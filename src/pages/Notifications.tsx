@@ -1,40 +1,64 @@
-import { FC } from 'react';
-import { useApiData } from '../hooks/useApiData';
-import '../styles/layout.css';
+import { useEffect, useState } from 'react';
+import api from '../services/api';
 
-type Notification = {
+type NotificationItem = {
   id: string;
+  title: string;
   message: string;
-  createdAt: string;
+  created_at: string;
+  read?: boolean;
+  [key: string]: unknown;
 };
 
-type NotificationsResponse = {
-  notifications: Notification[];
-};
+export default function Notifications() {
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
-const Notifications: FC = () => {
-  const { data, loading, error } = useApiData<NotificationsResponse>('/notifications', {
-    notifications: [],
-  });
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const { data } = await api.get<NotificationItem[]>('/api/notifications');
+        setNotifications(data);
+        setError(null);
+      } catch (err) {
+        setError('Unable to fetch');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchNotifications();
+  }, []);
 
   return (
-    <section className="page-card">
-      <h2>Notifications</h2>
-      <p>Stay up to date on key borrower and lender activity.</p>
-      {loading && <p>Loading notifications…</p>}
-      {error && <p role="alert">Failed to load notifications: {error}</p>}
-      {!loading && data && (
-        <ul>
-          {data.notifications.length === 0 && <li>No notifications yet.</li>}
-          {data.notifications.map((notification) => (
-            <li key={notification.id}>
-              <strong>{new Date(notification.createdAt).toLocaleString()}</strong> — {notification.message}
-            </li>
+    <div className="content-wrapper">
+      <div className="page-header">
+        <div>
+          <h2>Notifications</h2>
+          <p style={{ color: 'var(--color-muted)' }}>Real-time event feed from lending, documents, communications, and underwriting.</p>
+        </div>
+      </div>
+      <div className="card" style={{ display: 'grid', gap: '1rem' }}>
+        <h3>Live Feed</h3>
+        {loading && <p>Loading...</p>}
+        {error && <p>{error}</p>}
+        {!loading && !error && notifications.length === 0 && <p>No notifications available.</p>}
+        {!loading && !error &&
+          notifications.map((notification) => (
+            <div
+              key={notification.id}
+              style={{ borderBottom: '1px solid rgba(148, 163, 184, 0.25)', paddingBottom: '1rem' }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h4 style={{ margin: 0 }}>{notification.title}</h4>
+                <span className="status-pill">{notification.read ? 'Read' : 'New'}</span>
+              </div>
+              <p style={{ margin: '0.5rem 0', color: 'var(--color-muted)' }}>{notification.message}</p>
+              <small style={{ color: 'var(--color-muted)' }}>{new Date(notification.created_at).toLocaleString()}</small>
+            </div>
           ))}
-        </ul>
-      )}
-    </section>
+      </div>
+    </div>
   );
-};
-
-export default Notifications;
+}

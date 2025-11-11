@@ -1,40 +1,74 @@
-import { FC } from 'react';
-import { useApiData } from '../hooks/useApiData';
-import '../styles/layout.css';
+import { useEffect, useState } from 'react';
+import api from '../services/api';
 
 type Lender = {
-  name: string;
-  contact: string;
-  programs: number;
+  id: string;
+  name?: string;
+  products?: string[];
+  contact?: string;
+  status?: string;
+  [key: string]: unknown;
 };
 
-type LendersResponse = {
-  lenders: Lender[];
-};
+export default function Lenders() {
+  const [lenders, setLenders] = useState<Lender[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
-const Lenders: FC = () => {
-  const { data, loading, error } = useApiData<LendersResponse>('/lenders', {
-    lenders: [],
-  });
+  useEffect(() => {
+    const fetchLenders = async () => {
+      try {
+        const { data } = await api.get<Lender[]>('/api/lenders');
+        setLenders(data);
+        setError(null);
+      } catch (err) {
+        setError('Unable to fetch');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLenders();
+  }, []);
 
   return (
-    <section className="page-card">
-      <h2>Lenders</h2>
-      <p>Maintain visibility into available lending partners.</p>
-      {loading && <p>Loading lenders…</p>}
-      {error && <p role="alert">Failed to load lenders: {error}</p>}
-      {!loading && data && (
-        <ul>
-          {data.lenders.length === 0 && <li>No lenders connected.</li>}
-          {data.lenders.map((lender) => (
-            <li key={lender.name}>
-              <strong>{lender.name}</strong> — {lender.contact} ({lender.programs} programs)
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
+    <div className="content-wrapper">
+      <div className="page-header">
+        <div>
+          <h2>Lenders</h2>
+          <p style={{ color: 'var(--color-muted)' }}>Manage partner institutions, program eligibility, and contact routing.</p>
+        </div>
+      </div>
+      <div className="card">
+        <h3>Partner Directory</h3>
+        {loading && <p>Loading...</p>}
+        {error && <p>{error}</p>}
+        {!loading && !error && lenders.length === 0 && <p>No lenders configured.</p>}
+        {!loading && !error && lenders.length > 0 && (
+          <table className="table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Products</th>
+                <th>Contact</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {lenders.map((lender) => (
+                <tr key={lender.id}>
+                  <td>{lender.id}</td>
+                  <td>{lender.name || 'N/A'}</td>
+                  <td>{lender.products?.join(', ') || 'N/A'}</td>
+                  <td>{lender.contact || 'N/A'}</td>
+                  <td><span className="status-pill">{lender.status || 'Active'}</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
   );
-};
-
-export default Lenders;
+}

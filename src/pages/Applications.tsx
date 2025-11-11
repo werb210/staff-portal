@@ -1,39 +1,76 @@
-import { FC } from 'react';
-import { useApiData } from '../hooks/useApiData';
-import '../styles/layout.css';
+import { useEffect, useState } from 'react';
+import api from '../services/api';
 
 type Application = {
-  applicant: string;
-  status: string;
+  id: string;
+  applicant?: string;
+  status?: string;
+  amount?: number;
+  created_at?: string;
+  [key: string]: unknown;
 };
 
-type ApplicationsResponse = {
-  applications: Application[];
-};
+export default function Applications() {
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
-const Applications: FC = () => {
-  const { data, loading, error } = useApiData<ApplicationsResponse>('/applications', {
-    applications: [],
-  });
+  useEffect(() => {
+    const fetchApplications = async () => {
+      try {
+        const { data } = await api.get<Application[]>('/api/applications');
+        setApplications(data);
+        setError(null);
+      } catch (err) {
+        setError('Unable to fetch');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchApplications();
+  }, []);
 
   return (
-    <section className="page-card">
-      <h2>Applications</h2>
-      <p>Track and manage borrower applications.</p>
-      {loading && <p>Loading applications…</p>}
-      {error && <p role="alert">Failed to load applications: {error}</p>}
-      {!loading && data && (
-        <ul>
-          {data.applications.length === 0 && <li>No applications available.</li>}
-          {data.applications.map((application) => (
-            <li key={application.applicant}>
-              <strong>{application.applicant}</strong> — {application.status}
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
+    <div className="content-wrapper">
+      <div className="page-header">
+        <div>
+          <h2>Applications</h2>
+          <p style={{ color: 'var(--color-muted)' }}>Review and track borrower applications entering the Boreal pipeline.</p>
+        </div>
+      </div>
+      <div className="card">
+        <h3>Active Applications</h3>
+        {loading && <p>Loading...</p>}
+        {error && <p>{error}</p>}
+        {!loading && !error && applications.length === 0 && <p>No applications to show.</p>}
+        {!loading && !error && applications.length > 0 && (
+          <table className="table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Applicant</th>
+                <th>Status</th>
+                <th>Amount</th>
+                <th>Created</th>
+              </tr>
+            </thead>
+            <tbody>
+              {applications.map((application) => (
+                <tr key={application.id}>
+                  <td>{application.id}</td>
+                  <td>{application.applicant || 'N/A'}</td>
+                  <td>
+                    <span className="status-pill">{application.status || 'Pending'}</span>
+                  </td>
+                  <td>${Number(application.amount || 0).toLocaleString()}</td>
+                  <td>{application.created_at ? new Date(application.created_at).toLocaleString() : 'N/A'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
   );
-};
-
-export default Applications;
+}
