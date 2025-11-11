@@ -1,0 +1,129 @@
+.app-container {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  grid-template-rows: auto 1fr;
+  min-height: 100vh;
+}
+
+.sidebar {
+  grid-row: 1 / span 2;
+  background-color: #111827;
+  color: #f9fafb;
+  padding: 1.5rem 1rem;
+}
+
+.sidebar nav ul {
+  list-style: none;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.sidebar nav a,
+.sidebar nav a.nav-link {
+  display: block;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  color: #d1d5db;
+  font-weight: 500;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.sidebar nav a.active,
+.sidebar nav a:hover,
+.sidebar nav a.nav-link.active,
+.sidebar nav a.nav-link:hover {
+  background-color: #1f2937;
+  color: #f9fafb;
+}
+
+.navbar {
+  grid-column: 2 / 3;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 1rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.navbar h1 {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.navbar .navbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.navbar .user-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  background-color: #f3f4f6;
+  font-weight: 500;
+}
+
+.main-content {
+  grid-column: 2 / 3;
+  padding: 2rem 2.5rem;
+}
+
+.page-card {
+  background-color: #ffffff;
+  border-radius: 1.25rem;
+  border: 1px solid #e5e7eb;
+  padding: 2rem;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
+  display: grid;
+  gap: 1rem;
+}
+
+.page-card h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.page-card p {
+  color: #4b5563;
+}
+
+.page-card ul {
+  list-style: none;
+  display: grid;
+  gap: 0.5rem;
+  padding-left: 0;
+}
+
+.page-card li strong {
+  color: #111827;
+}
+
+@media (max-width: 960px) {
+  .app-container {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto 1fr;
+  }
+
+  .sidebar {
+    grid-row: 2 / 3;
+    display: flex;
+    overflow-x: auto;
+  }
+
+  .sidebar nav ul {
+    display: flex;
+    gap: 0.75rem;
+  }
+
+  .sidebar nav a {
+    white-space: nowrap;
+  }
+
+  .main-content {
+    grid-column: 1 / 2;
+  }
+}
