@@ -40,7 +40,7 @@ const SmsPage = () => {
               <li key={message.id}>
                 <strong>{message.to}</strong>
                 <p>{message.body}</p>
-                <span>{message.sentAt}</span>
+                <span>{new Date(message.sentAt).toLocaleString()}</span>
               </li>
             ))}
           </ul>

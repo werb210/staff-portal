@@ -1,73 +1,64 @@
-import { apiClient } from './client';
+import { mockCallLogs, mockEmails, mockSmsMessages, mockTemplates } from '../mock';
+import type { CallLog, EmailMessage, SmsMessage, Template } from '../types/communication';
 
-export interface SmsMessage {
-  id: string;
-  to: string;
-  body: string;
-  status: string;
-  sentAt: string;
-}
+let smsMessages = [...mockSmsMessages];
+let callLogs = [...mockCallLogs];
+let emails = [...mockEmails];
+let templates = [...mockTemplates];
 
-export interface CallLog {
-  id: string;
-  contact: string;
-  duration: number;
-  status: string;
-  startedAt: string;
-}
+const nowIso = () => new Date().toISOString();
 
-export interface EmailMessage {
-  id: string;
-  subject: string;
-  to: string;
-  status: string;
-  sentAt: string;
-}
-
-export interface Template {
-  id: string;
-  name: string;
-  subject?: string;
-  body: string;
-  type: 'sms' | 'email';
-}
-
-export const getSmsMessages = async (): Promise<SmsMessage[]> => {
-  const { data } = await apiClient.get<SmsMessage[]>('/communication/sms');
-  return data;
-};
+export const getSmsMessages = async (): Promise<SmsMessage[]> => smsMessages;
 
 export const sendSmsMessage = async (payload: { to: string; body: string }) => {
-  const { data } = await apiClient.post<SmsMessage>('/communication/sms', payload);
-  return data;
+  const message: SmsMessage = {
+    id: `sms-${Date.now()}`,
+    to: payload.to,
+    body: payload.body,
+    status: 'sent',
+    sentAt: nowIso(),
+  };
+  smsMessages = [message, ...smsMessages];
+  return message;
 };
 
-export const getCallLogs = async (): Promise<CallLog[]> => {
-  const { data } = await apiClient.get<CallLog[]>('/communication/calls');
-  return data;
-};
+export const getCallLogs = async (): Promise<CallLog[]> => callLogs;
 
 export const logCall = async (payload: { contact: string; notes?: string }) => {
-  const { data } = await apiClient.post<CallLog>('/communication/calls', payload);
-  return data;
+  const log: CallLog = {
+    id: `call-${Date.now()}`,
+    contact: payload.contact,
+    duration: Math.floor(Math.random() * 600),
+    status: 'completed',
+    startedAt: nowIso(),
+  };
+  callLogs = [log, ...callLogs];
+  return log;
 };
 
-export const getEmails = async (): Promise<EmailMessage[]> => {
-  const { data } = await apiClient.get<EmailMessage[]>('/communication/email');
-  return data;
-};
+export const getEmails = async (): Promise<EmailMessage[]> => emails;
 
 export const sendEmail = async (payload: { to: string; subject: string; body: string }) => {
-  const { data } = await apiClient.post<EmailMessage>('/communication/email', payload);
-  return data;
+  const email: EmailMessage = {
+    id: `email-${Date.now()}`,
+    subject: payload.subject,
+    to: payload.to,
+    status: 'sent',
+    sentAt: nowIso(),
+  };
+  emails = [email, ...emails];
+  return email;
 };
 
-export const getTemplates = async (): Promise<Template[]> => {
-  const { data } = await apiClient.get<Template[]>('/communication/templates');
-  return data;
-};
+export const getTemplates = async (): Promise<Template[]> => templates;
 
 export const saveTemplate = async (payload: Template) => {
-  const { data } = await apiClient.put<Template>(`/communication/templates/${payload.id}`, payload);
-  return data;
+  const existingIndex = templates.findIndex((template) => template.id === payload.id);
+  if (existingIndex === -1) {
+    templates = [{ ...payload, id: payload.id || `template-${Date.now()}` }, ...templates];
+    return templates[0];
+  }
+
+  templates[existingIndex] = { ...templates[existingIndex], ...payload };
+  return templates[existingIndex];
 };

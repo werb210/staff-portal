@@ -41,7 +41,7 @@ const CallsPage = () => {
                 <strong>{call.contact}</strong>
                 <p>{call.status}</p>
                 <span>
-                  {call.duration} seconds • {call.startedAt}
+                  {call.duration} seconds • {new Date(call.startedAt).toLocaleString()}
                 </span>
               </li>
             ))}

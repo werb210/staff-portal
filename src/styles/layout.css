@@ -614,6 +614,15 @@
 
 .contact-card {
   gap: var(--space-sm);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.contact-card--active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 30%, transparent);
 }
 
 .contact-card__header {

@@ -1,3 +1,5 @@
+export type CommunicationChannel = 'sms' | 'email' | 'call';
+
 export interface SMSPayload {
   to: string;
   message: string;
@@ -19,8 +21,6 @@ export interface CallPayload {
   notes?: string;
 }
 
-export type CommunicationChannel = 'sms' | 'email' | 'call';
-
 export interface CommunicationMessage {
   id: string;
   sender: 'staff' | 'borrower';
@@ -35,4 +35,36 @@ export interface CommunicationThread {
   participant: string;
   messages: CommunicationMessage[];
   lastUpdated: string;
+}
+
+export interface SmsMessage {
+  id: string;
+  to: string;
+  body: string;
+  status: string;
+  sentAt: string;
+}
+
+export interface CallLog {
+  id: string;
+  contact: string;
+  duration: number;
+  status: string;
+  startedAt: string;
+}
+
+export interface EmailMessage {
+  id: string;
+  subject: string;
+  to: string;
+  status: string;
+  sentAt: string;
+}
+
+export interface Template {
+  id: string;
+  name: string;
+  subject?: string;
+  body: string;
+  type: 'sms' | 'email';
 }

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useEffect } from 'react';
 import type { FormEvent } from 'react';
 import { Button } from '../../components/common/Button';
 import { Spinner } from '../../components/common/Spinner';
@@ -8,6 +9,21 @@ const TemplatesPage = () => {
   const { listQuery, saveMutation } = useTemplates();
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [formState, setFormState] = useState({ name: '', subject: '', body: '', type: 'email' });
+
+  useEffect(() => {
+    if (!selectedTemplate && (listQuery.data?.length ?? 0) > 0) {
+      const firstTemplate = listQuery.data?.[0];
+      if (firstTemplate) {
+        setSelectedTemplate(firstTemplate.id);
+        setFormState({
+          name: firstTemplate.name,
+          subject: firstTemplate.subject ?? '',
+          body: firstTemplate.body,
+          type: firstTemplate.type,
+        });
+      }
+    }
+  }, [listQuery.data, selectedTemplate]);
 
   const handleSelect = (templateId: string) => {
     setSelectedTemplate(templateId);
@@ -25,7 +41,13 @@ const TemplatesPage = () => {
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!selectedTemplate) return;
-    saveMutation.mutate({ id: selectedTemplate, ...formState } as any);
+    saveMutation.mutate({
+      id: selectedTemplate,
+      name: formState.name,
+      subject: formState.subject,
+      body: formState.body,
+      type: formState.type as 'sms' | 'email',
+    });
   };
 
   return (

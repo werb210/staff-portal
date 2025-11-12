@@ -4,7 +4,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { useMemo, useState } from 'react';
 import { Drawer } from '../../components/common/Drawer';
 import { Spinner } from '../../components/common/Spinner';
-import { usePipelineBoard, usePipelineMutations, type PipelineBoard } from '../../hooks/usePipeline';
+import { usePipelineBoard, usePipelineMutations, type PipelineColumn } from '../../hooks/usePipeline';
 import ApplicationDrawer from './ApplicationDrawer';
 
 const PipelinePage = () => {
@@ -17,7 +17,7 @@ const PipelinePage = () => {
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (!active || !over) return;
-    const fromStage = active.data.current?.stage;
+    const fromStage = active.data.current?.status;
     const toStage = over.id as string;
     if (!fromStage || fromStage === toStage) return;
 
@@ -44,8 +44,8 @@ const PipelinePage = () => {
       <DndContext onDragEnd={handleDragEnd}>
         <div className="pipeline-board">
           {columns.map((column) => (
-            <PipelineColumn
-              key={column.stage}
+            <PipelineColumnView
+              key={column.status}
               column={column}
               onSelect={(id) => setSelectedApplication(id)}
             />
@@ -64,34 +64,34 @@ const PipelinePage = () => {
   );
 };
 
-const PipelineColumn = ({ column, onSelect }: { column: PipelineBoard; onSelect: (id: string) => void }) => {
-  const { setNodeRef, isOver } = useDroppable({ id: column.stage });
+const PipelineColumnView = ({ column, onSelect }: { column: PipelineColumn; onSelect: (id: string) => void }) => {
+  const { setNodeRef, isOver } = useDroppable({ id: column.status });
 
   return (
     <div className={`pipeline-column ${isOver ? 'is-over' : ''}`} ref={setNodeRef}>
       <header>
-        <h3>{column.stage}</h3>
-        <span>{column.applications.length}</span>
+        <h3>{column.title}</h3>
+        <span>{column.cards.length}</span>
       </header>
       <div className="pipeline-cards">
-        {column.applications.map((card) => (
-          <PipelineCard key={card.id} card={card} onSelect={onSelect} />
+        {column.cards.map((card) => (
+          <PipelineCardView key={card.id} card={card} onSelect={onSelect} />
         ))}
       </div>
     </div>
   );
 };
 
-const PipelineCard = ({
+const PipelineCardView = ({
   card,
   onSelect,
 }: {
-  card: PipelineBoard['applications'][number];
+  card: PipelineColumn['cards'][number];
   onSelect: (id: string) => void;
 }) => {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: card.id,
-    data: { stage: card.stage },
+    data: { status: card.status },
   });
 
   const style = {

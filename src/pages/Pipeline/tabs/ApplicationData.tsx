@@ -25,7 +25,7 @@ const ApplicationData = ({ applicationId }: ApplicationDataProps) => {
         <dt>Requested Amount</dt>
         <dd>${data.amount?.toLocaleString?.() ?? data.amount}</dd>
         <dt>Status</dt>
-        <dd>{data.stage}</dd>
+        <dd>{data.status}</dd>
         <dt>Updated</dt>
         <dd>{data.updatedAt}</dd>
       </dl>

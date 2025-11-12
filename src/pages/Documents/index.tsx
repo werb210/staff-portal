@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Button } from '../../components/common/Button';
-import { FileUpload } from '../../components/common/FileUpload';
+import { FileInput } from '../../components/common/FileInput';
 import { Modal } from '../../components/common/Modal';
 import { Spinner } from '../../components/common/Spinner';
 import { Table } from '../../components/common/Table';
@@ -51,10 +51,14 @@ const DocumentsPage = () => {
             emptyMessage="No documents pending review."
             columns={[
               { header: 'Name', accessor: 'name' },
-              { header: 'Type', accessor: 'type' },
+              { header: 'Category', accessor: 'category' },
               { header: 'Status', accessor: 'status' },
-              { header: 'Uploaded By', accessor: 'uploadedBy' },
-              { header: 'Uploaded At', accessor: 'uploadedAt' },
+              { header: 'Uploaded By', accessor: (document) => document.uploadedBy ?? 'Borrower' },
+              { header: 'Uploaded At', accessor: (document) => new Date(document.uploadedAt).toLocaleString() },
+              {
+                header: 'Last Upload',
+                accessor: (document) => document.lastUploadedFileName ?? '—',
+              },
               {
                 header: 'Actions',
                 accessor: (document) => (
@@ -71,7 +75,7 @@ const DocumentsPage = () => {
                     <Button variant="ghost" onClick={() => handleReject(document)} disabled={rejectMutation.isPending}>
                       Reject
                     </Button>
-                    <FileUpload onSelect={(file) => handleUpload(document, file)} />
+                    <FileInput label="Upload" onSelect={(file) => handleUpload(document, file)} />
                   </div>
                 ),
               },
