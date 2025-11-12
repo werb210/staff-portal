@@ -8,6 +8,7 @@ import Pipeline from './pages/Pipeline/Pipeline';
 import CommunicationCenter from './pages/Communication/CommunicationCenter';
 import AdminConsole from './pages/Admin/AdminConsole';
 import AIPortal from './pages/AI/AIPortal';
+import CRM from './pages/CRM/CRM';
 import { ProtectedRoute } from './components/Layout/ProtectedRoute';
 import { useAuth } from './hooks/useAuth';
 
@@ -67,6 +68,14 @@ function App() {
             element={(
               <ProtectedRoute module="communication" required={["communication:sms", "communication:email"]}>
                 <CommunicationCenter />
+              </ProtectedRoute>
+            )}
+          />
+          <Route
+            path="crm"
+            element={(
+              <ProtectedRoute module="dashboard">
+                <CRM />
               </ProtectedRoute>
             )}
           />

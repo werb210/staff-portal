@@ -14,9 +14,23 @@ export interface SummarizationPayload {
   notes: string;
 }
 
+export interface AISummaryRecord {
+  id: string;
+  applicationId: string;
+  summary: string;
+  generatedAt: string;
+}
+
 export interface RiskScorePayload {
   applicationId: string;
   financials: Record<string, number>;
+}
+
+export interface RiskScoreRecord {
+  id: string;
+  applicationId: string;
+  score: number;
+  generatedAt: string;
 }
 
 export interface LenderMatchPayload {

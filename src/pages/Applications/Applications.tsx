@@ -7,6 +7,12 @@ import {
   useUploadApplicationDocument,
 } from '../../hooks/api/useApplications';
 import type { ApplicationPayload, DocumentUploadPayload } from '../../types/applications';
+import { FormSection } from '../../components/Form/FormSection';
+import { PortalButton } from '../../components/Button/PortalButton';
+import { DataTable } from '../../components/Table/DataTable';
+import type { ApplicationSummary } from '../../types/applications';
+import { useFormNavigation } from '../../hooks/mobile/useFormNavigation';
+import { BaseModal } from '../../components/Modal/BaseModal';
 
 const INITIAL_FORM: ApplicationPayload = {
   businessName: '',
@@ -28,28 +34,68 @@ export default function Applications() {
     documentType: '',
     fileUrl: '',
   });
+  const [activeApplication, setActiveApplication] = useState<ApplicationSummary | null>(null);
+  const formNav = useFormNavigation(2);
 
   const handleCreate = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    createMutation.mutate(form);
-    setForm(INITIAL_FORM);
+    createMutation.mutate(form, {
+      onSuccess: () => {
+        setForm(INITIAL_FORM);
+        formNav.goNext();
+      },
+    });
   };
 
   const handleUpload = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    uploadMutation.mutate(uploadState);
-    setUploadState({ applicationId: '', documentType: '', fileUrl: '' });
+    uploadMutation.mutate(uploadState, {
+      onSuccess: () => {
+        setUploadState({ applicationId: '', documentType: '', fileUrl: '' });
+        formNav.reset();
+      },
+    });
   };
+
+  const tableColumns = [
+    { key: 'businessName', header: 'Business' },
+    { key: 'stage', header: 'Stage' },
+    { key: 'status', header: 'Status' },
+    {
+      key: 'updatedAt',
+      header: 'Updated',
+      render: (app: ApplicationSummary) => new Date(app.updatedAt).toLocaleString(),
+    },
+    {
+      key: 'actions',
+      header: 'Actions',
+      render: (app: ApplicationSummary) => (
+        <div className="table__actions">
+          <PortalButton type="button" onClick={() => submitMutation.mutate(app.id)} tone="primary" loading={submitMutation.isPending}>
+            Submit
+          </PortalButton>
+          <PortalButton
+            type="button"
+            tone="success"
+            onClick={() => completeMutation.mutate({ applicationId: app.id })}
+            loading={completeMutation.isPending}
+          >
+            Complete
+          </PortalButton>
+          <PortalButton type="button" tone="ghost" onClick={() => setActiveApplication(app)}>
+            Details
+          </PortalButton>
+        </div>
+      ),
+    },
+  ];
 
   if (isLoading) return <div className="card loading-state">Loading applications...</div>;
 
   return (
     <div className="page applications">
-      <section className="card">
-        <header className="card__header">
-          <h2>Create Application</h2>
-          <span>BF & SLF silos supported</span>
-        </header>
+      <p role="status">Step {formNav.progress.current} of {formNav.progress.total} ({formNav.progress.percentage}% complete)</p>
+      <FormSection title="Create Application" description="BF & SLF silos supported">
         <form className="form-grid" onSubmit={handleCreate}>
           <label>
             Business Name
@@ -85,31 +131,26 @@ export default function Applications() {
                 setForm((prev) => ({
                   ...prev,
                   amountRequested: event.target.value ? Number(event.target.value) : 0,
-                }))}
+                }))
+              }
               required
             />
           </label>
           <label>
             Silo
-            <select
-              value={form.silo}
-              onChange={(event) => setForm((prev) => ({ ...prev, silo: event.target.value }))}
-            >
+            <select value={form.silo} onChange={(event) => setForm((prev) => ({ ...prev, silo: event.target.value }))}>
               <option value="BF">BF</option>
               <option value="SLF">SLF</option>
               <option value="BI">BI (coming soon)</option>
             </select>
           </label>
-          <button type="submit" className="btn primary" disabled={createMutation.isPending}>
-            {createMutation.isPending ? 'Creating...' : 'Create Application'}
-          </button>
+          <PortalButton type="submit" tone="primary" loading={createMutation.isPending}>
+            {createMutation.isPending ? 'Creating…' : 'Create Application'}
+          </PortalButton>
         </form>
-      </section>
+      </FormSection>
 
-      <section className="card">
-        <header className="card__header">
-          <h2>Upload Application Document</h2>
-        </header>
+      <FormSection title="Upload Application Document" description="Attach supporting documentation">
         <form className="form-grid" onSubmit={handleUpload}>
           <label>
             Application ID
@@ -136,50 +177,45 @@ export default function Applications() {
               required
             />
           </label>
-          <button type="submit" className="btn" disabled={uploadMutation.isPending}>
-            {uploadMutation.isPending ? 'Uploading...' : 'Submit Document'}
-          </button>
+          <PortalButton type="submit" loading={uploadMutation.isPending}>
+            {uploadMutation.isPending ? 'Uploading…' : 'Submit Document'}
+          </PortalButton>
         </form>
-      </section>
+      </FormSection>
 
       <section className="card">
         <header className="card__header">
           <h2>Application Pipeline</h2>
           <span>Track progress and actions</span>
         </header>
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Business</th>
-              <th>Stage</th>
-              <th>Status</th>
-              <th>Updated</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {apps?.map((app) => (
-              <tr key={app.id}>
-                <td>{app.businessName}</td>
-                <td>{app.stage}</td>
-                <td>{app.status}</td>
-                <td>{new Date(app.updatedAt).toLocaleString()}</td>
-                <td className="table__actions">
-                  <button onClick={() => submitMutation.mutate(app.id)} disabled={submitMutation.isPending}>
-                    Submit
-                  </button>
-                  <button
-                    onClick={() => completeMutation.mutate({ applicationId: app.id })}
-                    disabled={completeMutation.isPending}
-                  >
-                    Complete
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <DataTable<ApplicationSummary>
+          caption="Current application inventory"
+          columns={tableColumns}
+          data={apps ?? []}
+          getRowKey={(app) => app.id}
+        />
       </section>
+
+      <BaseModal title="Application Details" isOpen={Boolean(activeApplication)} onClose={() => setActiveApplication(null)}>
+        {activeApplication ? (
+          <div className="modal__details">
+            <p>
+              <strong>Business:</strong> {activeApplication.businessName}
+            </p>
+            <p>
+              <strong>Status:</strong> {activeApplication.status}
+            </p>
+            <p>
+              <strong>Stage:</strong> {activeApplication.stage}
+            </p>
+            <p>
+              <strong>Updated:</strong> {new Date(activeApplication.updatedAt).toLocaleString()}
+            </p>
+          </div>
+        ) : (
+          <p>No application selected.</p>
+        )}
+      </BaseModal>
     </div>
   );
 }

@@ -7,12 +7,18 @@ import type {
 } from '../../types/applications';
 import { useOfflineQueue } from '../offline/useOfflineQueue';
 import { storeOffline } from '../../services/pwa/offlineService';
+import { useDataStore } from '../../store/dataStore';
 
-export const useApplications = () =>
-  useQuery({
+export const useApplications = () => {
+  const { setApplications } = useDataStore();
+  return useQuery({
     queryKey: ['applications'],
     queryFn: applicationService.list,
+    onSuccess: (data) => {
+      setApplications(data);
+    },
   });
+};
 
 export function useCreateApplication() {
   const queryClient = useQueryClient();

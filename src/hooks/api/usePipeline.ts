@@ -2,12 +2,18 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { pipelineService } from '../../services/pipelineService';
 import type { PipelineReorderPayload, PipelineStage, PipelineTransitionPayload } from '../../types/pipeline';
 import { useOfflineQueue } from '../offline/useOfflineQueue';
+import { useDataStore } from '../../store/dataStore';
 
-export const usePipeline = () =>
-  useQuery<PipelineStage[]>({
+export const usePipeline = () => {
+  const { setPipelineStages } = useDataStore();
+  return useQuery<PipelineStage[]>({
     queryKey: ['pipeline'],
     queryFn: pipelineService.list,
+    onSuccess: (data) => {
+      setPipelineStages(data);
+    },
   });
+};
 
 export function usePipelineTransition() {
   const queryClient = useQueryClient();
