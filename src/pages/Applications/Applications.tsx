@@ -191,7 +191,7 @@ export default function Applications() {
         <DataTable<ApplicationSummary>
           caption="Current application inventory"
           columns={tableColumns}
-          data={apps ?? []}
+          data={Array.isArray(apps) ? apps : []}
           getRowKey={(app) => app.id}
         />
       </section>

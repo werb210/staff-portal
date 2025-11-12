@@ -3,16 +3,21 @@ import { pipelineService } from '../../services/pipelineService';
 import type { PipelineReorderPayload, PipelineStage, PipelineTransitionPayload } from '../../types/pipeline';
 import { useOfflineQueue } from '../offline/useOfflineQueue';
 import { useDataStore } from '../../store/dataStore';
+import { useEffect } from 'react';
 
 export const usePipeline = () => {
   const { setPipelineStages } = useDataStore();
-  return useQuery<PipelineStage[]>({
+  const query = useQuery<PipelineStage[]>({
     queryKey: ['pipeline'],
     queryFn: pipelineService.list,
-    onSuccess: (data) => {
-      setPipelineStages(data);
-    },
   });
+  useEffect(() => {
+    if (query.data) {
+      setPipelineStages(query.data);
+    }
+  }, [query.data, setPipelineStages]);
+
+  return query;
 };
 
 export function usePipelineTransition() {

@@ -7,8 +7,22 @@ interface FollowUpTimelineProps {
   isScheduling?: boolean;
 }
 
+type FollowUpFormState = {
+  contactId: string;
+  scheduledFor: string;
+  channel: 'sms' | 'email' | 'call';
+  notes: string;
+};
+
+const INITIAL_FORM_STATE: FollowUpFormState = {
+  contactId: '',
+  scheduledFor: '',
+  channel: 'email',
+  notes: '',
+};
+
 export function FollowUpTimeline({ reminders, onSchedule, isScheduling }: FollowUpTimelineProps) {
-  const [formState, setFormState] = useState({ contactId: '', scheduledFor: '', channel: 'email' as const, notes: '' });
+  const [formState, setFormState] = useState<FollowUpFormState>(INITIAL_FORM_STATE);
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -46,7 +60,7 @@ export function FollowUpTimeline({ reminders, onSchedule, isScheduling }: Follow
             name="channel"
             value={formState.channel}
             onChange={(event) =>
-              setFormState((prev) => ({ ...prev, channel: event.target.value as 'sms' | 'email' | 'call' }))
+              setFormState((prev) => ({ ...prev, channel: event.target.value as FollowUpFormState['channel'] }))
             }
           >
             <option value="email">Email</option>

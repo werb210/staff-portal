@@ -6,6 +6,7 @@ import { getPipelineStagesForSilo } from '../../config/rbac';
 import { StatCard } from '../../components/Card/StatCard';
 import { DataTable } from '../../components/Table/DataTable';
 import type { ApplicationSummary } from '../../types/applications';
+import type { PipelineStage } from '../../types/pipeline';
 import { NotificationBanner } from '../../components/Notification/NotificationBanner';
 import { useDataStore } from '../../store/dataStore';
 
@@ -15,12 +16,14 @@ export default function Dashboard() {
   const { user } = useRBAC();
   const { marketingDashboards } = useDataStore();
 
+  const applicationList: ApplicationSummary[] = Array.isArray(apps) ? apps : [];
+  const pipelineStages: PipelineStage[] = Array.isArray(pipeline) ? pipeline : [];
   const metrics = useMemo(() => {
-    const total = apps?.length ?? 0;
-    const funded = apps?.filter((app) => app.status?.toLowerCase() === 'funded').length ?? 0;
+    const total = applicationList.length;
+    const funded = applicationList.filter((app) => app.status?.toLowerCase() === 'funded').length;
     const pending = total - funded;
     return { total, funded, pending };
-  }, [apps]);
+  }, [applicationList]);
 
   const siloStages = user ? getPipelineStagesForSilo(user.silo) : [];
 
@@ -58,13 +61,13 @@ export default function Dashboard() {
           <span>{user?.silo} stages</span>
         </header>
         <div className="pipeline-snapshot">
-          {pipeline?.map((stage) => (
+          {pipelineStages.map((stage) => (
             <div key={stage.id} className="pipeline-snapshot__stage">
               <h3>{stage.name}</h3>
               <p>{stage.applications?.length ?? 0} applications</p>
             </div>
           ))}
-          {pipeline?.length === 0 && (
+          {pipelineStages.length === 0 && (
             <p>No pipeline data yet. Expected stages: {siloStages.join(', ')}</p>
           )}
         </div>
@@ -91,7 +94,7 @@ export default function Dashboard() {
         <DataTable<ApplicationSummary>
           caption="Most recent submissions across teams"
           columns={recentColumns}
-          data={(apps ?? []).slice(0, 6)}
+          data={applicationList.slice(0, 6)}
           getRowKey={(app) => app.id}
           emptyMessage="No applications submitted yet."
         />

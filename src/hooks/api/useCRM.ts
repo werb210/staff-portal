@@ -9,6 +9,7 @@ import type {
   CRMTaskUpdatePayload,
 } from '../../types/crm';
 import { useDataStore } from '../../store/dataStore';
+import { useEffect } from 'react';
 
 const crmQueryOptions = {
   staleTime: 1000 * 30,
@@ -17,32 +18,50 @@ const crmQueryOptions = {
 
 export function useCRMContacts() {
   const { setContacts } = useDataStore();
-  return useQuery<CRMContact[]>({
+  const query = useQuery<CRMContact[]>({
     queryKey: ['crm', 'contacts'],
     queryFn: crmService.contacts,
-    onSuccess: (contacts) => setContacts(contacts),
     ...crmQueryOptions,
   });
+  useEffect(() => {
+    if (query.data) {
+      setContacts(query.data);
+    }
+  }, [query.data, setContacts]);
+
+  return query;
 }
 
 export function useCRMTasks() {
   const { setTasks } = useDataStore();
-  return useQuery<CRMTask[]>({
+  const query = useQuery<CRMTask[]>({
     queryKey: ['crm', 'tasks'],
     queryFn: crmService.tasks,
-    onSuccess: (tasks) => setTasks(tasks),
     ...crmQueryOptions,
   });
+  useEffect(() => {
+    if (query.data) {
+      setTasks(query.data);
+    }
+  }, [query.data, setTasks]);
+
+  return query;
 }
 
 export function useCRMReminders() {
   const { setReminders } = useDataStore();
-  return useQuery<CRMReminder[]>({
+  const query = useQuery<CRMReminder[]>({
     queryKey: ['crm', 'reminders'],
     queryFn: crmService.reminders,
-    onSuccess: (reminders) => setReminders(reminders),
     ...crmQueryOptions,
   });
+  useEffect(() => {
+    if (query.data) {
+      setReminders(query.data);
+    }
+  }, [query.data, setReminders]);
+
+  return query;
 }
 
 export function useUpdateCRMTask() {

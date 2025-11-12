@@ -10,7 +10,7 @@ export default function DocumentsPage() {
   const [selected, setSelected] = useState<DocumentRecord | null>(null);
   const [ocrResult, setOcrResult] = useState<string>('');
 
-  const documents: DocumentRecord[] = docs ?? [];
+  const documents: DocumentRecord[] = Array.isArray(docs) ? docs : [];
 
   const handleStatusChange = (status: DocumentRecord['status']) => {
     if (!selected) return;

@@ -1,30 +1,39 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { lenderService } from '../../services/lenderService';
-import type { SendToLenderPayload } from '../../types/lenders';
+import type { Lender, LenderProduct, SendToLenderPayload } from '../../types/lenders';
+import { useEffect } from 'react';
 import { useOfflineQueue } from '../offline/useOfflineQueue';
 import { storeOffline } from '../../services/pwa/offlineService';
 import { useDataStore } from '../../store/dataStore';
 
 export const useLenders = () => {
   const { setLenders } = useDataStore();
-  return useQuery({
+  const query = useQuery<Lender[], Error>({
     queryKey: ['lenders'],
     queryFn: lenderService.list,
-    onSuccess: (data) => {
-      setLenders(data);
-    },
   });
+  useEffect(() => {
+    if (query.data) {
+      setLenders(query.data);
+    }
+  }, [query.data, setLenders]);
+
+  return query;
 };
 
 export const useLenderProducts = () => {
   const { setLenderProducts } = useDataStore();
-  return useQuery({
+  const query = useQuery<LenderProduct[], Error>({
     queryKey: ['lender-products'],
     queryFn: lenderService.products,
-    onSuccess: (data) => {
-      setLenderProducts(data);
-    },
   });
+  useEffect(() => {
+    if (query.data) {
+      setLenderProducts(query.data);
+    }
+  }, [query.data, setLenderProducts]);
+
+  return query;
 };
 
 export function useSendToLender() {
