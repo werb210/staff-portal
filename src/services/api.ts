@@ -1,4 +1,7 @@
-import axios, { type AxiosRequestHeaders } from 'axios';
+import axios, {
+  type AxiosRequestHeaders,
+  type InternalAxiosRequestConfig
+} from 'axios';
 import { withAuth, onTokenChange } from './auth';
 
 const api = axios.create({
@@ -6,7 +9,7 @@ const api = axios.create({
   withCredentials: true
 });
 
-api.interceptors.request.use((config) => {
+api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const headers = (config.headers ?? {}) as AxiosRequestHeaders;
   config.headers = withAuth(headers);
   return config;

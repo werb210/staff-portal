@@ -25,7 +25,7 @@ export default function NotificationBell() {
         const { data } = await api.get<NotificationItem[]>('/api/notifications');
         if (!isMounted) return;
         setNotifications(data);
-        setUnreadCount(data.filter((item) => !item.read).length);
+        setUnreadCount(data.filter((item: NotificationItem) => !item.read).length);
         setError(null);
       } catch (err) {
         if (!isMounted) return;
