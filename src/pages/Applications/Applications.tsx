@@ -1,4 +1,3 @@
-import React from 'react';
 import { useApplications } from '../../hooks/api/useApplications';
 
 export default function Applications() {

@@ -1,4 +1,3 @@
-import React from 'react';
 import { useLenders } from '../../hooks/api/useLenders';
 
 export default function Lenders() {

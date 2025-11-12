@@ -1,4 +1,3 @@
-import React from 'react';
 import { useApplications } from '../../hooks/api/useApplications';
 import { usePipeline } from '../../hooks/api/usePipeline';
 import { useNotifications } from '../../hooks/api/useNotifications';

@@ -1,4 +1,3 @@
-import React from 'react';
 import { useNotifications } from '../../hooks/api/useNotifications';
 
 export default function Notifications() {
