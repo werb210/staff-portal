@@ -1,8 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
 import { applicationService } from '../../services/applicationService';
 import type {
   ApplicationCompletionPayload,
   ApplicationPayload,
+  ApplicationSummary,
   DocumentUploadPayload,
 } from '../../types/applications';
 import { useOfflineQueue } from '../offline/useOfflineQueue';
@@ -12,22 +14,26 @@ import { mergeReturningApplications } from '../../utils/returningApplications';
 
 export const useApplications = () => {
   const { setApplications } = useDataStore();
-  return useQuery({
+  const query = useQuery<ApplicationSummary[], Error>({
     queryKey: ['applications'],
     queryFn: applicationService.list,
-    onSuccess: (data) => {
-      setApplications(data);
-      mergeReturningApplications(
-        data.slice(0, 6).map((app) => ({
-          id: app.id,
-          businessName: app.businessName,
-          stage: app.stage,
-          status: app.status,
-          updatedAt: app.updatedAt,
-        }))
-      );
-    },
   });
+  useEffect(() => {
+    if (!query.data) return;
+    const data = query.data;
+    setApplications(data);
+    mergeReturningApplications(
+      data.slice(0, 6).map((app) => ({
+        id: app.id,
+        businessName: app.businessName,
+        stage: app.stage,
+        status: app.status,
+        updatedAt: app.updatedAt,
+      }))
+    );
+  }, [query.data, setApplications]);
+
+  return query;
 };
 
 export function useCreateApplication() {

@@ -1,12 +1,14 @@
 export interface ApplicationSummary {
   id: string;
   businessName: string;
-  contactName: string;
+  contactName?: string;
   status: string;
   stage: string;
   createdAt: string;
   updatedAt: string;
   amountRequested?: number;
+  silo?: string;
+  owner?: string;
 }
 
 export interface ApplicationPayload {

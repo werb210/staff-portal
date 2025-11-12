@@ -5,6 +5,7 @@ import { usePipeline, usePipelineReorder, usePipelineTransition } from '../../ho
 import { notificationService } from '../../services/notificationService';
 import { useRBAC } from '../../hooks/useRBAC';
 import { useMobilePipelineInteractions } from '../../hooks/mobile/useMobilePipeline';
+import type { PipelineStage } from '../../types/pipeline';
 
 export default function PipelineBoard() {
   const { data: pipeline, isLoading } = usePipeline();
@@ -12,7 +13,7 @@ export default function PipelineBoard() {
   const reorderMutation = usePipelineReorder();
   const { user } = useRBAC();
   const { isTouchDevice, announcement, announceDrag } = useMobilePipelineInteractions();
-  const stages = pipeline ?? [];
+  const stages: PipelineStage[] = Array.isArray(pipeline) ? pipeline : [];
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 8 } })

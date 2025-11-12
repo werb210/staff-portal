@@ -7,6 +7,9 @@ export default function Lenders() {
   const sendToLender = useSendToLender();
   const [selectedApp, setSelectedApp] = useState('');
 
+  const lenderList = Array.isArray(lenders) ? lenders : [];
+  const productList = Array.isArray(products) ? products : [];
+
   if (isLoading) return <div className="card loading-state">Loading lenders...</div>;
 
   return (
@@ -25,14 +28,14 @@ export default function Lenders() {
             </tr>
           </thead>
           <tbody>
-            {lenders?.map((lender) => (
+            {lenderList.map((lender) => (
               <tr key={lender.id}>
                 <td>{lender.name}</td>
                 <td>{lender.country}</td>
                 <td>{lender.specialties?.join(', ') ?? '—'}</td>
               </tr>
             ))}
-            {lenders?.length === 0 && (
+            {lenderList.length === 0 && (
               <tr>
                 <td colSpan={3}>No lenders available for this silo.</td>
               </tr>
@@ -55,15 +58,15 @@ export default function Lenders() {
             </tr>
           </thead>
           <tbody>
-            {products?.map((product) => (
+            {productList.map((product) => (
               <tr key={product.id}>
                 <td>{product.name}</td>
-                <td>{lenders?.find((l) => l.id === product.lenderId)?.name}</td>
+                <td>{lenderList.find((l) => l.id === product.lenderId)?.name}</td>
                 <td>{product.rate}</td>
                 <td>${product.minAmount.toLocaleString()} - ${product.maxAmount.toLocaleString()}</td>
               </tr>
             ))}
-            {products?.length === 0 && (
+            {productList.length === 0 && (
               <tr>
                 <td colSpan={4}>No products configured.</td>
               </tr>
@@ -98,7 +101,7 @@ export default function Lenders() {
             Lender
             <select name="lenderId" required>
               <option value="">Select lender</option>
-              {lenders?.map((lender) => (
+              {lenderList.map((lender) => (
                 <option key={lender.id} value={lender.id}>
                   {lender.name}
                 </option>

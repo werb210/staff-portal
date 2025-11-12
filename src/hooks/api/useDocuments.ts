@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
 import { documentService } from '../../services/documentService';
 import type { DocumentRecord, DocumentStatusPayload } from '../../types/documents';
 import { useOfflineQueue } from '../offline/useOfflineQueue';
@@ -7,13 +8,17 @@ import { useDataStore } from '../../store/dataStore';
 
 export const useDocuments = () => {
   const { setDocuments } = useDataStore();
-  return useQuery<DocumentRecord[]>({
+  const query = useQuery<DocumentRecord[]>({
     queryKey: ['documents'],
     queryFn: documentService.list,
-    onSuccess: (data) => {
-      setDocuments(data);
-    },
   });
+  useEffect(() => {
+    if (query.data) {
+      setDocuments(query.data);
+    }
+  }, [query.data, setDocuments]);
+
+  return query;
 };
 
 export function useUpdateDocumentStatus() {
