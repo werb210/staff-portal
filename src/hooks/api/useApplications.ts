@@ -1,12 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import apiClient from './axiosClient';
 
-export const useApplications = () => {
-  return useQuery({
+export const useApplications = () =>
+  useQuery({
     queryKey: ['applications'],
-    queryFn: async () => {
-      const { data } = await apiClient.get('/api/applications');
-      return data;
-    }
+    queryFn: async () => (await apiClient.get('/api/applications')).data,
   });
-};
