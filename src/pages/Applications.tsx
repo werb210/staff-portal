@@ -1,76 +1,86 @@
-import { useEffect, useState } from 'react';
-import api from '../services/api';
-
-type Application = {
-  id: string;
-  applicant?: string;
-  status?: string;
-  amount?: number;
-  created_at?: string;
-  [key: string]: unknown;
-};
+import { FormEvent, useState } from 'react';
+import Button from '../components/Button';
+import Card from '../components/Card';
+import { Table } from '../components/Table';
+import { useAppContext } from '../contexts/AppContext';
+import { useSubmitApplication } from '../hooks/useApplications';
 
 export default function Applications() {
-  const [applications, setApplications] = useState<Application[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { applications } = useAppContext();
+  const submitApplication = useSubmitApplication();
+  const [formState, setFormState] = useState({ applicantName: '', product: '', amount: 0 });
 
-  useEffect(() => {
-    const fetchApplications = async () => {
-      try {
-        const { data } = await api.get<Application[]>('/api/applications');
-        setApplications(data);
-        setError(null);
-      } catch (err) {
-        setError('Unable to fetch');
-      } finally {
-        setLoading(false);
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    submitApplication.mutate(formState, {
+      onSuccess: () => {
+        setFormState({ applicantName: '', product: '', amount: 0 });
       }
-    };
-
-    fetchApplications();
-  }, []);
+    });
+  };
 
   return (
-    <div className="content-wrapper">
-      <div className="page-header">
-        <div>
-          <h2>Applications</h2>
-          <p style={{ color: 'var(--color-muted)' }}>Review and track borrower applications entering the Boreal pipeline.</p>
-        </div>
+    <div className="page">
+      <div className="grid grid--2">
+        <Card title="Submit new application">
+          <form className="form" onSubmit={handleSubmit}>
+            <label>
+              Applicant name
+              <input
+                name="applicantName"
+                required
+                value={formState.applicantName}
+                onChange={(event) => setFormState((prev) => ({ ...prev, applicantName: event.target.value }))}
+              />
+            </label>
+            <label>
+              Product
+              <input
+                name="product"
+                required
+                value={formState.product}
+                onChange={(event) => setFormState((prev) => ({ ...prev, product: event.target.value }))}
+              />
+            </label>
+            <label>
+              Amount
+              <input
+                name="amount"
+                type="number"
+                min={0}
+                required
+                value={formState.amount || ''}
+                onChange={(event) => setFormState((prev) => ({ ...prev, amount: Number(event.target.value) }))}
+              />
+            </label>
+            <Button type="submit" disabled={submitApplication.isPending}>
+              {submitApplication.isPending ? 'Submitting…' : 'Submit application'}
+            </Button>
+          </form>
+        </Card>
+        <Card title="Summary">
+          <p>Total applications: {applications.length}</p>
+          <p>Completed: {applications.filter((application) => application.status === 'completed').length}</p>
+          <p>Pending: {applications.filter((application) => application.status !== 'completed').length}</p>
+        </Card>
       </div>
-      <div className="card">
-        <h3>Active Applications</h3>
-        {loading && <p>Loading...</p>}
-        {error && <p>{error}</p>}
-        {!loading && !error && applications.length === 0 && <p>No applications to show.</p>}
-        {!loading && !error && applications.length > 0 && (
-          <table className="table">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Applicant</th>
-                <th>Status</th>
-                <th>Amount</th>
-                <th>Created</th>
-              </tr>
-            </thead>
-            <tbody>
-              {applications.map((application) => (
-                <tr key={application.id}>
-                  <td>{application.id}</td>
-                  <td>{application.applicant || 'N/A'}</td>
-                  <td>
-                    <span className="status-pill">{application.status || 'Pending'}</span>
-                  </td>
-                  <td>${Number(application.amount || 0).toLocaleString()}</td>
-                  <td>{application.created_at ? new Date(application.created_at).toLocaleString() : 'N/A'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+      <Card title="Applications">
+        <Table
+          data={applications}
+          columns={[
+            { key: 'applicantName', header: 'Applicant' },
+            { key: 'product', header: 'Product' },
+            { key: 'amount', header: 'Amount', render: (application) => `$${application.amount.toLocaleString()}` },
+            { key: 'status', header: 'Status' },
+            {
+              key: 'updatedAt',
+              header: 'Updated',
+              render: (application) => new Date(application.updatedAt).toLocaleString()
+            }
+          ]}
+          emptyState="No applications found"
+        />
+      </Card>
     </div>
   );
 }
