@@ -45,7 +45,7 @@ const EmailPage = () => {
               <li key={email.id}>
                 <strong>{email.subject}</strong>
                 <p>{email.to}</p>
-                <span>{email.sentAt}</span>
+                <span>{new Date(email.sentAt).toLocaleString()}</span>
               </li>
             ))}
           </ul>

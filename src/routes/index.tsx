@@ -13,6 +13,7 @@ import LenderProductsPage from '../pages/LenderProducts';
 import LenderProductEditPage from '../pages/LenderProducts/Edit';
 import SettingsPage from '../pages/Settings';
 import Login from '../pages/Login';
+import CRMPage from '../pages/CRM/CRM';
 import { ProtectedRoute } from './ProtectedRoute';
 
 export const publicRoutes: RouteObject[] = [
@@ -32,6 +33,7 @@ export const protectedRoutes: RouteObject[] = [
         children: [
           { index: true, element: <Dashboard /> },
           { path: 'contacts', element: <ContactsPage /> },
+          { path: 'crm', element: <CRMPage /> },
           { path: 'pipeline', element: <PipelinePage /> },
           { path: 'documents', element: <DocumentsPage /> },
           {

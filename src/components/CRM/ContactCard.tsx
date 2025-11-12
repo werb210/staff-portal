@@ -1,15 +1,52 @@
-import type { CRMContact } from '../../types/crm';
+import type { KeyboardEvent } from 'react';
+import type { Contact } from '../../api/contacts';
 
 interface ContactCardProps {
-  contact: CRMContact;
+  contact: Contact & {
+    owner?: string | null;
+    stage?: string | null;
+    tags?: string[] | null;
+    lastInteractionAt?: string | null;
+    nextFollowUpAt?: string | null;
+  };
   onAssign?: (contactId: string) => void;
+  onSelect?: (contactId: string) => void;
+  isActive?: boolean;
 }
 
-export function ContactCard({ contact, onAssign }: ContactCardProps) {
-  const statusTone = contact.status === 'active' ? 'success' : contact.status === 'inactive' ? 'muted' : 'warning';
+const resolveStatusTone = (status?: string | null) => {
+  if (!status) return 'warning';
+  const normalized = status.toLowerCase();
+  if (normalized === 'active') return 'success';
+  if (normalized === 'inactive') return 'muted';
+  return 'warning';
+};
+
+export function ContactCard({ contact, onAssign, onSelect, isActive }: ContactCardProps) {
+  const statusTone = resolveStatusTone(contact.status);
+
+  const handleSelect = () => {
+    if (onSelect) {
+      onSelect(contact.id);
+    }
+  };
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLElement>) => {
+    if (!onSelect) return;
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      onSelect(contact.id);
+    }
+  };
 
   return (
-    <article className="card contact-card" data-silo={contact.silo}>
+    <article
+      className={`card contact-card${isActive ? ' contact-card--active' : ''}`}
+      onClick={handleSelect}
+      role={onSelect ? 'button' : undefined}
+      tabIndex={onSelect ? 0 : undefined}
+      onKeyDown={handleKeyDown}
+    >
       <header className="contact-card__header">
         <div>
           <h3>{contact.name}</h3>
@@ -18,12 +55,6 @@ export function ContactCard({ contact, onAssign }: ContactCardProps) {
         <span className={`contact-card__status contact-card__status--${statusTone}`}>{contact.status}</span>
       </header>
       <dl className="contact-card__meta">
-        {contact.title && (
-          <div>
-            <dt>Title</dt>
-            <dd>{contact.title}</dd>
-          </div>
-        )}
         {contact.email && (
           <div>
             <dt>Email</dt>
@@ -36,14 +67,18 @@ export function ContactCard({ contact, onAssign }: ContactCardProps) {
             <dd>{contact.phone}</dd>
           </div>
         )}
-        <div>
-          <dt>Owner</dt>
-          <dd>{contact.owner ?? 'Unassigned'}</dd>
-        </div>
-        <div>
-          <dt>Pipeline Stage</dt>
-          <dd>{contact.stage}</dd>
-        </div>
+        {contact.owner && (
+          <div>
+            <dt>Owner</dt>
+            <dd>{contact.owner}</dd>
+          </div>
+        )}
+        {contact.stage && (
+          <div>
+            <dt>Pipeline Stage</dt>
+            <dd>{contact.stage}</dd>
+          </div>
+        )}
         {contact.tags && contact.tags.length > 0 && (
           <div className="contact-card__tags">
             <dt>Tags</dt>
@@ -58,10 +93,18 @@ export function ContactCard({ contact, onAssign }: ContactCardProps) {
         )}
       </dl>
       <footer className="contact-card__footer">
-        <div className="contact-card__timestamps">
-          <span>Last touch: {contact.lastInteractionAt ? new Date(contact.lastInteractionAt).toLocaleString() : '—'}</span>
-          <span>Next follow-up: {contact.nextFollowUpAt ? new Date(contact.nextFollowUpAt).toLocaleString() : '—'}</span>
-        </div>
+        {(contact.lastInteractionAt || contact.nextFollowUpAt) && (
+          <div className="contact-card__timestamps">
+            <span>
+              Last touch:{' '}
+              {contact.lastInteractionAt ? new Date(contact.lastInteractionAt).toLocaleString() : '—'}
+            </span>
+            <span>
+              Next follow-up:{' '}
+              {contact.nextFollowUpAt ? new Date(contact.nextFollowUpAt).toLocaleString() : '—'}
+            </span>
+          </div>
+        )}
         {onAssign && (
           <button className="btn" onClick={() => onAssign(contact.id)} type="button">
             Reassign

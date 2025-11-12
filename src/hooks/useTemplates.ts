@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { getTemplates, saveTemplate, type Template } from '../api/communication';
+import { getTemplates, saveTemplate } from '../api/communication';
+import type { Template } from '../types/communication';
 
 const TEMPLATE_KEY = ['communication', 'templates'];
 

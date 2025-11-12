@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { getCallLogs, logCall, type CallLog } from '../api/communication';
+import { getCallLogs, logCall } from '../api/communication';
+import type { CallLog } from '../types/communication';
 
 const CALLS_KEY = ['communication', 'calls'];
 

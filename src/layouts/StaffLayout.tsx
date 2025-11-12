@@ -13,6 +13,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { label: 'Dashboard', path: '/' },
   { label: 'Contacts', path: '/contacts' },
+  { label: 'CRM', path: '/crm' },
   { label: 'Pipeline', path: '/pipeline' },
   { label: 'Documents', path: '/documents' },
   { label: 'Communication', path: '/communication' },

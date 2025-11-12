@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { getSmsMessages, sendSmsMessage, type SmsMessage } from '../api/communication';
+import { getSmsMessages, sendSmsMessage } from '../api/communication';
+import type { SmsMessage } from '../types/communication';
 
 const SMS_KEY = ['communication', 'sms'];
 

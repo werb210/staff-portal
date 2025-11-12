@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { getEmails, sendEmail, type EmailMessage } from '../api/communication';
+import { getEmails, sendEmail } from '../api/communication';
+import type { EmailMessage } from '../types/communication';
 
 const EMAIL_KEY = ['communication', 'email'];
 

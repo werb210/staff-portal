@@ -1,13 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   getPipelineAISummary,
-  getPipelineApplication,
-  getPipelineBoard,
+  getPipelineCard,
+  getPipelineBoards,
   getPipelineDocuments,
   getPipelineLenders,
-  updatePipelineApplication,
-  updatePipelineStage,
-  type PipelineBoard,
+  movePipelineCard,
+  updatePipelineCard,
+  type PipelineColumn,
   type PipelineMovePayload,
 } from '../api/pipeline';
 
@@ -16,13 +16,13 @@ const PIPELINE_KEY = ['pipeline'];
 export const usePipelineBoard = () =>
   useQuery({
     queryKey: PIPELINE_KEY,
-    queryFn: getPipelineBoard,
+    queryFn: getPipelineBoards,
   });
 
 export const usePipelineApplication = (id: string) =>
   useQuery({
     queryKey: [...PIPELINE_KEY, id],
-    queryFn: () => getPipelineApplication(id),
+    queryFn: () => getPipelineCard(id),
     enabled: Boolean(id),
   });
 
@@ -51,13 +51,12 @@ export const usePipelineMutations = () => {
   const queryClient = useQueryClient();
 
   const stageMutation = useMutation({
-    mutationFn: (payload: PipelineMovePayload) => updatePipelineStage(payload),
+    mutationFn: (payload: PipelineMovePayload) => movePipelineCard(payload),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: PIPELINE_KEY }),
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, input }: { id: string; input: Record<string, unknown> }) =>
-      updatePipelineApplication(id, input),
+    mutationFn: ({ id, input }: { id: string; input: Record<string, unknown> }) => updatePipelineCard(id, input),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: [...PIPELINE_KEY, variables.id] });
     },
@@ -66,4 +65,4 @@ export const usePipelineMutations = () => {
   return { stageMutation, updateMutation };
 };
 
-export type { PipelineBoard };
+export type { PipelineColumn };

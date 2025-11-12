@@ -1,33 +1,47 @@
-import { apiClient } from './client';
+import { mockDocuments } from '../mock';
+import type { DocumentRecord } from '../types/documents';
 
-export interface DocumentItem {
-  id: string;
-  name: string;
-  type: string;
-  status: 'pending' | 'approved' | 'rejected';
-  uploadedAt: string;
-  uploadedBy: string;
+export interface DocumentItem extends DocumentRecord {
+  uploadedBy?: string;
   downloadUrl?: string;
+  lastUploadedFileName?: string;
 }
 
-export const getDocuments = async (): Promise<DocumentItem[]> => {
-  const { data } = await apiClient.get<DocumentItem[]>('/documents');
-  return data;
-};
+let documents: DocumentItem[] = mockDocuments.map((document) => ({
+  ...document,
+  uploadedBy: 'Borrower Portal',
+}));
+
+export const getDocuments = async (): Promise<DocumentItem[]> => documents;
 
 export const approveDocument = async (id: string) => {
-  await apiClient.post(`/documents/${id}/approve`);
+  documents = documents.map((document) =>
+    document.id === id ? { ...document, status: 'approved', uploadedAt: new Date().toISOString() } : document,
+  );
 };
 
 export const rejectDocument = async (id: string, reason: string) => {
-  await apiClient.post(`/documents/${id}/reject`, { reason });
+  documents = documents.map((document) =>
+    document.id === id
+      ? {
+          ...document,
+          status: 'rejected',
+          lastUploadedFileName: reason ? `${document.name} (Rejected: ${reason})` : document.lastUploadedFileName,
+        }
+      : document,
+  );
 };
 
 export const uploadDocumentVersion = async (id: string, file: File) => {
-  const formData = new FormData();
-  formData.append('file', file);
-  const { data } = await apiClient.post(`/documents/${id}/upload`, formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  });
-  return data;
+  documents = documents.map((document) =>
+    document.id === id
+      ? {
+          ...document,
+          status: 'pending',
+          uploadedAt: new Date().toISOString(),
+          lastUploadedFileName: file.name,
+        }
+      : document,
+  );
+  return { id, fileName: file.name };
 };
