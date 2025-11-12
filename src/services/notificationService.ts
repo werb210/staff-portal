@@ -1,40 +1,32 @@
-import axios from 'axios';
-import { useCallback } from 'react';
-import { useTwilioNotifications } from '../hooks/useTwilioNotifications';
-import { useO365Notifications } from '../hooks/useO365Notifications';
+import { communicationService } from './communicationService';
 
-type NotifyStageChangeParams = {
+interface StageChangePayload {
   applicationId: string;
   stage: string;
-  applicantPhone: string;
-  applicantEmail: string;
-};
+  borrowerEmail?: string;
+  borrowerPhone?: string;
+}
 
-export function useNotificationService() {
-  const { sendSMS } = useTwilioNotifications();
-  const { sendEmail } = useO365Notifications();
-
-  const notifyStageChange = useCallback(
-    async ({ applicationId, stage, applicantPhone, applicantEmail }: NotifyStageChangeParams) => {
-      await sendSMS(applicantPhone, `Your application ${applicationId} moved to stage: ${stage}`);
-      await sendEmail(
-        applicantEmail,
-        'Application Stage Update',
-        `Application ${applicationId} is now in stage: ${stage}`
-      );
-
-      try {
-        await axios.post('http://localhost:5000/api/notifications', {
-          applicationId,
-          stage,
-          timestamp: new Date().toISOString()
-        });
-      } catch (err) {
-        console.error('Backend notification logging failed', err);
-      }
-    },
-    [sendSMS, sendEmail]
-  );
-
-  return { notifyStageChange };
+export async function notifyStageChange(payload: StageChangePayload) {
+  const promises: Promise<unknown>[] = [];
+  if (payload.borrowerPhone) {
+    promises.push(
+      communicationService.sendSMS({
+        to: payload.borrowerPhone,
+        message: `Your application ${payload.applicationId} moved to ${payload.stage}.`,
+        applicationId: payload.applicationId,
+      })
+    );
+  }
+  if (payload.borrowerEmail) {
+    promises.push(
+      communicationService.sendEmail({
+        to: payload.borrowerEmail,
+        subject: 'Application Update',
+        body: `Application ${payload.applicationId} is now ${payload.stage}.`,
+        applicationId: payload.applicationId,
+      })
+    );
+  }
+  await Promise.all(promises);
 }

@@ -1,0 +1,9 @@
+{
+  "name": "Staff Portal",
+  "short_name": "Portal",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#F5F7FB",
+  "theme_color": "#0047AB",
+  "icons": []
+}
