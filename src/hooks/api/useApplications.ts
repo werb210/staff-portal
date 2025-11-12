@@ -8,6 +8,7 @@ import type {
 import { useOfflineQueue } from '../offline/useOfflineQueue';
 import { storeOffline } from '../../services/pwa/offlineService';
 import { useDataStore } from '../../store/dataStore';
+import { mergeReturningApplications } from '../../utils/returningApplications';
 
 export const useApplications = () => {
   const { setApplications } = useDataStore();
@@ -16,6 +17,15 @@ export const useApplications = () => {
     queryFn: applicationService.list,
     onSuccess: (data) => {
       setApplications(data);
+      mergeReturningApplications(
+        data.slice(0, 6).map((app) => ({
+          id: app.id,
+          businessName: app.businessName,
+          stage: app.stage,
+          status: app.status,
+          updatedAt: app.updatedAt,
+        }))
+      );
     },
   });
 };

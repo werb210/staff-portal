@@ -73,6 +73,13 @@
   flex-direction: column;
   text-align: right;
   color: var(--color-muted);
+  gap: var(--space-xs);
+}
+
+.topbar__signout.btn {
+  align-self: flex-end;
+  padding: var(--space-xs) var(--space-sm);
+  font-size: 0.85rem;
 }
 
 .layout__main {

@@ -5,6 +5,7 @@ import App from './App';
 import './styles/globals.css';
 import './styles/layout.css';
 import './styles/responsive.css';
+import './styles/auth.css';
 import { registerSW } from './pwa/registerServiceWorker';
 
 const queryClient = new QueryClient();
