@@ -5,6 +5,7 @@ import PipelineColumn from './PipelineColumn';
 import { useNotifications } from '../../hooks/useNotifications';
 import { useTwilioNotifications } from '../../hooks/useTwilioNotifications';
 import { useO365Notifications } from '../../hooks/useO365Notifications';
+import { useNotificationService } from '../../services/notificationService';
 
 export default function PipelineBoard() {
   const { data: pipeline, isLoading } = usePipeline();
@@ -13,8 +14,10 @@ export default function PipelineBoard() {
   const { sendNotification } = useNotifications();
   const { sendSMS } = useTwilioNotifications();
   const { sendEmail } = useO365Notifications();
+  const { notifyStageChange } = useNotificationService();
   void sendSMS;
   void sendEmail;
+  void notifyStageChange;
 
   if (isLoading) return <p>Loading pipeline...</p>;
 
@@ -25,8 +28,12 @@ export default function PipelineBoard() {
     if (event.over && event.active.id !== event.over.id) {
       sendNotification('Pipeline Updated', 'Stage order has been updated.');
       // Example: trigger notifications on stage change
-      // sendSMS('+15551234567', 'Pipeline stage updated');
-      // sendEmail('staff@example.com', 'Pipeline Update', 'Stage changed for Application #123');
+      // void notifyStageChange({
+      //   applicationId: 'APP-12345',
+      //   stage: 'In Review',
+      //   applicantPhone: '+15551234567',
+      //   applicantEmail: 'applicant@example.com'
+      // });
     }
   };
 
