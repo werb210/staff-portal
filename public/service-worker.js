@@ -1,5 +1,6 @@
-const CACHE_NAME = 'staff-portal-cache-v1';
-const OFFLINE_URLS = ['/'];
+const CACHE_NAME = 'staff-portal-cache-v2';
+const API_CACHE = 'staff-portal-api-v1';
+const OFFLINE_URLS = ['/', '/applications', '/pipeline', '/notifications', '/crm'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -15,7 +16,7 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((keys) =>
       Promise.all(
         keys
-          .filter((key) => key !== CACHE_NAME)
+          .filter((key) => key !== CACHE_NAME && key !== API_CACHE)
           .map((key) => caches.delete(key))
       )
     )
@@ -25,6 +26,20 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') {
+    return;
+  }
+
+  if (event.request.url.includes('/api/')) {
+    event.respondWith(
+      caches.open(API_CACHE).then((cache) =>
+        fetch(event.request)
+          .then((response) => {
+            cache.put(event.request, response.clone());
+            return response;
+          })
+          .catch(() => cache.match(event.request))
+      )
+    );
     return;
   }
 

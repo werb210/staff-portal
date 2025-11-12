@@ -1,32 +1,41 @@
-import { communicationService } from './communicationService';
+import apiClient from '../hooks/api/axiosClient';
+import type { NotificationDispatchPayload, NotificationRecord, PushSubscriptionPayload } from '../types/notifications';
 
-interface StageChangePayload {
-  applicationId: string;
-  stage: string;
-  borrowerEmail?: string;
-  borrowerPhone?: string;
-}
-
-export async function notifyStageChange(payload: StageChangePayload) {
-  const promises: Promise<unknown>[] = [];
-  if (payload.borrowerPhone) {
-    promises.push(
-      communicationService.sendSMS({
-        to: payload.borrowerPhone,
-        message: `Your application ${payload.applicationId} moved to ${payload.stage}.`,
-        applicationId: payload.applicationId,
-      })
-    );
-  }
-  if (payload.borrowerEmail) {
-    promises.push(
-      communicationService.sendEmail({
-        to: payload.borrowerEmail,
-        subject: 'Application Update',
-        body: `Application ${payload.applicationId} is now ${payload.stage}.`,
-        applicationId: payload.applicationId,
-      })
-    );
-  }
-  await Promise.all(promises);
-}
+export const notificationService = {
+  list: async () => (await apiClient.get<NotificationRecord[]>('/api/notifications')).data,
+  dispatch: async (payload: NotificationDispatchPayload) =>
+    (await apiClient.post('/api/notifications/dispatch', payload)).data,
+  markRead: async (notificationId: string) =>
+    (await apiClient.post(`/api/notifications/${notificationId}/read`, {})).data,
+  subscribePush: async (payload: PushSubscriptionPayload) =>
+    (await apiClient.post('/api/notifications/push/subscribe', payload)).data,
+  notifyStageChange: async (payload: {
+    applicationId: string;
+    stage: string;
+    borrowerEmail?: string;
+    borrowerPhone?: string;
+  }) => {
+    const operations: Promise<unknown>[] = [];
+    if (payload.borrowerEmail) {
+      operations.push(
+        apiClient.post('/api/notifications/dispatch', {
+          channel: 'email',
+          message: `Application ${payload.applicationId} is now ${payload.stage}.`,
+          recipient: payload.borrowerEmail,
+          applicationId: payload.applicationId,
+        })
+      );
+    }
+    if (payload.borrowerPhone) {
+      operations.push(
+        apiClient.post('/api/notifications/dispatch', {
+          channel: 'sms',
+          message: `Your application ${payload.applicationId} moved to ${payload.stage}.`,
+          recipient: payload.borrowerPhone,
+          applicationId: payload.applicationId,
+        })
+      );
+    }
+    await Promise.all(operations);
+  },
+};

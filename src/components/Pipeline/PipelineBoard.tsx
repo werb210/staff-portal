@@ -2,7 +2,7 @@ import { DndContext, useSensor, useSensors, PointerSensor, TouchSensor, closestC
 import { SortableContext, arrayMove, horizontalListSortingStrategy } from '@dnd-kit/sortable';
 import PipelineColumn from './PipelineColumn';
 import { usePipeline, usePipelineReorder, usePipelineTransition } from '../../hooks/api/usePipeline';
-import { notifyStageChange } from '../../services/notificationService';
+import { notificationService } from '../../services/notificationService';
 import { useRBAC } from '../../hooks/useRBAC';
 import { useMobilePipelineInteractions } from '../../hooks/mobile/useMobilePipeline';
 
@@ -40,7 +40,7 @@ export default function PipelineBoard() {
         {
           onSuccess: async () => {
             if (application) {
-              await notifyStageChange({
+              await notificationService.notifyStageChange({
                 applicationId: application.id,
                 stage: stages.find((stage) => stage.id === overStageId)?.name ?? overStageId,
                 borrowerEmail: application.borrowerEmail,

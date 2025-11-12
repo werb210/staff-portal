@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { AISummaryPanel } from '../../components/AI/AISummaryPanel';
 import { useLenderMatching, useOCRExtraction, useRiskScoring, useSummarizeApplication } from '../../hooks/ai/useAI';
 import type { LenderMatchSuggestion } from '../../types/ai';
 
@@ -14,6 +15,7 @@ export default function AIPortal() {
 
   return (
     <div className="page ai">
+      <AISummaryPanel />
       <section className="card">
         <header className="card__header">
           <h2>Document OCR</h2>

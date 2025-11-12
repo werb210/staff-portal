@@ -99,6 +99,28 @@ check_endpoint POST /api/communication/sms '{"to":"+1-555-0000","message":"Smoke
 check_endpoint POST /api/communication/email '{"to":"ops@example.com","subject":"Smoke","body":"Smoke test"}'
 check_endpoint POST /api/communication/calls '{"to":"+1-555-0001","outcome":"connected"}'
 
+log_section "Notifications"
+check_endpoint GET /api/notifications
+check_endpoint POST /api/notifications/dispatch '{"channel":"email","message":"Smoke notification","recipient":"ops@boreal.test"}'
+check_endpoint POST /api/notifications/push/subscribe '{"endpoint":"https://push.example","keys":{"p256dh":"stub","auth":"stub"}}'
+
+log_section "AI"
+check_endpoint POST /api/ai/ocr '{"documentId":"smoke","fileUrl":"https://example.com/doc.pdf"}'
+check_endpoint POST /api/ai/summarize '{"applicationId":"smoke","notes":"Smoke test"}'
+check_endpoint POST /api/ai/risk-score '{"applicationId":"smoke","financials":{"revenue":1}}'
+check_endpoint POST /api/ai/lender-match '{"applicationId":"smoke","criteria":{"industry":"general","amount":10000}}'
+
+log_section "CRM"
+check_endpoint GET /api/crm/contacts
+check_endpoint GET /api/crm/tasks
+check_endpoint POST /api/crm/tasks/smoke/status '{"status":"completed"}'
+check_endpoint GET /api/crm/follow-ups
+check_endpoint POST /api/crm/follow-ups '{"contactId":"smoke-contact","scheduledFor":"2024-01-01T00:00:00.000Z","channel":"email"}'
+
+log_section "Assistant"
+check_endpoint POST /api/support/escalate '{"subject":"Smoke test escalation"}'
+check_endpoint POST /api/support/report-issue '{"summary":"Smoke test issue"}'
+
 log_section "Admin"
 check_endpoint GET /api/admin/retry-queue
 check_endpoint POST /api/admin/retry-queue/smoke-test/retry '{}'
