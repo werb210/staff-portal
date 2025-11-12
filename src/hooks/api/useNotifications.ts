@@ -1,8 +1,26 @@
-import { useQuery } from '@tanstack/react-query';
-import apiClient from './axiosClient';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { notificationService } from '../../services/notificationService';
+import type { NotificationDispatchPayload, NotificationRecord, PushSubscriptionPayload } from '../../types/notifications';
 
 export const useNotifications = () =>
-  useQuery({
+  useQuery<NotificationRecord[]>({
     queryKey: ['notifications'],
-    queryFn: async () => (await apiClient.get('/api/notifications')).data,
+    queryFn: notificationService.list,
+    staleTime: 1000 * 10,
   });
+
+export function useDispatchNotification() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: NotificationDispatchPayload) => notificationService.dispatch(payload),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    },
+  });
+}
+
+export function useSubscribeToPush() {
+  return useMutation({
+    mutationFn: (payload: PushSubscriptionPayload) => notificationService.subscribePush(payload),
+  });
+}

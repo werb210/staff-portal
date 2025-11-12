@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useEscalateToHuman, useReportIssue } from '../../hooks/api/useAssistant';
 
 type ChatbotMessage = {
   role: 'system' | 'user' | 'assistant';
@@ -20,6 +21,8 @@ const quickActions = [
 export default function ChatbotWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatbotMessage[]>(defaultMessages);
+  const escalateMutation = useEscalateToHuman();
+  const reportIssueMutation = useReportIssue();
 
   const handleAction = (actionId: string) => {
     setMessages((prev) => [
@@ -27,9 +30,17 @@ export default function ChatbotWidget() {
       { role: 'user', content: quickActions.find((a) => a.id === actionId)?.label ?? '' },
       {
         role: 'assistant',
-        content: quickActions.find((a) => a.id === actionId)?.placeholder ?? 'Processing...'
+        content: quickActions.find((a) => a.id === actionId)?.placeholder ?? 'Processing...',
       },
     ]);
+
+    const summary = summariseConversation(messages);
+    if (actionId === 'human') {
+      escalateMutation.mutate({ subject: 'Staff portal escalation', transcript: summary });
+    }
+    if (actionId === 'issue') {
+      reportIssueMutation.mutate({ summary: 'Portal issue reported', details: summary });
+    }
   };
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -37,7 +48,17 @@ export default function ChatbotWidget() {
     const formData = new FormData(event.currentTarget);
     const prompt = String(formData.get('prompt') ?? '').trim();
     if (!prompt) return;
-    setMessages((prev) => [...prev, { role: 'user', content: prompt }, { role: 'assistant', content: 'Thanks! A specialist will review this.' }]);
+    setMessages((prev) => [
+      ...prev,
+      { role: 'user', content: prompt },
+      {
+        role: 'assistant',
+        content:
+          escalateMutation.isPending || reportIssueMutation.isPending
+            ? 'Routing your request to the Boreal team…'
+            : 'Thanks! A specialist will review this.',
+      },
+    ]);
     event.currentTarget.reset();
   };
 
@@ -58,6 +79,21 @@ export default function ChatbotWidget() {
                 {message.content}
               </div>
             ))}
+            {escalateMutation.isSuccess && (
+              <div className="chatbot__message chatbot__message--system">
+                A human specialist has been notified. Ticket reference pending confirmation.
+              </div>
+            )}
+            {reportIssueMutation.isSuccess && (
+              <div className="chatbot__message chatbot__message--system">
+                Issue logged with operations. We will follow up shortly.
+              </div>
+            )}
+            {(escalateMutation.isError || reportIssueMutation.isError) && (
+              <div className="chatbot__message chatbot__message--system chatbot__message--error">
+                Something went wrong. Please retry or reach support directly.
+              </div>
+            )}
           </div>
           <div className="chatbot__actions">
             {quickActions.map((action) => (
@@ -75,4 +111,11 @@ export default function ChatbotWidget() {
       )}
     </div>
   );
+}
+
+function summariseConversation(messages: ChatbotMessage[]) {
+  return messages
+    .filter((message) => message.role !== 'system')
+    .map((message) => `${message.role}: ${message.content}`)
+    .join('\n');
 }
