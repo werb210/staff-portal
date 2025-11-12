@@ -5,6 +5,7 @@ import Documents from './pages/Documents/Documents';
 import Lenders from './pages/Lenders/Lenders';
 import Notifications from './pages/Notifications/Notifications';
 import CRM from './pages/CRM/CRM';
+import Pipeline from './pages/Pipeline/Pipeline';
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
         <Route path="/lenders" element={<Lenders />} />
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/crm" element={<CRM />} />
+        <Route path="/pipeline" element={<Pipeline />} />
       </Routes>
     </BrowserRouter>
   );
