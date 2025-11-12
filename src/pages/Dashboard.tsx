@@ -1,124 +1,91 @@
-import { useEffect, useMemo, useState } from 'react';
-import api from '../services/api';
-
-type Application = {
-  id: string;
-  applicant?: string;
-  status?: string;
-  amount?: number;
-  updated_at?: string;
-  [key: string]: unknown;
-};
-
-type PipelineStage = {
-  id: string;
-  name: string;
-  stage: string;
-  amount?: number;
-  [key: string]: unknown;
-};
-
-interface MetricCardProps {
-  title: string;
-  value: string;
-  description?: string;
-}
-
-const MetricCard = ({ title, value, description }: MetricCardProps) => (
-  <div className="card">
-    <h3>{title}</h3>
-    <p style={{ fontSize: '2rem', margin: '0.5rem 0' }}>{value}</p>
-    {description && <p style={{ margin: 0, color: 'var(--color-muted)' }}>{description}</p>}
-  </div>
-);
+import Card from '../components/Card';
+import { Table } from '../components/Table';
+import { useAppContext } from '../contexts/AppContext';
+import { useHealthStatus } from '../hooks/useHealth';
 
 export default function Dashboard() {
-  const [applications, setApplications] = useState<Application[]>([]);
-  const [pipeline, setPipeline] = useState<PipelineStage[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const { applications, pipelineStages, crm } = useAppContext();
+  const { data: health } = useHealthStatus();
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [appsResponse, pipelineResponse] = await Promise.all([
-          api.get<Application[]>('/api/applications'),
-          api.get<PipelineStage[]>('/api/pipeline')
-        ]);
-        setApplications(appsResponse.data);
-        setPipeline(pipelineResponse.data);
-        setError(null);
-      } catch (err) {
-        setError('Unable to fetch');
-      }
-    };
+  const inProgress = applications.filter((application) => application.status !== 'completed');
+  const totalVolume = applications.reduce((total, application) => total + application.amount, 0);
 
-    fetchData();
-  }, []);
-
-  const metrics = useMemo(() => {
-    const totalVolume = applications.reduce((acc, application) => acc + (Number(application.amount) || 0), 0);
-    const activePipeline = pipeline.filter((item) => item.stage !== 'Completed').length;
-    const approvals = applications.filter((app) => (app.status || '').toLowerCase() === 'approved').length;
-    const approvalRate = applications.length ? Math.round((approvals / applications.length) * 100) : 0;
-
-    return [
-      {
-        title: 'Active Applications',
-        value: applications.length.toString(),
-        description: 'Including new submissions in the last 48 hours'
-      },
-      {
-        title: 'Pipeline Volume',
-        value: `$${totalVolume.toLocaleString()}`,
-        description: 'Total financed amount across all applications'
-      },
-      {
-        title: 'Active Pipeline Items',
-        value: activePipeline.toString(),
-        description: 'Items in underwriting, review, or funding'
-      },
-      {
-        title: 'Approval Rate',
-        value: `${approvalRate}%`,
-        description: 'Ratio of approvals versus total decisions'
-      }
-    ];
-  }, [applications, pipeline]);
+  const topStage = pipelineStages.slice().sort((a, b) => b.applications.length - a.applications.length)[0];
 
   return (
-    <div className="content-wrapper">
-      <section className="page-header">
-        <div>
-          <h2>Mission Control</h2>
-          <p style={{ color: 'var(--color-muted)' }}>
-            Live view of Boreal staff operations. Track lending performance, backlog, and communications.
-          </p>
+    <div className="page page--dashboard">
+      <div className="grid grid--3">
+        <Card title="Active Applications">
+          <strong className="metric">{inProgress.length}</strong>
+          <p>Applications currently moving through the pipeline.</p>
+        </Card>
+        <Card title="Pipeline Volume">
+          <strong className="metric">${totalVolume.toLocaleString()}</strong>
+          <p>Total value of all applications.</p>
+        </Card>
+        <Card title="Most Active Stage">
+          <strong className="metric">{topStage?.name ?? 'N/A'}</strong>
+          <p>{topStage ? `${topStage.applications.length} applications` : 'No data'}</p>
+        </Card>
+      </div>
+
+      <div className="grid grid--2">
+        <Card title="Recent Applications">
+          <Table
+            data={applications.slice(0, 5)}
+            columns={[
+              { key: 'applicantName', header: 'Applicant' },
+              { key: 'product', header: 'Product' },
+              { key: 'status', header: 'Status' },
+              {
+                key: 'submittedAt',
+                header: 'Submitted',
+                render: (application) => new Date(application.submittedAt).toLocaleDateString()
+              }
+            ]}
+            emptyState="No applications yet."
+          />
+        </Card>
+        <Card title="Health">
+          {health ? (
+            <ul className="health">
+              <li>
+                <span>Status</span>
+                <span className={`health__status health__status--${health.status}`}>{health.status}</span>
+              </li>
+              <li>
+                <span>Version</span>
+                <span>{health.version}</span>
+              </li>
+              {Object.entries(health.services).map(([service, status]) => (
+                <li key={service}>
+                  <span>{service}</span>
+                  <span className={`health__status health__status--${status}`}>{status}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p>Loading health status…</p>
+          )}
+        </Card>
+      </div>
+
+      <Card title="CRM Snapshot">
+        <div className="grid grid--3">
+          <div>
+            <h4>Contacts</h4>
+            <strong>{crm.contacts?.length ?? 0}</strong>
+          </div>
+          <div>
+            <h4>Companies</h4>
+            <strong>{crm.companies?.length ?? 0}</strong>
+          </div>
+          <div>
+            <h4>Tasks</h4>
+            <strong>{crm.tasks?.length ?? 0}</strong>
+          </div>
         </div>
-      </section>
-      {error && <div className="card">{error}</div>}
-      <section className="page-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
-        {metrics.map((metric) => (
-          <MetricCard key={metric.title} {...metric} />
-        ))}
-      </section>
-      <section className="card">
-        <h3>Recent Activity</h3>
-        {!applications.length && !pipeline.length && !error && <p>Loading activity...</p>}
-        <div style={{ display: 'grid', gap: '1rem' }}>
-          {applications.slice(0, 5).map((app) => (
-            <div key={app.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <strong>{app.applicant || 'Unknown Applicant'}</strong>
-                <p style={{ margin: 0, color: 'var(--color-muted)' }}>Status: {app.status || 'Pending'}</p>
-              </div>
-              <div style={{ textAlign: 'right', color: 'var(--color-muted)' }}>
-                <span>${Number(app.amount || 0).toLocaleString()}</span>
-                <p style={{ margin: 0 }}>{app.updated_at ? new Date(app.updated_at).toLocaleString() : 'N/A'}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
+      </Card>
     </div>
   );
 }

@@ -1,0 +1,21 @@
+{
+  "name": "Staff Portal",
+  "short_name": "StaffPortal",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#003049",
+  "theme_color": "#003049",
+  "description": "CRM-integrated staff portal for applications, documents, pipeline, and admin workflows.",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

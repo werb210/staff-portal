@@ -1,87 +1,85 @@
 import { NavLink } from 'react-router-dom';
+import clsx from 'clsx';
 
 interface SidebarProps {
-  collapsed: boolean;
-  openOnMobile: boolean;
-  onCloseMobile: () => void;
+  collapsed?: boolean;
+  onNavigate?: () => void;
 }
 
-const navItems = [
-  { path: '/', label: 'Dashboard', icon: '📊' },
-  { path: '/applications', label: 'Applications', icon: '🗂️' },
-  { path: '/documents', label: 'Documents', icon: '📄' },
-  { path: '/lenders', label: 'Lenders', icon: '🏦' },
-  { path: '/pipeline', label: 'Pipeline', icon: '🛤️' },
-  { path: '/notifications', label: 'Notifications', icon: '🔔' },
-  { path: '/communication', label: 'Communication', icon: '💬' },
-  { path: '/retry-queue', label: 'Retry Queue', icon: '♻️' }
+const mainLinks = [
+  { to: '/', label: 'Dashboard' },
+  { to: '/applications', label: 'Applications' },
+  { to: '/documents', label: 'Documents' },
+  { to: '/lenders', label: 'Lenders' },
+  { to: '/pipeline', label: 'Pipeline' }
 ];
 
-export default function Sidebar({ collapsed, openOnMobile, onCloseMobile }: SidebarProps) {
+const crmLinks = [
+  { to: '/crm/contacts', label: 'Contacts' },
+  { to: '/crm/companies', label: 'Companies' },
+  { to: '/crm/tasks', label: 'Tasks' }
+];
+
+const adminLinks = [
+  { to: '/admin/retry-queue', label: 'Retry Queue' },
+  { to: '/admin/backups', label: 'Backups' }
+];
+
+export function Sidebar({ collapsed = false, onNavigate }: SidebarProps) {
   return (
-    <aside
-      className={`sidebar ${collapsed ? 'collapsed' : ''} ${openOnMobile ? 'open' : ''}`}
-      onClick={() => (openOnMobile ? onCloseMobile() : undefined)}
-    >
-      <div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <div
-            style={{
-              width: '46px',
-              height: '46px',
-              borderRadius: '14px',
-              background: 'linear-gradient(135deg, var(--color-primary), var(--color-accent))',
-              display: 'grid',
-              placeItems: 'center',
-              color: '#fff',
-              fontWeight: 700,
-              fontSize: '1.1rem'
-            }}
-          >
-            BO
-          </div>
-          {!collapsed && (
-            <div>
-              <h2 style={{ margin: 0, fontSize: '1.2rem' }}>Boreal</h2>
-              <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--color-muted)' }}>Staff Operations</p>
-            </div>
-          )}
+    <aside className={clsx('sidebar', { 'sidebar--collapsed': collapsed })}>
+      <nav>
+        <div className="sidebar__section">
+          <h3>Main</h3>
+          <ul>
+            {mainLinks.map((link) => (
+              <li key={link.to}>
+                <NavLink
+                  to={link.to}
+                  onClick={onNavigate}
+                  className={({ isActive }) => (isActive ? 'active' : undefined)}
+                >
+                  {link.label}
+                </NavLink>
+              </li>
+            ))}
+          </ul>
         </div>
-      </div>
-      <nav className="nav-links">
-        {navItems.map((item) => (
-          <NavLink
-            key={item.path}
-            to={item.path}
-            className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-          >
-            <span style={{ fontSize: '1.1rem' }}>{item.icon}</span>
-            {!collapsed && <span>{item.label}</span>}
-          </NavLink>
-        ))}
+        <div className="sidebar__section">
+          <h3>CRM</h3>
+          <ul>
+            {crmLinks.map((link) => (
+              <li key={link.to}>
+                <NavLink
+                  to={link.to}
+                  onClick={onNavigate}
+                  className={({ isActive }) => (isActive ? 'active' : undefined)}
+                >
+                  {link.label}
+                </NavLink>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="sidebar__section">
+          <h3>Admin</h3>
+          <ul>
+            {adminLinks.map((link) => (
+              <li key={link.to}>
+                <NavLink
+                  to={link.to}
+                  onClick={onNavigate}
+                  className={({ isActive }) => (isActive ? 'active' : undefined)}
+                >
+                  {link.label}
+                </NavLink>
+              </li>
+            ))}
+          </ul>
+        </div>
       </nav>
-      {!collapsed && (
-        <div style={{ marginTop: 'auto', background: 'rgba(31, 111, 235, 0.1)', padding: '1rem', borderRadius: '12px' }}>
-          <h3 style={{ marginTop: 0 }}>Insights</h3>
-          <p style={{ marginBottom: '0.75rem', color: 'var(--color-muted)' }}>
-            Monitor lending KPIs and trigger automations across the Boreal ecosystem.
-          </p>
-          <button
-            type="button"
-            style={{
-              width: '100%',
-              padding: '0.75rem',
-              borderRadius: '10px',
-              border: 'none',
-              background: 'var(--color-primary)',
-              color: '#fff',
-              cursor: 'pointer'
-            }}
-          >
-            View Reports
-          </button>
-        </div>
-      )}
     </aside>
   );
 }
+
+export default Sidebar;

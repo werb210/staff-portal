@@ -1,96 +1,54 @@
-import NotificationBell from './NotificationBell';
-import UserMenu from './UserMenu';
+import { useMemo } from 'react';
+import { Link } from 'react-router-dom';
+import { useAppContext } from '../contexts/AppContext';
+import Button from './Button';
 
 interface NavbarProps {
   onToggleSidebar: () => void;
   onToggleTheme: () => void;
-  isDarkMode: boolean;
+  theme: 'light' | 'dark';
 }
 
-export default function Navbar({ onToggleSidebar, onToggleTheme, isDarkMode }: NavbarProps) {
+export function Navbar({ onToggleSidebar, onToggleTheme, theme }: NavbarProps) {
+  const { currentUser, notifications } = useAppContext();
+
+  const unreadCount = useMemo(
+    () => notifications.filter((notification) => !notification.read).length,
+    [notifications]
+  );
+
   return (
-    <header
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '1rem 2rem',
-        background: 'var(--color-surface)',
-        borderBottom: '1px solid rgba(17, 24, 39, 0.08)'
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-        <button
-          type="button"
-          onClick={onToggleSidebar}
-          style={{
-            width: '40px',
-            height: '40px',
-            borderRadius: '12px',
-            background: 'rgba(31, 111, 235, 0.15)',
-            color: 'var(--color-primary)',
-            border: 'none',
-            cursor: 'pointer',
-            fontSize: '1.25rem'
-          }}
-          aria-label="Toggle sidebar"
-        >
+    <header className="navbar">
+      <div className="navbar__section">
+        <Button variant="ghost" onClick={onToggleSidebar} aria-label="Toggle navigation menu">
           ☰
-        </button>
-        <div>
-          <h1 style={{ margin: 0, fontSize: '1.35rem' }}>Boreal Staff Portal</h1>
-          <p style={{ margin: 0, color: 'var(--color-muted)', fontSize: '0.9rem' }}>
-            Operational control center &mdash; real-time lending intelligence
-          </p>
-        </div>
+        </Button>
+        <Link to="/" className="navbar__logo">
+          Staff Portal
+        </Link>
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-        <div
-          className="dark-mode-toggle"
-          onClick={onToggleTheme}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter' || event.key === ' ') {
-              event.preventDefault();
-              onToggleTheme();
-            }
-          }}
-        >
-          <span>{isDarkMode ? '🌙' : '🌞'}</span>
-          <span>{isDarkMode ? 'Dark' : 'Light'}</span>
+      <div className="navbar__section navbar__section--right">
+        <Button variant="ghost" onClick={onToggleTheme} aria-label="Toggle theme">
+          {theme === 'dark' ? '🌙' : '☀️'}
+        </Button>
+        <Link to="/notifications" className="navbar__notifications" aria-label="Notifications">
+          🔔
+          {unreadCount > 0 && <span className="navbar__badge">{unreadCount}</span>}
+        </Link>
+        <div className="navbar__user">
+          <div className="navbar__user-info">
+            <span className="navbar__user-name">{currentUser?.name ?? 'Guest'}</span>
+            <span className="navbar__user-silo">{currentUser?.silo ?? 'No silo'}</span>
+          </div>
+          {currentUser?.avatarUrl ? (
+            <img src={currentUser.avatarUrl} alt="Avatar" className="navbar__avatar" />
+          ) : (
+            <div className="navbar__avatar navbar__avatar--placeholder">{currentUser?.name?.charAt(0) ?? 'G'}</div>
+          )}
         </div>
-        <div style={{ display: 'flex', gap: '0.75rem' }}>
-          <button
-            type="button"
-            style={{
-              padding: '0.65rem 1rem',
-              borderRadius: '999px',
-              border: 'none',
-              background: 'var(--color-primary)',
-              color: '#fff',
-              cursor: 'pointer'
-            }}
-          >
-            New Application
-          </button>
-          <button
-            type="button"
-            style={{
-              padding: '0.65rem 1rem',
-              borderRadius: '999px',
-              border: '1px solid rgba(148, 163, 184, 0.45)',
-              background: 'transparent',
-              color: 'var(--color-primary)',
-              cursor: 'pointer'
-            }}
-          >
-            Quick Task
-          </button>
-        </div>
-        <NotificationBell />
-        <UserMenu />
       </div>
     </header>
   );
 }
+
+export default Navbar;
