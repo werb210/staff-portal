@@ -3,12 +3,18 @@ import { documentService } from '../../services/documentService';
 import type { DocumentRecord, DocumentStatusPayload } from '../../types/documents';
 import { useOfflineQueue } from '../offline/useOfflineQueue';
 import { storeOffline } from '../../services/pwa/offlineService';
+import { useDataStore } from '../../store/dataStore';
 
-export const useDocuments = () =>
-  useQuery<DocumentRecord[]>({
+export const useDocuments = () => {
+  const { setDocuments } = useDataStore();
+  return useQuery<DocumentRecord[]>({
     queryKey: ['documents'],
     queryFn: documentService.list,
+    onSuccess: (data) => {
+      setDocuments(data);
+    },
   });
+};
 
 export function useUpdateDocumentStatus() {
   const queryClient = useQueryClient();

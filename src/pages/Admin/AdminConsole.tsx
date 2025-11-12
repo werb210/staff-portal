@@ -1,13 +1,42 @@
 import { useBackups, useCreateBackup, useRetryQueue, useTriggerRetry } from '../../hooks/api/useAdmin';
+import { useSystemStatus } from '../../hooks/api/useSystemStatus';
 
 export default function AdminConsole() {
   const { data: queue, isLoading: queueLoading } = useRetryQueue();
   const { data: backups, isLoading: backupsLoading } = useBackups();
   const triggerRetry = useTriggerRetry();
   const createBackup = useCreateBackup();
+  const { health, buildGuard, isLoading: systemLoading } = useSystemStatus();
 
   return (
     <div className="page admin">
+      <section className="card">
+        <header className="card__header">
+          <h2>System Status</h2>
+        </header>
+        {systemLoading ? (
+          <p>Checking platform health…</p>
+        ) : (
+          <dl className="status-grid">
+            <div>
+              <dt>Health</dt>
+              <dd>
+                {health.data?.status ?? 'unknown'} • build {health.data?.version ?? 'n/a'} at{' '}
+                {health.data?.timestamp ? new Date(health.data.timestamp).toLocaleString() : '—'}
+              </dd>
+            </div>
+            <div>
+              <dt>Build Guard</dt>
+              <dd>
+                {buildGuard.data?.locked ? 'Locked' : 'Open'}
+                {buildGuard.data?.reason ? ` – ${buildGuard.data.reason}` : ''}
+                {buildGuard.data?.expiresAt ? ` until ${new Date(buildGuard.data.expiresAt).toLocaleString()}` : ''}
+              </dd>
+            </div>
+          </dl>
+        )}
+      </section>
+
       <section className="card">
         <header className="card__header">
           <h2>Retry Queue</h2>

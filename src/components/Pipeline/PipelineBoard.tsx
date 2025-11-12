@@ -4,12 +4,14 @@ import PipelineColumn from './PipelineColumn';
 import { usePipeline, usePipelineReorder, usePipelineTransition } from '../../hooks/api/usePipeline';
 import { notifyStageChange } from '../../services/notificationService';
 import { useRBAC } from '../../hooks/useRBAC';
+import { useMobilePipelineInteractions } from '../../hooks/mobile/useMobilePipeline';
 
 export default function PipelineBoard() {
   const { data: pipeline, isLoading } = usePipeline();
   const transitionMutation = usePipelineTransition();
   const reorderMutation = usePipelineReorder();
   const { user } = useRBAC();
+  const { isTouchDevice, announcement, announceDrag } = useMobilePipelineInteractions();
   const stages = pipeline ?? [];
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -44,6 +46,7 @@ export default function PipelineBoard() {
                 borrowerEmail: application.borrowerEmail,
                 borrowerPhone: application.borrowerPhone,
               });
+              announceDrag(stages.find((stage) => stage.id === overStageId)?.name ?? overStageId);
             }
           },
         }
@@ -64,12 +67,13 @@ export default function PipelineBoard() {
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
       <SortableContext items={stages.map((stage) => stage.id)} strategy={horizontalListSortingStrategy}>
-        <div className="pipeline-board">
+        <div className="pipeline-board" aria-live={isTouchDevice ? 'polite' : 'off'}>
           {stages.map((stage) => (
             <PipelineColumn key={stage.id} stage={stage} />
           ))}
         </div>
       </SortableContext>
+      {announcement && <p className="sr-only">{announcement}</p>}
       {stages.length === 0 && <p>No stages configured for {user?.silo} silo.</p>}
     </DndContext>
   );

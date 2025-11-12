@@ -3,18 +3,29 @@ import { lenderService } from '../../services/lenderService';
 import type { SendToLenderPayload } from '../../types/lenders';
 import { useOfflineQueue } from '../offline/useOfflineQueue';
 import { storeOffline } from '../../services/pwa/offlineService';
+import { useDataStore } from '../../store/dataStore';
 
-export const useLenders = () =>
-  useQuery({
+export const useLenders = () => {
+  const { setLenders } = useDataStore();
+  return useQuery({
     queryKey: ['lenders'],
     queryFn: lenderService.list,
+    onSuccess: (data) => {
+      setLenders(data);
+    },
   });
+};
 
-export const useLenderProducts = () =>
-  useQuery({
+export const useLenderProducts = () => {
+  const { setLenderProducts } = useDataStore();
+  return useQuery({
     queryKey: ['lender-products'],
     queryFn: lenderService.products,
+    onSuccess: (data) => {
+      setLenderProducts(data);
+    },
   });
+};
 
 export function useSendToLender() {
   const queryClient = useQueryClient();
