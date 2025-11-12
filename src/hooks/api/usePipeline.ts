@@ -1,20 +1,39 @@
-import { useQuery } from '@tanstack/react-query';
-import apiClient from './axiosClient';
-
-export interface PipelineApplication {
-  id: string;
-  name: string;
-}
-
-export interface PipelineStage {
-  id: string;
-  name: string;
-  count?: number;
-  applications?: PipelineApplication[];
-}
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { pipelineService } from '../../services/pipelineService';
+import type { PipelineReorderPayload, PipelineStage, PipelineTransitionPayload } from '../../types/pipeline';
+import { useOfflineQueue } from '../offline/useOfflineQueue';
 
 export const usePipeline = () =>
   useQuery<PipelineStage[]>({
     queryKey: ['pipeline'],
-    queryFn: async () => (await apiClient.get('/api/pipeline')).data,
+    queryFn: pipelineService.list,
   });
+
+export function usePipelineTransition() {
+  const queryClient = useQueryClient();
+  const { enqueue } = useOfflineQueue();
+  return useMutation({
+    mutationFn: (payload: PipelineTransitionPayload) => pipelineService.transition(payload),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['pipeline'] });
+      void queryClient.invalidateQueries({ queryKey: ['applications'] });
+    },
+    onError: (_error, payload) => {
+      enqueue('/api/pipeline/transition', payload, 'post');
+    },
+  });
+}
+
+export function usePipelineReorder() {
+  const queryClient = useQueryClient();
+  const { enqueue } = useOfflineQueue();
+  return useMutation({
+    mutationFn: (payload: PipelineReorderPayload) => pipelineService.reorder(payload),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['pipeline'] });
+    },
+    onError: (_error, payload) => {
+      enqueue('/api/pipeline/reorder', payload, 'post');
+    },
+  });
+}
