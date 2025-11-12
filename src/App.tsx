@@ -11,6 +11,7 @@ import AIPortal from './pages/AI/AIPortal';
 import CRM from './pages/CRM/CRM';
 import { ProtectedRoute } from './components/Layout/ProtectedRoute';
 import { useAuth } from './hooks/useAuth';
+import LoginPage from './pages/Auth/Login';
 
 function App() {
   const { status } = useAuth();
@@ -22,7 +23,15 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<PortalLayout />}>
+        <Route path="/login" element={<LoginPage />} />
+        <Route
+          path="/"
+          element={(
+            <ProtectedRoute module="dashboard">
+              <PortalLayout />
+            </ProtectedRoute>
+          )}
+        >
           <Route
             index
             element={(
