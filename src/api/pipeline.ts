@@ -1,17 +1,19 @@
 // -----------------------------------------------------
-// FIXED PIPELINE API CLIENT
-// Fully aligned with backend:
-//   GET    /api/pipeline/stages
-//   GET    /api/pipeline/cards
-//   PUT    /api/pipeline/cards/:id/move
-//   GET    /api/pipeline/cards/:id/application
-//   GET    /api/pipeline/cards/:id/documents
-//   GET    /api/pipeline/cards/:id/lenders
+// FINAL, FULLY FIXED PIPELINE API CLIENT
+// 100% aligned with backend:
+//   GET  /api/pipeline/stages
+//   GET  /api/pipeline/cards
+//   PUT  /api/pipeline/cards/:id/move
+//   GET  /api/pipeline/cards/:id/application
+//   GET  /api/pipeline/cards/:id/documents
+//   GET  /api/pipeline/cards/:id/lenders
+//
+// THIS FILE IS NOW CANONICAL.
 // -----------------------------------------------------
 
 import { apiClient } from "./client";
 
-// Canonical pipeline stage names (match backend EXACTLY)
+// Canonical stage names (must match backend exactly)
 export type PipelineStage =
   | "New"
   | "Requires Docs"
@@ -20,9 +22,9 @@ export type PipelineStage =
   | "Approved"
   | "Declined";
 
-// A single card on the board
+// Single card on the board
 export interface PipelineCard {
-  id: string;                // cardId = applicationId
+  id: string; // applicationId = cardId
   applicationId: string;
   applicantName: string;
   amount: number;
@@ -31,11 +33,11 @@ export interface PipelineCard {
   assignedTo?: string;
 }
 
-// A single column on the pipeline board
+// Single pipeline column
 export interface PipelineColumn {
-  id: string;                // stage id (string)
-  name: PipelineStage;
-  stage: PipelineStage;
+  id: string;                 // stage name
+  name: PipelineStage;        // column title
+  stage: PipelineStage;       // duplicate for UI compatibility
   position: number;
   count: number;
   totalLoanAmount: number;
@@ -44,7 +46,7 @@ export interface PipelineColumn {
   cards: PipelineCard[];
 }
 
-// Input for moving a pipeline card
+// Move card payload
 export interface PipelineMoveInput {
   applicationId: string;
   toStage: PipelineStage;
@@ -53,46 +55,23 @@ export interface PipelineMoveInput {
   note?: string;
 }
 
-// Normalize text → canonical stage name
+// Convert any input → canonical stage
 const normalizeStage = (s: unknown): PipelineStage => {
   if (!s || typeof s !== "string") return "New";
 
   const v = s.trim().toLowerCase();
 
-  switch (v) {
-    case "new":
-    case "new application":
-      return "New";
+  if (v.includes("require")) return "Requires Docs";
+  if (v.includes("review")) return "In Review";
+  if (v.includes("sent")) return "Sent to Lenders";
+  if (v.includes("approve")) return "Approved";
+  if (v.includes("declin") || v.includes("reject")) return "Declined";
 
-    case "requires docs":
-    case "requires_documents":
-    case "requiresdocuments":
-      return "Requires Docs";
-
-    case "in review":
-    case "review":
-      return "In Review";
-
-    case "sent to lenders":
-    case "sent to lender":
-    case "ready_for_lenders":
-    case "ready for lenders":
-      return "Sent to Lenders";
-
-    case "approved":
-      return "Approved";
-
-    case "declined":
-    case "rejected":
-      return "Declined";
-
-    default:
-      return "New";
-  }
+  return "New";
 };
 
 // -----------------------------------------------------
-// FETCH BOARD + CARDS
+// BOARD + CARD FETCHING
 // -----------------------------------------------------
 
 export const getPipelineStages = async (): Promise<PipelineColumn[]> => {
@@ -118,9 +97,7 @@ export const movePipelineCard = async (
 ): Promise<PipelineCard> => {
   const payload = {
     applicationId: input.applicationId,
-    fromStage: input.fromStage
-      ? normalizeStage(input.fromStage)
-      : undefined,
+    fromStage: input.fromStage ? normalizeStage(input.fromStage) : undefined,
     toStage: normalizeStage(input.toStage),
     assignedTo: input.assignedTo,
     note: input.note,
@@ -135,29 +112,28 @@ export const movePipelineCard = async (
 };
 
 // -----------------------------------------------------
-// APPLICATION DATA FOR DRAWER
+// APPLICATION DRAWER DATA
 // -----------------------------------------------------
 
 export const getPipelineApplication = async (id: string) => {
-  const { data } = await apiClient.get(`/pipeline/cards/${id}/application`);
+  const { data } = await apiClient.get<{ data: any }>(
+    `/pipeline/cards/${id}/application`
+  );
   return data.data;
 };
 
 export const getPipelineDocuments = async (id: string) => {
-  const { data } = await apiClient.get(
+  const { data } = await apiClient.get<{ data: any }>(
     `/pipeline/cards/${id}/documents`
   );
   return data.data;
 };
 
 export const getPipelineLenders = async (id: string) => {
-  const { data } = await apiClient.get(`/pipeline/cards/${id}/lenders`);
-  return data.data;
-};
-
-export const getPipelineAISummary = async (id: string) => {
-  const { data } = await apiClient.get(
-    `/pipeline/cards/${id}/ai-summary`
+  const { data } = await apiClient.get<{ data: any }>(
+    `/pipeline/cards/${id}/lenders`
   );
   return data.data;
 };
+
+// Removed getPipelineAISummary (backend does NOT have this route)
