@@ -1,46 +1,35 @@
-import { CSS } from '@dnd-kit/utilities';
-import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
-import { useDroppable } from '@dnd-kit/core';
-import type { PipelineStage } from '../../types/pipeline';
-import { PipelineCard } from './PipelineCard';
+import { useDroppable } from "@dnd-kit/core";
+import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import type { PipelineColumn as PipelineColumnType } from "../../hooks/usePipeline";
+import PipelineCard from "./PipelineCard";
 
-interface PipelineColumnProps {
-  stage: PipelineStage;
+interface ColumnProps {
+  column: PipelineColumnType;
 }
 
-export default function PipelineColumn({ stage }: PipelineColumnProps) {
-  const { setNodeRef: setDroppableRef } = useDroppable({ id: stage.id, data: { stageId: stage.id } });
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: stage.id,
-    data: { type: 'stage' },
+export default function PipelineColumn({ column }: ColumnProps) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: column.status,        // Backend canonical identifier
+    data: { status: column.status },
   });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  } as React.CSSProperties;
-
-  const applications = stage.applications ?? [];
 
   return (
     <div
-      ref={(node) => {
-        setNodeRef(node);
-        setDroppableRef(node);
-      }}
-      className={`pipeline-column ${isDragging ? 'pipeline-column--dragging' : ''}`}
-      style={style}
-      {...attributes}
-      {...listeners}
+      ref={setNodeRef}
+      className={`pipeline-column ${isOver ? "is-over" : ""}`}
     >
-      <header>
-        <h3>{stage.name}</h3>
-        <span>{applications.length} apps</span>
+      <header className="pipeline-column__header">
+        <h3>{column.title}</h3>
+        <span>{column.cards.length}</span>
       </header>
-      <SortableContext items={applications.map((app) => app.id)} strategy={verticalListSortingStrategy}>
+
+      <SortableContext
+        items={column.cards.map((c) => c.id)}
+        strategy={verticalListSortingStrategy}
+      >
         <div className="pipeline-column__list">
-          {applications.map((application) => (
-            <PipelineCard key={application.id} application={application} stageId={stage.id} />
+          {column.cards.map((card) => (
+            <PipelineCard key={card.id} card={card} />
           ))}
         </div>
       </SortableContext>
