@@ -1,9 +1,23 @@
+// -------------------------------------------------------------
+// usePipeline.ts
+// Canonical Staff Pipeline Hooks
+// Matches backend:
+//   GET /api/pipeline/stages
+//   GET /api/pipeline/cards/:id/application
+//   GET /api/pipeline/cards/:id/documents
+//   GET /api/pipeline/cards/:id/lenders
+//   GET /api/pipeline/cards/:id/ai-summary
+//   PUT /api/pipeline/cards/:id/move
+// -------------------------------------------------------------
+
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+
 import {
   getPipelineStages,
   getPipelineApplication,
   getPipelineDocuments,
   getPipelineLenders,
+  getPipelineAISummary,
   movePipelineCard,
   type PipelineStage,
   type PipelineCard,
@@ -11,31 +25,31 @@ import {
 
 const PIPELINE_KEY = ["pipeline"];
 
-/**
- * Load the full board (canonical stages + cards)
- * Backend: GET /api/pipeline/stages
- */
+// -------------------------------------------------------------
+// LOAD PIPELINE BOARD (Stages + Cards)
+// Backend: GET /api/pipeline/stages
+// -------------------------------------------------------------
 export const usePipelineBoard = () =>
   useQuery({
     queryKey: PIPELINE_KEY,
     queryFn: getPipelineStages,
   });
 
-/**
- * Load a single application drawer
- * Backend: GET /api/pipeline/cards/:id/application
- */
+// -------------------------------------------------------------
+// LOAD APPLICATION (Drawer → Application Tab)
+// Backend: GET /api/pipeline/cards/:id/application
+// -------------------------------------------------------------
 export const usePipelineApplication = (id: string) =>
-  useQuery<PipelineCard>({
+  useQuery({
     queryKey: [...PIPELINE_KEY, id, "application"],
     queryFn: () => getPipelineApplication(id),
     enabled: Boolean(id),
   });
 
-/**
- * Drawer → Documents tab
- * Backend: GET /api/pipeline/cards/:id/documents
- */
+// -------------------------------------------------------------
+// LOAD DOCUMENTS (Drawer → Documents Tab)
+// Backend: GET /api/pipeline/cards/:id/documents
+// -------------------------------------------------------------
 export const usePipelineDocuments = (id: string) =>
   useQuery({
     queryKey: [...PIPELINE_KEY, id, "documents"],
@@ -43,10 +57,10 @@ export const usePipelineDocuments = (id: string) =>
     enabled: Boolean(id),
   });
 
-/**
- * Drawer → Lenders tab
- * Backend: GET /api/pipeline/cards/:id/lenders
- */
+// -------------------------------------------------------------
+// LOAD LENDERS (Drawer → Lenders Tab)
+// Backend: GET /api/pipeline/cards/:id/lenders
+// -------------------------------------------------------------
 export const usePipelineLenders = (id: string) =>
   useQuery({
     queryKey: [...PIPELINE_KEY, id, "lenders"],
@@ -54,30 +68,31 @@ export const usePipelineLenders = (id: string) =>
     enabled: Boolean(id),
   });
 
-/**
- * Pipeline Mutations
- */
+// -------------------------------------------------------------
+// LOAD AI SUMMARY (Drawer → AI Summary Tab)
+// Backend: GET /api/pipeline/cards/:id/ai-summary
+// -------------------------------------------------------------
+export const usePipelineAISummary = (id: string) =>
+  useQuery({
+    queryKey: [...PIPELINE_KEY, id, "ai-summary"],
+    queryFn: () => getPipelineAISummary(id),
+    enabled: Boolean(id),
+  });
+
+// -------------------------------------------------------------
+// MUTATIONS → MOVE CARD BETWEEN STAGES
+// Backend: PUT /api/pipeline/cards/:id/move
+// -------------------------------------------------------------
 export const usePipelineMutations = () => {
   const qc = useQueryClient();
 
-  /**
-   * Stage transition
-   * Backend: PUT /api/pipeline/cards/:id/move
-   *
-   * Payload shape (canonical):
-   * {
-   *   applicationId: string;
-   *   fromStage?: string | null;
-   *   toStage: string;     ← must be canonical stage name ("New", "In Review", etc.)
-   *   assignedTo?: string;
-   *   note?: string;
-   * }
-   */
   const stageMutation = useMutation({
     mutationFn: async (payload: {
       applicationId: string;
       fromStage?: string | null;
       toStage: string;
+      assignedTo?: string;
+      note?: string;
     }) => {
       return movePipelineCard(payload);
     },
@@ -89,4 +104,7 @@ export const usePipelineMutations = () => {
   return { stageMutation };
 };
 
+// -------------------------------------------------------------
+// EXPORT TYPES
+// -------------------------------------------------------------
 export type { PipelineStage, PipelineCard };
