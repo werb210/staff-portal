@@ -1,17 +1,17 @@
 import { CSS } from "@dnd-kit/utilities";
 import { useSortable } from "@dnd-kit/sortable";
-import type { PipelineCard as CardType } from "../../hooks/usePipeline";
+import type { PipelineCard as CardType } from "../../api/pipeline";
 
 interface Props {
   card: CardType;
-  onSelect?: (id: string) => void; // optional — parent controls drawer
+  onSelect?: (id: string) => void;
 }
 
 export default function PipelineCard({ card, onSelect }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({
       id: card.id,
-      data: { status: card.status }, // canonical stage name
+      data: { stage: card.stage }, // canonical pipeline stage name
     });
 
   const style = {
@@ -29,12 +29,17 @@ export default function PipelineCard({ card, onSelect }: Props) {
       {...listeners}
       onClick={() => onSelect?.(card.id)}
     >
-      <h4>{card.applicant}</h4>
+      {/* Applicant Name */}
+      <h4>{card.applicantName ?? "Unnamed Applicant"}</h4>
 
-      {card.amount !== undefined && (
+      {/* Amount */}
+      {typeof card.amount === "number" ? (
         <p>${card.amount.toLocaleString()}</p>
+      ) : (
+        <p>—</p>
       )}
 
+      {/* Last Updated */}
       <small>
         {card.updatedAt
           ? new Date(card.updatedAt).toLocaleDateString()
