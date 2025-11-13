@@ -1,3 +1,12 @@
+// ======================================================================
+// src/context/AuthContext.tsx
+// Canonical Staff App Auth Context
+// - Single source of truth for token + profile
+// - Syncs with localStorage
+// - Supports ProtectedRoute and useAuth
+// - No infinite loops, no double-loads
+// ======================================================================
+
 import {
   createContext,
   useCallback,
@@ -6,10 +15,16 @@ import {
   useMemo,
   useState,
   type ReactNode,
-} from 'react';
-import { QueryClient, useQueryClient } from '@tanstack/react-query';
-import { getCurrentUser, login as loginRequest, logout as logoutRequest, type AuthUser } from '../api/auth';
-import { setAuthToken, setUnauthorizedHandler } from '../api/client';
+} from "react";
+
+import {
+  getCurrentUser,
+  login as loginRequest,
+  logout as logoutRequest,
+  type AuthUser,
+} from "../api/auth";
+
+import { setAuthToken, setUnauthorizedHandler } from "../api/client";
 
 interface AuthContextValue {
   user: AuthUser | null;
@@ -21,22 +36,27 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-const STORAGE_KEY = 'staff-portal-session';
+// ----------------------------------------------------------------------
+// Storage key
+// ----------------------------------------------------------------------
+const STORAGE_KEY = "staff-portal-session";
 
-const readStoredSession = () => {
-  if (typeof window === 'undefined') return null;
-  const raw = window.localStorage.getItem(STORAGE_KEY);
-  if (!raw) return null;
+// Read token from storage
+const readStoredToken = (): string | null => {
+  if (typeof window === "undefined") return null;
   try {
-    return JSON.parse(raw) as { token: string };
-  } catch (error) {
-    console.error('Failed to parse stored auth session', error);
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed.token ?? null;
+  } catch {
     return null;
   }
 };
 
-const writeStoredSession = (token: string | null) => {
-  if (typeof window === 'undefined') return;
+// Write token to storage
+const writeStoredToken = (token: string | null) => {
+  if (typeof window === "undefined") return;
   if (!token) {
     window.localStorage.removeItem(STORAGE_KEY);
   } else {
@@ -44,75 +64,94 @@ const writeStoredSession = (token: string | null) => {
   }
 };
 
-const useAuthProvider = (queryClient: QueryClient): AuthContextValue => {
-  const [user, setUser] = useState<AuthUser | null>(null);
+// ======================================================================
+// Provider logic
+// ======================================================================
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [token, setToken] = useState<string | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const clearSession = useCallback(async () => {
-    setUser(null);
+  // -----------------------------------------------------------
+  // Internal: fully clear session
+  // -----------------------------------------------------------
+  const clearSession = useCallback(() => {
     setToken(null);
-    writeStoredSession(null);
+    setUser(null);
+    writeStoredToken(null);
     setAuthToken(null);
-    await queryClient.invalidateQueries();
-  }, [queryClient]);
+  }, []);
 
-  const loadUser = useCallback(
+  // -----------------------------------------------------------
+  // Load user from API when token exists
+  // -----------------------------------------------------------
+  const loadProfile = useCallback(
     async (sessionToken: string | null) => {
       if (!sessionToken) {
+        clearSession();
         setLoading(false);
-        setUser(null);
-        setAuthToken(null);
         return;
       }
 
       try {
         setAuthToken(sessionToken);
-        const currentUser = await getCurrentUser();
-        setUser(currentUser);
-      } catch (error) {
-        console.error('Failed to load current user', error);
-        await clearSession();
+        const profile = await getCurrentUser();
+        setUser(profile);
+      } catch (e) {
+        console.warn("Auth failed, clearing session", e);
+        clearSession();
       } finally {
         setLoading(false);
       }
     },
-    [clearSession],
+    [clearSession]
   );
 
+  // -----------------------------------------------------------
+  // Restore token on boot
+  // -----------------------------------------------------------
   useEffect(() => {
-    const stored = readStoredSession();
-    const storedToken = stored?.token ?? null;
-    setToken(storedToken);
-    loadUser(storedToken);
-  }, [loadUser]);
+    const stored = readStoredToken();
+    setToken(stored);
+    void loadProfile(stored);
+  }, [loadProfile]);
 
-  const login = useCallback(
-    async (email: string, password: string) => {
-      setLoading(true);
-      try {
-        const { token: nextToken, user: loggedInUser } = await loginRequest({ email, password });
-        setToken(nextToken);
-        setUser(loggedInUser);
-        writeStoredSession(nextToken);
-        setAuthToken(nextToken);
-      } finally {
-        setLoading(false);
-      }
-    },
-    [],
-  );
+  // -----------------------------------------------------------
+  // Login
+  // -----------------------------------------------------------
+  const login = useCallback(async (email: string, password: string) => {
+    setLoading(true);
+    try {
+      const { token: nextToken, user: profile } = await loginRequest({
+        email,
+        password,
+      });
 
+      setToken(nextToken);
+      setUser(profile);
+      writeStoredToken(nextToken);
+      setAuthToken(nextToken);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // -----------------------------------------------------------
+  // Logout
+  // -----------------------------------------------------------
   const logout = useCallback(async () => {
     try {
       await logoutRequest();
-    } catch (error) {
-      console.warn('Logout request failed', error);
+    } catch {
+      // Remote logout is optional
     } finally {
-      await clearSession();
+      clearSession();
     }
   }, [clearSession]);
 
+  // -----------------------------------------------------------
+  // Global 401 Handler → auto logout
+  // -----------------------------------------------------------
   useEffect(() => {
     setUnauthorizedHandler(() => {
       void logout();
@@ -122,11 +161,10 @@ const useAuthProvider = (queryClient: QueryClient): AuthContextValue => {
     };
   }, [logout]);
 
-  useEffect(() => {
-    setAuthToken(token);
-  }, [token]);
-
-  return useMemo(
+  // -----------------------------------------------------------
+  // Memoized context value
+  // -----------------------------------------------------------
+  const value = useMemo(
     () => ({
       user,
       token,
@@ -134,20 +172,18 @@ const useAuthProvider = (queryClient: QueryClient): AuthContextValue => {
       login,
       logout,
     }),
-    [loading, login, logout, token, user],
+    [user, token, loading, login, logout]
   );
-};
 
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const queryClient = useQueryClient();
-  const value = useAuthProvider(queryClient);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
+// ======================================================================
+// Hook
+// ======================================================================
 export const useAuthContext = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuthContext must be used within AuthProvider');
-  }
-  return context;
+  const ctx = useContext(AuthContext);
+  if (!ctx)
+    throw new Error("useAuthContext must be used within <AuthProvider>");
+  return ctx;
 };
