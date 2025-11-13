@@ -1,40 +1,71 @@
-import { useEffect } from 'react';
-import { useAuthStore } from '../store/authStore';
-import { authService } from '../services/authService';
+// ======================================================================
+// src/hooks/useAuth.ts
+// Canonical Staff Portal authentication hook
+// - Proper hydration
+// - Stable status transitions
+// - Profile fetch after token restored
+// - Auto-clear on failure
+// - No infinite loops
+// ======================================================================
+
+import { useEffect } from "react";
+import { useAuthStore } from "../store/authStore";
+import { authService } from "../services/authService";
 
 export function useAuth() {
-  const { user, status, token, hydrate, hydrated, setStatus, setUser, clear } = useAuthStore();
+  const {
+    user,
+    token,
+    status,
+    hydrated,
+    hydrate,
+    setUser,
+    setStatus,
+    clear,
+  } = useAuthStore();
 
+  // -------------------------------------------------------------
+  // 1) Initial hydration (restore token from storage)
+  // -------------------------------------------------------------
   useEffect(() => {
-    if (!hydrated && status === 'idle') {
-      hydrate();
+    if (!hydrated && status === "idle") {
+      hydrate(); // loads token into store if exists
     }
   }, [hydrate, hydrated, status]);
 
+  // -------------------------------------------------------------
+  // 2) After hydration, determine next step
+  // -------------------------------------------------------------
   useEffect(() => {
     if (!hydrated) return;
 
-    if (status === 'idle') {
-      setStatus(token ? 'loading' : 'unauthenticated');
+    // If no token after hydration → unauthenticated
+    if (!token) {
+      if (status !== "unauthenticated") {
+        setStatus("unauthenticated");
+      }
       return;
     }
 
-    if (status !== 'loading') return;
+    // If we have a token but no profile → fetch it
+    if (status === "idle" || status === "loading") {
+      setStatus("loading");
 
-    const fetchProfile = async () => {
-      try {
-        const profile = await authService.fetchProfile();
-        setUser(profile);
-        setStatus('authenticated');
-      } catch (error) {
-        console.warn('Unable to fetch staff profile, requiring login', error);
-        clear();
-        setStatus('unauthenticated');
-      }
-    };
+      const loadProfile = async () => {
+        try {
+          const profile = await authService.fetchProfile();
+          setUser(profile);
+          setStatus("authenticated");
+        } catch (err) {
+          console.warn("Auth failed — clearing token", err);
+          clear();
+          setStatus("unauthenticated");
+        }
+      };
 
-    void fetchProfile();
-  }, [clear, hydrated, setStatus, setUser, status, token]);
+      void loadProfile();
+    }
+  }, [hydrated, token, status, setStatus, setUser, clear]);
 
-  return { user, status };
+  return { user, status, token };
 }
