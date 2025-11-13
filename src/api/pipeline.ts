@@ -1,86 +1,163 @@
-import { apiClient } from './client';
+// -----------------------------------------------------
+// FIXED PIPELINE API CLIENT
+// Fully aligned with backend:
+//   GET    /api/pipeline/stages
+//   GET    /api/pipeline/cards
+//   PUT    /api/pipeline/cards/:id/move
+//   GET    /api/pipeline/cards/:id/application
+//   GET    /api/pipeline/cards/:id/documents
+//   GET    /api/pipeline/cards/:id/lenders
+// -----------------------------------------------------
 
-export type PipelineStatus = 'new' | 'in_review' | 'underwriting' | 'conditions' | 'closing' | 'funded';
+import { apiClient } from "./client";
 
+// Canonical pipeline stage names (match backend EXACTLY)
+export type PipelineStage =
+  | "New"
+  | "Requires Docs"
+  | "In Review"
+  | "Sent to Lenders"
+  | "Approved"
+  | "Declined";
+
+// A single card on the board
 export interface PipelineCard {
-  id: string;
-  applicant: string;
+  id: string;                // cardId = applicationId
+  applicationId: string;
+  applicantName: string;
   amount: number;
-  status: PipelineStatus;
+  stage: PipelineStage;
   updatedAt: string;
-  borrowerEmail?: string;
-  borrowerPhone?: string;
-  financials?: {
-    revenue?: number;
-    netIncome?: number;
-    dscr?: number | string;
-  };
-  bankAccounts?: Array<{
-    id: string;
-    institution: string;
-    type?: string;
-    last4?: string;
-    balance?: number;
-  }>;
+  assignedTo?: string;
 }
 
+// A single column on the pipeline board
 export interface PipelineColumn {
-  id: string;
-  title: string;
-  status: PipelineStatus;
+  id: string;                // stage id (string)
+  name: PipelineStage;
+  stage: PipelineStage;
+  position: number;
+  count: number;
+  totalLoanAmount: number;
+  averageScore?: number;
+  lastUpdatedAt: string;
   cards: PipelineCard[];
 }
 
-export interface PipelineMovePayload {
+// Input for moving a pipeline card
+export interface PipelineMoveInput {
   applicationId: string;
-  fromStage: PipelineStatus;
-  toStage: PipelineStatus;
-  position: number;
+  toStage: PipelineStage;
+  fromStage?: PipelineStage;
+  assignedTo?: string;
+  note?: string;
 }
 
-const formatTitle = (title: string | undefined, status: PipelineStatus) => {
-  if (title) return title;
-  return status
-    .split('_')
-    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
-    .join(' ');
+// Normalize text → canonical stage name
+const normalizeStage = (s: unknown): PipelineStage => {
+  if (!s || typeof s !== "string") return "New";
+
+  const v = s.trim().toLowerCase();
+
+  switch (v) {
+    case "new":
+    case "new application":
+      return "New";
+
+    case "requires docs":
+    case "requires_documents":
+    case "requiresdocuments":
+      return "Requires Docs";
+
+    case "in review":
+    case "review":
+      return "In Review";
+
+    case "sent to lenders":
+    case "sent to lender":
+    case "ready_for_lenders":
+    case "ready for lenders":
+      return "Sent to Lenders";
+
+    case "approved":
+      return "Approved";
+
+    case "declined":
+    case "rejected":
+      return "Declined";
+
+    default:
+      return "New";
+  }
 };
 
-export const getPipelineBoards = async (): Promise<PipelineColumn[]> => {
-  const { data } = await apiClient.get<PipelineColumn[]>('/pipeline/boards');
-  return data.map((column) => ({
-    id: column.id,
-    title: formatTitle(column.title, column.status),
-    status: column.status,
-    cards: column.cards ?? [],
-  }));
+// -----------------------------------------------------
+// FETCH BOARD + CARDS
+// -----------------------------------------------------
+
+export const getPipelineStages = async (): Promise<PipelineColumn[]> => {
+  const { data } = await apiClient.get<{ data: PipelineColumn[] }>(
+    "/pipeline/stages"
+  );
+  return data.data;
 };
 
-export const movePipelineCard = async (payload: PipelineMovePayload): Promise<void> => {
-  await apiClient.post('/pipeline/move', payload);
+export const getPipelineCards = async (): Promise<PipelineCard[]> => {
+  const { data } = await apiClient.get<{ data: PipelineCard[] }>(
+    "/pipeline/cards"
+  );
+  return data.data;
 };
 
-export const getPipelineCard = async (id: string): Promise<PipelineCard> => {
-  const { data } = await apiClient.get<PipelineCard>(`/pipeline/cards/${id}`);
-  return data;
+// -----------------------------------------------------
+// MOVE CARD
+// -----------------------------------------------------
+
+export const movePipelineCard = async (
+  input: PipelineMoveInput
+): Promise<PipelineCard> => {
+  const payload = {
+    applicationId: input.applicationId,
+    fromStage: input.fromStage
+      ? normalizeStage(input.fromStage)
+      : undefined,
+    toStage: normalizeStage(input.toStage),
+    assignedTo: input.assignedTo,
+    note: input.note,
+  };
+
+  const { data } = await apiClient.put<{ data: PipelineCard }>(
+    `/pipeline/cards/${input.applicationId}/move`,
+    payload
+  );
+
+  return data.data;
 };
 
-export const updatePipelineCard = async (id: string, input: Record<string, unknown>) => {
-  const { data } = await apiClient.put(`/pipeline/cards/${id}`, input);
-  return data;
+// -----------------------------------------------------
+// APPLICATION DATA FOR DRAWER
+// -----------------------------------------------------
+
+export const getPipelineApplication = async (id: string) => {
+  const { data } = await apiClient.get(`/pipeline/cards/${id}/application`);
+  return data.data;
 };
 
 export const getPipelineDocuments = async (id: string) => {
-  const { data } = await apiClient.get(`/pipeline/cards/${id}/documents`);
-  return data;
+  const { data } = await apiClient.get(
+    `/pipeline/cards/${id}/documents`
+  );
+  return data.data;
 };
 
 export const getPipelineLenders = async (id: string) => {
   const { data } = await apiClient.get(`/pipeline/cards/${id}/lenders`);
-  return data;
+  return data.data;
 };
 
 export const getPipelineAISummary = async (id: string) => {
-  const { data } = await apiClient.get(`/pipeline/cards/${id}/ai-summary`);
-  return data;
+  const { data } = await apiClient.get(
+    `/pipeline/cards/${id}/ai-summary`
+  );
+  return data.data;
 };
