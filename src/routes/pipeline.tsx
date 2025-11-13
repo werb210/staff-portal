@@ -1,23 +1,29 @@
 import { lazy } from "react";
 import type { RouteObject } from "react-router-dom";
-import AppLayout from "../layouts/AppLayout";
+import StaffLayout from "../layouts/StaffLayout";
 
-// Lazy-loaded Pipeline page
+// Lazy-loaded Pipeline page (folder import for index.tsx resolution)
 const PipelinePage = lazy(() => import("../pages/Pipeline"));
 
 /**
  * Pipeline Route Module
  *
- * This file isolates all routes for the Pipeline feature:
- *   /pipeline
- *   /pipeline/:id  (drawer opened through state)
+ * This file defines the canonical routing for the Staff Pipeline feature.
  *
- * This matches the Staff Portal architecture for modular routing.
+ * Routes:
+ *   /pipeline          – full board
+ *   /pipeline/:id      – board stays mounted, drawer opens for an application
+ *
+ * IMPORTANT:
+ *  - StaffLayout wraps the entire authenticated portal
+ *  - PipelinePage handles both board rendering and drawer logic
+ *  - We do NOT mount PipelinePage twice
  */
+
 const pipelineRoutes: RouteObject[] = [
   {
     path: "/pipeline",
-    element: <AppLayout />,
+    element: <StaffLayout />, // must match staff portal layout
     children: [
       {
         index: true,
