@@ -20,7 +20,7 @@ import Login from "../pages/Login";
 
 import { ProtectedRoute } from "./ProtectedRoute";
 
-// NEW — modular pipeline route bundle
+// Pipeline module — DO NOT nest inside another StaffLayout
 import pipelineRoutes from "./pipeline";
 
 export const publicRoutes: RouteObject[] = [
@@ -34,6 +34,7 @@ export const protectedRoutes: RouteObject[] = [
   {
     element: <ProtectedRoute />,
     children: [
+      /** Primary authenticated shell */
       {
         path: "/",
         element: <StaffLayout />,
@@ -41,17 +42,10 @@ export const protectedRoutes: RouteObject[] = [
           { index: true, element: <Dashboard /> },
 
           /* -----------------------------
-           * CRM / Contacts
+           * CRM
            * --------------------------- */
           { path: "contacts", element: <ContactsPage /> },
           { path: "crm", element: <CRMPage /> },
-
-          /* -----------------------------
-           * Pipeline (modular injected)
-           * /pipeline
-           * /pipeline/:id
-           * --------------------------- */
-          ...pipelineRoutes,
 
           /* -----------------------------
            * Documents
@@ -59,7 +53,7 @@ export const protectedRoutes: RouteObject[] = [
           { path: "documents", element: <DocumentsPage /> },
 
           /* -----------------------------
-           * Communication Center
+           * Communication
            * --------------------------- */
           {
             path: "communication",
@@ -88,6 +82,12 @@ export const protectedRoutes: RouteObject[] = [
           { path: "settings", element: <SettingsPage /> },
         ],
       },
+
+      /** ----------------------------------
+       *  Pipeline module (standalone)
+       *  Already includes its own StaffLayout
+       * ---------------------------------- */
+      ...pipelineRoutes,
     ],
   },
 ];
