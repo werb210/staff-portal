@@ -1,16 +1,24 @@
 import { useDroppable } from "@dnd-kit/core";
-import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import type { PipelineColumn as PipelineColumnType } from "../../hooks/usePipeline";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+
+import type { PipelineColumn } from "../../api/pipeline";
 import PipelineCard from "./PipelineCard";
 
 interface ColumnProps {
-  column: PipelineColumnType;
+  column: PipelineColumn;
 }
 
 export default function PipelineColumn({ column }: ColumnProps) {
+  /**
+   * Droppable region for the entire column.
+   * ID MUST MATCH backend canonical stage name.
+   */
   const { setNodeRef, isOver } = useDroppable({
-    id: column.status,        // Backend canonical identifier
-    data: { status: column.status },
+    id: column.name, // <-- canonical: "New", "Requires Docs", ...
+    data: { stage: column.name },
   });
 
   return (
@@ -19,7 +27,7 @@ export default function PipelineColumn({ column }: ColumnProps) {
       className={`pipeline-column ${isOver ? "is-over" : ""}`}
     >
       <header className="pipeline-column__header">
-        <h3>{column.title}</h3>
+        <h3>{column.name}</h3>
         <span>{column.cards.length}</span>
       </header>
 
@@ -29,7 +37,7 @@ export default function PipelineColumn({ column }: ColumnProps) {
       >
         <div className="pipeline-column__list">
           {column.cards.map((card) => (
-            <PipelineCard key={card.id} card={card} />
+            <PipelineCard key={card.id} card={card} stage={column.name} />
           ))}
         </div>
       </SortableContext>
