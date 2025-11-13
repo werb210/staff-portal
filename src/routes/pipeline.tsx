@@ -1,37 +1,46 @@
 import { lazy } from "react";
 import type { RouteObject } from "react-router-dom";
 import StaffLayout from "../layouts/StaffLayout";
+import { ProtectedRoute } from "./ProtectedRoute";
 
-// Lazy-loaded Pipeline page (folder import for index.tsx resolution)
+// Lazy-loaded Pipeline page — folder import resolves to pages/Pipeline/index.tsx
 const PipelinePage = lazy(() => import("../pages/Pipeline"));
 
 /**
- * Pipeline Route Module
+ * STAFF PORTAL — PIPELINE ROUTES
  *
- * This file defines the canonical routing for the Staff Pipeline feature.
+ * FINAL ARCHITECTURE:
  *
- * Routes:
- *   /pipeline          – full board
- *   /pipeline/:id      – board stays mounted, drawer opens for an application
+ * /pipeline            => PipelinePage (board)
+ * /pipeline/:id        => PipelinePage (board + drawer)
  *
  * IMPORTANT:
- *  - StaffLayout wraps the entire authenticated portal
- *  - PipelinePage handles both board rendering and drawer logic
- *  - We do NOT mount PipelinePage twice
+ * - StaffLayout must NOT re-mount for "/pipeline/:id"
+ * - ProtectedRoute stays above StaffLayout
+ * - Only ONE element = <PipelinePage /> inside this module
  */
 
 const pipelineRoutes: RouteObject[] = [
   {
-    path: "/pipeline",
-    element: <StaffLayout />, // must match staff portal layout
+    element: <ProtectedRoute />,
     children: [
       {
-        index: true,
-        element: <PipelinePage />,
-      },
-      {
-        path: ":id",
-        element: <PipelinePage />,
+        element: <StaffLayout />,
+        children: [
+          {
+            path: "/pipeline",
+            children: [
+              {
+                index: true,
+                element: <PipelinePage />,
+              },
+              {
+                path: ":id",
+                element: <PipelinePage />,
+              },
+            ],
+          },
+        ],
       },
     ],
   },
