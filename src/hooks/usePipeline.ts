@@ -1,68 +1,92 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  getPipelineAISummary,
-  getPipelineCard,
-  getPipelineBoards,
+  getPipelineStages,
+  getPipelineApplication,
   getPipelineDocuments,
   getPipelineLenders,
   movePipelineCard,
-  updatePipelineCard,
-  type PipelineColumn,
-  type PipelineMovePayload,
-} from '../api/pipeline';
+  type PipelineStage,
+  type PipelineCard,
+} from "../api/pipeline";
 
-const PIPELINE_KEY = ['pipeline'];
+const PIPELINE_KEY = ["pipeline"];
 
+/**
+ * Load the full board (canonical stages + cards)
+ * Backend: GET /api/pipeline/stages
+ */
 export const usePipelineBoard = () =>
   useQuery({
     queryKey: PIPELINE_KEY,
-    queryFn: getPipelineBoards,
+    queryFn: getPipelineStages,
   });
 
+/**
+ * Load a single application drawer
+ * Backend: GET /api/pipeline/cards/:id/application
+ */
 export const usePipelineApplication = (id: string) =>
-  useQuery({
-    queryKey: [...PIPELINE_KEY, id],
-    queryFn: () => getPipelineCard(id),
+  useQuery<PipelineCard>({
+    queryKey: [...PIPELINE_KEY, id, "application"],
+    queryFn: () => getPipelineApplication(id),
     enabled: Boolean(id),
   });
 
+/**
+ * Drawer → Documents tab
+ * Backend: GET /api/pipeline/cards/:id/documents
+ */
 export const usePipelineDocuments = (id: string) =>
   useQuery({
-    queryKey: [...PIPELINE_KEY, id, 'documents'],
+    queryKey: [...PIPELINE_KEY, id, "documents"],
     queryFn: () => getPipelineDocuments(id),
     enabled: Boolean(id),
   });
 
+/**
+ * Drawer → Lenders tab
+ * Backend: GET /api/pipeline/cards/:id/lenders
+ */
 export const usePipelineLenders = (id: string) =>
   useQuery({
-    queryKey: [...PIPELINE_KEY, id, 'lenders'],
+    queryKey: [...PIPELINE_KEY, id, "lenders"],
     queryFn: () => getPipelineLenders(id),
     enabled: Boolean(id),
   });
 
-export const usePipelineAISummary = (id: string) =>
-  useQuery({
-    queryKey: [...PIPELINE_KEY, id, 'ai-summary'],
-    queryFn: () => getPipelineAISummary(id),
-    enabled: Boolean(id),
-  });
-
+/**
+ * Pipeline Mutations
+ */
 export const usePipelineMutations = () => {
-  const queryClient = useQueryClient();
+  const qc = useQueryClient();
 
+  /**
+   * Stage transition
+   * Backend: PUT /api/pipeline/cards/:id/move
+   *
+   * Payload shape (canonical):
+   * {
+   *   applicationId: string;
+   *   fromStage?: string | null;
+   *   toStage: string;     ← must be canonical stage name ("New", "In Review", etc.)
+   *   assignedTo?: string;
+   *   note?: string;
+   * }
+   */
   const stageMutation = useMutation({
-    mutationFn: (payload: PipelineMovePayload) => movePipelineCard(payload),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: PIPELINE_KEY }),
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: ({ id, input }: { id: string; input: Record<string, unknown> }) => updatePipelineCard(id, input),
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: [...PIPELINE_KEY, variables.id] });
+    mutationFn: async (payload: {
+      applicationId: string;
+      fromStage?: string | null;
+      toStage: string;
+    }) => {
+      return movePipelineCard(payload);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: PIPELINE_KEY });
     },
   });
 
-  return { stageMutation, updateMutation };
+  return { stageMutation };
 };
 
-export type { PipelineColumn };
+export type { PipelineStage, PipelineCard };
