@@ -15,15 +15,15 @@ import ApplicationDrawer from "./ApplicationDrawer";
 
 const PipelinePage = () => {
   const boardQuery = usePipelineBoard();
-  const { moveMutation } = usePipelineMutations();
+  const { stageMutation } = usePipelineMutations();
 
-  const [selectedApplication, setSelectedApplication] = useState<string | null>(
-    null
-  );
+  const [selectedApplication, setSelectedApplication] = useState<
+    string | null
+  >(null);
 
-  // The backend returns: { data: Stage[] }
-  const columns = useMemo(
-    () => boardQuery.data?.data ?? [],
+  // backend returns array: PipelineColumn[]
+  const columns: PipelineColumn[] = useMemo(
+    () => (Array.isArray(boardQuery.data) ? boardQuery.data : []),
     [boardQuery.data]
   );
 
@@ -32,12 +32,12 @@ const PipelinePage = () => {
     if (!active || !over) return;
 
     const applicationId = active.id as string;
-    const fromStage = active.data.current?.stage;
+    const fromStage = active.data.current?.stage as string | undefined;
     const toStage = over.id as string;
 
     if (!fromStage || !toStage || fromStage === toStage) return;
 
-    moveMutation.mutate({
+    stageMutation.mutate({
       applicationId,
       fromStage,
       toStage,
@@ -45,9 +45,7 @@ const PipelinePage = () => {
     });
   };
 
-  if (boardQuery.isLoading) {
-    return <Spinner />;
-  }
+  if (boardQuery.isLoading) return <Spinner />;
 
   return (
     <section className="page pipeline">
@@ -62,9 +60,9 @@ const PipelinePage = () => {
         <div className="pipeline-board">
           {columns.map((column) => (
             <PipelineColumnView
-              key={column.stage}
+              key={column.name}
               column={column}
-              onSelect={(id) => setSelectedApplication(id)}
+              onSelect={setSelectedApplication}
             />
           ))}
         </div>
@@ -91,8 +89,9 @@ const PipelineColumnView = ({
   column: PipelineColumn;
   onSelect: (id: string) => void;
 }) => {
+  // droppable id MUST MATCH canonical stage names
   const { setNodeRef, isOver } = useDroppable({
-    id: column.stage, // MUST match canonical backend stage names
+    id: column.name,
   });
 
   return (
@@ -101,7 +100,7 @@ const PipelineColumnView = ({
       ref={setNodeRef}
     >
       <header>
-        <h3>{column.stage}</h3>
+        <h3>{column.name}</h3>
         <span>{column.cards.length}</span>
       </header>
 
@@ -141,16 +140,18 @@ const PipelineCardView = ({
       {...attributes}
       onClick={() => onSelect(card.id)}
     >
-      <h4>{card.applicantName}</h4>
+      <h4>{card.applicantName || "Unknown Applicant"}</h4>
 
       <p>
         {card.amount
           ? `$${Number(card.amount).toLocaleString()}`
-          : "No amount provided"}
+          : "—"}
       </p>
 
       <span className="updated-at">
-        {new Date(card.updatedAt).toLocaleDateString()}
+        {card.updatedAt
+          ? new Date(card.updatedAt).toLocaleDateString()
+         : ""}
       </span>
     </article>
   );
