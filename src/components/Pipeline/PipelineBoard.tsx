@@ -1,81 +1,93 @@
-import { DndContext, useSensor, useSensors, PointerSensor, TouchSensor, closestCenter, type DragEndEvent } from '@dnd-kit/core';
-import { SortableContext, arrayMove, horizontalListSortingStrategy } from '@dnd-kit/sortable';
-import PipelineColumn from './PipelineColumn';
-import { usePipeline, usePipelineReorder, usePipelineTransition } from '../../hooks/api/usePipeline';
-import { notificationService } from '../../services/notificationService';
-import { useRBAC } from '../../hooks/useRBAC';
-import { useMobilePipelineInteractions } from '../../hooks/mobile/useMobilePipeline';
-import type { PipelineStage } from '../../types/pipeline';
+import {
+  DndContext,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  closestCenter,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+
+import { SortableContext, horizontalListSortingStrategy } from "@dnd-kit/sortable";
+
+import PipelineColumn from "./PipelineColumn";
+import { usePipelineBoard, usePipelineMutations } from "../../hooks/usePipeline";
+import { Spinner } from "../common/Spinner";
+import { notificationService } from "../../services/notificationService";
+
+/**
+ * Canonical Staff Pipeline Stages
+ * MUST match backend exactly.
+ */
+const CANONICAL_STAGES = [
+  "New",
+  "Requires Docs",
+  "In Review",
+  "Sent to Lenders",
+  "Approved",
+  "Declined",
+] as const;
 
 export default function PipelineBoard() {
-  const { data: pipeline, isLoading } = usePipeline();
-  const transitionMutation = usePipelineTransition();
-  const reorderMutation = usePipelineReorder();
-  const { user } = useRBAC();
-  const { isTouchDevice, announcement, announceDrag } = useMobilePipelineInteractions();
-  const stages: PipelineStage[] = Array.isArray(pipeline) ? pipeline : [];
+  const boardQuery = usePipelineBoard();
+  const { stageMutation } = usePipelineMutations();
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 8 } })
+    useSensor(TouchSensor, { activationConstraint: { delay: 120, tolerance: 8 } })
   );
 
-  if (isLoading) return <div className="card loading-state">Loading pipeline...</div>;
+  if (boardQuery.isLoading) return <Spinner />;
+  if (!boardQuery.data) return <p>Error loading pipeline.</p>;
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const columns = boardQuery.data;
+
+  /**
+   * Drag End → Move Card Between Columns
+   */
+  const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
-    if (!over) return;
 
-    const activeStageId = active.data.current?.stageId as string | undefined;
-    const overStageId = over.data.current?.stageId as string | undefined;
+    if (!active || !over) return;
 
-    if (activeStageId && overStageId) {
-      if (activeStageId === overStageId) {
-        return;
+    const applicationId = String(active.id);
+    const fromStage = active.data.current?.status;
+    const toStage = String(over.id);
+
+    if (!fromStage || !toStage || fromStage === toStage) return;
+
+    // Frontend optimistic UI handled in hook
+    stageMutation.mutate(
+      {
+        applicationId,
+        fromStage,
+        toStage,
+        position: 0,
+      },
+      {
+        onSuccess: () => {
+          const targetColumn = columns.find((c) => c.status === toStage);
+          notificationService.notifyStageChange({
+            applicationId,
+            stage: targetColumn?.title ?? toStage,
+          });
+        },
       }
-      const application = stages
-        .flatMap((stage) => (stage.applications ?? []).map((app) => ({ ...app, stageId: stage.id })))
-        .find((item) => item.id === active.id);
-
-      transitionMutation.mutate(
-        { applicationId: String(active.id), fromStageId: activeStageId, toStageId: overStageId },
-        {
-          onSuccess: async () => {
-            if (application) {
-              await notificationService.notifyStageChange({
-                applicationId: application.id,
-                stage: stages.find((stage) => stage.id === overStageId)?.name ?? overStageId,
-                borrowerEmail: application.borrowerEmail,
-                borrowerPhone: application.borrowerPhone,
-              });
-              announceDrag(stages.find((stage) => stage.id === overStageId)?.name ?? overStageId);
-            }
-          },
-        }
-      );
-      return;
-    }
-
-    if (active.data.current?.type === 'stage' && over.id !== active.id) {
-      const stageOrder = stages.map((stage) => stage.id);
-      const oldIndex = stageOrder.indexOf(String(active.id));
-      const newIndex = stageOrder.indexOf(String(over.id));
-      if (oldIndex !== -1 && newIndex !== -1) {
-        reorderMutation.mutate({ stageOrder: arrayMove(stageOrder, oldIndex, newIndex) });
-      }
-    }
+    );
   };
 
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-      <SortableContext items={stages.map((stage) => stage.id)} strategy={horizontalListSortingStrategy}>
-        <div className="pipeline-board" aria-live={isTouchDevice ? 'polite' : 'off'}>
-          {stages.map((stage) => (
-            <PipelineColumn key={stage.id} stage={stage} />
+      <SortableContext
+        items={CANONICAL_STAGES}
+        strategy={horizontalListSortingStrategy}
+      >
+        <div className="pipeline-board">
+          {columns.map((column) => (
+            <PipelineColumn key={column.status} column={column} />
           ))}
         </div>
       </SortableContext>
-      {announcement && <p className="sr-only">{announcement}</p>}
-      {stages.length === 0 && <p>No stages configured for {user?.silo} silo.</p>}
     </DndContext>
   );
 }
