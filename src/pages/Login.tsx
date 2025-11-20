@@ -38,7 +38,8 @@ export default function Login() {
         password,
       });
 
-      login(data.token, data.role || "staff");
+      const displayName = email ? email.split("@")[0] || email : undefined;
+      login(data.token, data.role || "staff", displayName);
       navigate(redirectPath, { replace: true });
     } catch (err: any) {
       const message = err?.response?.data?.message || "Invalid email or password";
