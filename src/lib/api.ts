@@ -1,21 +1,35 @@
-import { api } from "./axios";
+// src/lib/api.ts
+// Global Axios client with token injection + 401 handling
 
-export async function get<T>(url: string, params?: Record<string, unknown>) {
-  const response = await api.get<T>(url, { params });
-  return response.data;
-}
+import axios from "axios";
+import { useAuthStore } from "../state/authStore";
 
-export async function post<T>(url: string, data?: unknown) {
-  const response = await api.post<T>(url, data);
-  return response.data;
-}
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL,
+  timeout: 20000,
+});
 
-export async function put<T>(url: string, data?: unknown) {
-  const response = await api.put<T>(url, data);
-  return response.data;
-}
+// REQUEST → attach token
+api.interceptors.request.use(
+  (config) => {
+    const token = useAuthStore.getState().token;
+    if (token) config.headers.Authorization = `Bearer ${token}`;
+    return config;
+  },
+  (err) => Promise.reject(err)
+);
 
-export async function del<T>(url: string) {
-  const response = await api.delete<T>(url);
-  return response.data;
-}
+// RESPONSE → auto-logout on 401
+api.interceptors.response.use(
+  (res) => res,
+  (err) => {
+    if (err.response?.status === 401) {
+      const logout = useAuthStore.getState().logout;
+      logout();
+      window.location.href = "/login";
+    }
+    return Promise.reject(err);
+  }
+);
+
+export default api;
