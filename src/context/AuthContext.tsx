@@ -1,64 +1,52 @@
-import {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  ReactNode,
-} from "react";
-import api from "../lib/api";
-import { getToken, logout, setRole, setToken } from "../lib/storage";
+import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
 
-interface User {
-  id: string;
-  email: string;
-  role: string;
-}
-
-interface AuthContextValue {
-  user: User | null;
+interface AuthContextType {
   token: string | null;
-  loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (token: string, role?: string) => void;
   logout: () => void;
+  isAuthenticated: boolean;
 }
 
-const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+const AUTH_TOKEN_KEY = "auth_token";
+const LEGACY_TOKEN_KEY = "bf_token";
+const ROLE_KEY = "bf_role";
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [tokenState, setTokenState] = useState<string | null>(getToken());
-  const [loading, setLoading] = useState(false);
+  const [token, setToken] = useState<string | null>(() => {
+    return localStorage.getItem(AUTH_TOKEN_KEY) || localStorage.getItem(LEGACY_TOKEN_KEY);
+  });
 
-  useEffect(() => {
-    if (tokenState) setToken(tokenState);
-    else logout();
-  }, [tokenState]);
+  const login = (newToken: string, role?: string) => {
+    localStorage.setItem(AUTH_TOKEN_KEY, newToken);
+    localStorage.setItem(LEGACY_TOKEN_KEY, newToken);
 
-  async function login(email: string, password: string) {
-    setLoading(true);
-    try {
-      const result = await api.post("/api/auth/login", { email, password });
-      const { token, role, user: userData } = result.data;
-
-      setTokenState(token);
-      if (role) setRole(role);
-      if (userData) setUser(userData);
-    } finally {
-      setLoading(false);
+    if (role) {
+      localStorage.setItem(ROLE_KEY, role);
     }
-  }
 
-  function handleLogout() {
-    setUser(null);
-    setTokenState(null);
-    logout();
-  }
+    setToken(newToken);
+  };
 
-  return (
-    <AuthContext.Provider value={{ user, token: tokenState, loading, login, logout: handleLogout }}>
-      {children}
-    </AuthContext.Provider>
+  const logout = () => {
+    localStorage.removeItem(AUTH_TOKEN_KEY);
+    localStorage.removeItem(LEGACY_TOKEN_KEY);
+    localStorage.removeItem(ROLE_KEY);
+    setToken(null);
+  };
+
+  const value = useMemo(
+    () => ({
+      token,
+      login,
+      logout,
+      isAuthenticated: Boolean(token),
+    }),
+    [token]
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
