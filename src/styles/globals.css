@@ -1,1 +1,8 @@
-/* Global styles placeholder for the staff portal. */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Global override */
+body {
+  @apply bg-gray-50 text-gray-900;
+}
