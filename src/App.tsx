@@ -1,28 +1,38 @@
-import { Routes, Route, Navigate } from "react-router-dom";
-import LoginPage from "./pages/login/LoginPage";
-import DashboardLayout from "./layouts/DashboardLayout";
+import { Navigate, Route, Routes } from "react-router-dom";
+import { isLoggedIn } from "./lib/auth";
 import AuthLayout from "./layouts/AuthLayout";
-import DashboardHome from "./pages/dashboard/DashboardHome";
-import ApplicationsPage from "./pages/dashboard/ApplicationsPage";
-import DocumentsPage from "./pages/dashboard/DocumentsPage";
-import LendersPage from "./pages/dashboard/LendersPage";
-import SettingsPage from "./pages/dashboard/SettingsPage";
+import LoginPage from "./pages/login/LoginPage";
+import { AppShell } from "./components/layout/AppShell";
+import DashboardPage from "./pages/dashboard/DashboardPage";
+
+function ProtectedRoute({ children }: { children: JSX.Element }) {
+  if (!isLoggedIn()) {
+    return <Navigate to="/login" replace />;
+  }
+  return children;
+}
 
 export default function App() {
   return (
     <Routes>
+      {/* PUBLIC AUTH ROUTE */}
       <Route path="/login" element={<AuthLayout />}>
         <Route index element={<LoginPage />} />
       </Route>
 
-      <Route path="/" element={<DashboardLayout />}>
-        <Route index element={<DashboardHome />} />
-        <Route path="applications" element={<ApplicationsPage />} />
-        <Route path="documents" element={<DocumentsPage />} />
-        <Route path="lenders" element={<LendersPage />} />
-        <Route path="settings" element={<SettingsPage />} />
-      </Route>
+      {/* PROTECTED APP ROUTES */}
+      <Route
+        path="/"
+        element={
+          <ProtectedRoute>
+            <AppShell>
+              <DashboardPage />
+            </AppShell>
+          </ProtectedRoute>
+        }
+      />
 
+      {/* CATCH-ALL → ROOT */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
