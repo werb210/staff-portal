@@ -1,17 +1,15 @@
-const TOKEN_KEY = "staff_portal_token";
-
-export function getToken() {
-  return localStorage.getItem(TOKEN_KEY);
+export function saveToken(token: string) {
+  localStorage.setItem("bf_auth", token);
 }
 
-export function setToken(token: string) {
-  localStorage.setItem(TOKEN_KEY, token);
+export function getToken() {
+  return localStorage.getItem("bf_auth");
 }
 
 export function clearToken() {
-  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem("bf_auth");
 }
 
-export function isAuthenticated() {
+export function isLoggedIn() {
   return Boolean(getToken());
 }
