@@ -1,3 +1,5 @@
+import { getToken } from "../lib/storage";
+
 export async function login(email: string, password: string): Promise<string> {
   const res = await fetch(
     `${import.meta.env.VITE_API_URL}/api/auth/login`,
@@ -18,6 +20,6 @@ export async function login(email: string, password: string): Promise<string> {
 }
 
 export function getAuthHeaders() {
-  const token = localStorage.getItem("token");
+  const token = getToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
 }

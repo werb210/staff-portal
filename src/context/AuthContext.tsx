@@ -5,7 +5,8 @@ import {
   useEffect,
   ReactNode,
 } from "react";
-import { apiPost } from "../lib/api";
+import api from "../lib/api";
+import { getToken, logout, setRole, setToken } from "../lib/storage";
 
 interface User {
   id: string;
@@ -25,34 +26,36 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(
-    localStorage.getItem("token")
-  );
+  const [tokenState, setTokenState] = useState<string | null>(getToken());
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (token) localStorage.setItem("token", token);
-    else localStorage.removeItem("token");
-  }, [token]);
+    if (tokenState) setToken(tokenState);
+    else logout();
+  }, [tokenState]);
 
   async function login(email: string, password: string) {
     setLoading(true);
     try {
-      const result = await apiPost("/api/auth/login", { email, password });
-      setToken(result.token);
-      setUser(result.user);
+      const result = await api.post("/api/auth/login", { email, password });
+      const { token, role, user: userData } = result.data;
+
+      setTokenState(token);
+      if (role) setRole(role);
+      if (userData) setUser(userData);
     } finally {
       setLoading(false);
     }
   }
 
-  function logout() {
+  function handleLogout() {
     setUser(null);
-    setToken(null);
+    setTokenState(null);
+    logout();
   }
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, token: tokenState, loading, login, logout: handleLogout }}>
       {children}
     </AuthContext.Provider>
   );

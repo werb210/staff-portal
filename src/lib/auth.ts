@@ -1,24 +1,19 @@
-const TOKEN_KEY = "token";
-const ROLE_KEY = "role";
+import { getRole, getToken, logout, setRole, setToken as setStoredToken } from "./storage";
 
-export function getToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY);
-}
+export { getToken };
 
 export function setToken(token: string) {
-  localStorage.setItem(TOKEN_KEY, token);
+  setStoredToken(token);
 }
 
 export function setUserRole(role: string) {
-  localStorage.setItem(ROLE_KEY, role);
+  setRole(role);
 }
 
 export function clearAuth() {
-  localStorage.removeItem(TOKEN_KEY);
-  localStorage.removeItem(ROLE_KEY);
+  logout();
 }
 
-// Backwards compatibility for existing imports
 export const clearToken = clearAuth;
 
 export function isAuthenticated(): boolean {
@@ -26,5 +21,5 @@ export function isAuthenticated(): boolean {
 }
 
 export function getUserRole(): string | null {
-  return localStorage.getItem(ROLE_KEY) || null;
+  return getRole();
 }
