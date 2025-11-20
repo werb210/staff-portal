@@ -1,15 +1,17 @@
-export function saveToken(token: string) {
-  localStorage.setItem("bf_token", token);
+const TOKEN_KEY = "bf_staff_token";
+
+export function getToken(): string | null {
+  return localStorage.getItem(TOKEN_KEY);
 }
 
-export function getToken() {
-  return localStorage.getItem("bf_token");
+export function setToken(token: string) {
+  localStorage.setItem(TOKEN_KEY, token);
 }
 
 export function clearToken() {
-  localStorage.removeItem("bf_token");
+  localStorage.removeItem(TOKEN_KEY);
 }
 
-export function isLoggedIn() {
+export function isLoggedIn(): boolean {
   return Boolean(getToken());
 }
