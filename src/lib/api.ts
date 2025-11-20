@@ -1,63 +1,29 @@
-import axios from "axios";
-import { API_BASE_URL } from "../config/env";
-import { getToken, clearToken } from "./auth";
+const API_BASE =
+  import.meta.env.VITE_API_URL ||
+  "https://boreal-staff-server-XXXX.azurewebsites.net";
 
-export const api = axios.create({
-  baseURL: API_BASE_URL,
-  timeout: 20000,
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
+export async function apiPost(path: string, body: any) {
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
 
-// ---------------------------
-// REQUEST: Attach token
-// ---------------------------
-api.interceptors.request.use(
-  (config) => {
-    const token = getToken();
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (err) => Promise.reject(err),
-);
-
-// ---------------------------
-// RESPONSE: Handle errors
-// ---------------------------
-api.interceptors.response.use(
-  (res) => res,
-  (err) => {
-    if (err?.response?.status === 401) {
-      clearToken();
-      window.location.href = "/login";
-    }
-
-    return Promise.reject(err);
-  },
-);
-
-// ---------------------------
-// Typed helpers
-// ---------------------------
-export async function apiGet<T>(url: string): Promise<T> {
-  const res = await api.get(url);
-  return res.data;
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || "Request failed");
+  }
+  return res.json();
 }
 
-export async function apiPost<T>(url: string, body: any): Promise<T> {
-  const res = await api.post(url, body);
-  return res.data;
-}
+export async function apiGet(path: string, token: string | null) {
+  const res = await fetch(`${API_BASE}${path}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
 
-export async function apiPut<T>(url: string, body: any): Promise<T> {
-  const res = await api.put(url, body);
-  return res.data;
-}
-
-export async function apiDelete<T>(url: string): Promise<T> {
-  const res = await api.delete(url);
-  return res.data;
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || "Request failed");
+  }
+  return res.json();
 }

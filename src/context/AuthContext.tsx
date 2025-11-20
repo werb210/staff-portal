@@ -6,53 +6,53 @@ import {
   ReactNode,
 } from "react";
 import { apiPost } from "../lib/api";
-import { setToken, clearToken, getToken } from "../lib/auth";
 
-interface AuthState {
-  user: any;
+interface User {
+  id: string;
+  email: string;
+  role: string;
+}
+
+interface AuthContextValue {
+  user: User | null;
+  token: string | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
 }
 
-const AuthContext = createContext<AuthState | null>(null);
+const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(
+    localStorage.getItem("token")
+  );
+  const [loading, setLoading] = useState(false);
 
-  // Load user from token on initial boot
   useEffect(() => {
-    const token = getToken();
-    if (!token) {
-      setLoading(false);
-      return;
-    }
-
-    // Fetch profile (Codex will add this endpoint later)
-    apiPost("/api/auth/me", {})
-      .then((data) => setUser(data.user || null))
-      .catch(() => {
-        clearToken();
-        setUser(null);
-      })
-      .finally(() => setLoading(false));
-  }, []);
+    if (token) localStorage.setItem("token", token);
+    else localStorage.removeItem("token");
+  }, [token]);
 
   async function login(email: string, password: string) {
-    const res = await apiPost("/api/auth/login", { email, password });
-    setToken(res.token);
-    setUser(res.user || null);
+    setLoading(true);
+    try {
+      const result = await apiPost("/api/auth/login", { email, password });
+      setToken(result.token);
+      setUser(result.user);
+    } finally {
+      setLoading(false);
+    }
   }
 
   function logout() {
-    clearToken();
     setUser(null);
-    window.location.href = "/login";
+    setToken(null);
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, token, loading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
@@ -60,6 +60,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth() {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("AuthContext missing");
+  if (!ctx) throw new Error("useAuth must be inside AuthProvider");
   return ctx;
 }
