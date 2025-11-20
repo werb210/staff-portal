@@ -1,35 +1,27 @@
-// src/lib/api.ts
-// Global Axios client with token injection + 401 handling
+const API_URL = import.meta.env.VITE_API_URL;
 
-import axios from "axios";
-import { useAuthStore } from "../state/authStore";
+export async function api(path: string, options: RequestInit = {}) {
+  const res = await fetch(`${API_URL}${path}`, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+    },
+  });
 
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
-  timeout: 20000,
-});
-
-// REQUEST → attach token
-api.interceptors.request.use(
-  (config) => {
-    const token = useAuthStore.getState().token;
-    if (token) config.headers.Authorization = `Bearer ${token}`;
-    return config;
-  },
-  (err) => Promise.reject(err)
-);
-
-// RESPONSE → auto-logout on 401
-api.interceptors.response.use(
-  (res) => res,
-  (err) => {
-    if (err.response?.status === 401) {
-      const logout = useAuthStore.getState().logout;
-      logout();
-      window.location.href = "/login";
-    }
-    return Promise.reject(err);
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`API ${res.status}: ${body}`);
   }
-);
 
-export default api;
+  return res.json();
+}
+
+export const backend = {
+  health: () => api("/api/_int/health"),
+  login: (data: { email: string; password: string }) =>
+    api("/api/auth/login", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+};
