@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
+import ApplicationDetailsDrawer from "../applications/ApplicationDetailsDrawer";
 import { getPipeline, moveCard } from "./PipelineService";
 import { Pipeline, PipelineCard, PipelineStage } from "./PipelineTypes";
 import PipelineCardComponent from "./PipelineCard";
@@ -32,6 +33,7 @@ function normalizePipeline(data?: Pipeline | null): Pipeline {
 export default function PipelineBoard() {
   const queryClient = useQueryClient();
   const [draggingCard, setDraggingCard] = useState<PipelineCard | null>(null);
+  const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["pipeline"],
@@ -98,35 +100,45 @@ export default function PipelineBoard() {
   }
 
   return (
-    <div className="flex gap-4 overflow-x-auto p-4">
-      {STAGES.map((stage) => (
-        <div
-          key={stage.key}
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={() => handleDrop(stage.key)}
-          className="w-80 min-w-[320px] bg-gray-50 border rounded p-4 shadow-sm"
-        >
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold">{stage.label}</h2>
-            <span className="text-xs text-gray-500">
-              {pipeline[stage.key]?.length ?? 0} card(s)
-            </span>
-          </div>
+    <div className="relative">
+      <div className="flex gap-4 overflow-x-auto p-4 pr-[540px]">
+        {STAGES.map((stage) => (
+          <div
+            key={stage.key}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={() => handleDrop(stage.key)}
+            className="w-80 min-w-[320px] bg-gray-50 border rounded p-4 shadow-sm"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold">{stage.label}</h2>
+              <span className="text-xs text-gray-500">
+                {pipeline[stage.key]?.length ?? 0} card(s)
+              </span>
+            </div>
 
-          <div className="flex flex-col gap-3">
-            {pipeline[stage.key]?.map((card) => (
-              <PipelineCardComponent
-                key={card.id}
-                card={card}
-                onDragStart={setDraggingCard}
-              />
-            ))}
-            {pipeline[stage.key]?.length === 0 && (
-              <p className="text-sm text-gray-500">No cards yet.</p>
-            )}
+            <div className="flex flex-col gap-3">
+              {pipeline[stage.key]?.map((card) => (
+                <PipelineCardComponent
+                  key={card.id}
+                  card={card}
+                  onDragStart={setDraggingCard}
+                  onOpen={setSelectedAppId}
+                />
+              ))}
+              {pipeline[stage.key]?.length === 0 && (
+                <p className="text-sm text-gray-500">No cards yet.</p>
+              )}
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
+
+      {selectedAppId && (
+        <ApplicationDetailsDrawer
+          appId={selectedAppId}
+          onClose={() => setSelectedAppId(null)}
+        />
+      )}
     </div>
   );
 }
