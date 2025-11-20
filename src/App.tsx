@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import LoginPage from "./pages/login/LoginPage";
 import DashboardLayout from "./layouts/DashboardLayout";
+import AuthLayout from "./layouts/AuthLayout";
 import DashboardHome from "./pages/dashboard/DashboardHome";
 import ApplicationsPage from "./pages/dashboard/ApplicationsPage";
 import DocumentsPage from "./pages/dashboard/DocumentsPage";
@@ -10,7 +11,9 @@ import SettingsPage from "./pages/dashboard/SettingsPage";
 export default function App() {
   return (
     <Routes>
-      <Route path="/login" element={<LoginPage />} />
+      <Route path="/login" element={<AuthLayout />}>
+        <Route index element={<LoginPage />} />
+      </Route>
 
       <Route path="/" element={<DashboardLayout />}>
         <Route index element={<DashboardHome />} />
