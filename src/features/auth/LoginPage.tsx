@@ -1,55 +1,55 @@
 import { useState } from "react";
-import { useAuth } from "../../hooks/useAuth";
+import { login } from "./api";
+import { saveAuth } from "../../lib/storage";
+import { useNavigate } from "react-router-dom";
 
 export default function LoginPage() {
-  const { login, loading, error } = useAuth();
+  const nav = useNavigate();
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [form, setForm] = useState({ email: "", password: "" });
+  const [error, setError] = useState("");
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setError("");
 
-    const ok = await login(email, password);
-    if (ok) {
-      window.location.href = "/app/dashboard";
+    try {
+      const { token, role } = await login(form);
+      saveAuth(token, role);
+      nav("/app/dashboard");
+    } catch (err: any) {
+      setError("Invalid credentials");
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 p-6">
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white p-8 rounded-xl shadow-xl w-full max-w-md space-y-6"
-      >
-        <h1 className="text-2xl font-bold text-center">Staff Portal Login</h1>
+    <div className="flex items-center justify-center min-h-screen bg-gray-100 p-8">
+      <form onSubmit={handleSubmit} className="bg-white p-8 w-full max-w-sm rounded shadow">
+        <h1 className="text-2xl font-bold mb-4">Staff Login</h1>
 
         <input
           type="email"
           placeholder="Email"
-          className="w-full px-4 py-2 border rounded-md"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          className="border p-2 w-full mb-3"
+          value={form.email}
+          onChange={(e) => setForm({ ...form, email: e.target.value })}
         />
 
         <input
           type="password"
           placeholder="Password"
-          className="w-full px-4 py-2 border rounded-md"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          className="border p-2 w-full mb-4"
+          value={form.password}
+          onChange={(e) => setForm({ ...form, password: e.target.value })}
         />
 
-        {error && (
-          <div className="text-red-600 text-sm text-center">{error}</div>
-        )}
+        {error && <p className="text-red-600 mb-3">{error}</p>}
 
         <button
           type="submit"
-          disabled={loading}
-          className="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50"
+          className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
         >
-          {loading ? "Logging in…" : "Login"}
+          Login
         </button>
       </form>
     </div>

@@ -1,42 +1,49 @@
-/**
- * Central API client with:
- * - Base URL
- * - Token injection
- * - Unified error handling
- */
+import axios from "axios";
+import { getToken, clearAuth } from "./storage";
 
-const API_URL = import.meta.env.VITE_API_URL || "https://boreal-staff-server.azurewebsites.net";
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL ?? "https://boreal-staff-server.azurewebsites.net",
+  timeout: 20000,
+});
 
-async function request(method: string, path: string, body?: any) {
-  const token = localStorage.getItem("token");
+// Attach token
+api.interceptors.request.use((config) => {
+  const token = getToken();
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
 
-  const res = await fetch(`${API_URL}${path}`, {
-    method,
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-
-  // Handle 401 → auto-logout
-  if (res.status === 401) {
-    localStorage.removeItem("token");
-    window.location.href = "/login";
-    return;
+// Handle 401
+api.interceptors.response.use(
+  (res) => res,
+  (err) => {
+    if (err.response?.status === 401) {
+      clearAuth();
+      window.location.href = "/login";
+    }
+    return Promise.reject(err);
   }
+);
 
-  if (!res.ok) {
-    const msg = await res.text();
-    throw new Error(msg || `API error: ${res.status}`);
-  }
+export default api;
+export { api };
 
-  return res.json();
+export async function apiGet<T = unknown>(path: string) {
+  const res = await api.get<T>(path);
+  return res.data;
 }
 
-export const api = {
-  get: (path: string) => request("GET", path),
-  post: (path: string, body: any) => request("POST", path, body),
-  put: (path: string, body: any) => request("PUT", path, body),
-  delete: (path: string) => request("DELETE", path),
-};
+export async function apiPost<T = unknown>(path: string, body: any) {
+  const res = await api.post<T>(path, body);
+  return res.data;
+}
+
+export async function apiPut<T = unknown>(path: string, body: any) {
+  const res = await api.put<T>(path, body);
+  return res.data;
+}
+
+export async function apiDelete<T = unknown>(path: string) {
+  const res = await api.delete<T>(path);
+  return res.data;
+}
