@@ -1,9 +1,10 @@
 import axios from "axios";
+import { API_URL } from "./env";
 import { getToken } from "./auth";
 
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "https://boreal-staff-server.azurewebsites.net",
-  withCredentials: false
+  baseURL: API_URL,
+  timeout: 20000
 });
 
 api.interceptors.request.use((config) => {
