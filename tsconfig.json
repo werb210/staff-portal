@@ -1,19 +1,16 @@
 {
+  "extends": "vite/tsconfig.node.json",
   "compilerOptions": {
     "target": "ES2020",
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "jsx": "react-jsx",
     "strict": true,
-    "esModuleInterop": true,
     "skipLibCheck": true,
-    "resolveJsonModule": true,
+    "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
-    "baseUrl": ".",
-    "paths": {
-      "@/": ["src/"]
-    }
+    "resolveJsonModule": true
   },
-  "include": ["src", "vite.config.ts"],
-  "references": []
+  "include": ["src"],
+  "exclude": ["dist", "node_modules"]
 }
