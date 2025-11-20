@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { api } from "../lib/api";
+import { clearAuth, setToken, setUserRole } from "../lib/auth";
 
 export function useAuth() {
   const [loading, setLoading] = useState(false);
@@ -11,7 +12,14 @@ export function useAuth() {
 
     try {
       const data = await api.post("/api/auth/login", { email, password });
-      localStorage.setItem("token", data.token);
+      setToken(data.token);
+      if (data.role) {
+        setUserRole(data.role);
+      }
+      // Default to staff if API does not return a role to keep navigation usable
+      if (!data.role) {
+        setUserRole("staff");
+      }
       return true;
     } catch (err: any) {
       setError(err.message || "Login failed");
@@ -22,7 +30,7 @@ export function useAuth() {
   }
 
   function logout() {
-    localStorage.removeItem("token");
+    clearAuth();
     window.location.href = "/login";
   }
 
