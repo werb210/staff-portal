@@ -25,7 +25,7 @@ export default function Login() {
   const [error, setError] = useState<string | null>(null);
 
   const redirectPath =
-    (location.state as LocationState | null)?.from?.pathname || "/app/dashboard";
+    (location.state as LocationState | null)?.from?.pathname || "/dashboard";
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

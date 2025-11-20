@@ -1,43 +1,32 @@
-import { createBrowserRouter, Navigate } from "react-router-dom";
-import ProtectedRoute from "../components/ProtectedRoute";
-import RoleGuard from "../components/RoleGuard";
+import { Suspense, lazy } from "react";
+import { Routes, Route } from "react-router-dom";
+import ProtectedRoute from "../routes/ProtectedRoute";
 
-import LoginPage from "../features/auth/LoginPage";
-import AppLayout from "../layouts/AppLayout";
-import Unauthorized from "../pages/Unauthorized";
+// Lazy-load pages for performance
+const Login = lazy(() => import("../pages/Login"));
+const Dashboard = lazy(() => import("../pages/Dashboard"));
 
-import DashboardPage from "../pages/DashboardPage";
+export default function AppRouter() {
+  return (
+    <Suspense fallback={<div className="p-6 text-center">Loading...</div>}>
+      <Routes>
 
-export const router = createBrowserRouter([
-  {
-    path: "/",
-    element: <Navigate to="/login" replace />,
-  },
-  {
-    path: "/login",
-    element: <LoginPage />,
-  },
-  {
-    path: "/unauthorized",
-    element: <Unauthorized />,
-  },
-  {
-    path: "/app",
-    element: (
-      <ProtectedRoute>
-        <AppLayout />
-      </ProtectedRoute>
-    ),
-    children: [
-      { index: true, element: <Navigate to="dashboard" replace /> },
-      {
-        path: "dashboard",
-        element: (
-          <RoleGuard allow={["admin", "staff"]}>
-            <DashboardPage />
-          </RoleGuard>
-        ),
-      },
-    ],
-  },
-]);
+        {/* PUBLIC ROUTES */}
+        <Route path="/login" element={<Login />} />
+
+        {/* PROTECTED ROUTES */}
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* DEFAULT FALLBACK → LOGIN */}
+        <Route path="*" element={<Login />} />
+      </Routes>
+    </Suspense>
+  );
+}
