@@ -1,13 +1,12 @@
-import { RouterProvider } from 'react-router-dom';
-import { router } from './router';
-import { AuthProvider } from './context/AuthContext';
+import { Routes, Route } from "react-router-dom";
+import Dashboard from "./routes/Dashboard";
+import Login from "./routes/Login";
 
-const App = () => {
+export default function App() {
   return (
-    <AuthProvider>
-      <RouterProvider router={router} />
-    </AuthProvider>
+    <Routes>
+      <Route path="/" element={<Dashboard />} />
+      <Route path="/login" element={<Login />} />
+    </Routes>
   );
-};
-
-export default App;
+}
