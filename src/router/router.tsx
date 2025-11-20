@@ -3,6 +3,7 @@ import App from "../App";
 import RoleGuard from "../components/RoleGuard";
 import LoginPage from "../features/auth/LoginPage";
 import DashboardPage from "../features/dashboard/DashboardPage";
+import PipelineModule from "../features/pipeline";
 import UnauthorizedPage from "../features/errors/UnauthorizedPage";
 import UsersModule from "../features/users";
 import ProtectedRoute from "./ProtectedRoute";
@@ -28,6 +29,14 @@ export const router = createBrowserRouter([
       {
         path: "dashboard",
         element: <DashboardPage />,
+      },
+      {
+        path: "pipeline/*",
+        element: (
+          <RoleGuard allow={["admin", "staff"]}>
+            <PipelineModule />
+          </RoleGuard>
+        ),
       },
       {
         path: "users/*",

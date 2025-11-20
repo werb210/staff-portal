@@ -22,6 +22,15 @@ export default function App() {
             Dashboard
           </NavLink>
 
+          <NavLink
+            to="/app/pipeline"
+            className={({ isActive }) =>
+              isActive ? "font-bold text-blue-600" : "text-gray-700"
+            }
+          >
+            Pipeline
+          </NavLink>
+
           {isAdmin && (
             <NavLink
               to="/app/users"
