@@ -1,4 +1,4 @@
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../lib/auth/AuthContext";
 
 export default function Topbar() {
   const { user, logout } = useAuth();
@@ -6,7 +6,7 @@ export default function Topbar() {
   return (
     <header className="h-14 bg-white border-b flex items-center justify-between px-6">
       <div className="font-medium text-gray-700">
-        Welcome{user ? `, ${user.name}` : ""}
+        Welcome{user ? `, ${user.email}` : ""}
       </div>
 
       <button
