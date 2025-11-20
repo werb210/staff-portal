@@ -1,4 +1,4 @@
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../lib/auth/AuthContext";
 
 export default function Dashboard() {
   const { logout } = useAuth();
