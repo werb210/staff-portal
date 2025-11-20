@@ -1,18 +1,22 @@
-import { createBrowserRouter } from "react-router-dom";
+import { createBrowserRouter, Navigate } from "react-router-dom";
 import App from "../App";
 import RoleGuard from "../components/RoleGuard";
-import LoginPage from "../features/auth/LoginPage";
+import Login from "../pages/Login";
+import ProtectedRoute from "../routes/ProtectedRoute";
 import DashboardPage from "../features/dashboard/DashboardPage";
 import PipelineModule from "../features/pipeline";
 import UnauthorizedPage from "../features/errors/UnauthorizedPage";
 import UsersModule from "../features/users";
-import ProtectedRoute from "./ProtectedRoute";
 import NotFoundPage from "../features/errors/NotFoundPage";
 
 export const router = createBrowserRouter([
   {
+    path: "/",
+    element: <Navigate to="/login" replace />,
+  },
+  {
     path: "/login",
-    element: <LoginPage />,
+    element: <Login />,
   },
   {
     path: "/unauthorized",
