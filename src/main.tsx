@@ -1,36 +1,18 @@
-// src/main.tsx
-
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-
+import { BrowserRouter } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import App from "./App";
 import "./index.css";
 
-import AppLayout from "./layouts/AppLayout";
-import ProtectedRoute from "./routes/ProtectedRoute";
-
-// Pages
-import LoginPage from "./pages/Login";
-import DashboardPage from "./pages/Dashboard";
+const queryClient = new QueryClient();
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <AppLayout />
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<DashboardPage />} />
-        </Route>
-      </Routes>
+      <QueryClientProvider client={queryClient}>
+        <App />
+      </QueryClientProvider>
     </BrowserRouter>
   </React.StrictMode>
 );
-
