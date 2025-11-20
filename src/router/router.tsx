@@ -1,10 +1,11 @@
 import { createBrowserRouter } from "react-router-dom";
 import App from "../App";
+import RoleGuard from "../components/RoleGuard";
 import LoginPage from "../features/auth/LoginPage";
-import ProtectedRoute from "./ProtectedRoute";
-
 import DashboardPage from "../features/dashboard/DashboardPage";
 import UnauthorizedPage from "../features/errors/UnauthorizedPage";
+import UsersModule from "../features/users";
+import ProtectedRoute from "./ProtectedRoute";
 import NotFoundPage from "../features/errors/NotFoundPage";
 
 export const router = createBrowserRouter([
@@ -27,6 +28,14 @@ export const router = createBrowserRouter([
       {
         path: "dashboard",
         element: <DashboardPage />,
+      },
+      {
+        path: "users/*",
+        element: (
+          <RoleGuard allow={["admin"]}>
+            <UsersModule />
+          </RoleGuard>
+        ),
       },
     ],
   },

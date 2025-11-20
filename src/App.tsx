@@ -1,7 +1,11 @@
 import { Outlet, NavLink } from "react-router-dom";
 import LogoutButton from "./components/LogoutButton";
+import { getRole } from "./lib/storage";
 
 export default function App() {
+  const role = getRole();
+  const isAdmin = role === "admin";
+
   return (
     <div className="min-h-screen flex flex-col">
       {/* TOP NAV */}
@@ -17,6 +21,17 @@ export default function App() {
           >
             Dashboard
           </NavLink>
+
+          {isAdmin && (
+            <NavLink
+              to="/app/users"
+              className={({ isActive }) =>
+                isActive ? "font-bold text-blue-600" : "text-gray-700"
+              }
+            >
+              Users
+            </NavLink>
+          )}
 
           <LogoutButton />
         </nav>
