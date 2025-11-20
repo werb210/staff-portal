@@ -1,7 +1,8 @@
 import { Routes, Route } from "react-router-dom";
 import LoginPage from "./pages/Login";
-import Dashboard from "./pages/Dashboard"; // or actual home page
+import Dashboard from "./pages/Dashboard";
 import { ProtectedRoute } from "./lib/auth/ProtectedRoute";
+import { Layout } from "./lib/ui/layout/Layout";
 
 export default function App() {
   return (
@@ -12,7 +13,53 @@ export default function App() {
         path="/"
         element={
           <ProtectedRoute>
-            <Dashboard />
+            <Layout>
+              <Dashboard />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/applications"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <div>Applications Page</div>
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/contacts"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <div>Contacts Page</div>
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/lenders"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <div>Lender Management</div>
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/reports"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <div>Reports Page</div>
+            </Layout>
           </ProtectedRoute>
         }
       />
