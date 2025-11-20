@@ -1,55 +1,69 @@
 import { useState } from "react";
-import { login } from "./api";
-import { saveAuth } from "../../lib/storage";
 import { useNavigate } from "react-router-dom";
+import { login } from "./LoginService";
 
 export default function LoginPage() {
   const nav = useNavigate();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [errMsg, setErrMsg] = useState("");
 
-  const [form, setForm] = useState({ email: "", password: "" });
-  const [error, setError] = useState("");
-
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
-    setError("");
+    setLoading(true);
+    setErrMsg("");
 
     try {
-      const { token, role } = await login(form);
-      saveAuth(token, role);
+      await login({ email, password });
       nav("/app/dashboard");
     } catch (err: any) {
-      setError("Invalid credentials");
+      setErrMsg(err?.response?.data?.message || "Login failed");
+    } finally {
+      setLoading(false);
     }
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100 p-8">
-      <form onSubmit={handleSubmit} className="bg-white p-8 w-full max-w-sm rounded shadow">
-        <h1 className="text-2xl font-bold mb-4">Staff Login</h1>
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-6">
+      <form
+        onSubmit={handleLogin}
+        className="w-full max-w-sm bg-white shadow p-6 rounded"
+      >
+        <h2 className="text-2xl font-bold mb-4 text-center">Staff Login</h2>
 
-        <input
-          type="email"
-          placeholder="Email"
-          className="border p-2 w-full mb-3"
-          value={form.email}
-          onChange={(e) => setForm({ ...form, email: e.target.value })}
-        />
+        <label className="block mb-3">
+          <span className="text-gray-700">Email</span>
+          <input
+            type="email"
+            className="mt-1 w-full border rounded p-2"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+        </label>
 
-        <input
-          type="password"
-          placeholder="Password"
-          className="border p-2 w-full mb-4"
-          value={form.password}
-          onChange={(e) => setForm({ ...form, password: e.target.value })}
-        />
+        <label className="block mb-4">
+          <span className="text-gray-700">Password</span>
+          <input
+            type="password"
+            className="mt-1 w-full border rounded p-2"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+        </label>
 
-        {error && <p className="text-red-600 mb-3">{error}</p>}
+        {errMsg && (
+          <p className="text-red-600 text-sm mb-4 text-center">{errMsg}</p>
+        )}
 
         <button
           type="submit"
-          className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
+          disabled={loading}
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded font-semibold"
         >
-          Login
+          {loading ? "Signing in…" : "Login"}
         </button>
       </form>
     </div>

@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
-import { clearToken } from "../../lib/auth";
+import { logout } from "../../lib/storage";
 
 type Props = {
   children: ReactNode;
@@ -10,7 +10,7 @@ export function AppShell({ children }: Props) {
   const nav = useNavigate();
 
   function handleLogout() {
-    clearToken();
+    logout();
     nav("/login");
   }
 
