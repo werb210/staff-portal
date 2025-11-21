@@ -1,11 +1,10 @@
 import { useNavigate } from "react-router-dom";
-import { Button } from "../ui/button";
-import { useAuthStore } from "../../store/useAuthStore";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/context/AuthContext";
 
-export default function Navbar() {
+export default function TopNav() {
   const navigate = useNavigate();
-  const clearAuth = useAuthStore((state) => state.clearAuth);
-  const user = useAuthStore((state) => state.user);
+  const { user, clearAuth } = useAuth();
 
   const handleLogout = () => {
     clearAuth();
