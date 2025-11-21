@@ -1,4 +1,5 @@
-// legacy – not mounted
+// LEGACY AUTH — DO NOT USE
+// Replaced by unified auth system in src/lib/auth/
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import AppRoot from "@/components/layout/AppRoot";

@@ -1,5 +1,5 @@
-// LEGACY — NOT USED. DO NOT IMPORT.
-// Router replaced by src/AppRouter.tsx
+// LEGACY AUTH — DO NOT USE
+// Replaced by unified auth system in src/lib/auth/
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import ProtectedRoute from "@/components/routing/ProtectedRoute";
 import AppRoot from "@/components/layout/AppRoot";

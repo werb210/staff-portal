@@ -1,3 +1,5 @@
+// LEGACY AUTH — DO NOT USE
+// Replaced by unified auth system in src/lib/auth/
 import axios from "axios";
 import { pushToast } from "@/components/ui/toast";
 import { useAuthStore } from "@/store/authStore";

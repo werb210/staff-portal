@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import AppRoot from "@/components/layout/AppRoot";
 import LoginPage from "@/pages/auth/LoginPage";
@@ -16,7 +16,7 @@ import OcrPage from "@/pages/ocr/OcrPage";
 import AdminPage from "@/pages/roles/AdminPage";
 import LenderPage from "@/pages/roles/LenderPage";
 import ReferrerPage from "@/pages/roles/ReferrerPage";
-import { Role, useAuthStore } from "@/store/authStore";
+import { authStore, Role } from "@/lib/auth/authStore";
 
 interface ProtectedRouteProps {
   roles?: Role[];
@@ -24,31 +24,12 @@ interface ProtectedRouteProps {
 }
 
 function ProtectedRoute({ roles, children }: ProtectedRouteProps) {
-  const loadFromStorage = useAuthStore((state) => state.loadFromStorage);
-  const { user, isAuthenticated } = useAuthStore();
-  const [checkingSession, setCheckingSession] = useState(true);
+  const { isAuthenticated, user } = authStore();
 
-  useEffect(() => {
-    let active = true;
-    (async () => {
-      await loadFromStorage();
-      if (active) setCheckingSession(false);
-    })();
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
 
-    return () => {
-      active = false;
-    };
-  }, [loadFromStorage]);
-
-  if (checkingSession) return null;
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
-
-  if (roles && (!user || !roles.includes(user.role))) {
+  if (roles && (!user || !roles.includes(user.role)))
     return <Navigate to="/dashboard" replace />;
-  }
 
   return <>{children}</>;
 }
