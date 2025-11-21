@@ -1,4 +1,4 @@
-import { http } from "@/lib/http";
+import http from "@/lib/http";
 
 export const ApplicationsAPI = {
   list: () => http.get("/api/applications"),

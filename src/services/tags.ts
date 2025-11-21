@@ -1,4 +1,4 @@
-import { http } from "@/lib/http";
+import http from "@/lib/http";
 
 export const TagsAPI = {
   list: () => http.get("/api/tags"),
