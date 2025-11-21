@@ -6,15 +6,13 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
-    strictPort: true
   },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
-    }
+    },
   },
-  build: {
-    outDir: "dist",
-    sourcemap: false
-  }
+  define: {
+    __API_URL__: JSON.stringify(process.env.VITE_API_URL),
+  },
 });
