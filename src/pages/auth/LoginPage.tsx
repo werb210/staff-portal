@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, Lock } from "lucide-react";
 import { useForm } from "react-hook-form";
@@ -9,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { useToast } from "@/components/ui/toast";
+import { login } from "@/api/auth";
 import { useAuthStore } from "@/store/useAuthStore";
 
 const loginSchema = z.object({
@@ -21,24 +22,22 @@ type LoginInput = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { addToast } = useToast();
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const form = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: "", password: "" },
   });
 
   const mutation = useMutation({
-    mutationFn: async ({ email, password }: LoginInput) => {
-      const { login } = useAuthStore.getState();
-      await login(email, password);
-    },
-    onSuccess: () => {
-      navigate("/dashboard");
-      addToast({ title: "Signed in", description: "Welcome back", variant: "success" });
+    mutationFn: async ({ email, password }: LoginInput) => login(email, password),
+    onMutate: () => setErrorMessage(null),
+    onSuccess: ({ token, user }) => {
+      useAuthStore.getState().setAuth(token, user);
+      navigate("/");
     },
     onError: (error) => {
       const message = error instanceof Error ? error.message : "Check your credentials";
-      addToast({ title: "Login failed", description: message, variant: "destructive" });
+      setErrorMessage(message);
     },
   });
 
@@ -81,6 +80,7 @@ export default function LoginPage() {
                   </FormItem>
                 )}
               />
+              {errorMessage && <p className="text-sm text-red-600">{errorMessage}</p>}
               <Button type="submit" disabled={mutation.isPending} className="w-full">
                 {mutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Sign in
               </Button>

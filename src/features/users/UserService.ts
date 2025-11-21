@@ -1,18 +1,18 @@
-import api from "@/lib/api/client";
+import http from "@/lib/http";
 import { User, CreateUserPayload, UpdateUserPayload } from "./UserTypes";
 
 export async function getUsers(): Promise<User[]> {
-  const res = await api.get("/api/users");
+  const res = await http.get("/api/users");
   return res.data;
 }
 
 export async function getUser(id: string): Promise<User> {
-  const res = await api.get(`/api/users/${id}`);
+  const res = await http.get(`/api/users/${id}`);
   return res.data;
 }
 
 export async function createUser(payload: CreateUserPayload): Promise<User> {
-  const res = await api.post("/api/users", payload);
+  const res = await http.post("/api/users", payload);
   return res.data;
 }
 
@@ -20,10 +20,10 @@ export async function updateUser(
   id: string,
   payload: UpdateUserPayload
 ): Promise<User> {
-  const res = await api.put(`/api/users/${id}`, payload);
+  const res = await http.put(`/api/users/${id}`, payload);
   return res.data;
 }
 
 export async function deleteUser(id: string): Promise<void> {
-  await api.delete(`/api/users/${id}`);
+  await http.delete(`/api/users/${id}`);
 }

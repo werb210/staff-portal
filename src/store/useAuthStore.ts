@@ -1,87 +1,56 @@
-import axios from "axios";
 import { create } from "zustand";
-import api from "@/lib/api/client";
 
-export type UserRole = "admin" | "staff" | "marketing" | "lender" | "referrer" | "user" | null;
-
-export interface AuthUser {
-  id?: string;
-  name?: string;
-  email?: string;
-  role?: UserRole | string | null;
-}
+const TOKEN_KEY = "staff_portal_token";
 
 interface AuthState {
   token: string | null;
-  user: AuthUser | null;
-  role: UserRole;
+  user: any | null;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  setAuth: (token: string, user: any) => void;
   logout: () => void;
-  loadSession: () => Promise<void>;
+  hydrate: () => Promise<void>;
 }
 
-const TOKEN_KEY = "token";
-const ROLE_KEY = "role";
+export type UserRole = "admin" | "staff" | "marketing" | "lender" | "referrer" | "user" | null;
 
-export const useAuthStore = create<AuthState>((set) => ({
-  token: localStorage.getItem(TOKEN_KEY),
-  user: null,
-  role: (localStorage.getItem(ROLE_KEY) as UserRole) ?? null,
-  isAuthenticated: Boolean(localStorage.getItem(TOKEN_KEY)),
-
-  login: async (email: string, password: string) => {
-    const response = await api.post("/api/users/login", { email, password });
-    const { token, user, role } = response.data ?? {};
-
-    if (!token) {
-      throw new Error("Missing token in login response");
-    }
-
-    localStorage.setItem(TOKEN_KEY, token);
-    if (role) {
-      localStorage.setItem(ROLE_KEY, role);
-    }
-
-    axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-
-    set({
-      token,
-      user: user ?? null,
-      role: (role as UserRole) ?? (user?.role as UserRole) ?? null,
-      isAuthenticated: true,
-    });
-  },
-
-  logout: () => {
+export const useAuthStore = create<AuthState>((set) => {
+  const setLoggedOut = () => {
     localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(ROLE_KEY);
-    delete axios.defaults.headers.common["Authorization"];
-    set({ token: null, user: null, role: null, isAuthenticated: false });
-  },
+    set({ token: null, user: null, isAuthenticated: false });
+  };
 
-  loadSession: async () => {
-    const storedToken = localStorage.getItem(TOKEN_KEY);
-    if (!storedToken) {
-      set({ token: null, user: null, role: null, isAuthenticated: false });
-      return;
-    }
+  return {
+    token: localStorage.getItem(TOKEN_KEY),
+    user: null,
+    isAuthenticated: Boolean(localStorage.getItem(TOKEN_KEY)),
 
-    axios.defaults.headers.common["Authorization"] = `Bearer ${storedToken}`;
+    setAuth: (token, user) => {
+      localStorage.setItem(TOKEN_KEY, token);
+      set({ token, user: user ?? null, isAuthenticated: true });
+    },
 
-    try {
-      const response = await api.get("/api/users/me");
-      const me = response.data?.user ?? response.data;
-      const role = (me?.role as UserRole) ?? ((localStorage.getItem(ROLE_KEY) as UserRole) ?? null);
+    logout: () => {
+      setLoggedOut();
+    },
 
-      set({ token: storedToken, user: me ?? null, role, isAuthenticated: true });
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response?.status === 401) {
-        localStorage.removeItem(TOKEN_KEY);
-        localStorage.removeItem(ROLE_KEY);
-        set({ token: null, user: null, role: null, isAuthenticated: false });
+    hydrate: async () => {
+      const storedToken = localStorage.getItem(TOKEN_KEY);
+
+      if (!storedToken) {
+        setLoggedOut();
+        return;
       }
-      throw error;
-    }
-  },
-}));
+
+      set({ token: storedToken, isAuthenticated: true });
+
+      try {
+        const { me } = await import("@/api/auth");
+        const currentUser = await me();
+
+        set({ user: currentUser ?? null, isAuthenticated: true });
+      } catch (error) {
+        setLoggedOut();
+      }
+    },
+  };
+});
