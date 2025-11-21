@@ -18,6 +18,7 @@ export interface PipelineCard {
   businessName: string;
   contactName: string;
   amountRequested: number;
+  currency?: string;
   productType: string;
   stageId: string;
   updatedAt: string;
