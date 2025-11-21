@@ -1,9 +1,9 @@
-import apiClient from "@/lib/apiClient";
+import http from "@/lib/api/http";
 
 export const UsersAPI = {
-  list: () => apiClient.get("/api/users"),
-  get: (id: string) => apiClient.get(`/api/users/${id}`),
-  create: (data: any) => apiClient.post("/api/users", data),
-  update: (id: string, data: any) => apiClient.put(`/api/users/${id}`, data),
-  remove: (id: string) => apiClient.delete(`/api/users/${id}`),
+  list: () => http.get("/api/users"),
+  get: (id: string) => http.get(`/api/users/${id}`),
+  create: (data: any) => http.post("/api/users", data),
+  update: (id: string, data: any) => http.put(`/api/users/${id}`, data),
+  remove: (id: string) => http.delete(`/api/users/${id}`),
 };

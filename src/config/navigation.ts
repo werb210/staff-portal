@@ -1,5 +1,5 @@
 import { BarChart, Building2, FileText, Home, Landmark, Megaphone, Settings, Shield, Users, Workflow } from "lucide-react";
-import { Role } from "@/store/authStore";
+import { Role } from "@/lib/auth/authStore";
 
 export interface NavItem {
   label: string;

@@ -1,4 +1,5 @@
-// legacy – not consumed by active auth system
+// LEGACY AUTH — DO NOT USE
+// Replaced by unified auth system in src/lib/auth/
 import { create } from "zustand";
 import { AuthAPI } from "@/services/auth";
 import { TOKEN_STORAGE_KEY, setUnauthorizedHandler } from "@/lib/http";
