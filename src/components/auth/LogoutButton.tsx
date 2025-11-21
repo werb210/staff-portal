@@ -1,20 +1,10 @@
-import { useAuth } from "@/context/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useAuthStore } from "@/store/auth";
 
 export default function LogoutButton() {
-  const { logout } = useAuth();
-  const navigate = useNavigate();
-
-  function handleLogout() {
-    logout();
-    navigate("/login");
-  }
+  const logout = useAuthStore((state) => state.logout);
 
   return (
-    <button
-      onClick={handleLogout}
-      className="text-sm text-red-500 hover:underline"
-    >
+    <button onClick={() => logout()} className="text-sm text-red-500 hover:underline">
       Logout
     </button>
   );

@@ -1,22 +1,44 @@
-import { useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/context/AuthContext";
+import { useAuthStore } from "@/store/auth";
+
+const ROLE_REDIRECTS: Record<string, string> = {
+  admin: "/admin",
+  staff: "/dashboard",
+  lender: "/lender",
+  referrer: "/referrer",
+};
 
 export default function LoginPage() {
-  const { login } = useAuth();
+  const login = useAuthStore((state) => state.login);
+  const role = useAuthStore((state) => state.role);
+  const token = useAuthStore((state) => state.token);
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  async function handleSubmit(e: any) {
+  const destination = useMemo(() => {
+    if (!role) return null;
+    const normalized = role.toLowerCase?.() ?? role;
+    return ROLE_REDIRECTS[normalized] ?? "/dashboard";
+  }, [role]);
+
+  useEffect(() => {
+    if (token && destination) {
+      navigate(destination, { replace: true });
+    }
+  }, [destination, navigate, token]);
+
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError("");
 
     try {
-      await login(email, password);
-      navigate("/");
+      const userRole = (await login(email, password))?.toLowerCase?.();
+      const redirectPath = userRole ? ROLE_REDIRECTS[userRole] ?? "/dashboard" : "/dashboard";
+      navigate(redirectPath, { replace: true });
     } catch (err: any) {
       setError(err?.response?.data?.message || "Login failed");
     }
