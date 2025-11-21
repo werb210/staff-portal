@@ -2,15 +2,15 @@ import { create } from "zustand";
 import { AuthAPI } from "@/services/auth";
 import { TOKEN_STORAGE_KEY, setUnauthorizedHandler } from "@/lib/http";
 
+export type Role = "admin" | "staff" | "lender" | "referrer" | null;
+
 export type AuthUser = {
   id: string;
   email: string;
-  role: string;
+  role: Role;
   name?: string;
   [key: string]: unknown;
 };
-
-export type Role = string | null;
 
 type AuthState = {
   token: string | null;
@@ -84,7 +84,8 @@ export const useAuthStore = create<AuthState>((set, get) => {
         const response = await AuthAPI.me();
         const user = (response as any).user ?? response;
         const role = (response as any).role ?? user?.role ?? null;
-        const normalizedRole = typeof role === "string" ? role.toLowerCase() : role;
+        const normalizedRole =
+          typeof role === "string" ? (role.toLowerCase() as Exclude<Role, null>) : role;
         set({ user: user ?? null, role: normalizedRole ?? null });
       } catch (error: any) {
         if (error?.response?.status === 401) {

@@ -1,6 +1,6 @@
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { createBrowserRouter, Navigate } from "react-router-dom";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
-import Layout from "@/components/layout/Layout";
+import AppRoot from "@/components/layout/AppRoot";
 import LoginPage from "@/pages/auth/LoginPage";
 import CompaniesPage from "@/pages/companies/CompaniesPage";
 import ContactsPage from "@/pages/contacts/ContactsPage";
@@ -10,35 +10,102 @@ import NotFoundPage from "@/pages/errors/NotFoundPage";
 import AdminPage from "@/pages/roles/AdminPage";
 import LenderPage from "@/pages/roles/LenderPage";
 import ReferrerPage from "@/pages/roles/ReferrerPage";
+import { Role, useAuthStore } from "@/store/auth";
 
-export default function AppRouter() {
-  return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
+function HomeRedirect() {
+  const token = useAuthStore((state) => state.token);
+  const role = useAuthStore((state) => state.role);
 
-        <Route element={<ProtectedRoute />}>
-          <Route element={<Layout />}>
-            <Route index element={<Navigate to="/dashboard" replace />} />
-            <Route path="dashboard" element={<DashboardPage />} />
-            <Route path="contacts" element={<ContactsPage />} />
-            <Route path="companies" element={<CompaniesPage />} />
-            <Route path="deals" element={<DealsPage />} />
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
 
-            <Route element={<ProtectedRoute role="admin" />}>
-              <Route path="admin" element={<AdminPage />} />
-            </Route>
-            <Route element={<ProtectedRoute role="lender" />}>
-              <Route path="lender" element={<LenderPage />} />
-            </Route>
-            <Route element={<ProtectedRoute role="referrer" />}>
-              <Route path="referrer" element={<ReferrerPage />} />
-            </Route>
-          </Route>
-        </Route>
+  if (role === "lender") return <Navigate to="/lender" replace />;
+  if (role === "referrer") return <Navigate to="/referrer" replace />;
 
-        <Route path="*" element={<NotFoundPage />} />
-      </Routes>
-    </BrowserRouter>
-  );
+  return <Navigate to="/dashboard" replace />;
 }
+
+function RoleProtected({ roles }: { roles: Exclude<Role, null>[] }) {
+  return <ProtectedRoute roles={roles} />;
+}
+
+export const router = createBrowserRouter([
+  {
+    path: "/login",
+    element: <LoginPage />,
+  },
+  {
+    element: <ProtectedRoute />,
+    children: [
+      {
+        element: <AppRoot />,
+        children: [
+          {
+            index: true,
+            element: <HomeRedirect />,
+          },
+          {
+            path: "dashboard",
+            element: <RoleProtected roles={["admin", "staff"]} />,
+            children: [{ index: true, element: <DashboardPage /> }],
+          },
+          {
+            path: "pipeline",
+            element: <RoleProtected roles={["admin", "staff"]} />,
+            children: [{ index: true, element: <DealsPage /> }],
+          },
+          {
+            path: "contacts",
+            element: <RoleProtected roles={["admin", "staff"]} />,
+            children: [{ index: true, element: <ContactsPage /> }],
+          },
+          {
+            path: "companies",
+            element: <RoleProtected roles={["admin", "staff"]} />,
+            children: [{ index: true, element: <CompaniesPage /> }],
+          },
+          {
+            path: "deals",
+            element: <RoleProtected roles={["admin", "staff"]} />,
+            children: [{ index: true, element: <DealsPage /> }],
+          },
+          {
+            path: "documents",
+            element: <RoleProtected roles={["admin", "staff"]} />,
+            children: [{ index: true, element: <DealsPage /> }],
+          },
+          {
+            path: "marketing",
+            element: <RoleProtected roles={["admin", "staff"]} />,
+            children: [{ index: true, element: <DashboardPage /> }],
+          },
+          {
+            path: "analytics",
+            element: <RoleProtected roles={["admin", "staff"]} />,
+            children: [{ index: true, element: <DashboardPage /> }],
+          },
+          {
+            path: "admin",
+            element: <RoleProtected roles={["admin"]} />,
+            children: [{ index: true, element: <AdminPage /> }],
+          },
+          {
+            path: "lender",
+            element: <RoleProtected roles={["lender"]} />,
+            children: [{ index: true, element: <LenderPage /> }],
+          },
+          {
+            path: "referrer",
+            element: <RoleProtected roles={["referrer"]} />,
+            children: [{ index: true, element: <ReferrerPage /> }],
+          },
+        ],
+      },
+    ],
+  },
+  {
+    path: "*",
+    element: <NotFoundPage />,
+  },
+]);

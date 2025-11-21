@@ -1,12 +1,13 @@
 import { useEffect } from "react";
 import { Navigate, Outlet } from "react-router-dom";
-import { useAuthStore } from "@/store/auth";
+import { Role, useAuthStore } from "@/store/auth";
 
 type ProtectedRouteProps = {
-  role?: string;
+  role?: Exclude<Role, null>;
+  roles?: Exclude<Role, null>[];
 };
 
-export default function ProtectedRoute({ role }: ProtectedRouteProps) {
+export default function ProtectedRoute({ role, roles }: ProtectedRouteProps) {
   const token = useAuthStore((state) => state.token);
   const user = useAuthStore((state) => state.user);
   const userRole = useAuthStore((state) => state.role);
@@ -39,7 +40,9 @@ export default function ProtectedRoute({ role }: ProtectedRouteProps) {
     return <Navigate to="/login" replace />;
   }
 
-  if (role && userRole && role !== userRole) {
+  const allowedRoles = roles ?? (role ? [role] : undefined);
+
+  if (allowedRoles && (!userRole || !allowedRoles.includes(userRole))) {
     return <Navigate to="/" replace />;
   }
 
