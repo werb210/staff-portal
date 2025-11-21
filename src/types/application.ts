@@ -10,3 +10,11 @@ export interface Application {
 export interface ApplicationListResponse {
   items: Application[];
 }
+
+export interface PagedApplicationsResponse {
+  items: Application[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}

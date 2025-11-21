@@ -5,6 +5,7 @@ import {
   getSortedRowModel,
   useReactTable,
   ColumnDef,
+  SortingState,
 } from "@tanstack/react-table";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -14,14 +15,16 @@ interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
   filterColumn?: keyof TData;
+  enablePagination?: boolean;
 }
 
 export function DataTable<TData, TValue>({
   columns,
   data,
   filterColumn,
+  enablePagination = true,
 }: DataTableProps<TData, TValue>) {
-  const [sorting, setSorting] = useState([]);
+  const [sorting, setSorting] = useState<SortingState>([]);
   const [filter, setFilter] = useState("");
 
   const table = useReactTable({
@@ -33,7 +36,7 @@ export function DataTable<TData, TValue>({
     onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
+    getPaginationRowModel: enablePagination ? getPaginationRowModel() : undefined,
   });
 
   return (
@@ -94,23 +97,25 @@ export function DataTable<TData, TValue>({
         </Table>
       </div>
 
-      <div className="flex items-center justify-end space-x-2 py-2">
-        <button
-          className="border rounded px-3 py-1 disabled:opacity-50"
-          onClick={() => table.previousPage()}
-          disabled={!table.getCanPreviousPage()}
-        >
-          Prev
-        </button>
+      {enablePagination && (
+        <div className="flex items-center justify-end space-x-2 py-2">
+          <button
+            className="border rounded px-3 py-1 disabled:opacity-50"
+            onClick={() => table.previousPage()}
+            disabled={!table.getCanPreviousPage()}
+          >
+            Prev
+          </button>
 
-        <button
-          className="border rounded px-3 py-1 disabled:opacity-50"
-          onClick={() => table.nextPage()}
-          disabled={!table.getCanNextPage()}
-        >
-          Next
-        </button>
-      </div>
+          <button
+            className="border rounded px-3 py-1 disabled:opacity-50"
+            onClick={() => table.nextPage()}
+            disabled={!table.getCanNextPage()}
+          >
+            Next
+          </button>
+        </div>
+      )}
     </div>
   );
 }
