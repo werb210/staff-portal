@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import LoadingState from "@/components/states/LoadingState";
 import ErrorState from "@/components/states/ErrorState";
-import http from "@/lib/http";
+import api from "@/lib/api";
 import CompanyDrawer from "./CompanyDrawer";
 
 interface Company {
@@ -33,7 +33,7 @@ export default function CompaniesPage() {
   const companiesQuery = useQuery({
     queryKey: ["companies", { search }],
     queryFn: async () => {
-      const res = await http.get<CompanyResponse>("/api/companies", { params: { search } });
+      const res = await api.get<CompanyResponse>("/api/companies", { params: { search } });
       return res.data;
     },
   });

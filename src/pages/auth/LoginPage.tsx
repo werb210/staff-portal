@@ -1,27 +1,53 @@
 import { useState } from "react";
-import api from "@/lib/http";
-import { useAuthStore } from "@/store/useAuthStore";
+import { useAuth } from "@/context/AuthContext";
 
 export default function LoginPage() {
-  const setAuth = useAuthStore((s) => s.setAuth);
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [err, setErr] = useState("");
 
-  async function handleLogin(e) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
-    const res = await api.post("/api/users/login", { email, password });
-    const { token, user } = res.data;
-
-    setAuth(token, user);
-    window.location.href = "/";
+    setErr("");
+    try {
+      await login(email, password);
+    } catch {
+      setErr("Invalid email or password");
+    }
   }
 
   return (
-    <div className="p-6 max-w-sm mx-auto">
-      <form onSubmit={handleLogin} className="space-y-4">
-        <input className="input" placeholder="Email" onChange={(e) => setEmail(e.target.value)} />
-        <input className="input" type="password" placeholder="Password" onChange={(e) => setPassword(e.target.value)} />
-        <button className="btn btn-primary w-full">Login</button>
+    <div className="w-full h-screen flex items-center justify-center bg-gray-100">
+      <form
+        onSubmit={submit}
+        className="bg-white p-6 rounded shadow w-96 flex flex-col gap-4"
+      >
+        <h1 className="text-xl font-bold text-center">Login</h1>
+
+        {err && <p className="text-red-600 text-center">{err}</p>}
+
+        <input
+          className="border p-2 rounded"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+
+        <input
+          className="border p-2 rounded"
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+
+        <button
+          type="submit"
+          className="bg-blue-600 text-white p-2 rounded hover:bg-blue-700"
+        >
+          Login
+        </button>
       </form>
     </div>
   );

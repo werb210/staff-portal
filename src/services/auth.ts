@@ -1,4 +1,4 @@
-import http from "@/lib/http";
+import api from "@/lib/api";
 
 export type LoginPayload = {
   email: string;
@@ -6,12 +6,12 @@ export type LoginPayload = {
 };
 
 async function login(payload: LoginPayload) {
-  const response = await http.post("/api/users/login", payload);
+  const response = await api.post("/api/auth/login", payload);
   return response.data as { token: string; role: string; email: string; user: Record<string, unknown> };
 }
 
 async function me() {
-  const response = await http.get("/api/users/me");
+  const response = await api.get("/api/auth/me");
   return response.data;
 }
 

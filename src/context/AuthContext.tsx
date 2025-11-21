@@ -1,71 +1,64 @@
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode,
-} from "react";
-import { AuthUser, useAuthStore } from "@/store/useAuthStore";
+import { createContext, useContext, useEffect, useState } from "react";
+import api from "@/lib/api";
 
-type AuthContextValue = {
-  user: AuthUser | null;
-  token: string | null;
-  loading: boolean;
-  setAuth: (token: string, user: AuthUser) => void;
-  clearAuth: () => void;
+type User = {
+  id: string;
+  email: string;
+  role: string;
 };
 
-const AuthContext = createContext<AuthContextValue | null>(null);
+type AuthContextType = {
+  user: User | null;
+  loading: boolean;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => void;
+};
 
-export default function AuthProvider({ children }: { children: ReactNode }) {
-  const { user, token, isReady, setAuth, clearAuth } = useAuthStore();
-  const initialHydrated = useAuthStore.persist.hasHydrated?.() ?? true;
-  const [hydrating, setHydrating] = useState(!initialHydrated);
-
-  useEffect(() => {
-    const markReady = () => {
-      useAuthStore.setState({ isReady: true });
-      setHydrating(false);
-    };
-
-    if (useAuthStore.persist.hasHydrated?.() ?? false) {
-      markReady();
-      return;
-    }
-
-    const unsubFinish = useAuthStore.persist.onFinishHydration?.(() => {
-      markReady();
-    });
-
-    if (!useAuthStore.persist.hasHydrated) {
-      markReady();
-      return unsubFinish;
-    }
-
-    useAuthStore.persist.rehydrate?.();
-
-    return () => {
-      unsubFinish?.();
-    };
-  }, []);
-
-  const loading = hydrating || !isReady;
-
-  const value = useMemo(
-    () => ({ user, token, loading, setAuth, clearAuth }),
-    [user, token, loading, setAuth, clearAuth]
-  );
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
+const AuthContext = createContext<AuthContextType>({
+  user: null,
+  loading: true,
+  login: async () => {},
+  logout: () => {},
+});
 
 export function useAuth() {
-  const context = useContext(AuthContext);
+  return useContext(AuthContext);
+}
 
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
+export default function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  async function loadSession() {
+    try {
+      const res = await api.get("/api/auth/me");
+      setUser(res.data.user);
+    } catch {
+      setUser(null);
+    }
+    setLoading(false);
   }
 
-  return context;
+  async function login(email: string, password: string) {
+    const res = await api.post("/api/auth/login", { email, password });
+    localStorage.setItem("token", res.data.token);
+    await loadSession();
+    window.location.href = "/";
+  }
+
+  function logout() {
+    localStorage.removeItem("token");
+    setUser(null);
+    window.location.href = "/login";
+  }
+
+  useEffect(() => {
+    loadSession();
+  }, []);
+
+  return (
+    <AuthContext.Provider value={{ user, loading, login, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
 }

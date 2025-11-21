@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/data-table/DataTable";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import http from "@/lib/http";
+import api from "@/lib/api";
 import LoadingState from "@/components/states/LoadingState";
 import ErrorState from "@/components/states/ErrorState";
 import ContactDrawer from "./ContactDrawer";
@@ -57,7 +57,7 @@ export default function ContactsPage() {
   const contactsQuery = useQuery({
     queryKey: ["contacts", { page, pageSize, search, status }],
     queryFn: async () => {
-      const res = await http.get<ContactResponse>("/api/contacts", {
+      const res = await api.get<ContactResponse>("/api/contacts", {
         params: { page, pageSize, search, status: status || undefined },
       });
       return res.data;
@@ -67,20 +67,20 @@ export default function ContactsPage() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      await http.delete(`/api/contacts/${id}`);
+      await api.delete(`/api/contacts/${id}`);
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["contacts"] }),
   });
 
   const mergeMutation = useMutation({
     mutationFn: async (ids: string[]) => {
-      await http.post("/api/contacts/merge", { ids });
+      await api.post("/api/contacts/merge", { ids });
     },
   });
 
   const assignMutation = useMutation({
     mutationFn: async ({ contactId, companyId }: { contactId: string; companyId: string }) => {
-      await http.post(`/api/contacts/${contactId}/assign`, { companyId });
+      await api.post(`/api/contacts/${contactId}/assign`, { companyId });
     },
   });
 
@@ -92,11 +92,11 @@ export default function ContactsPage() {
   const saveMutation = useMutation({
     mutationFn: async (values: z.infer<typeof contactSchema>) => {
       if (mode === "create") {
-        const res = await http.post<Contact>("/api/contacts", values);
+        const res = await api.post<Contact>("/api/contacts", values);
         return res.data;
       }
       if (!selected) throw new Error("No contact selected");
-      const res = await http.patch<Contact>(`/api/contacts/${selected.id}`, values);
+      const res = await api.patch<Contact>(`/api/contacts/${selected.id}`, values);
       return res.data;
     },
     onSuccess: () => {

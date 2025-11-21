@@ -1,13 +1,13 @@
 import { useNavigate } from "react-router-dom";
 
-import { useAuthStore } from "@/store/useAuthStore";
+import { useAuth } from "@/context/AuthContext";
 
 export default function LogoutButton() {
   const nav = useNavigate();
-  const clearAuth = useAuthStore((state) => state.clearAuth);
+  const { logout } = useAuth();
 
   function handleLogout() {
-    clearAuth();
+    logout();
     nav("/login");
   }
 

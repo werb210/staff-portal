@@ -1,19 +1,19 @@
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { filterByRole } from "@/config/navigation";
-import { useAuthStore } from "@/store/useAuthStore";
+import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
 import { ChevronLeft, ChevronRight, Menu } from "lucide-react";
 
 export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const navigate = useNavigate();
-  const role = useAuthStore((s) => s.user?.role ?? null);
-  const clearAuth = useAuthStore((s) => s.clearAuth);
+  const { user, logout } = useAuth();
+  const role = user?.role ?? null;
   const items = filterByRole(role);
 
   const handleLogout = () => {
-    clearAuth();
+    logout();
     navigate("/login", { replace: true });
   };
 
