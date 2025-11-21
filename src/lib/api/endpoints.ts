@@ -4,16 +4,15 @@ import api from "./client";
 export const AuthAPI = {
   login: (data: { email: string; password: string }) =>
     api.post("/api/auth/login", data),
-  me: () => api.get("/api/auth/me"),
 };
 
 // CONTACTS
 export const ContactsAPI = {
-  list: () => api.get("/api/contacts"),
-  get: (id: string) => api.get(`/api/contacts/${id}`),
-  create: (data: any) => api.post("/api/contacts", data),
-  update: (id: string, data: any) => api.put(`/api/contacts/${id}`, data),
-  remove: (id: string) => api.delete(`/api/contacts/${id}`),
+  list: (params?: any) => api.get("/api/crm/contacts", { params }),
+  get: (id: string) => api.get(`/api/crm/contacts/${id}`),
+  create: (data: any) => api.post("/api/crm/contacts", data),
+  update: (id: string, data: any) => api.patch(`/api/crm/contacts/${id}`, data),
+  remove: (id: string) => api.delete(`/api/crm/contacts/${id}`),
 };
 
 // COMPANIES

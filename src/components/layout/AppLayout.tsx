@@ -1,7 +1,8 @@
+import { Outlet } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import TopNav from "./TopNav";
 
-export default function AppLayout({ children }: { children: React.ReactNode }) {
+export default function AppLayout({ children }: { children?: React.ReactNode }) {
   return (
     <div className="min-h-screen flex bg-gray-50">
       <Sidebar />
@@ -9,9 +10,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <div className="flex-1 flex flex-col">
         <TopNav />
 
-        <main className="flex-1 p-6">
-          {children}
-        </main>
+        <main className="flex-1 p-6">{children ?? <Outlet />}</main>
       </div>
     </div>
   );

@@ -1,12 +1,25 @@
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useNavigate, useLocation } from "react-router-dom";
 import { loginSchema, LoginInput } from "./loginSchema";
 import { useLogin } from "./useLogin";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
+import { useAuthStore } from "@/lib/auth/useAuthStore";
+
+const ROLE_REDIRECT: Record<string, string> = {
+  Admin: "/admin",
+  Staff: "/pipeline",
+  Lender: "/lender",
+  Referrer: "/referrer",
+};
 
 export default function LoginPage() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { token, user } = useAuthStore();
   const form = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -17,8 +30,22 @@ export default function LoginPage() {
 
   const login = useLogin();
 
+  useEffect(() => {
+    if (token && user?.role) {
+      const fallback = "/pipeline";
+      navigate(ROLE_REDIRECT[user.role] ?? fallback, { replace: true });
+    }
+  }, [navigate, token, user]);
+
   function submit(values: LoginInput) {
-    login.mutate(values);
+    login.mutate(values, {
+      onSuccess: (result) => {
+        const role = result.role;
+        const redirectTo = ROLE_REDIRECT[role] ?? "/pipeline";
+        const from = (location.state as any)?.from?.pathname;
+        navigate(from || redirectTo, { replace: true });
+      },
+    });
   }
 
   return (

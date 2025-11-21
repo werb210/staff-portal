@@ -5,6 +5,14 @@ export type PipelineStage =
   | "submitted"
   | "funded";
 
+export type DocumentStatus = "accepted" | "rejected" | "pending" | "missing";
+
+export interface PipelineDocument {
+  id: string;
+  name: string;
+  status: DocumentStatus;
+}
+
 export interface PipelineCard {
   id: string;
   applicationId: string;
@@ -14,6 +22,7 @@ export interface PipelineCard {
   productType: string;
   stage: PipelineStage;
   updatedAt: string;
+  documents?: PipelineDocument[];
 }
 
 export type Pipeline = Record<PipelineStage, PipelineCard[]>;

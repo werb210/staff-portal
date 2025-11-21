@@ -1,10 +1,12 @@
 import { useState } from "react";
-import { api } from "../lib/api";
-import { clearAuth, setToken, setUserRole } from "../lib/auth";
+import api from "../lib/api/client";
+import { useAuthStore } from "../lib/auth/useAuthStore";
 
 export function useAuth() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const setAuth = useAuthStore((s) => s.setAuth);
+  const logoutStore = useAuthStore((s) => s.logout);
 
   async function login(email: string, password: string) {
     setLoading(true);
@@ -12,14 +14,7 @@ export function useAuth() {
 
     try {
       const { data } = await api.post("/api/auth/login", { email, password });
-      setToken(data.token);
-      if (data.role) {
-        setUserRole(data.role);
-      }
-      // Default to staff if API does not return a role to keep navigation usable
-      if (!data.role) {
-        setUserRole("staff");
-      }
+      setAuth(data.token, data.role, data.email);
       return true;
     } catch (err: any) {
       setError(err.message || "Login failed");
@@ -30,7 +25,7 @@ export function useAuth() {
   }
 
   function logout() {
-    clearAuth();
+    logoutStore();
     window.location.href = "/login";
   }
 

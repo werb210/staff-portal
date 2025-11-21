@@ -10,7 +10,7 @@ export async function moveCard(
   cardId: string,
   toStage: PipelineStage
 ): Promise<void> {
-  await api.post("/api/pipeline/move", {
+  await api.patch("/api/pipeline/move", {
     cardId,
     stage: toStage,
   });

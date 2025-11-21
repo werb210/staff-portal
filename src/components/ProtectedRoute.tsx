@@ -1,9 +1,3 @@
-import { Navigate } from "react-router-dom";
-import { isAuthenticated } from "../lib/auth";
+import { ProtectedRoute as BaseProtectedRoute } from "@/lib/auth/ProtectedRoute";
 
-export default function ProtectedRoute({ children }: { children: JSX.Element }) {
-  if (!isAuthenticated()) {
-    return <Navigate to="/login" replace />;
-  }
-  return children;
-}
+export default BaseProtectedRoute;
