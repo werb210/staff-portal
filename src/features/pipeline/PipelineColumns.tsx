@@ -3,27 +3,22 @@ import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import PipelineCardComponent from "./PipelineCard";
 import { Pipeline, PipelineCard, PipelineStage } from "./PipelineTypes";
 
-interface ColumnMeta {
-  key: PipelineStage;
-  label: string;
-}
-
 interface Props {
   pipeline: Pipeline;
-  stages: ColumnMeta[];
-  onOpen: (applicationId: string, stage: PipelineStage) => void;
+  stages: PipelineStage[];
+  onOpen: (applicationId: string, stage: string) => void;
 }
 
 export default function PipelineColumns({ pipeline, stages, onOpen }: Props) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-4 overflow-x-auto p-4">
       {stages.map((stage) => {
-        const { setNodeRef, isOver } = useDroppable({ id: stage.key, data: { stage: stage.key } });
-        const cards = pipeline[stage.key] ?? [];
+        const { setNodeRef, isOver } = useDroppable({ id: stage.id, data: { stage: stage.id } });
+        const cards = pipeline[stage.id] ?? [];
 
         return (
           <div
-            key={stage.key}
+            key={stage.id}
             ref={setNodeRef}
             className={`bg-gray-50 border rounded p-4 shadow-sm min-h-[240px] flex flex-col gap-3 transition-colors ${
               isOver ? "border-blue-400 bg-blue-50" : "border-slate-200"
@@ -31,7 +26,7 @@ export default function PipelineColumns({ pipeline, stages, onOpen }: Props) {
           >
             <div className="flex items-center justify-between mb-2">
               <div>
-                <p className="text-lg font-semibold">{stage.label}</p>
+                <p className="text-lg font-semibold">{stage.name}</p>
                 <p className="text-xs text-slate-500">{cards.length} card(s)</p>
               </div>
             </div>
@@ -45,7 +40,7 @@ export default function PipelineColumns({ pipeline, stages, onOpen }: Props) {
                   <PipelineCardComponent
                     key={card.id}
                     card={card}
-                    onOpen={(id) => onOpen(id, stage.key)}
+                    onOpen={(id) => onOpen(id, stage.id)}
                   />
                 ))}
                 {cards.length === 0 && (

@@ -1,11 +1,7 @@
-export type PipelineStage =
-  | "new"
-  | "requires_docs"
-  | "reviewing"
-  | "ready_for_lenders"
-  | "sent_to_lenders"
-  | "funded"
-  | "closed_withdrawn";
+export interface PipelineStage {
+  id: string;
+  name: string;
+}
 
 export type DocumentStatus = "accepted" | "rejected" | "pending" | "missing";
 
@@ -22,7 +18,7 @@ export interface PipelineCard {
   contactName: string;
   amountRequested: number;
   productType: string;
-  stage: PipelineStage;
+  stageId: string;
   updatedAt: string;
   documents?: PipelineDocument[];
   documentCompletion?: number;
@@ -36,4 +32,4 @@ export interface PipelineCard {
   hasBankingAnomalies?: boolean;
 }
 
-export type Pipeline = Record<PipelineStage, PipelineCard[]>;
+export type Pipeline = Record<string, PipelineCard[]>;

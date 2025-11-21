@@ -1,145 +1,124 @@
 import { DndContext, DragEndEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { arrayMove, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { useMemo, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueries, useQueryClient, UseQueryResult } from "@tanstack/react-query";
 import ApplicationDrawer from "../applications/ApplicationDrawer";
 import LoadingState from "@/components/states/LoadingState";
 import ErrorState from "@/components/states/ErrorState";
-import { getPipeline, moveCard } from "./PipelineService";
-import { Pipeline, PipelineCard, PipelineStage } from "./PipelineTypes";
 import PipelineColumns from "./PipelineColumns";
 import { useToast } from "@/components/ui/toast";
-
-const STAGES: { key: PipelineStage; label: string }[] = [
-  { key: "new", label: "New" },
-  { key: "requires_docs", label: "Requires Docs" },
-  { key: "reviewing", label: "Reviewing" },
-  { key: "ready_for_lenders", label: "Ready for Lenders" },
-  { key: "sent_to_lenders", label: "Sent to Lenders" },
-  { key: "funded", label: "Funded" },
-  { key: "closed_withdrawn", label: "Closed / Withdrawn" },
-];
-
-const EMPTY_PIPELINE: Pipeline = {
-  new: [],
-  requires_docs: [],
-  reviewing: [],
-  ready_for_lenders: [],
-  sent_to_lenders: [],
-  funded: [],
-  closed_withdrawn: [],
-};
-
-function normalizePipeline(data?: Pipeline | null): Pipeline {
-  if (!data) return EMPTY_PIPELINE;
-
-  return STAGES.reduce<Pipeline>((acc, stage) => {
-    acc[stage.key] = data[stage.key] ?? [];
-    return acc;
-  }, { ...EMPTY_PIPELINE });
-}
+import { Pipeline, PipelineCard } from "./PipelineTypes";
+import { useMoveApplication, usePipelineStages } from "./PipelineService";
+import { getApplicationsByStage } from "@/lib/api";
 
 export default function PipelineBoard() {
   const queryClient = useQueryClient();
   const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
-  const [selectedStage, setSelectedStage] = useState<PipelineStage | undefined>();
+  const [selectedStage, setSelectedStage] = useState<string | undefined>();
   const { addToast } = useToast();
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
-  const { data, isLoading, isError, error, refetch } = useQuery({
-    queryKey: ["pipeline"],
-    queryFn: getPipeline,
-    refetchInterval: 10000,
-  });
+  const stagesQuery = usePipelineStages();
 
-  const pipeline = useMemo(() => normalizePipeline(data), [data]);
+  const applicationQueries = useQueries({
+    queries: (stagesQuery.data ?? []).map((stage) => ({
+      queryKey: ["stage-applications", stage.id],
+      queryFn: () => getApplicationsByStage(stage.id),
+      refetchInterval: 10000,
+      onError: (error: unknown) => {
+        const message = error instanceof Error ? error.message : "Unable to load applications";
+        addToast({
+          title: "Unable to load applications",
+          description: message,
+          variant: "destructive",
+        });
+      },
+    })),
+  }) as UseQueryResult<PipelineCard[], Error>[];
 
-  const moveMutation = useMutation({
-    mutationFn: ({
-      appId,
-      fromStage,
-      toStage,
-      positionIndex,
-    }: {
-      appId: string;
-      fromStage: PipelineStage;
-      toStage: PipelineStage;
-      positionIndex: number;
-    }) => moveCard(appId, fromStage, toStage, positionIndex),
-    onSuccess: () => {
-      addToast({ title: "Move saved", description: "Pipeline updated", variant: "success" });
-    },
-    onError: () => {
-      addToast({ title: "Failed to move", description: "Reverting position", variant: "destructive" });
-    },
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ["pipeline"] }),
-  });
+  const pipeline = useMemo(() => {
+    if (!stagesQuery.data) return {} as Pipeline;
 
-  function findStageForCard(cardId: string, state: Pipeline): PipelineStage | null {
-    const stage = STAGES.find(({ key }) => state[key]?.some((c) => c.id === cardId));
-    return stage?.key ?? null;
+    return stagesQuery.data.reduce<Pipeline>((acc, stage, idx) => {
+      const cards = applicationQueries[idx]?.data ?? [];
+      acc[stage.id] = cards.map((card) => ({ ...card, stageId: card.stageId ?? stage.id }));
+      return acc;
+    }, {} as Pipeline);
+  }, [applicationQueries, stagesQuery.data]);
+
+  const moveMutation = useMoveApplication();
+
+  function findStageForCard(cardId: string, state: Pipeline): string | null {
+    const entry = Object.entries(state).find(([, cards]) => cards.some((c) => c.id === cardId));
+    return entry?.[0] ?? null;
   }
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
     if (!over) return;
 
-    const current = queryClient.getQueryData<Pipeline>(["pipeline"]);
-    if (!current) return;
-
-    const fromStage = (active.data.current?.stage as PipelineStage | undefined) ??
-      findStageForCard(active.id as string, current);
-    const overStage = (over.data.current?.stage as PipelineStage | undefined) ??
-      findStageForCard(over.id as string, current);
+    const fromStage = (active.data.current?.stage as string | undefined) ??
+      findStageForCard(active.id as string, pipeline);
+    const overStage = (over.data.current?.stage as string | undefined) ??
+      findStageForCard(over.id as string, pipeline);
 
     if (!fromStage || !overStage) return;
 
-    const sourceCards = current[fromStage] ?? [];
-    const destinationCards = current[overStage] ?? [];
-    const activeIndex = sourceCards.findIndex((card) => card.id === active.id);
-    const overIndex = over.data.current?.sortable?.index ?? destinationCards.length;
+    const currentFrom = queryClient.getQueryData<PipelineCard[]>(["stage-applications", fromStage]) ?? [];
+    const currentTo = queryClient.getQueryData<PipelineCard[]>(["stage-applications", overStage]) ?? [];
+
+    const activeIndex = currentFrom.findIndex((card) => card.id === active.id);
+    const overIndex = over.data.current?.sortable?.index ?? currentTo.length;
 
     if (fromStage === overStage && activeIndex === overIndex) return;
 
-    const movingCard = sourceCards[activeIndex];
+    const movingCard = currentFrom[activeIndex];
     if (!movingCard) return;
 
-    const optimistic: Pipeline = STAGES.reduce<Pipeline>((acc, stage) => {
-      acc[stage.key] = [...(current[stage.key] ?? [])];
-      return acc;
-    }, { ...EMPTY_PIPELINE });
+    const optimisticFrom = [...currentFrom];
+    const optimisticTo = [...currentTo];
 
-    optimistic[fromStage].splice(activeIndex, 1);
+    optimisticFrom.splice(activeIndex, 1);
 
-    const updatedCard: PipelineCard = { ...movingCard, stage: overStage };
+    const updatedCard: PipelineCard = { ...movingCard, stageId: overStage };
     if (fromStage === overStage) {
-      optimistic[overStage] = arrayMove(optimistic[overStage], activeIndex, overIndex);
+      const reordered = arrayMove(optimisticTo, activeIndex, overIndex);
+      queryClient.setQueryData(["stage-applications", fromStage], reordered);
     } else {
-      optimistic[overStage].splice(overIndex, 0, updatedCard);
+      optimisticTo.splice(overIndex, 0, updatedCard);
+      queryClient.setQueryData(["stage-applications", fromStage], optimisticFrom);
+      queryClient.setQueryData(["stage-applications", overStage], optimisticTo);
     }
 
-    queryClient.setQueryData(["pipeline"], optimistic);
-
-    moveMutation.mutate({
-      appId: movingCard.applicationId,
-      fromStage,
-      toStage: overStage,
-      positionIndex: overIndex,
-    }, {
-      onError: () => queryClient.setQueryData(["pipeline"], current),
-    });
+    moveMutation.mutate(
+      { appId: movingCard.applicationId, stageId: overStage },
+      {
+        onError: () => {
+          queryClient.setQueryData(["stage-applications", fromStage], currentFrom);
+          queryClient.setQueryData(["stage-applications", overStage], currentTo);
+        },
+      }
+    );
   }
+
+  const isLoading =
+    stagesQuery.isLoading || applicationQueries.some((query) => query.isLoading || query.isFetching);
+  const applicationError = applicationQueries.find((query) => query.isError)?.error as Error | undefined;
 
   if (isLoading) {
     return <LoadingState label="Loading pipeline" />;
   }
 
-  if (isError) {
+  if (stagesQuery.isError || applicationError) {
+    const message = stagesQuery.error?.message ?? applicationError?.message ?? "Failed to load pipeline";
     return (
       <ErrorState
-        onRetry={() => refetch()}
-        message={`Failed to load pipeline: ${String(error)}`}
+        onRetry={() => {
+          stagesQuery.refetch();
+          applicationQueries.forEach((query) => query.refetch?.());
+        }}
+        message={message}
       />
     );
   }
@@ -148,14 +127,14 @@ export default function PipelineBoard() {
     <div className="relative">
       <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
         <SortableContext
-          items={STAGES.map((stage) => stage.key)}
+          items={(stagesQuery.data ?? []).map((stage) => stage.id)}
           strategy={verticalListSortingStrategy}
         >
           <PipelineColumns
             pipeline={pipeline}
-            stages={STAGES}
+            stages={stagesQuery.data ?? []}
             onOpen={(id, stage) => {
-              setSelectedStage(stage as PipelineStage);
+              setSelectedStage(stage);
               setSelectedAppId(id);
             }}
           />
