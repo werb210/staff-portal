@@ -1,56 +1,68 @@
 import { create } from "zustand";
 
-const TOKEN_KEY = "staff_portal_token";
+export type UserRole = string | null;
 
 interface AuthState {
   token: string | null;
-  user: any | null;
-  isAuthenticated: boolean;
-  setAuth: (token: string, user: any) => void;
+  role: string | null;
+  email: string | null;
+  user: Record<string, unknown> | null;
+  login: (token: string, role: string, email: string, user: Record<string, unknown>) => void;
   logout: () => void;
-  hydrate: () => Promise<void>;
+  hydrate: () => void;
 }
 
-export type UserRole = "admin" | "staff" | "marketing" | "lender" | "referrer" | "user" | null;
+const TOKEN_KEY = "STAFF_TOKEN";
+const ROLE_KEY = "STAFF_ROLE";
+const EMAIL_KEY = "STAFF_EMAIL";
+const USER_KEY = "STAFF_USER";
 
-export const useAuthStore = create<AuthState>((set) => {
-  const setLoggedOut = () => {
+export const useAuthStore = create<AuthState>((set, get) => ({
+  token: null,
+  role: null,
+  email: null,
+  user: null,
+
+  login: (token, role, email, user) => {
+    localStorage.setItem(TOKEN_KEY, token);
+    localStorage.setItem(ROLE_KEY, role);
+    localStorage.setItem(EMAIL_KEY, email);
+    localStorage.setItem(USER_KEY, JSON.stringify(user));
+
+    set({ token, role, email, user });
+  },
+
+  logout: () => {
     localStorage.removeItem(TOKEN_KEY);
-    set({ token: null, user: null, isAuthenticated: false });
-  };
+    localStorage.removeItem(ROLE_KEY);
+    localStorage.removeItem(EMAIL_KEY);
+    localStorage.removeItem(USER_KEY);
 
-  return {
-    token: localStorage.getItem(TOKEN_KEY),
-    user: null,
-    isAuthenticated: Boolean(localStorage.getItem(TOKEN_KEY)),
+    set({ token: null, role: null, email: null, user: null });
+  },
 
-    setAuth: (token, user) => {
-      localStorage.setItem(TOKEN_KEY, token);
-      set({ token, user: user ?? null, isAuthenticated: true });
-    },
+  hydrate: () => {
+    const token = localStorage.getItem(TOKEN_KEY);
+    const role = localStorage.getItem(ROLE_KEY);
+    const email = localStorage.getItem(EMAIL_KEY);
+    const storedUser = localStorage.getItem(USER_KEY);
 
-    logout: () => {
-      setLoggedOut();
-    },
+    let user: Record<string, unknown> | null = null;
 
-    hydrate: async () => {
-      const storedToken = localStorage.getItem(TOKEN_KEY);
-
-      if (!storedToken) {
-        setLoggedOut();
-        return;
-      }
-
-      set({ token: storedToken, isAuthenticated: true });
-
+    if (storedUser) {
       try {
-        const { me } = await import("@/api/auth");
-        const currentUser = await me();
-
-        set({ user: currentUser ?? null, isAuthenticated: true });
+        user = JSON.parse(storedUser);
       } catch (error) {
-        setLoggedOut();
+        console.warn("Failed to parse stored user", error);
+        localStorage.removeItem(USER_KEY);
       }
-    },
-  };
-});
+    }
+
+    if (!token) {
+      get().logout();
+      return;
+    }
+
+    set({ token, role, email, user });
+  },
+}));
