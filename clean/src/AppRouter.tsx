@@ -1,6 +1,5 @@
 import { Navigate, createBrowserRouter } from "react-router-dom";
 import AppRoot from "./components/layout/AppRoot";
-import ProtectedRoute from "./components/routing/ProtectedRoute";
 import LoginPage from "./pages/auth/LoginPage";
 import CompaniesPage from "./pages/companies/CompaniesPage";
 import ContactsPage from "./pages/contacts/ContactsPage";
@@ -13,6 +12,7 @@ import SearchPage from "./pages/search/SearchPage";
 import AdminPage from "./pages/roles/AdminPage";
 import LenderPage from "./pages/roles/LenderPage";
 import ReferrerPage from "./pages/roles/ReferrerPage";
+import ProtectedRoute from "./modules/auth/auth.guard";
 
 const AppRouter = createBrowserRouter([
   {

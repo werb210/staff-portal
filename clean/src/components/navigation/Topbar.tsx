@@ -4,14 +4,15 @@ import { Avatar } from "../ui/avatar";
 import { Button } from "../ui/button";
 import NotificationsPanel from "./notifications/NotificationsPanel";
 import SearchModal from "./search/SearchModal";
-import { authStore } from "../../lib/auth/authStore";
+import { useLogout } from "../../modules/auth/auth.hooks";
+import { authStore } from "../../modules/auth/auth.store";
 
 export default function Topbar() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [dark, setDark] = useState(false);
   const user = authStore((state) => state.user);
-  const logout = authStore((state) => state.logout);
+  const logout = useLogout();
 
   const initials = useMemo(() => (user?.email ?? "User").slice(0, 2).toUpperCase(), [user]);
 

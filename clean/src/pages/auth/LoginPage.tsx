@@ -1,8 +1,9 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+
 import { pushToast } from "../../components/ui/toast";
-import { authStore, Role } from "../../lib/auth/authStore";
-import { login } from "../../lib/auth/login";
+import { Role, authStore } from "../../modules/auth/auth.store";
+import { useLogin } from "../../modules/auth/auth.hooks";
 
 const ROLE_REDIRECTS: Record<Role, string> = {
   admin: "/admin",
@@ -14,6 +15,7 @@ const ROLE_REDIRECTS: Record<Role, string> = {
 export default function LoginPage() {
   const navigate = useNavigate();
   const { isAuthenticated, user } = authStore();
+  const login = useLogin();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -38,17 +40,15 @@ export default function LoginPage() {
     setSubmitting(true);
 
     try {
-      const { success } = await login(email, password);
-      if (success) {
-        const nextRole = authStore.getState().user?.role as Role | undefined;
-        const redirectPath = nextRole ? ROLE_REDIRECTS[nextRole] : "/dashboard";
-        pushToast({
-          title: "Welcome",
-          description: "You have been signed in.",
-          variant: "success",
-        });
-        navigate(redirectPath, { replace: true });
-      }
+      const { user: nextUser } = await login.mutateAsync({ email, password });
+      const nextRole = nextUser?.role as Role | undefined;
+      const redirectPath = nextRole ? ROLE_REDIRECTS[nextRole] : "/dashboard";
+      pushToast({
+        title: "Welcome",
+        description: "You have been signed in.",
+        variant: "success",
+      });
+      navigate(redirectPath, { replace: true });
     } catch (err: any) {
       const message =
         err?.response?.data?.message ||

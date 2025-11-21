@@ -3,10 +3,9 @@
 // LEGACY AUTH — DO NOT USE
 // Replaced by unified auth system in src/lib/auth/
 import { createBrowserRouter, Navigate } from "react-router-dom";
-import ProtectedRoute from "../components/routing/ProtectedRoute";
+import ProtectedRoute from "../modules/auth/auth.guard";
 import AppRoot from "../components/layout/AppRoot";
 import LoginPage from "../pages/auth/LoginPage";
-import Unauthorized from "../pages/auth/Unauthorized";
 import CompaniesPage from "../pages/companies/CompaniesPage";
 import ContactsPage from "../pages/contacts/ContactsPage";
 import DashboardPage from "../pages/dashboard/Dashboard";
@@ -19,10 +18,10 @@ import NotFoundPage from "../pages/errors/NotFoundPage";
 import AdminPage from "../pages/roles/AdminPage";
 import LenderPage from "../pages/roles/LenderPage";
 import ReferrerPage from "../pages/roles/ReferrerPage";
-import { Role, useAuthStore } from "../store/authStore";
+import { Role, authStore } from "../modules/auth/auth.store";
 
 function RoleRedirect() {
-  const role = useAuthStore((state) => state.user?.role);
+  const role = authStore((state) => state.user?.role);
 
   const redirectForRole: Record<Exclude<Role, null>, string> = {
     admin: "/admin",
@@ -42,10 +41,6 @@ export const appRouter = createBrowserRouter([
   {
     path: "/login",
     element: <LoginPage />,
-  },
-  {
-    path: "/unauthorized",
-    element: <Unauthorized />,
   },
   {
     element: <ProtectedRoute />,

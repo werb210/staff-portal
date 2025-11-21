@@ -1,12 +1,12 @@
 import axios from "axios";
 
-import { authStore } from "../../modules/auth/auth.store";
+import { authStore } from "./auth.store";
 
-const http = axios.create({
+export const authClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
 });
 
-http.interceptors.request.use((config) => {
+authClient.interceptors.request.use((config) => {
   const token = authStore.getState().token;
   if (token) {
     config.headers = config.headers ?? {};
@@ -15,7 +15,7 @@ http.interceptors.request.use((config) => {
   return config;
 });
 
-http.interceptors.response.use(
+authClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error?.response?.status === 401) {
@@ -24,5 +24,3 @@ http.interceptors.response.use(
     return Promise.reject(error);
   }
 );
-
-export default http;

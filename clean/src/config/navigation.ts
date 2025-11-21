@@ -1,5 +1,6 @@
 import { Building2, FileText, Home, Landmark, Search, Shield, Tag, Users, Workflow } from "lucide-react";
-import { Role } from "../lib/auth/authStore";
+
+import { Role } from "../modules/auth/auth.store";
 
 export interface NavItem {
   label: string;
