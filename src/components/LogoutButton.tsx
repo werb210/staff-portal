@@ -4,10 +4,10 @@ import { useAuthStore } from "@/store/useAuthStore";
 
 export default function LogoutButton() {
   const nav = useNavigate();
-  const logout = useAuthStore((state) => state.logout);
+  const clearAuth = useAuthStore((state) => state.clearAuth);
 
   function handleLogout() {
-    logout();
+    clearAuth();
     nav("/login");
   }
 

@@ -7,7 +7,7 @@ import { deleteUser, getUsers } from "./UserService";
 import { User } from "./UserTypes";
 
 export default function UserList() {
-  const role = useAuthStore((state) => state.role ?? (state.user as { role?: string } | null)?.role ?? null);
+  const role = useAuthStore((state) => state.user?.role ?? null);
   const isAdmin = role === "admin";
   const queryClient = useQueryClient();
 

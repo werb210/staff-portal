@@ -1,5 +1,6 @@
-import { UserRole } from "@/store/useAuthStore";
 import { Building2, Briefcase, Home, Search as SearchIcon, Tag, Users, Workflow } from "lucide-react";
+
+export type UserRole = string;
 
 export interface NavItem {
   label: string;
