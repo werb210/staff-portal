@@ -4,11 +4,11 @@ import { useAuthStore } from "../../store/useAuthStore";
 
 export default function Navbar() {
   const navigate = useNavigate();
-  const logout = useAuthStore((state) => state.logout);
+  const clearAuth = useAuthStore((state) => state.clearAuth);
   const user = useAuthStore((state) => state.user);
 
   const handleLogout = () => {
-    logout();
+    clearAuth();
     navigate("/login", { replace: true });
   };
 

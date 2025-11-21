@@ -13,7 +13,7 @@ export default function Topbar() {
   const [dark, setDark] = useState(false);
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
-  const logout = useAuthStore((s) => s.logout);
+  const clearAuth = useAuthStore((s) => s.clearAuth);
 
   const initials = useMemo(() => user?.name?.slice(0, 2).toUpperCase() ?? "US", [user]);
 
@@ -41,7 +41,7 @@ export default function Topbar() {
             variant="outline"
             size="sm"
             onClick={() => {
-              logout();
+              clearAuth();
               navigate("/login", { replace: true });
             }}
           >

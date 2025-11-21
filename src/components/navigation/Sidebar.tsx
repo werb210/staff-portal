@@ -9,11 +9,11 @@ export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const navigate = useNavigate();
   const role = useAuthStore((s) => s.user?.role ?? null);
-  const logout = useAuthStore((s) => s.logout);
+  const clearAuth = useAuthStore((s) => s.clearAuth);
   const items = filterByRole(role);
 
   const handleLogout = () => {
-    logout();
+    clearAuth();
     navigate("/login", { replace: true });
   };
 
