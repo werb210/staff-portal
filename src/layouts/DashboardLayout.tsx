@@ -1,43 +1,20 @@
-import { Link, Outlet, useLocation } from "react-router-dom";
+import { Outlet } from "react-router-dom";
+import { Sidebar } from "../components/layout/Sidebar";
+import { Topbar } from "../components/layout/Topbar";
 
-const navItems = [
-  { to: "/", label: "Home" },
-  { to: "/applications", label: "Applications" },
-  { to: "/documents", label: "Documents" },
-  { to: "/lenders", label: "Lenders" },
-  { to: "/settings", label: "Settings" },
-];
-
-export default function DashboardLayout() {
-  const { pathname } = useLocation();
-
+export function DashboardLayout() {
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
-      <header className="border-b bg-white px-6 py-4 shadow-sm">
-        <div className="mx-auto flex max-w-5xl items-center justify-between">
-          <div className="text-xl font-semibold">Staff Portal</div>
-          <nav className="flex gap-4 text-sm font-medium">
-            {navItems.map((item) => {
-              const active = pathname === item.to;
-              return (
-                <Link
-                  key={item.to}
-                  to={item.to}
-                  className={`rounded px-3 py-2 transition hover:bg-slate-100 ${
-                    active ? "bg-slate-200" : ""
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
-      </header>
+    <div className="flex h-screen bg-gray-50">
+      <Sidebar />
 
-      <main className="mx-auto max-w-5xl px-6 py-10">
-        <Outlet />
-      </main>
+      <div className="flex flex-col flex-1">
+        <Topbar />
+        <main className="flex-1 overflow-y-auto p-6">
+          <Outlet />
+        </main>
+      </div>
     </div>
   );
 }
+
+export default DashboardLayout;

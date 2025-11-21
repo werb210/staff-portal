@@ -1,30 +1,18 @@
-import { useAuthStore } from "../../lib/auth/useAuthStore";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
+import { useAuth } from "../../providers/AuthProvider";
 
-export default function Topbar() {
-  const { user, logout } = useAuthStore();
+export function Topbar() {
+  const { logout, user } = useAuth();
 
   return (
-    <div className="h-14 border-b bg-white flex items-center justify-between px-4">
-      <div className="font-semibold text-lg">Staff Portal</div>
+    <header className="h-14 bg-white border-b flex items-center justify-between px-6">
+      <div className="text-gray-700 font-medium">Welcome, {user?.firstName || "User"}</div>
 
-      <div className="flex items-center gap-4">
-        {user && (
-          <div className="flex items-center gap-2">
-            <Avatar className="h-8 w-8">
-              <AvatarFallback>
-                {user.email?.substring(0, 2).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <span className="text-sm text-gray-700">{user.email}</span>
-          </div>
-        )}
-
-        <Button variant="outline" onClick={logout}>
-          Logout
-        </Button>
-      </div>
-    </div>
+      <button
+        onClick={logout}
+        className="px-3 py-1 text-sm bg-red-500 text-white rounded-md hover:bg-red-600"
+      >
+        Logout
+      </button>
+    </header>
   );
 }
