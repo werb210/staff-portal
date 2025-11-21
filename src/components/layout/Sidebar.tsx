@@ -1,17 +1,11 @@
 import { NavLink } from "react-router-dom";
-import { Briefcase, Building2, Home, Search, Tag, Users, Workflow } from "lucide-react";
-
-const links = [
-  { to: "/", label: "Dashboard", icon: Home },
-  { to: "/contacts", label: "Contacts", icon: Users },
-  { to: "/companies", label: "Companies", icon: Building2 },
-  { to: "/deals", label: "Deals", icon: Briefcase },
-  { to: "/pipeline", label: "Pipeline", icon: Workflow },
-  { to: "/tags", label: "Tags", icon: Tag },
-  { to: "/search", label: "Search", icon: Search },
-];
+import { NAV_ITEMS, filterByRole } from "@/config/navigation";
+import { useAuthStore } from "@/store/auth";
 
 export default function Sidebar() {
+  const role = useAuthStore((state) => state.role);
+  const links = filterByRole(role);
+
   return (
     <aside className="flex w-64 flex-col border-r border-gray-200 bg-white">
       <div className="flex h-16 items-center px-6 text-lg font-semibold">Boreal Staff</div>
