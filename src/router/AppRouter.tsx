@@ -1,3 +1,4 @@
+// legacy – not mounted
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import AppRoot from "@/components/layout/AppRoot";
