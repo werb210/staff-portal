@@ -1,9 +1,10 @@
 import { Button } from "../ui/button";
-import { authStore } from "../../lib/auth/authStore";
+import { useLogout } from "../../modules/auth/auth.hooks";
+import { authStore } from "../../modules/auth/auth.store";
 
 export default function TopNav() {
   const user = authStore((state) => state.user);
-  const logout = authStore((state) => state.logout);
+  const logout = useLogout();
 
   const handleLogout = () => {
     logout();
