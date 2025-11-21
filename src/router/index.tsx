@@ -4,7 +4,7 @@ import LoginPage from "@/features/auth/LoginPage";
 import ForgotPasswordPage from "@/features/auth/ForgotPasswordPage";
 import ResetPasswordPage from "@/features/auth/ResetPasswordPage";
 import LogoutPage from "@/features/auth/LogoutPage";
-import PipelinePage from "@/features/pipeline/PipelinePage";
+import PipelinePage from "@/pages/pipeline";
 import ContactsPage from "@/pages/Contacts";
 import ContactDetailPage from "@/pages/contacts/ContactDetailPage";
 import Companies from "@/pages/Companies";
