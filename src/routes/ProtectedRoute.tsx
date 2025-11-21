@@ -1,3 +1,1 @@
-import { ProtectedRoute } from "../lib/auth/ProtectedRoute";
-
-export default ProtectedRoute;
+export { ProtectedRoute as default } from "@/components/auth/ProtectedRoute";
