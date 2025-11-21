@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import LoginPage from "@/features/auth/LoginPage";
 import DashboardPage from "@/features/dashboard/DashboardPage";
+import AppLayout from "@/components/layout/AppLayout";
 import { useAuthStore } from "@/lib/auth/useAuthStore";
 
 function Protected({ children }: { children: JSX.Element }) {
@@ -13,12 +14,14 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
-        
+
         <Route
           path="/"
           element={
             <Protected>
-              <DashboardPage />
+              <AppLayout>
+                <DashboardPage />
+              </AppLayout>
             </Protected>
           }
         />

@@ -1,31 +1,36 @@
 import { NavLink } from "react-router-dom";
-import { cn } from "../../lib/utils";
-import { Separator } from "@/components/ui/separator";
+import { useAuthStore } from "@/lib/auth/useAuthStore";
+import { cn } from "@/lib/utils";
 
-const nav = [
-  { label: "Dashboard", path: "/" },
-  { label: "Applications", path: "/applications" },
-  { label: "Contacts", path: "/contacts" },
-  { label: "Companies", path: "/companies" },
-  { label: "Deals", path: "/deals" },
-  { label: "Lenders", path: "/lenders" },
-  { label: "Reports", path: "/reports" },
+const menu = [
+  { label: "Dashboard", to: "/" },
+  { label: "Applications", to: "/applications" },
+  { label: "Contacts", to: "/contacts" },
+  { label: "Companies", to: "/companies" },
+  { label: "Lenders", to: "/lenders" },
+  { label: "Reports", to: "/reports" },
 ];
 
 export default function Sidebar() {
+  const user = useAuthStore((s) => s.user);
+
   return (
-    <div className="w-64 h-full border-r bg-white flex flex-col">
-      <div className="p-4 font-bold text-xl">Boreal Staff</div>
-      <Separator />
-      <nav className="flex-1 p-2 flex flex-col gap-1">
-        {nav.map((item) => (
+    <aside className="hidden md:flex flex-col w-64 bg-white border-r border-gray-200">
+      <div className="h-16 flex items-center px-6 border-b font-semibold text-lg">
+        Boreal Staff
+      </div>
+
+      <nav className="flex-1 p-4 space-y-1">
+        {menu.map((item) => (
           <NavLink
-            key={item.path}
-            to={item.path}
+            key={item.to}
+            to={item.to}
             className={({ isActive }) =>
               cn(
-                "px-3 py-2 rounded text-sm font-medium",
-                isActive ? "bg-black text-white" : "hover:bg-gray-100"
+                "block px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                isActive
+                  ? "bg-gray-900 text-white"
+                  : "text-gray-700 hover:bg-gray-100"
               )
             }
           >
@@ -33,6 +38,10 @@ export default function Sidebar() {
           </NavLink>
         ))}
       </nav>
-    </div>
+
+      <div className="p-4 text-xs text-gray-500 border-t">
+        Logged in as: <span className="font-medium">{user?.email}</span>
+      </div>
+    </aside>
   );
 }
