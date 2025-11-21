@@ -1,60 +1,50 @@
 import { useState } from "react";
-import { useAuth } from "../providers/AuthProvider";
+import { login } from "../api/auth";
+import { useAuth } from "../context/AuthContext";
 
 export default function LoginPage() {
-  const { login } = useAuth();
+  const { setUser } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [err, setErr] = useState("");
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
-    setError("");
-
     try {
-      await login(email, password);
-    } catch (err: any) {
-      setError(err?.response?.data?.message || "Invalid email or password");
+      const res = await login(email, password);
+      setUser(res?.user);
+      window.location.href = "/";
+    } catch (e: any) {
+      setErr(e.message || "Login failed");
     }
   }
 
   return (
-    <div className="h-screen flex items-center justify-center bg-gray-100">
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white w-full max-w-sm p-8 rounded-lg shadow"
-      >
-        <h1 className="text-xl font-semibold mb-6 text-center">Staff Portal Login</h1>
+    <div className="flex items-center justify-center h-screen bg-gray-100">
+      <form onSubmit={submit} className="bg-white p-8 rounded shadow-md w-80">
+        <h1 className="text-xl font-semibold mb-4 text-center">Staff Login</h1>
 
-        {error && (
-          <div className="mb-4 p-2 bg-red-100 text-red-700 rounded">{error}</div>
-        )}
+        {err && <p className="text-red-600 text-sm mb-3">{err}</p>}
 
-        <label className="block mb-4">
-          <span className="text-gray-700 text-sm">Email</span>
-          <input
-            type="email"
-            className="mt-1 w-full border px-3 py-2 rounded"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-        </label>
+        <input
+          type="email"
+          placeholder="Email"
+          className="w-full p-2 border rounded mb-3"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
 
-        <label className="block mb-6">
-          <span className="text-gray-700 text-sm">Password</span>
-          <input
-            type="password"
-            className="mt-1 w-full border px-3 py-2 rounded"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-        </label>
+        <input
+          type="password"
+          placeholder="Password"
+          className="w-full p-2 border rounded mb-4"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
 
         <button
           type="submit"
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-md"
+          className="w-full p-2 bg-blue-600 text-white rounded hover:bg-blue-700"
         >
           Login
         </button>

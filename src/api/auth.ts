@@ -1,13 +1,18 @@
-import { verifyToken } from "@/services/authService";
+import { api } from "./client";
+
+export async function login(email: string, password: string) {
+  const res = await api("/api/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ email, password }),
+  });
+
+  if ((res as any)?.token) {
+    localStorage.setItem("token", (res as any).token);
+  }
+
+  return res as { user?: any; token?: string } | undefined;
+}
 
 export async function getSession() {
-  const token = localStorage.getItem("token");
-  if (!token) return null;
-
-  try {
-    const session = await verifyToken(token);
-    return { user: session.user, token: session.token };
-  } catch {
-    return null;
-  }
+  return api("/api/auth/session");
 }
