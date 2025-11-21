@@ -1,36 +1,45 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
-import { useAuthStore, type UserRole } from "@/lib/auth/useAuthStore";
+
+import { useAuthStore } from "@/store/useAuthStore";
 
 interface ProtectedRouteProps {
-  allow?: UserRole[];
   children?: JSX.Element;
 }
 
-export function ProtectedRoute({ allow, children }: ProtectedRouteProps) {
+export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const location = useLocation();
-  const { token, user, loading, initialized } = useAuthStore((state) => ({
-    token: state.token,
-    user: state.user,
-    loading: state.loading,
-    initialized: state.initialized,
-  }));
-  const initialize = useAuthStore((state) => state.initialize);
+  const [checking, setChecking] = useState(true);
+
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const loadSession = useAuthStore((state) => state.loadSession);
 
   useEffect(() => {
-    initialize();
-  }, [initialize]);
+    let mounted = true;
 
-  if (!initialized || loading) {
+    const ensureSession = async () => {
+      try {
+        await loadSession();
+      } catch (error) {
+        console.error("Session load failed", error);
+      } finally {
+        if (mounted) setChecking(false);
+      }
+    };
+
+    ensureSession();
+
+    return () => {
+      mounted = false;
+    };
+  }, [loadSession]);
+
+  if (checking) {
     return <div className="p-6 text-gray-600">Loading...</div>;
   }
 
-  if (!token || !user) {
+  if (!isAuthenticated) {
     return <Navigate to="/login" replace state={{ from: location }} />;
-  }
-
-  if (allow && !allow.includes(user.role)) {
-    return <Navigate to="/forbidden" replace />;
   }
 
   return children ?? <Outlet />;

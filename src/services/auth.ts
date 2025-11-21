@@ -6,6 +6,6 @@ export type LoginPayload = {
 };
 
 export const AuthAPI = {
-  login: (payload: LoginPayload) => api.post("/api/auth/login", payload),
-  me: () => api.get("/api/auth/me"),
+  login: (payload: LoginPayload) => api.post("/api/users/login", payload),
+  me: () => api.get("/api/users/me"),
 };
