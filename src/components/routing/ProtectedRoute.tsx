@@ -1,7 +1,23 @@
-// LEGACY AUTH — DO NOT USE
-// Replaced by unified auth system in src/lib/auth/
-import { Outlet } from "react-router-dom";
+import { ReactNode } from "react";
+import { Navigate } from "react-router-dom";
+import { authStore } from "../../lib/auth/authStore";
+import { Role } from "../../lib/auth/authStore";
 
-export default function ProtectedRoute() {
-  return <Outlet />;
+type ProtectedRouteProps = {
+  roles?: Role[];
+  children: ReactNode;
+};
+
+export default function ProtectedRoute({ roles, children }: ProtectedRouteProps) {
+  const { isAuthenticated, user } = authStore();
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (roles && (!user || !roles.includes(user.role))) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return <>{children}</>;
 }

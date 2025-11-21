@@ -1,6 +1,6 @@
 import React from "react";
-import ErrorState from "@/components/states/ErrorState";
-import { Button } from "@/components/ui/button";
+import ErrorState from "./states/ErrorState";
+import { Button } from "./ui/button";
 
 interface Props {
   children: React.ReactNode;

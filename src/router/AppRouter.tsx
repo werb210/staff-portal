@@ -1,18 +1,18 @@
 // LEGACY AUTH — DO NOT USE
 // Replaced by unified auth system in src/lib/auth/
 import { createBrowserRouter, Navigate } from "react-router-dom";
-import ProtectedRoute from "@/components/auth/ProtectedRoute";
-import AppRoot from "@/components/layout/AppRoot";
-import LoginPage from "@/pages/auth/LoginPage";
-import CompaniesPage from "@/pages/companies/CompaniesPage";
-import ContactsPage from "@/pages/contacts/ContactsPage";
-import DashboardPage from "@/pages/dashboard/Dashboard";
-import DealsPage from "@/pages/deals/DealsPage";
-import NotFoundPage from "@/pages/errors/NotFoundPage";
-import AdminPage from "@/pages/roles/AdminPage";
-import LenderPage from "@/pages/roles/LenderPage";
-import ReferrerPage from "@/pages/roles/ReferrerPage";
-import { Role, useAuthStore } from "@/store/auth";
+import ProtectedRoute from "../components/auth/ProtectedRoute";
+import AppRoot from "../components/layout/AppRoot";
+import LoginPage from "../pages/auth/LoginPage";
+import CompaniesPage from "../pages/companies/CompaniesPage";
+import ContactsPage from "../pages/contacts/ContactsPage";
+import DashboardPage from "../pages/dashboard/Dashboard";
+import DealsPage from "../pages/deals/DealsPage";
+import NotFoundPage from "../pages/errors/NotFoundPage";
+import AdminPage from "../pages/roles/AdminPage";
+import LenderPage from "../pages/roles/LenderPage";
+import ReferrerPage from "../pages/roles/ReferrerPage";
+import { Role, useAuthStore } from "../store/auth";
 
 function HomeRedirect() {
   const token = useAuthStore((state) => state.token);

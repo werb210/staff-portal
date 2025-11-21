@@ -1,5 +1,5 @@
 import { Outlet, Link } from "react-router-dom";
-import LogoutButton from "@/components/auth/LogoutButton";
+import LogoutButton from "../auth/LogoutButton";
 
 export default function Layout() {
   return (

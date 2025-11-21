@@ -1,4 +1,4 @@
-import http from "@/lib/api/http";
+import http from "../lib/api/http";
 
 export const UsersAPI = {
   list: () => http.get("/api/users"),

@@ -1,6 +1,6 @@
 import { NavLink } from "react-router-dom";
-import { NAV_ITEMS, filterByRole } from "@/config/navigation";
-import { authStore } from "@/lib/auth/authStore";
+import { NAV_ITEMS, filterByRole } from "../../config/navigation";
+import { authStore } from "../../lib/auth/authStore";
 
 export default function Sidebar() {
   const role = authStore((state) => state.user?.role ?? null);

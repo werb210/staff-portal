@@ -1,8 +1,8 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { pushToast } from "@/components/ui/toast";
-import { authStore, Role } from "@/lib/auth/authStore";
-import { login } from "@/lib/auth/login";
+import { pushToast } from "../../components/ui/toast";
+import { authStore, Role } from "../../lib/auth/authStore";
+import { login } from "../../lib/auth/login";
 
 const ROLE_REDIRECTS: Record<Role, string> = {
   admin: "/admin",

@@ -1,8 +1,8 @@
 // LEGACY AUTH — DO NOT USE
 // Replaced by unified auth system in src/lib/auth/
 import axios from "axios";
-import { pushToast } from "@/components/ui/toast";
-import { useAuthStore } from "@/store/authStore";
+import { pushToast } from "../components/ui/toast";
+import { useAuthStore } from "../store/authStore";
 
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL,

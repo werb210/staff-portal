@@ -1,10 +1,10 @@
 import { useMemo, useState } from "react";
 import { Bell, Moon, Search, Sun } from "lucide-react";
-import { Avatar } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
+import { Avatar } from "../ui/avatar";
+import { Button } from "../ui/button";
 import NotificationsPanel from "./notifications/NotificationsPanel";
 import SearchModal from "./search/SearchModal";
-import { authStore } from "@/lib/auth/authStore";
+import { authStore } from "../../lib/auth/authStore";
 
 export default function Topbar() {
   const [searchOpen, setSearchOpen] = useState(false);
