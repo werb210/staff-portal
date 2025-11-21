@@ -1,5 +1,5 @@
 import api from "../../lib/api";
-import { setToken, setRole } from "../../lib/storage";
+import { setEmail, setRole, setToken } from "../../lib/storage";
 
 export interface LoginPayload {
   email: string;
@@ -16,6 +16,9 @@ export async function login(payload: LoginPayload) {
 
   setToken(token);
   setRole(role);
+  if (payload.email) {
+    setEmail(payload.email);
+  }
 
   return { token, role };
 }

@@ -1,11 +1,22 @@
-import { Navigate } from "react-router-dom";
-import { useAuth } from "./AuthContext";
+import { Navigate, useLocation } from "react-router-dom";
+import { useAuthStore } from "./useAuthStore";
 
-export const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
-  const { user, loading } = useAuth();
+interface Props {
+  children: JSX.Element;
+  allow?: string[];
+}
 
-  if (loading) return <div className="p-6 text-center">Loading…</div>;
-  if (!user) return <Navigate to="/login" replace />;
+export const ProtectedRoute = ({ children, allow }: Props) => {
+  const location = useLocation();
+  const { token, user } = useAuthStore();
+
+  if (!token || !user) {
+    return <Navigate to="/login" replace state={{ from: location }} />;
+  }
+
+  if (allow && !allow.includes(user.role)) {
+    return <Navigate to="/forbidden" replace />;
+  }
 
   return children;
 };

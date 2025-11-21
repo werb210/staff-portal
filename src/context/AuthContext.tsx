@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuthStore } from "@/lib/auth/useAuthStore";
 
 interface User {
   id: string;
@@ -18,6 +19,8 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
+  const setAuth = useAuthStore((s) => s.setAuth);
+  const clearAuth = useAuthStore((s) => s.logout);
 
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(
@@ -26,7 +29,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function login(email: string, password: string): Promise<boolean> {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/login`, {
+      const res = await fetch(`/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -35,10 +38,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!res.ok) return false;
 
       const data = await res.json();
-
       setToken(data.token);
       localStorage.setItem("auth_token", data.token);
       setUser(data.user);
+      setAuth(data.token, data.role ?? data.user?.role ?? "Staff", data.user?.email);
 
       navigate("/dashboard");
       return true;
@@ -51,6 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(null);
     setUser(null);
     localStorage.removeItem("auth_token");
+    clearAuth();
     navigate("/login");
   }
 

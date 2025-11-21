@@ -4,11 +4,8 @@ import { useAuthStore } from "@/lib/auth/useAuthStore";
 
 interface LoginResponse {
   token: string;
-  user: {
-    id: string;
-    email: string;
-    role: string;
-  };
+  role: string;
+  email?: string;
 }
 
 export function useLogin() {
@@ -19,7 +16,7 @@ export function useLogin() {
       post<LoginResponse>("/api/auth/login", data),
 
     onSuccess: (res) => {
-      loginStore.setAuth(res.token, res.user);
+      loginStore.setAuth(res.token, res.role, res.email);
     },
   });
 }
