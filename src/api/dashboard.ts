@@ -1,6 +1,5 @@
-import api from "./client";
+import { http } from "./http";
 
 export async function fetchDashboardStats() {
-  const { data } = await api.get("/api/dashboard");
-  return data;
+  return http.get("/api/dashboard");
 }
