@@ -4,10 +4,10 @@ function App() {
       <div className="mx-auto flex max-w-3xl flex-col gap-4 px-6 py-12">
         <header>
           <p className="text-sm font-semibold uppercase tracking-wide text-indigo-600">Staff Portal</p>
-          <h1 className="text-3xl font-bold">Clean workspace ready</h1>
+          <h1 className="text-3xl font-bold">Dashboard</h1>
           <p className="mt-2 text-slate-600">
-            This minimal scaffold is configured with React Router, React Query, Zustand, Tailwind CSS, and supporting
-            tooling so the Staff Portal can be rebuilt from a fresh foundation.
+            Welcome to the central dashboard for staff operations. Use the navigation to access contacts, companies, deals,
+            applications, documents, search, tags, pipeline, reports, and settings.
           </p>
         </header>
         <section className="rounded-lg border border-slate-200 bg-slate-50 p-6">
