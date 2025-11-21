@@ -8,7 +8,8 @@ export default function SearchPage() {
         <h1 className="text-2xl font-semibold text-slate-900">Search</h1>
       </div>
       <p className="text-sm text-slate-600">
-        Global search will connect to the Azure Staff Server when the endpoint is available.
+        Global search is on the way. Once connected to the staff API, you will be able to search across contacts,
+        companies, and deals from this page.
       </p>
     </div>
   );
