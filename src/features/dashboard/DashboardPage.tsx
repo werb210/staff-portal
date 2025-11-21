@@ -1,4 +1,4 @@
-import { useAuthStore } from "@/lib/auth/useAuthStore";
+import { useAuthStore } from "@/store/useAuthStore";
 
 export default function DashboardPage() {
   const user = useAuthStore((s) => s.user);

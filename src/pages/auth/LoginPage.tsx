@@ -1,15 +1,16 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, Lock } from "lucide-react";
 import { useForm } from "react-hook-form";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { z } from "zod";
+import { useMutation } from "@tanstack/react-query";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
-import { useMutation } from "@tanstack/react-query";
-import { useAuthStore } from "@/lib/auth/useAuthStore";
+import { useAuthStore } from "@/store/useAuthStore";
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -21,20 +22,24 @@ type LoginInput = z.infer<typeof loginSchema>;
 export default function LoginPage() {
   const navigate = useNavigate();
   const { addToast } = useToast();
-  const login = useAuthStore((state) => state.login);
-
   const form = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: "", password: "" },
   });
 
   const mutation = useMutation({
-    mutationFn: ({ email, password }: LoginInput) => login(email, password),
+    mutationFn: async ({ email, password }: LoginInput) => {
+      const { login } = useAuthStore.getState();
+      await login(email, password);
+    },
     onSuccess: () => {
-      navigate("/dashboard", { replace: true });
+      navigate("/dashboard");
       addToast({ title: "Signed in", description: "Welcome back", variant: "success" });
     },
-    onError: () => addToast({ title: "Login failed", description: "Check your credentials", variant: "destructive" }),
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : "Check your credentials";
+      addToast({ title: "Login failed", description: message, variant: "destructive" });
+    },
   });
 
   return (
@@ -76,11 +81,6 @@ export default function LoginPage() {
                   </FormItem>
                 )}
               />
-              <div className="flex items-center justify-between text-sm">
-                <Link to="/forgot-password" className="text-slate-900 underline">
-                  Forgot password?
-                </Link>
-              </div>
               <Button type="submit" disabled={mutation.isPending} className="w-full">
                 {mutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Sign in
               </Button>

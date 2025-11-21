@@ -1,4 +1,4 @@
-import { useAuthStore } from "@/lib/auth/useAuthStore";
+import { useAuthStore } from "@/store/useAuthStore";
 
 export default function Dashboard() {
   const logout = useAuthStore((state) => state.logout);

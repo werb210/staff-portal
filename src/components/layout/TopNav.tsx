@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { useAuthStore } from "@/lib/auth/useAuthStore";
+import { useAuthStore } from "@/store/useAuthStore";
 import { Button } from "@/components/ui/button";
 import NotificationBell from "./NotificationBell";
 import { useNavStore } from "@/store/navStore";

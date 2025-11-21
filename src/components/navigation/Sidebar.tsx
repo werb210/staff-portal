@@ -1,14 +1,21 @@
 import { useState } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { filterByRole } from "@/config/navigation";
-import { useAuthStore } from "@/lib/auth/useAuthStore";
+import { useAuthStore } from "@/store/useAuthStore";
 import { cn } from "@/lib/utils";
 import { ChevronLeft, ChevronRight, Menu } from "lucide-react";
 
 export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
+  const navigate = useNavigate();
   const role = useAuthStore((s) => s.user?.role ?? null);
+  const logout = useAuthStore((s) => s.logout);
   const items = filterByRole(role);
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login", { replace: true });
+  };
 
   return (
     <aside
@@ -45,18 +52,16 @@ export default function Sidebar() {
         ))}
       </nav>
       <div className="p-3">
-        <NavLink
-          to="/logout"
-          className={({ isActive }) =>
-            cn(
-              "flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium hover:bg-slate-100",
-              isActive ? "bg-slate-900 text-white" : "text-slate-700"
-            )
-          }
+        <button
+          onClick={handleLogout}
+          className={cn(
+            "flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium text-slate-700 hover:bg-slate-100",
+            collapsed && "justify-center"
+          )}
         >
           <Menu className="h-4 w-4" />
           <span className={cn(collapsed && "hidden")}>Logout</span>
-        </NavLink>
+        </button>
       </div>
     </aside>
   );

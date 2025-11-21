@@ -5,7 +5,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import NotificationsPanel from "./notifications/NotificationsPanel";
 import SearchModal from "./search/SearchModal";
-import { useAuthStore } from "@/lib/auth/useAuthStore";
+import { useAuthStore } from "@/store/useAuthStore";
 
 export default function Topbar() {
   const [searchOpen, setSearchOpen] = useState(false);
@@ -13,6 +13,7 @@ export default function Topbar() {
   const [dark, setDark] = useState(false);
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
+  const logout = useAuthStore((s) => s.logout);
 
   const initials = useMemo(() => user?.name?.slice(0, 2).toUpperCase() ?? "US", [user]);
 
@@ -36,7 +37,16 @@ export default function Topbar() {
             <p className="font-medium leading-none">{user?.name ?? "Guest"}</p>
             <p className="text-xs text-muted-foreground">{user?.role ?? "unauthenticated"}</p>
           </div>
-          <Button variant="outline" size="sm" onClick={() => navigate("/logout")}>Logout</Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              logout();
+              navigate("/login", { replace: true });
+            }}
+          >
+            Logout
+          </Button>
         </div>
       </div>
       <SearchModal open={searchOpen} onOpenChange={setSearchOpen} />
