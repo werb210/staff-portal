@@ -3,6 +3,8 @@ import LoginPage from "@/features/auth/LoginPage";
 import DashboardPage from "@/features/dashboard/DashboardPage";
 import AppLayout from "@/components/layout/AppLayout";
 import { useAuthStore } from "@/lib/auth/useAuthStore";
+import ApplicationsListPage from "@/features/applications/ApplicationsListPage";
+import ApplicationViewPage from "@/features/applications/ApplicationViewPage";
 
 function Protected({ children }: { children: JSX.Element }) {
   const token = useAuthStore((s) => s.token);
@@ -21,6 +23,28 @@ export default function App() {
             <Protected>
               <AppLayout>
                 <DashboardPage />
+              </AppLayout>
+            </Protected>
+          }
+        />
+
+        <Route
+          path="/applications"
+          element={
+            <Protected>
+              <AppLayout>
+                <ApplicationsListPage />
+              </AppLayout>
+            </Protected>
+          }
+        />
+
+        <Route
+          path="/applications/:id"
+          element={
+            <Protected>
+              <AppLayout>
+                <ApplicationViewPage />
               </AppLayout>
             </Protected>
           }
