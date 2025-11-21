@@ -46,7 +46,7 @@ export const NAV_ITEMS: { key: NavItemKey; label: string; to: string; roles?: Us
 
 export function filterNavByRole(role?: UserRole) {
   if (!role) return NAV_ITEMS;
-  if (role === "Lender") {
+  if (role === "lender") {
     return NAV_ITEMS.filter((item) => ["lenders", "notifications", "dashboard"].includes(item.key));
   }
   return NAV_ITEMS;

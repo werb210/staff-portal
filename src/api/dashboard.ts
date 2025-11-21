@@ -1,5 +1,5 @@
-import { http } from "./http";
+import api from "@/lib/api/client";
 
 export async function fetchDashboardStats() {
-  return http.get("/api/dashboard");
+  return api.get("/api/dashboard").then((res) => res.data);
 }

@@ -1,22 +1,21 @@
-import { http } from "./http";
+import api from "@/lib/api/client";
 
 export function listApplications(params: any = {}) {
-  const query = new URLSearchParams(params).toString();
-  return http.get(`/api/applications?${query}`);
+  return api.get(`/api/applications`, { params }).then((res) => res.data);
 }
 
 export function getApplication(id: string) {
-  return http.get(`/api/applications/${id}`);
+  return api.get(`/api/applications/${id}`).then((res) => res.data);
 }
 
 export function createApplication(data: any) {
-  return http.post(`/api/applications`, data);
+  return api.post(`/api/applications`, data).then((res) => res.data);
 }
 
 export function updateApplication(id: string, data: any) {
-  return http.put(`/api/applications/${id}`, data);
+  return api.put(`/api/applications/${id}`, data).then((res) => res.data);
 }
 
 export function deleteApplication(id: string) {
-  return http.del(`/api/applications/${id}`);
+  return api.delete(`/api/applications/${id}`).then((res) => res.data);
 }

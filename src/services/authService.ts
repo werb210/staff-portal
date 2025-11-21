@@ -1,4 +1,4 @@
-import { SessionUser, UserRole, useSessionStore } from "@/store/sessionStore";
+import { UserRole } from "@/lib/auth/useAuthStore";
 
 type LoginPayload = { email: string; password: string };
 
@@ -8,6 +8,14 @@ const mockPermissions: Record<UserRole, string[]> = {
   marketing: ["marketing", "analytics"],
   lender: ["lender"],
   referrer: ["referrer"],
+};
+
+type SessionUser = {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  permissions: string[];
 };
 
 const fakeFetch = async <T>(result: T, delay = 600): Promise<T> => {
@@ -33,7 +41,7 @@ export async function login(payload: LoginPayload) {
 }
 
 export async function logout() {
-  useSessionStore.getState().clearSession();
+  localStorage.removeItem("staff_portal_token");
   return fakeFetch({ success: true }, 200);
 }
 
@@ -47,10 +55,6 @@ export async function resetPassword(payload: { token: string; password: string }
 
 export async function verifyToken(token: string | null) {
   if (!token) throw new Error("Missing token");
-  const store = useSessionStore.getState();
-  if (store.user) {
-    return fakeFetch({ user: store.user, token, expiresAt: store.expiresAt });
-  }
   const decoded = atob(token).split(":");
   const role = decoded[1] as UserRole;
   const user: SessionUser = {

@@ -1,4 +1,4 @@
-import api from "../lib/api";
+import api from "@/lib/api/client";
 
 export const TagsAPI = {
   list: () => api.get("/api/tags"),

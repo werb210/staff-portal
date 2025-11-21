@@ -4,6 +4,10 @@
     "lib": ["DOM", "DOM.Iterable", "ES2020"],
     "module": "ESNext",
     "moduleResolution": "bundler",
+    "baseUrl": "./src",
+    "paths": {
+      "@/*": ["*"]
+    },
     "jsx": "react-jsx",
     "strict": true,
     "skipLibCheck": true,

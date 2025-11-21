@@ -1,16 +1,15 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, Lock } from "lucide-react";
 import { useForm } from "react-hook-form";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
-import { useSessionStore } from "@/store/sessionStore";
 import { useMutation } from "@tanstack/react-query";
-import { login } from "@/services/authService";
+import { useAuthStore } from "@/lib/auth/useAuthStore";
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -19,19 +18,10 @@ const loginSchema = z.object({
 
 type LoginInput = z.infer<typeof loginSchema>;
 
-const ROLE_REDIRECT: Record<string, string> = {
-  admin: "/admin",
-  staff: "/dashboard",
-  marketing: "/marketing",
-  lender: "/lender",
-  referrer: "/referrer",
-};
-
 export default function LoginPage() {
   const navigate = useNavigate();
-  const location = useLocation();
   const { addToast } = useToast();
-  const session = useSessionStore();
+  const login = useAuthStore((state) => state.login);
 
   const form = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
@@ -39,13 +29,10 @@ export default function LoginPage() {
   });
 
   const mutation = useMutation({
-    mutationFn: login,
-    onSuccess: (data) => {
-      session.setSession({ user: data.user, token: data.token, expiresAt: data.expiresAt });
-      const from = (location.state as any)?.from?.pathname;
-      const redirectTo = ROLE_REDIRECT[data.user.role] ?? "/dashboard";
-      navigate(from || redirectTo, { replace: true });
-      addToast({ title: "Signed in", description: `Welcome back ${data.user.name}`, variant: "success" });
+    mutationFn: ({ email, password }: LoginInput) => login(email, password),
+    onSuccess: () => {
+      navigate("/dashboard", { replace: true });
+      addToast({ title: "Signed in", description: "Welcome back", variant: "success" });
     },
     onError: () => addToast({ title: "Login failed", description: "Check your credentials", variant: "destructive" }),
   });
