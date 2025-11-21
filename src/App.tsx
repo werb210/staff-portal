@@ -1,46 +1,29 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-
-import LoginPage from "./pages/auth/LoginPage";
-import Dashboard from "./pages/dashboard/Dashboard";
-import AdminPanel from "./pages/admin/AdminPanel";
-import ClientsPage from "./pages/clients/ClientsPage";
-
-import AppLayout from "./layouts/AppLayout";
+import ProtectedRoute from "./components/auth/ProtectedRoute";
+import LoginPage from "./pages/Login";
+import Dashboard from "./pages/Dashboard";
+import Unauthorized from "./pages/Unauthorized";
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Public */}
         <Route path="/login" element={<LoginPage />} />
 
+        {/* Protected */}
         <Route
-          path="/dashboard"
+          path="/"
           element={
-            <AppLayout>
+            <ProtectedRoute roles={["admin", "staff"]}>
               <Dashboard />
-            </AppLayout>
+            </ProtectedRoute>
           }
         />
 
-        <Route
-          path="/clients"
-          element={
-            <AppLayout>
-              <ClientsPage />
-            </AppLayout>
-          }
-        />
-
-        <Route
-          path="/admin"
-          element={
-            <AppLayout>
-              <AdminPanel />
-            </AppLayout>
-          }
-        />
-
-        <Route path="*" element={<LoginPage />} />
+        {/* Generic */}
+        <Route path="/unauthorized" element={<Unauthorized />} />
+        <Route path="*" element={<Unauthorized />} />
       </Routes>
     </BrowserRouter>
   );
