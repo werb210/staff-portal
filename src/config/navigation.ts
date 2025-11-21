@@ -1,15 +1,4 @@
-import {
-  BarChart,
-  Briefcase,
-  Building2,
-  FileText,
-  Home,
-  Landmark,
-  Megaphone,
-  Shield,
-  Users,
-  Workflow,
-} from "lucide-react";
+import { BarChart, Building2, FileText, Home, Landmark, Megaphone, Settings, Shield, Users, Workflow } from "lucide-react";
 import { Role } from "@/store/auth";
 
 export interface NavItem {
@@ -24,11 +13,11 @@ export const NAV_ITEMS: NavItem[] = [
   { label: "Pipeline", to: "/pipeline", icon: Workflow, roles: ["admin", "staff"] },
   { label: "Contacts", to: "/contacts", icon: Users, roles: ["admin", "staff"] },
   { label: "Companies", to: "/companies", icon: Building2, roles: ["admin", "staff"] },
-  { label: "Deals", to: "/deals", icon: Briefcase, roles: ["admin", "staff"] },
   { label: "Documents", to: "/documents", icon: FileText, roles: ["admin", "staff"] },
   { label: "Marketing", to: "/marketing", icon: Megaphone, roles: ["admin", "staff"] },
   { label: "Analytics", to: "/analytics", icon: BarChart, roles: ["admin"] },
   { label: "Admin", to: "/admin", icon: Shield, roles: ["admin"] },
+  { label: "Settings", to: "/settings", icon: Settings, roles: ["admin"] },
   { label: "Lender Portal", to: "/lender", icon: Landmark, roles: ["lender"] },
   { label: "Referrer Portal", to: "/referrer", icon: Landmark, roles: ["referrer"] },
 ];
