@@ -1,6 +1,6 @@
 import { Routes, Route } from "react-router-dom";
 import { ProtectedRoute } from "./ProtectedRoute";
-import { DashboardLayout } from "../layouts/DashboardLayout";
+import AppLayout from "../layouts/AppLayout";
 
 // Screens
 import LoginPage from "../screens/LoginPage";
@@ -15,20 +15,17 @@ export function AppRouter() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
 
-      <Route
-        path="/"
-        element={
-          <ProtectedRoute>
-            <DashboardLayout />
-          </ProtectedRoute>
-        }
-      >
-        <Route index element={<DashboardHome />} />
-        <Route path="users" element={<UsersPage />} />
-        <Route path="applications" element={<ApplicationsPage />} />
-        <Route path="ocr" element={<OCRPage />} />
-        <Route path="tags" element={<TagsPage />} />
+      <Route element={<ProtectedRoute />}>
+        <Route element={<AppLayout />}>
+          <Route index element={<DashboardHome />} />
+          <Route path="/applications" element={<ApplicationsPage />} />
+          <Route path="/search" element={<OCRPage />} />
+          <Route path="/tags" element={<TagsPage />} />
+          <Route path="/users" element={<UsersPage />} />
+        </Route>
       </Route>
+
+      <Route path="*" element={<LoginPage />} />
     </Routes>
   );
 }
