@@ -1,18 +1,22 @@
-import { useAuth } from "../../providers/AuthProvider";
+import { useAuth } from "../../context/AuthContext";
 
-export function Topbar() {
-  const { logout, user } = useAuth();
+export default function Topbar() {
+  const { user, logout } = useAuth();
 
   return (
-    <header className="h-14 bg-white border-b flex items-center justify-between px-6">
-      <div className="text-gray-700 font-medium">Welcome, {user?.firstName || "User"}</div>
+    <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6">
+      <div className="font-medium text-gray-700">Staff Portal</div>
 
-      <button
-        onClick={logout}
-        className="px-3 py-1 text-sm bg-red-500 text-white rounded-md hover:bg-red-600"
-      >
-        Logout
-      </button>
+      <div className="flex items-center gap-4">
+        <span className="text-gray-600">{user?.email}</span>
+
+        <button
+          onClick={logout}
+          className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100"
+        >
+          Logout
+        </button>
+      </div>
     </header>
   );
 }
