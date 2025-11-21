@@ -1,5 +1,5 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
-import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import ProtectedRoute from "@/components/routing/ProtectedRoute";
 import AppRoot from "@/components/layout/AppRoot";
 import LoginPage from "@/pages/auth/LoginPage";
 import Unauthorized from "@/pages/auth/Unauthorized";
@@ -15,10 +15,10 @@ import NotFoundPage from "@/pages/errors/NotFoundPage";
 import AdminPage from "@/pages/roles/AdminPage";
 import LenderPage from "@/pages/roles/LenderPage";
 import ReferrerPage from "@/pages/roles/ReferrerPage";
-import { Role, useAuthStore } from "@/store/auth";
+import { Role, useAuthStore } from "@/store/authStore";
 
 function RoleRedirect() {
-  const role = useAuthStore((state) => state.role);
+  const role = useAuthStore((state) => state.user?.role);
 
   const redirectForRole: Record<Exclude<Role, null>, string> = {
     admin: "/admin",

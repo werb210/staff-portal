@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import LoadingState from "@/components/states/LoadingState";
 import ErrorState from "@/components/states/ErrorState";
-import http from "@/lib/http";
+import apiClient from "@/lib/apiClient";
 import { Badge } from "@/components/ui/badge";
 
 interface Props {
@@ -29,7 +29,7 @@ export default function ContactDrawer({ contactId, open, onClose }: Props) {
   const detailQuery = useQuery({
     queryKey: ["contact", contactId],
     queryFn: async () => {
-      const res = await http.get<ContactDetail>(`/api/contacts/${contactId}`);
+      const res = await apiClient.get<ContactDetail>(`/api/contacts/${contactId}`);
       return res.data;
     },
     enabled: open,

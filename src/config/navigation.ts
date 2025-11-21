@@ -1,5 +1,5 @@
 import { BarChart, Building2, FileText, Home, Landmark, Megaphone, Settings, Shield, Users, Workflow } from "lucide-react";
-import { Role } from "@/store/auth";
+import { Role } from "@/store/authStore";
 
 export interface NavItem {
   label: string;
@@ -22,6 +22,6 @@ export const NAV_ITEMS: NavItem[] = [
   { label: "Referrer Portal", to: "/referrer", icon: Landmark, roles: ["referrer"] },
 ];
 
-export function filterByRole(role: Role) {
+export function filterByRole(role: Role | null | undefined) {
   return NAV_ITEMS.filter((item) => !item.roles || (role ? item.roles.includes(role) : false));
 }

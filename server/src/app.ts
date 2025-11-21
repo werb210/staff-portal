@@ -10,7 +10,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.use("/api/auth", authRoutes);
+app.use("/api/auth", authRoutes); // deprecated - not used
+app.use("/api/users", authRoutes);
 app.use("/api/applications", applicationsFullRoutes);
 app.use("/api/applications/paged", applicationsPagedRoutes);
 app.use("/api/dashboard", dashboardRoutes);

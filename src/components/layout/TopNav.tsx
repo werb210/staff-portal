@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { useAuthStore } from "@/store/auth";
+import { useAuthStore } from "@/store/authStore";
 
 export default function TopNav() {
   const user = useAuthStore((state) => state.user);

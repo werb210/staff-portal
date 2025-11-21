@@ -1,3 +1,4 @@
+// legacy – not consumed by active auth system
 import { create } from "zustand";
 import { AuthAPI } from "@/services/auth";
 import { TOKEN_STORAGE_KEY, setUnauthorizedHandler } from "@/lib/http";
