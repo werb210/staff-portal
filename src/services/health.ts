@@ -1,5 +1,5 @@
-import api from "@/lib/api";
+import { http } from "@/lib/http";
 
 export const HealthAPI = {
-  ping: () => api.get("/api/_int/health"),
+  ping: () => http.get("/api/_int/health"),
 };

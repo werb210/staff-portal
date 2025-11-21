@@ -1,53 +1,52 @@
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { http } from "@/lib/http";
 
 export default function LoginPage() {
-  const { login } = useAuth();
+  const { setUserAndToken } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [err, setErr] = useState("");
+  const [error, setError] = useState("");
 
-  async function submit(e: React.FormEvent) {
+  async function handleSubmit(e: any) {
     e.preventDefault();
-    setErr("");
+    setError("");
+
     try {
-      await login(email, password);
-    } catch {
-      setErr("Invalid email or password");
+      const res = await http.post("/api/auth/login", { email, password });
+      const { token, user } = res.data;
+
+      setUserAndToken(token, user);
+
+      window.location.href = "/";
+    } catch (err: any) {
+      setError("Invalid credentials.");
     }
   }
 
   return (
-    <div className="w-full h-screen flex items-center justify-center bg-gray-100">
-      <form
-        onSubmit={submit}
-        className="bg-white p-6 rounded shadow w-96 flex flex-col gap-4"
-      >
-        <h1 className="text-xl font-bold text-center">Login</h1>
-
-        {err && <p className="text-red-600 text-center">{err}</p>}
+    <div className="flex items-center justify-center h-screen bg-gray-50">
+      <form className="bg-white shadow p-8 w-96 space-y-4" onSubmit={handleSubmit}>
+        <h1 className="text-xl font-semibold">Login</h1>
 
         <input
-          className="border p-2 rounded"
+          className="border w-full p-2"
           placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
 
         <input
-          className="border p-2 rounded"
-          type="password"
+          className="border w-full p-2"
           placeholder="Password"
+          type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
 
-        <button
-          type="submit"
-          className="bg-blue-600 text-white p-2 rounded hover:bg-blue-700"
-        >
-          Login
-        </button>
+        {error && <p className="text-red-500">{error}</p>}
+
+        <button className="bg-blue-600 text-white p-2 w-full">Login</button>
       </form>
     </div>
   );

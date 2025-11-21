@@ -1,64 +1,65 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import api from "@/lib/api";
+import { http } from "@/lib/http";
 
-type User = {
+interface User {
   id: string;
   email: string;
   role: string;
-};
+}
 
-type AuthContextType = {
+interface AuthContextState {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  setUserAndToken: (token: string, user: User) => void;
   logout: () => void;
-};
+}
 
-const AuthContext = createContext<AuthContextType>({
+const AuthContext = createContext<AuthContextState>({
   user: null,
   loading: true,
-  login: async () => {},
+  setUserAndToken: () => {},
   logout: () => {},
 });
 
-export function useAuth() {
-  return useContext(AuthContext);
-}
-
-export default function AuthProvider({ children }: { children: React.ReactNode }) {
+export default function AuthProvider({ children }: any) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  async function loadSession() {
-    try {
-      const res = await api.get("/api/auth/me");
-      setUser(res.data.user);
-    } catch {
-      setUser(null);
+  // Load session on boot
+  useEffect(() => {
+    const token = localStorage.getItem("auth_token");
+    if (!token) {
+      setLoading(false);
+      return;
     }
-    setLoading(false);
-  }
 
-  async function login(email: string, password: string) {
-    const res = await api.post("/api/auth/login", { email, password });
-    localStorage.setItem("token", res.data.token);
-    await loadSession();
-    window.location.href = "/";
+    http
+      .get("/api/auth/me")
+      .then((res) => setUser(res.data.user))
+      .catch(() => {
+        localStorage.removeItem("auth_token");
+        localStorage.removeItem("auth_user");
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  function setUserAndToken(token: string, user: User) {
+    localStorage.setItem("auth_token", token);
+    localStorage.setItem("auth_user", JSON.stringify(user));
+    setUser(user);
   }
 
   function logout() {
-    localStorage.removeItem("token");
-    setUser(null);
+    localStorage.removeItem("auth_token");
+    localStorage.removeItem("auth_user");
     window.location.href = "/login";
   }
 
-  useEffect(() => {
-    loadSession();
-  }, []);
-
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, setUserAndToken, logout }}>
       {children}
     </AuthContext.Provider>
   );
 }
+
+export const useAuth = () => useContext(AuthContext);

@@ -1,9 +1,9 @@
-import api from "@/lib/api";
+import { http } from "@/lib/http";
 
 export const ApplicationsAPI = {
-  list: () => api.get("/api/applications"),
-  get: (id: string) => api.get(`/api/applications/${id}`),
-  create: (data: any) => api.post("/api/applications", data),
-  update: (id: string, data: any) => api.put(`/api/applications/${id}`, data),
-  remove: (id: string) => api.delete(`/api/applications/${id}`),
+  list: () => http.get("/api/applications"),
+  get: (id: string) => http.get(`/api/applications/${id}`),
+  create: (data: any) => http.post("/api/applications", data),
+  update: (id: string, data: any) => http.put(`/api/applications/${id}`, data),
+  remove: (id: string) => http.delete(`/api/applications/${id}`),
 };

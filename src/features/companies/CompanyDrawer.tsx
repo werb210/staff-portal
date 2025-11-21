@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import LoadingState from "@/components/states/LoadingState";
 import ErrorState from "@/components/states/ErrorState";
-import api from "@/lib/api";
+import { http } from "@/lib/http";
 import { Badge } from "@/components/ui/badge";
 
 interface Props {
@@ -30,7 +30,7 @@ export default function CompanyDrawer({ companyId, open, onClose }: Props) {
   const detailQuery = useQuery({
     queryKey: ["company", companyId],
     queryFn: async () => {
-      const res = await api.get<CompanyDetail>(`/api/companies/${companyId}`);
+      const res = await http.get<CompanyDetail>(`/api/companies/${companyId}`);
       return res.data;
     },
     enabled: open,
