@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { useMoveApplication, usePipelineApplications, usePipelineStages } from "@/hooks/pipeline";
 import { PipelineStage } from "@/features/pipeline/PipelineTypes";
 
+import { PipelineDrawer } from "./drawer";
 import PipelineColumn from "./PipelineColumn";
 
 export function PipelineBoard() {
@@ -73,14 +74,17 @@ export function PipelineBoard() {
   }
 
   return (
-    <ScrollArea className="w-full">
-      <div className={cn("grid", "grid-cols-[repeat(auto-fit,minmax(350px,1fr))]", "gap-6 pb-4")}> 
-        {stages.map((stage: PipelineStage) => (
-          <PipelineColumn stage={stage} key={stage.id} />
-        ))}
-      </div>
-      <div className="sr-only">{primedApplications.data?.length ?? 0} applications cached</div>
-    </ScrollArea>
+    <>
+      <ScrollArea className="w-full">
+        <div className={cn("grid", "grid-cols-[repeat(auto-fit,minmax(350px,1fr))]", "gap-6 pb-4")}>
+          {stages.map((stage: PipelineStage) => (
+            <PipelineColumn stage={stage} key={stage.id} />
+          ))}
+        </div>
+        <div className="sr-only">{primedApplications.data?.length ?? 0} applications cached</div>
+      </ScrollArea>
+      <PipelineDrawer />
+    </>
   );
 }
 
