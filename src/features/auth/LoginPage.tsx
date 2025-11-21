@@ -1,71 +1,84 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { login } from "./LoginService";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { loginSchema, LoginInput } from "./loginSchema";
+import { useLogin } from "./useLogin";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 
 export default function LoginPage() {
-  const nav = useNavigate();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [errMsg, setErrMsg] = useState("");
+  const form = useForm<LoginInput>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
 
-  async function handleLogin(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    setErrMsg("");
+  const login = useLogin();
 
-    try {
-      await login({ email, password });
-      nav("/app/dashboard");
-    } catch (err: any) {
-      setErrMsg(err?.response?.data?.message || "Login failed");
-    } finally {
-      setLoading(false);
-    }
+  function submit(values: LoginInput) {
+    login.mutate(values);
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-6">
-      <form
-        onSubmit={handleLogin}
-        className="w-full max-w-sm bg-white shadow p-6 rounded"
-      >
-        <h2 className="text-2xl font-bold mb-4 text-center">Staff Login</h2>
+    <div className="min-h-screen w-full flex items-center justify-center bg-gray-50">
+      <Card className="w-full max-w-md shadow-xl border border-gray-200">
+        <CardHeader>
+          <CardTitle className="text-center text-2xl font-semibold">
+            Staff Portal Login
+          </CardTitle>
+        </CardHeader>
 
-        <label className="block mb-3">
-          <span className="text-gray-700">Email</span>
-          <input
-            type="email"
-            className="mt-1 w-full border rounded p-2"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-        </label>
+        <CardContent>
+          <form
+            onSubmit={form.handleSubmit(submit)}
+            className="flex flex-col gap-4"
+          >
+            <div>
+              <label className="block text-sm mb-1 font-medium">Email</label>
+              <Input
+                type="email"
+                {...form.register("email")}
+                disabled={login.isPending}
+              />
+              {form.formState.errors.email && (
+                <p className="text-red-600 text-sm mt-1">
+                  {form.formState.errors.email.message}
+                </p>
+              )}
+            </div>
 
-        <label className="block mb-4">
-          <span className="text-gray-700">Password</span>
-          <input
-            type="password"
-            className="mt-1 w-full border rounded p-2"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-        </label>
+            <div>
+              <label className="block text-sm mb-1 font-medium">Password</label>
+              <Input
+                type="password"
+                {...form.register("password")}
+                disabled={login.isPending}
+              />
+              {form.formState.errors.password && (
+                <p className="text-red-600 text-sm mt-1">
+                  {form.formState.errors.password.message}
+                </p>
+              )}
+            </div>
 
-        {errMsg && (
-          <p className="text-red-600 text-sm mb-4 text-center">{errMsg}</p>
-        )}
+            {login.isError && (
+              <p className="text-red-600 text-sm">
+                Invalid credentials. Try again.
+              </p>
+            )}
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded font-semibold"
-        >
-          {loading ? "Signing in…" : "Login"}
-        </button>
-      </form>
+            <Button
+              type="submit"
+              disabled={login.isPending}
+              className="w-full mt-2"
+            >
+              {login.isPending ? "Signing in…" : "Sign in"}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 }
