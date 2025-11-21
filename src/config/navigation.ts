@@ -1,4 +1,4 @@
-import { UserRole } from "@/store/sessionStore";
+import { UserRole } from "@/lib/auth/useAuthStore";
 import {
   BarChart3,
   Building2,

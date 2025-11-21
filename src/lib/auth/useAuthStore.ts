@@ -1,63 +1,85 @@
 import { create } from "zustand";
+import { AuthAPI } from "@/services/auth";
 
 export const TOKEN_STORAGE_KEY = "staff_portal_token";
-export const ROLE_STORAGE_KEY = "staff_portal_role";
-export const EMAIL_STORAGE_KEY = "staff_portal_email";
 
-export type UserRole = "Admin" | "Staff" | "Lender" | "Referrer" | string;
+export type UserRole = "admin" | "staff" | "marketing" | "lender" | "referrer";
 
 export interface AuthUser {
+  id?: string;
+  name?: string;
   email?: string;
   role: UserRole;
+  permissions?: string[];
 }
 
 interface AuthState {
   token: string | null;
   user: AuthUser | null;
-
-  setAuth: (token: string, role: UserRole, email?: string) => void;
+  loading: boolean;
+  initialized: boolean;
+  setAuth: (token: string, user: AuthUser) => void;
+  login: (email: string, password: string) => Promise<void>;
   logout: () => void;
+  initialize: () => Promise<void>;
 }
 
-const getInitialState = (): Pick<AuthState, "token" | "user"> => {
-  const token = localStorage.getItem(TOKEN_STORAGE_KEY);
-  const role = localStorage.getItem(ROLE_STORAGE_KEY) as UserRole | null;
-  const email = localStorage.getItem(EMAIL_STORAGE_KEY) || undefined;
+export const useAuthStore = create<AuthState>((set, get) => ({
+  token: localStorage.getItem(TOKEN_STORAGE_KEY),
+  user: null,
+  loading: false,
+  initialized: false,
 
-  if (!token || !role) return { token: null, user: null };
+  setAuth: (token, user) => {
+    localStorage.setItem(TOKEN_STORAGE_KEY, token);
+    set({ token, user });
+  },
 
-  return {
-    token,
-    user: { role, email },
-  };
-};
+  login: async (email: string, password: string) => {
+    set({ loading: true });
+    try {
+      const res = await AuthAPI.login({ email, password });
+      const token = res.data?.token ?? res.data?.accessToken ?? "";
 
-export const useAuthStore = create<AuthState>((set) => ({
-  ...getInitialState(),
-
-  setAuth: (token, role, email) =>
-    set(() => {
-      localStorage.setItem(TOKEN_STORAGE_KEY, token);
-      localStorage.setItem(ROLE_STORAGE_KEY, role);
-      if (email) {
-        localStorage.setItem(EMAIL_STORAGE_KEY, email);
+      if (!token) {
+        throw new Error("Missing access token from auth response");
       }
 
-      return {
-        token,
-        user: { role, email },
-      };
-    }),
+      localStorage.setItem(TOKEN_STORAGE_KEY, token);
 
-  logout: () =>
-    set(() => {
+      const me = await AuthAPI.me();
+      const user = me.data?.user ?? me.data;
+
+      set({ token, user, loading: false, initialized: true });
+    } catch (error) {
       localStorage.removeItem(TOKEN_STORAGE_KEY);
-      localStorage.removeItem(ROLE_STORAGE_KEY);
-      localStorage.removeItem(EMAIL_STORAGE_KEY);
+      set({ token: null, user: null, loading: false, initialized: true });
+      throw error;
+    }
+  },
 
-      return {
-        token: null,
-        user: null,
-      };
-    }),
+  logout: () => {
+    localStorage.removeItem(TOKEN_STORAGE_KEY);
+    set({ token: null, user: null });
+  },
+
+  initialize: async () => {
+    if (get().initialized) return;
+
+    const token = localStorage.getItem(TOKEN_STORAGE_KEY);
+    if (!token) {
+      set({ initialized: true, loading: false, token: null, user: null });
+      return;
+    }
+
+    set({ loading: true });
+    try {
+      const me = await AuthAPI.me();
+      const user = me.data?.user ?? me.data;
+      set({ token, user, initialized: true, loading: false });
+    } catch (error) {
+      localStorage.removeItem(TOKEN_STORAGE_KEY);
+      set({ token: null, user: null, initialized: true, loading: false });
+    }
+  },
 }));

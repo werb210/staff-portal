@@ -1,18 +1,16 @@
-import { api } from "./client";
+import api from "@/lib/api/client";
 
 export async function login(email: string, password: string) {
-  const res = await api("/api/auth/login", {
-    method: "POST",
-    body: JSON.stringify({ email, password }),
-  });
+  const res = await api.post("/api/auth/login", { email, password });
 
-  if ((res as any)?.token) {
-    localStorage.setItem("token", (res as any).token);
+  if (res.data?.token) {
+    localStorage.setItem("token", res.data.token);
   }
 
-  return res as { user?: any; token?: string } | undefined;
+  return res.data as { user?: any; token?: string } | undefined;
 }
 
 export async function getSession() {
-  return api("/api/auth/session");
+  const res = await api.get("/api/auth/session");
+  return res.data;
 }

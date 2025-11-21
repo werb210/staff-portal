@@ -1,16 +1,37 @@
-import { Navigate, Outlet } from "react-router-dom";
-import { useAuth } from "../providers/AuthProvider";
+import { useEffect } from "react";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
+import { useAuthStore, type UserRole } from "@/lib/auth/useAuthStore";
 
-type ProtectedRouteProps = {
+interface ProtectedRouteProps {
+  allow?: UserRole[];
   children?: JSX.Element;
-  allow?: string[];
-};
+}
 
-export function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { token, loading } = useAuth();
+export function ProtectedRoute({ allow, children }: ProtectedRouteProps) {
+  const location = useLocation();
+  const { token, user, loading, initialized } = useAuthStore((state) => ({
+    token: state.token,
+    user: state.user,
+    loading: state.loading,
+    initialized: state.initialized,
+  }));
+  const initialize = useAuthStore((state) => state.initialize);
 
-  if (loading) return <div className="p-6 text-gray-600">Loading...</div>;
-  if (!token) return <Navigate to="/login" replace />;
+  useEffect(() => {
+    initialize();
+  }, [initialize]);
+
+  if (!initialized || loading) {
+    return <div className="p-6 text-gray-600">Loading...</div>;
+  }
+
+  if (!token || !user) {
+    return <Navigate to="/login" replace state={{ from: location }} />;
+  }
+
+  if (allow && !allow.includes(user.role)) {
+    return <Navigate to="/forbidden" replace />;
+  }
 
   return children ?? <Outlet />;
 }

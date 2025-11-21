@@ -1,7 +1,7 @@
-import { useAuth } from "../lib/auth/AuthContext";
+import { useAuthStore } from "@/lib/auth/useAuthStore";
 
 export default function Dashboard() {
-  const { logout } = useAuth();
+  const logout = useAuthStore((state) => state.logout);
 
   return (
     <div className="p-10">

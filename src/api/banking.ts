@@ -1,13 +1,13 @@
-import { http } from "./http";
+import api from "@/lib/api/client";
 
 export function runBankingAnalysis(applicationId: string) {
-  return http.post(`/api/banking/analyze`, { applicationId });
+  return api.post(`/api/banking/analyze`, { applicationId }).then((res) => res.data);
 }
 
 export function getBankingSummary(applicationId: string) {
-  return http.get(`/api/banking/summary/${applicationId}`);
+  return api.get(`/api/banking/summary/${applicationId}`).then((res) => res.data);
 }
 
 export function getBankingTransactions(applicationId: string) {
-  return http.get(`/api/banking/transactions/${applicationId}`);
+  return api.get(`/api/banking/transactions/${applicationId}`).then((res) => res.data);
 }

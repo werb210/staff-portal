@@ -5,14 +5,14 @@ import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import NotificationsPanel from "./notifications/NotificationsPanel";
 import SearchModal from "./search/SearchModal";
-import { useSessionStore } from "@/store/sessionStore";
+import { useAuthStore } from "@/lib/auth/useAuthStore";
 
 export default function Topbar() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [dark, setDark] = useState(false);
   const navigate = useNavigate();
-  const user = useSessionStore((s) => s.user);
+  const user = useAuthStore((s) => s.user);
 
   const initials = useMemo(() => user?.name?.slice(0, 2).toUpperCase() ?? "US", [user]);
 
