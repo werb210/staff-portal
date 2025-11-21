@@ -1,10 +1,4 @@
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  type ReactNode,
-} from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { api } from "../lib/api";
 
 interface User {
@@ -13,53 +7,48 @@ interface User {
   role: string;
 }
 
-interface AuthState {
+interface AuthContextShape {
   user: User | null;
-  loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (token: string) => void;
   logout: () => void;
 }
 
-const AuthContext = createContext<AuthState | null>(null);
+const AuthContext = createContext<AuthContextShape | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
 
-  // Load session
+  // Load stored token on boot
   useEffect(() => {
-    async function loadMe() {
-      const token = localStorage.getItem("bf_staff_token");
-      if (!token) {
-        setLoading(false);
-        return;
-      }
-      try {
-        const res = await api.get("/api/users/me");
-        setUser(res.data.user);
-      } catch {
-        localStorage.removeItem("bf_staff_token");
-      }
-      setLoading(false);
-    }
-    loadMe();
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    api.setToken(token);
+    api.get("/auth/me")
+      .then((res) => setUser(res.data.user))
+      .catch(() => {
+        localStorage.removeItem("token");
+        setUser(null);
+      });
   }, []);
 
-  const login = async (email: string, password: string) => {
-    const res = await api.post("/api/auth/login", { email, password });
-    localStorage.setItem("bf_staff_token", res.data.token);
-    const me = await api.get("/api/users/me");
-    setUser(me.data.user);
+  const login = (token: string) => {
+    localStorage.setItem("token", token);
+    api.setToken(token);
+
+    api.get("/auth/me")
+      .then((res) => setUser(res.data.user))
+      .catch(() => logout());
   };
 
   const logout = () => {
-    localStorage.removeItem("bf_staff_token");
+    localStorage.removeItem("token");
+    api.clearToken();
     setUser(null);
-    window.location.href = "/login";
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
@@ -67,6 +56,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth() {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be inside AuthProvider");
+  if (!ctx) throw new Error("useAuth outside AuthProvider");
   return ctx;
 }
