@@ -1,3 +1,4 @@
+// legacy – not consumed by active auth system
 import { ReactNode, useEffect } from "react";
 import { Navigate, Outlet } from "react-router-dom";
 import { Role, useAuthStore } from "@/store/auth";

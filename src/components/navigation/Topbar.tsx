@@ -4,7 +4,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import NotificationsPanel from "./notifications/NotificationsPanel";
 import SearchModal from "./search/SearchModal";
-import { useAuthStore } from "@/store/auth";
+import { useAuthStore } from "@/store/authStore";
 
 export default function Topbar() {
   const [searchOpen, setSearchOpen] = useState(false);

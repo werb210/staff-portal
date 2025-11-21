@@ -1,3 +1,4 @@
+// legacy – not consumed by active auth system
 import { useAuthStore } from "@/store/auth";
 
 export default function LogoutButton() {

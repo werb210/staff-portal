@@ -1,8 +1,10 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuthStore } from "@/store/auth";
+import apiClient from "@/lib/apiClient";
+import { pushToast } from "@/components/ui/toast";
+import { useAuthStore, Role } from "@/store/authStore";
 
-const ROLE_REDIRECTS: Record<string, string> = {
+const ROLE_REDIRECTS: Record<Role, string> = {
   admin: "/admin",
   staff: "/dashboard",
   lender: "/lender",
@@ -10,37 +12,63 @@ const ROLE_REDIRECTS: Record<string, string> = {
 };
 
 export default function LoginPage() {
-  const login = useAuthStore((state) => state.login);
-  const role = useAuthStore((state) => state.role);
-  const token = useAuthStore((state) => state.token);
   const navigate = useNavigate();
+  const { login, isAuthenticated, user } = useAuthStore((state) => state);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   const destination = useMemo(() => {
+    const role = user?.role?.toLowerCase?.() as Role | undefined;
     if (!role) return null;
-    const normalized = role.toLowerCase?.() ?? role;
-    return ROLE_REDIRECTS[normalized] ?? "/dashboard";
-  }, [role]);
+    return ROLE_REDIRECTS[role] ?? "/dashboard";
+  }, [user?.role]);
 
   useEffect(() => {
-    if (token && destination) {
+    if (isAuthenticated && destination) {
       navigate(destination, { replace: true });
     }
-  }, [destination, navigate, token]);
+  }, [destination, isAuthenticated, navigate]);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError("");
+    setSubmitting(true);
 
     try {
-      const userRole = (await login(email, password))?.toLowerCase?.();
-      const redirectPath = userRole ? ROLE_REDIRECTS[userRole] ?? "/dashboard" : "/dashboard";
+      const response = await apiClient.post("/api/users/login", { email, password });
+      const { token, user: nextUser } = response.data ?? {};
+
+      if (!token || !nextUser) {
+        throw new Error("Invalid login response");
+      }
+
+      login(token, nextUser);
+
+      const userRole = (nextUser.role?.toLowerCase?.() ?? "") as Role;
+      const redirectPath = ROLE_REDIRECTS[userRole] ?? "/dashboard";
+      pushToast({
+        title: "Welcome",
+        description: "You have been signed in.",
+        variant: "success",
+      });
       navigate(redirectPath, { replace: true });
     } catch (err: any) {
-      setError(err?.response?.data?.message || "Login failed");
+      const message =
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        err?.message ||
+        "Login failed";
+      setError(message);
+      pushToast({
+        title: "Authentication failed",
+        description: message,
+        variant: "destructive",
+      });
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -60,6 +88,7 @@ export default function LoginPage() {
           placeholder="Email"
           onChange={(e) => setEmail(e.target.value)}
           className="w-full border p-2 rounded"
+          required
         />
 
         <input
@@ -68,13 +97,15 @@ export default function LoginPage() {
           placeholder="Password"
           onChange={(e) => setPassword(e.target.value)}
           className="w-full border p-2 rounded"
+          required
         />
 
         <button
           type="submit"
-          className="w-full bg-blue-600 text-white rounded p-2"
+          className="w-full bg-blue-600 text-white rounded p-2 disabled:opacity-50"
+          disabled={submitting}
         >
-          Login
+          {submitting ? "Signing in..." : "Login"}
         </button>
       </form>
     </div>

@@ -1,4 +1,11 @@
-import { createContext, ReactNode, useContext, useMemo, useState } from "react";
+import {
+  createContext,
+  ReactNode,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { cn } from "@/lib/utils";
 
 interface ToastItem {
@@ -16,6 +23,12 @@ interface ToastContextValue {
 
 const ToastContext = createContext<ToastContextValue | null>(null);
 
+let globalAddToast: ((item: Omit<ToastItem, "id">) => void) | null = null;
+
+export function pushToast(item: Omit<ToastItem, "id">) {
+  globalAddToast?.(item);
+}
+
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
 
@@ -31,6 +44,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     }),
     [toasts]
   );
+
+  useEffect(() => {
+    globalAddToast = value.addToast;
+    return () => {
+      globalAddToast = null;
+    };
+  }, [value.addToast]);
 
   return (
     <ToastContext.Provider value={value}>
