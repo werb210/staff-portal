@@ -6,6 +6,7 @@ import {
   type ReactNode,
 } from "react";
 import { AuthAPI } from "../api/endpoints";
+import { TOKEN_STORAGE_KEY, useAuthStore } from "./useAuthStore";
 
 type User = {
   id: string;
@@ -23,17 +24,28 @@ type AuthContextShape = {
 const AuthContext = createContext<AuthContextShape>(null as any);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const user = useAuthStore((state) => state.user);
+  const setAuth = useAuthStore((state) => state.setAuth);
+  const clearAuth = useAuthStore((state) => state.logout);
 
   async function loadSession() {
+    const token = localStorage.getItem(TOKEN_STORAGE_KEY);
+
+    if (!token) {
+      clearAuth();
+      setLoading(false);
+      return;
+    }
+
     try {
       const res = await AuthAPI.me();
-      setUser(res.data.user);
+      setAuth(token, res.data.user);
     } catch {
-      setUser(null);
+      clearAuth();
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   useEffect(() => {
@@ -44,13 +56,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const res = await AuthAPI.login({ email, password });
     const token = res.data.token;
 
-    localStorage.setItem("bf_token", token);
-    await loadSession();
+    if (!token) return;
+
+    localStorage.setItem(TOKEN_STORAGE_KEY, token);
+
+    try {
+      const me = await AuthAPI.me();
+      setAuth(token, me.data.user);
+    } catch (error) {
+      clearAuth();
+      throw error;
+    }
   }
 
   function logout() {
-    localStorage.removeItem("bf_token");
-    setUser(null);
+    clearAuth();
     window.location.href = "/login";
   }
 
