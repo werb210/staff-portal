@@ -1,68 +1,40 @@
-import { Routes, Route } from "react-router-dom";
-import LoginPage from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
-import { ProtectedRoute } from "./lib/auth/ProtectedRoute";
-import { Layout } from "./lib/ui/layout/Layout";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+
+import LoginPage from "./pages/auth/LoginPage";
+import Dashboard from "./pages/dashboard/Dashboard";
+import AdminPanel from "./pages/admin/AdminPanel";
+
+import { Protected } from "./routes/protected";
 
 export default function App() {
   return (
-    <Routes>
-      <Route path="/login" element={<LoginPage />} />
+    <BrowserRouter>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
 
-      <Route
-        path="/"
-        element={
-          <ProtectedRoute>
-            <Layout>
+        {/* STAFF */}
+        <Route
+          path="/dashboard"
+          element={
+            <Protected>
               <Dashboard />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
+            </Protected>
+          }
+        />
 
-      <Route
-        path="/applications"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <div>Applications Page</div>
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
+        {/* ADMIN */}
+        <Route
+          path="/admin"
+          element={
+            <Protected>
+              <AdminPanel />
+            </Protected>
+          }
+        />
 
-      <Route
-        path="/contacts"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <div>Contacts Page</div>
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/lenders"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <div>Lender Management</div>
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/reports"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <div>Reports Page</div>
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-    </Routes>
+        {/* DEFAULT → login */}
+        <Route path="*" element={<LoginPage />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
