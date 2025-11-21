@@ -1,6 +1,6 @@
 import { QueryClientProvider } from "@tanstack/react-query";
 import { ReactNode } from "react";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient } from "../lib/queryClient";
 
 // legacy provider – retained for compatibility
 export function QueryProvider({ children }: { children: ReactNode }) {

@@ -1,23 +1,25 @@
+// LEGACY ROUTER — NOT MOUNTED
+// Replaced by unified AppRouter in src/AppRouter.tsx
 // LEGACY AUTH — DO NOT USE
 // Replaced by unified auth system in src/lib/auth/
 import { createBrowserRouter, Navigate } from "react-router-dom";
-import ProtectedRoute from "@/components/routing/ProtectedRoute";
-import AppRoot from "@/components/layout/AppRoot";
-import LoginPage from "@/pages/auth/LoginPage";
-import Unauthorized from "@/pages/auth/Unauthorized";
-import CompaniesPage from "@/pages/companies/CompaniesPage";
-import ContactsPage from "@/pages/contacts/ContactsPage";
-import DashboardPage from "@/pages/dashboard/Dashboard";
-import DocumentsPage from "@/pages/documents/DocumentsPage";
-import AnalyticsPage from "@/pages/analytics/AnalyticsPage";
-import MarketingPage from "@/pages/marketing/MarketingPage";
-import PipelinePage from "@/pages/pipeline/PipelinePage";
-import SettingsPage from "@/pages/settings/SettingsPage";
-import NotFoundPage from "@/pages/errors/NotFoundPage";
-import AdminPage from "@/pages/roles/AdminPage";
-import LenderPage from "@/pages/roles/LenderPage";
-import ReferrerPage from "@/pages/roles/ReferrerPage";
-import { Role, useAuthStore } from "@/store/authStore";
+import ProtectedRoute from "../components/routing/ProtectedRoute";
+import AppRoot from "../components/layout/AppRoot";
+import LoginPage from "../pages/auth/LoginPage";
+import Unauthorized from "../pages/auth/Unauthorized";
+import CompaniesPage from "../pages/companies/CompaniesPage";
+import ContactsPage from "../pages/contacts/ContactsPage";
+import DashboardPage from "../pages/dashboard/Dashboard";
+import DocumentsPage from "../pages/documents/DocumentsPage";
+import AnalyticsPage from "../pages/analytics/AnalyticsPage";
+import MarketingPage from "../pages/marketing/MarketingPage";
+import PipelinePage from "../pages/pipeline/PipelinePage";
+import SettingsPage from "../pages/settings/SettingsPage";
+import NotFoundPage from "../pages/errors/NotFoundPage";
+import AdminPage from "../pages/roles/AdminPage";
+import LenderPage from "../pages/roles/LenderPage";
+import ReferrerPage from "../pages/roles/ReferrerPage";
+import { Role, useAuthStore } from "../store/authStore";
 
 function RoleRedirect() {
   const role = useAuthStore((state) => state.user?.role);

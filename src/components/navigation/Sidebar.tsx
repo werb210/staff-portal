@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
-import { filterByRole } from "@/config/navigation";
-import { cn } from "@/lib/utils";
+import { filterByRole } from "../../config/navigation";
+import { cn } from "../../lib/utils";
 import { ChevronLeft, ChevronRight, Menu } from "lucide-react";
-import { authStore } from "@/lib/auth/authStore";
+import { authStore } from "../../lib/auth/authStore";
 
 export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);

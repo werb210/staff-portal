@@ -1,8 +1,8 @@
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { searchEverything } from "@/services/searchService";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { searchEverything } from "../../../services/searchService";
+import { Input } from "../../ui/input";
+import { Button } from "../../ui/button";
 import { X } from "lucide-react";
 import { useState } from "react";
 

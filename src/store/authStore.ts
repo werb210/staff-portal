@@ -1,7 +1,7 @@
 // LEGACY AUTH — DO NOT USE
 // Replaced by unified auth system in src/lib/auth/
 import { create } from "zustand";
-import { pushToast } from "@/components/ui/toast";
+import { pushToast } from "../components/ui/toast";
 
 export type Role = "admin" | "staff" | "lender" | "referrer";
 
@@ -76,7 +76,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ token, isAuthenticated: true, user: parsedUser });
 
     try {
-      const { default: apiClient } = await import("@/lib/apiClient");
+      const { default: apiClient } = await import("../lib/apiClient");
       const response = await apiClient.get("/api/users/me");
       const nextUser = (response.data?.user ?? response.data) as AuthUser;
       const normalizedUser = {

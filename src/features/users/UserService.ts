@@ -1,4 +1,4 @@
-import http from "@/lib/api/http";
+import http from "../../lib/api/http";
 import { User, CreateUserPayload, UpdateUserPayload } from "./UserTypes";
 
 export async function getUsers(): Promise<User[]> {

@@ -1,4 +1,4 @@
-import http from "@/lib/api/http";
+import http from "../api/http";
 import { authStore } from "./authStore";
 
 export async function fetchMe() {

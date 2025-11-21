@@ -1,11 +1,11 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import LoadingState from "@/components/states/LoadingState";
-import ErrorState from "@/components/states/ErrorState";
-import http from "@/lib/api/http";
-import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../../components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../components/ui/tabs";
+import LoadingState from "../../../components/states/LoadingState";
+import ErrorState from "../../../components/states/ErrorState";
+import http from "../../../lib/api/http";
+import { Badge } from "../../../components/ui/badge";
 
 interface Props {
   contactId: string;

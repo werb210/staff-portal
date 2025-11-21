@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 
-import { authStore } from "@/lib/auth/authStore";
+import { authStore } from "../../lib/auth/authStore";
 
 import { deleteUser, getUsers } from "./UserService";
 import { User } from "./UserTypes";
