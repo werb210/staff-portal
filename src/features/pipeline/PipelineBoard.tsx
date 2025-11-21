@@ -1,27 +1,32 @@
-import { DragDropContext, DropResult } from "@hello-pangea/dnd";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { DndContext, DragEndEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { arrayMove, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import ApplicationDrawer from "../applications/ApplicationDrawer";
+import LoadingState from "@/components/states/LoadingState";
+import ErrorState from "@/components/states/ErrorState";
 import { getPipeline, moveCard } from "./PipelineService";
 import { Pipeline, PipelineCard, PipelineStage } from "./PipelineTypes";
 import PipelineColumns from "./PipelineColumns";
-import LoadingState from "@/components/states/LoadingState";
-import ErrorState from "@/components/states/ErrorState";
 
 const STAGES: { key: PipelineStage; label: string }[] = [
+  { key: "new", label: "New" },
   { key: "requires_docs", label: "Requires Docs" },
-  { key: "review", label: "Review" },
+  { key: "in_review", label: "In Review" },
   { key: "ready_for_lender", label: "Ready for Lender" },
-  { key: "submitted", label: "Submitted" },
+  { key: "sent_to_lender", label: "Sent to Lender" },
   { key: "funded", label: "Funded" },
+  { key: "closed", label: "Closed" },
 ];
 
 const EMPTY_PIPELINE: Pipeline = {
+  new: [],
   requires_docs: [],
-  review: [],
+  in_review: [],
   ready_for_lender: [],
-  submitted: [],
+  sent_to_lender: [],
   funded: [],
+  closed: [],
 };
 
 function normalizePipeline(data?: Pipeline | null): Pipeline {
@@ -38,104 +43,83 @@ export default function PipelineBoard() {
   const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
   const [selectedStage, setSelectedStage] = useState<PipelineStage | undefined>();
 
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["pipeline"],
     queryFn: getPipeline,
-    refetchInterval: 5000,
+    refetchInterval: 10000,
   });
 
   const pipeline = useMemo(() => normalizePipeline(data), [data]);
 
   const moveMutation = useMutation({
-    mutationFn: ({ cardId, toStage }: { cardId: string; toStage: PipelineStage }) =>
-      moveCard(cardId, toStage),
-    onMutate: async ({ cardId, toStage }) => {
-      await queryClient.cancelQueries({ queryKey: ["pipeline"] });
-      const previous = queryClient.getQueryData<Pipeline>(["pipeline"]);
-
-      if (previous) {
-        const updated: Pipeline = STAGES.reduce<Pipeline>((acc, stage) => {
-          acc[stage.key] = [...(previous[stage.key] ?? [])];
-          return acc;
-        }, { ...EMPTY_PIPELINE });
-        let movingCard: PipelineCard | null = null;
-
-        STAGES.forEach((stage) => {
-          const cards = updated[stage.key] ?? [];
-          const index = cards.findIndex((c) => c.id === cardId);
-          if (index !== -1) {
-            const [removed] = cards.splice(index, 1);
-            movingCard = removed;
-          }
-        });
-
-        if (movingCard) {
-          updated[toStage] = [
-            { ...movingCard, stage: toStage },
-            ...(updated[toStage] ?? []),
-          ];
-        }
-
-        queryClient.setQueryData(["pipeline"], updated);
-      }
-
-      return { previous };
-    },
-    onError: (_err, _vars, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(["pipeline"], context.previous);
-      }
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["pipeline"] });
-    },
+    mutationFn: ({
+      appId,
+      fromStage,
+      toStage,
+      positionIndex,
+    }: {
+      appId: string;
+      fromStage: PipelineStage;
+      toStage: PipelineStage;
+      positionIndex: number;
+    }) => moveCard(appId, fromStage, toStage, positionIndex),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ["pipeline"] }),
   });
 
-  function enforceDocumentRules(card: PipelineCard, desired: PipelineStage) {
-    const docs = card.documents ?? [];
-    const hasRejected = docs.some((doc) => doc.status === "rejected");
-    const hasDocs = docs.length > 0;
-
-    if (!hasDocs || hasRejected) {
-      return "requires_docs" as PipelineStage;
-    }
-
-    return desired;
+  function findStageForCard(cardId: string, state: Pipeline): PipelineStage | null {
+    const stage = STAGES.find(({ key }) => state[key]?.some((c) => c.id === cardId));
+    return stage?.key ?? null;
   }
 
-  function handleDragEnd(result: DropResult) {
-    const { destination, source, draggableId } = result;
-    if (!destination) return;
-
-    const fromStage = source.droppableId as PipelineStage;
-    const toStage = destination.droppableId as PipelineStage;
-
-    if (fromStage === toStage && destination.index === source.index) return;
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over) return;
 
     const current = queryClient.getQueryData<Pipeline>(["pipeline"]);
     if (!current) return;
 
-    const card = current[fromStage]?.find((c) => c.id === draggableId);
-    if (!card) return;
+    const fromStage = (active.data.current?.stage as PipelineStage | undefined) ??
+      findStageForCard(active.id as string, current);
+    const overStage = (over.data.current?.stage as PipelineStage | undefined) ??
+      findStageForCard(over.id as string, current);
 
-    const finalStage = enforceDocumentRules(card, toStage);
+    if (!fromStage || !overStage) return;
+
+    const sourceCards = current[fromStage] ?? [];
+    const destinationCards = current[overStage] ?? [];
+    const activeIndex = sourceCards.findIndex((card) => card.id === active.id);
+    const overIndex = over.data.current?.sortable?.index ?? destinationCards.length;
+
+    if (fromStage === overStage && activeIndex === overIndex) return;
+
+    const movingCard = sourceCards[activeIndex];
+    if (!movingCard) return;
+
     const optimistic: Pipeline = STAGES.reduce<Pipeline>((acc, stage) => {
       acc[stage.key] = [...(current[stage.key] ?? [])];
       return acc;
     }, { ...EMPTY_PIPELINE });
 
-    const [removed] = optimistic[fromStage].splice(source.index, 1);
-    optimistic[finalStage].splice(destination.index, 0, {
-      ...removed,
-      stage: finalStage,
-    });
+    optimistic[fromStage].splice(activeIndex, 1);
+
+    const updatedCard: PipelineCard = { ...movingCard, stage: overStage };
+    if (fromStage === overStage) {
+      optimistic[overStage] = arrayMove(optimistic[overStage], activeIndex, overIndex);
+    } else {
+      optimistic[overStage].splice(overIndex, 0, updatedCard);
+    }
 
     queryClient.setQueryData(["pipeline"], optimistic);
 
-    moveMutation.mutate({ cardId: draggableId, toStage: finalStage }, {
-      onError: () => {
-        queryClient.setQueryData(["pipeline"], current);
-      },
+    moveMutation.mutate({
+      appId: movingCard.applicationId,
+      fromStage,
+      toStage: overStage,
+      positionIndex: overIndex,
+    }, {
+      onError: () => queryClient.setQueryData(["pipeline"], current),
     });
   }
 
@@ -144,21 +128,31 @@ export default function PipelineBoard() {
   }
 
   if (isError) {
-    return <ErrorState onRetry={() => refetch()} message={`Failed to load pipeline: ${String(error)}`} />;
+    return (
+      <ErrorState
+        onRetry={() => refetch()}
+        message={`Failed to load pipeline: ${String(error)}`}
+      />
+    );
   }
 
   return (
     <div className="relative">
-      <DragDropContext onDragEnd={handleDragEnd}>
-        <PipelineColumns
-          pipeline={pipeline}
-          stages={STAGES}
-          onOpen={(id, stage) => {
-            setSelectedStage(stage as PipelineStage);
-            setSelectedAppId(id);
-          }}
-        />
-      </DragDropContext>
+      <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+        <SortableContext
+          items={STAGES.map((stage) => stage.key)}
+          strategy={verticalListSortingStrategy}
+        >
+          <PipelineColumns
+            pipeline={pipeline}
+            stages={STAGES}
+            onOpen={(id, stage) => {
+              setSelectedStage(stage as PipelineStage);
+              setSelectedAppId(id);
+            }}
+          />
+        </SortableContext>
+      </DndContext>
 
       {selectedAppId && (
         <ApplicationDrawer

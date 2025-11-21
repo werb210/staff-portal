@@ -77,11 +77,13 @@ export default function ApplicationDrawer({ appId, open, onClose, stage }: Props
 
   const statusBadge = useMemo(() => {
     const map: Record<string, { label: string; variant: any }> = {
+      new: { label: "New", variant: "outline" },
       requires_docs: { label: "Requires Docs", variant: "warning" },
-      review: { label: "Review", variant: "outline" },
+      in_review: { label: "In Review", variant: "outline" },
       ready_for_lender: { label: "Ready for Lender", variant: "success" },
-      submitted: { label: "Submitted", variant: "default" },
+      sent_to_lender: { label: "Sent to Lender", variant: "default" },
       funded: { label: "Funded", variant: "success" },
+      closed: { label: "Closed", variant: "secondary" },
     };
     return map[stage ?? ""] ?? { label: stage ?? "", variant: "outline" };
   }, [stage]);
