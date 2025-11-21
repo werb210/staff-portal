@@ -1,58 +1,43 @@
 import axios from "axios";
-import { TOKEN_STORAGE_KEY, useAuthStore } from "../auth/useAuthStore";
+import { useAuthStore } from "../auth/useAuthStore";
 
-// Azure Staff Server URL
-const BASE_URL = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_API_URL ?? "https://boreal-staff-server.azurewebsites.net";
 
-if (!BASE_URL) {
-  console.warn("VITE_API_URL is missing in .env");
-}
-
-export const api = axios.create({
-  baseURL: BASE_URL,
+export const http = axios.create({
+  baseURL: API_URL,
   timeout: 20000,
   headers: {
     "Content-Type": "application/json",
   },
 });
 
-// Inject auth token automatically
-api.interceptors.request.use(
+// Attach token to every request
+http.interceptors.request.use(
   (config) => {
-    const token =
-      useAuthStore.getState().token || localStorage.getItem(TOKEN_STORAGE_KEY);
-
-    if (token) {
-      config.headers = {
-        ...config.headers,
-        Authorization: `Bearer ${token}`,
-      };
-    }
-
+    const token = useAuthStore.getState().token;
+    if (token) config.headers.Authorization = `Bearer ${token}`;
     return config;
   },
-  (error) => Promise.reject(error)
+  (err) => Promise.reject(err)
 );
 
-// Normalize errors + auto-logout
-api.interceptors.response.use(
+// Global error handling
+http.interceptors.response.use(
   (res) => res,
   (err) => {
     const status = err?.response?.status;
 
     if (status === 401) {
-      // Token expired → wipe local session
-      useAuthStore.getState().logout();
+      const logout = useAuthStore.getState().logout;
+      logout();
     }
 
-    const message =
-      err?.response?.data?.message ||
-      err?.response?.data?.error ||
-      err?.message ||
-      "Unknown error";
-
-    return Promise.reject(new Error(message));
+    return Promise.reject({
+      status,
+      message: err?.response?.data?.message || err.message,
+      raw: err,
+    });
   }
 );
 
-export default api;
+export default http;
