@@ -1,8 +1,23 @@
 import { Navigate } from "react-router-dom";
-import { getToken } from "../../lib/storage";
+import { useAuthStore } from "../../lib/auth/useAuthStore";
 
-export default function ProtectedRoute({ children }: { children: JSX.Element }) {
-  const token = getToken();
-  if (!token) return <Navigate to="/login" replace />;
+interface Props {
+  children: JSX.Element;
+  roles?: string[];
+}
+
+export default function ProtectedRoute({ children, roles }: Props) {
+  const { token, user } = useAuthStore();
+
+  // Not authenticated
+  if (!token || !user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // Role restricted
+  if (roles && !roles.includes(user.role)) {
+    return <Navigate to="/unauthorized" replace />;
+  }
+
   return children;
 }

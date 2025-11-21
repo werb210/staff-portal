@@ -1,60 +1,27 @@
-import { useState, type FormEvent } from "react";
-import { useAuth } from "../lib/auth/AuthContext";
+import { useState } from "react";
+import { useApiPost } from "../lib/api/mutations";
+import { useAuthStore } from "../lib/auth/useAuthStore";
 
 export default function LoginPage() {
-  const { login } = useAuth();
+  const loginMutation = useApiPost<{ token: string; user: any }>("/api/auth/login");
+  const { login } = useAuthStore();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [err, setErr] = useState("");
 
-  async function submit(e: FormEvent) {
+  async function handleSubmit(e: any) {
     e.preventDefault();
-    setErr("");
 
-    try {
-      await login(email, password);
-      window.location.href = "/";
-    } catch (e: any) {
-      setErr(e?.response?.data?.error ?? "Login failed");
-    }
+    const result = await loginMutation.mutateAsync({ email, password });
+    login(result.token, result.user);
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6">
-      <form
-        className="w-full max-w-sm space-y-4 bg-white shadow p-6 rounded-xl"
-        onSubmit={submit}
-      >
-        <h1 className="text-xl font-bold mb-2 text-center">Staff Login</h1>
-
-        {err && (
-          <div className="text-red-500 text-sm text-center">{err}</div>
-        )}
-
-        <input
-          type="email"
-          className="border w-full p-2 rounded"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-
-        <input
-          type="password"
-          className="border w-full p-2 rounded"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-
-        <button
-          type="submit"
-          className="w-full bg-black text-white py-2 rounded"
-        >
-          Login
-        </button>
+    <div className="h-screen flex items-center justify-center">
+      <form onSubmit={handleSubmit} className="p-6 border rounded w-80 flex flex-col gap-4">
+        <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" />
+        <input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" type="password" />
+        <button type="submit">Login</button>
       </form>
     </div>
   );
