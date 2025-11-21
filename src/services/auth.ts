@@ -1,4 +1,4 @@
-import api from "@/lib/api/client";
+import { login, me } from "@/api/auth";
 
 export type LoginPayload = {
   email: string;
@@ -6,6 +6,6 @@ export type LoginPayload = {
 };
 
 export const AuthAPI = {
-  login: (payload: LoginPayload) => api.post("/api/users/login", payload),
-  me: () => api.get("/api/users/me"),
+  login,
+  me,
 };
