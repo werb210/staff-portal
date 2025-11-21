@@ -1,18 +1,17 @@
 import { useMemo, useState } from "react";
 import { Bell, Moon, Search, Sun } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import NotificationsPanel from "./notifications/NotificationsPanel";
 import SearchModal from "./search/SearchModal";
-import { useAuth } from "@/context/AuthContext";
+import { useAuthStore } from "@/store/auth";
 
 export default function Topbar() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [dark, setDark] = useState(false);
-  const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const user = useAuthStore((state) => state.user);
+  const logout = useAuthStore((state) => state.logout);
 
   const initials = useMemo(() => (user?.email ?? "User").slice(0, 2).toUpperCase(), [user]);
 
@@ -39,10 +38,7 @@ export default function Topbar() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => {
-              logout();
-              navigate("/login", { replace: true });
-            }}
+            onClick={() => logout()}
           >
             Logout
           </Button>

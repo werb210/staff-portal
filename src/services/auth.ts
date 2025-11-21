@@ -5,9 +5,16 @@ export type LoginPayload = {
   password: string;
 };
 
-async function login(payload: LoginPayload) {
+export type LoginResponse = {
+  token: string;
+  role?: string;
+  email?: string;
+  user?: Record<string, unknown>;
+};
+
+async function login(payload: LoginPayload): Promise<LoginResponse> {
   const response = await http.post("/api/auth/login", payload);
-  return response.data as { token: string; role: string; email: string; user: Record<string, unknown> };
+  return response.data as LoginResponse;
 }
 
 async function me() {
