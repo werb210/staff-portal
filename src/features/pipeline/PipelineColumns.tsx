@@ -10,7 +10,7 @@ interface ColumnMeta {
 interface Props {
   pipeline: Pipeline;
   stages: ColumnMeta[];
-  onOpen: (applicationId: string) => void;
+  onOpen: (applicationId: string, stage: PipelineStage) => void;
 }
 
 export default function PipelineColumns({ pipeline, stages, onOpen }: Props) {
@@ -37,7 +37,7 @@ export default function PipelineColumns({ pipeline, stages, onOpen }: Props) {
                     key={card.id}
                     index={idx}
                     card={card}
-                    onOpen={onOpen}
+                    onOpen={(id) => onOpen(id, stage.key)}
                   />
                 ))}
                 {provided.placeholder}

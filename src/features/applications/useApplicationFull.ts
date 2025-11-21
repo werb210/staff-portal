@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import api from "@/lib/api";
 
 export function useApplicationFull(id: string) {
   return useQuery({
@@ -9,5 +9,6 @@ export function useApplicationFull(id: string) {
       return res.data;
     },
     enabled: Boolean(id),
+    staleTime: 5 * 60 * 1000,
   });
 }

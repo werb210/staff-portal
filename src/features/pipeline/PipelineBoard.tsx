@@ -1,10 +1,12 @@
 import { DragDropContext, DropResult } from "@hello-pangea/dnd";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import ApplicationDetailsDrawer from "../applications/ApplicationDetailsDrawer";
+import ApplicationDrawer from "../applications/ApplicationDrawer";
 import { getPipeline, moveCard } from "./PipelineService";
 import { Pipeline, PipelineCard, PipelineStage } from "./PipelineTypes";
 import PipelineColumns from "./PipelineColumns";
+import LoadingState from "@/components/states/LoadingState";
+import ErrorState from "@/components/states/ErrorState";
 
 const STAGES: { key: PipelineStage; label: string }[] = [
   { key: "requires_docs", label: "Requires Docs" },
@@ -34,8 +36,9 @@ function normalizePipeline(data?: Pipeline | null): Pipeline {
 export default function PipelineBoard() {
   const queryClient = useQueryClient();
   const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
+  const [selectedStage, setSelectedStage] = useState<PipelineStage | undefined>();
 
-  const { data, isLoading, isError, error } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["pipeline"],
     queryFn: getPipeline,
     refetchInterval: 5000,
@@ -137,11 +140,11 @@ export default function PipelineBoard() {
   }
 
   if (isLoading) {
-    return <p>Loading pipeline…</p>;
+    return <LoadingState label="Loading pipeline" />;
   }
 
   if (isError) {
-    return <p className="text-red-600">Failed to load pipeline: {String(error)}</p>;
+    return <ErrorState onRetry={() => refetch()} message={`Failed to load pipeline: ${String(error)}`} />;
   }
 
   return (
@@ -150,14 +153,19 @@ export default function PipelineBoard() {
         <PipelineColumns
           pipeline={pipeline}
           stages={STAGES}
-          onOpen={(id) => setSelectedAppId(id)}
+          onOpen={(id, stage) => {
+            setSelectedStage(stage as PipelineStage);
+            setSelectedAppId(id);
+          }}
         />
       </DragDropContext>
 
       {selectedAppId && (
-        <ApplicationDetailsDrawer
+        <ApplicationDrawer
           appId={selectedAppId}
+          open={Boolean(selectedAppId)}
           onClose={() => setSelectedAppId(null)}
+          stage={selectedStage}
         />
       )}
     </div>
