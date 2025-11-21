@@ -1,16 +1,19 @@
 import { BrowserRouter } from "react-router-dom";
 import { QueryProvider } from "./providers/QueryProvider";
-import { AuthProvider } from "./providers/AuthProvider";
+import { AuthProvider as LegacyAuthProvider } from "./providers/AuthProvider";
+import { AuthProvider as SessionAuthProvider } from "./context/AuthContext";
 import { AppRouter } from "./router/AppRouter";
 
 export default function App() {
   return (
     <QueryProvider>
-      <AuthProvider>
+      <LegacyAuthProvider>
         <BrowserRouter>
-          <AppRouter />
+          <SessionAuthProvider>
+            <AppRouter />
+          </SessionAuthProvider>
         </BrowserRouter>
-      </AuthProvider>
+      </LegacyAuthProvider>
     </QueryProvider>
   );
 }

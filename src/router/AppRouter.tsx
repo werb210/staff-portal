@@ -1,28 +1,31 @@
-import { Routes, Route } from "react-router-dom";
-import { ProtectedRoute } from "./ProtectedRoute";
-import AppLayout from "../layouts/AppLayout";
+import { Route, Routes } from "react-router-dom";
+import ProtectedRoute from "../components/ProtectedRoute";
+import AppLayout from "../layout/AppLayout";
 
-// Screens
 import LoginPage from "../screens/LoginPage";
 import DashboardHome from "../screens/DashboardHome";
-import UsersPage from "../screens/UsersPage";
 import ApplicationsPage from "../screens/ApplicationsPage";
 import OCRPage from "../screens/OCRPage";
-import TagsPage from "../screens/TagsPage";
+import UsersPage from "../screens/UsersPage";
 
 export function AppRouter() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
 
-      <Route element={<ProtectedRoute />}>
-        <Route element={<AppLayout />}>
-          <Route index element={<DashboardHome />} />
-          <Route path="/applications" element={<ApplicationsPage />} />
-          <Route path="/search" element={<OCRPage />} />
-          <Route path="/tags" element={<TagsPage />} />
-          <Route path="/users" element={<UsersPage />} />
-        </Route>
+      <Route
+        path="/"
+        element={
+          <ProtectedRoute>
+            <AppLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<DashboardHome />} />
+        <Route path="applications" element={<ApplicationsPage />} />
+        <Route path="search" element={<OCRPage />} />
+        <Route path="users" element={<UsersPage />} />
+        <Route path="settings" element={<div>TODO Settings</div>} />
       </Route>
 
       <Route path="*" element={<LoginPage />} />
