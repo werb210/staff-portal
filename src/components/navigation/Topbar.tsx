@@ -5,17 +5,16 @@ import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import NotificationsPanel from "./notifications/NotificationsPanel";
 import SearchModal from "./search/SearchModal";
-import { useAuthStore } from "@/store/useAuthStore";
+import { useAuth } from "@/context/AuthContext";
 
 export default function Topbar() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [dark, setDark] = useState(false);
   const navigate = useNavigate();
-  const user = useAuthStore((s) => s.user);
-  const clearAuth = useAuthStore((s) => s.clearAuth);
+  const { user, logout } = useAuth();
 
-  const initials = useMemo(() => user?.name?.slice(0, 2).toUpperCase() ?? "US", [user]);
+  const initials = useMemo(() => (user?.email ?? "User").slice(0, 2).toUpperCase(), [user]);
 
   return (
     <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b bg-white px-6">
@@ -34,14 +33,14 @@ export default function Topbar() {
         <div className="flex items-center gap-2">
           <Avatar initials={initials} />
           <div className="hidden text-left text-sm sm:block">
-            <p className="font-medium leading-none">{user?.name ?? "Guest"}</p>
+            <p className="font-medium leading-none">{user?.email ?? "Guest"}</p>
             <p className="text-xs text-muted-foreground">{user?.role ?? "unauthenticated"}</p>
           </div>
           <Button
             variant="outline"
             size="sm"
             onClick={() => {
-              clearAuth();
+              logout();
               navigate("/login", { replace: true });
             }}
           >

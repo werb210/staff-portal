@@ -4,10 +4,10 @@ import { useAuth } from "@/context/AuthContext";
 
 export default function TopNav() {
   const navigate = useNavigate();
-  const { user, clearAuth } = useAuth();
+  const { user, logout } = useAuth();
 
   const handleLogout = () => {
-    clearAuth();
+    logout();
     navigate("/login", { replace: true });
   };
 

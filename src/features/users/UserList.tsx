@@ -1,14 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 
-import { useAuthStore } from "@/store/useAuthStore";
+import { useAuth } from "@/context/AuthContext";
 
 import { deleteUser, getUsers } from "./UserService";
 import { User } from "./UserTypes";
 
 export default function UserList() {
-  const role = useAuthStore((state) => state.user?.role ?? null);
-  const isAdmin = role === "admin";
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
   const queryClient = useQueryClient();
 
   const {
