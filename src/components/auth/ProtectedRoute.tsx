@@ -1,4 +1,5 @@
-// legacy – not consumed by active auth system
+// LEGACY — NOT USED. DO NOT IMPORT.
+// Router replaced by src/AppRouter.tsx
 import { ReactNode, useEffect } from "react";
 import { Navigate, Outlet } from "react-router-dom";
 import { Role, useAuthStore } from "@/store/auth";

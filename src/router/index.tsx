@@ -1,3 +1,5 @@
+// LEGACY — NOT USED. DO NOT IMPORT.
+// Router replaced by src/AppRouter.tsx
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import ProtectedRoute from "@/components/routing/ProtectedRoute";
 import AppRoot from "@/components/layout/AppRoot";
