@@ -8,8 +8,7 @@ import ErrorState from "@/components/states/ErrorState";
 import PipelineColumns from "./PipelineColumns";
 import { useToast } from "@/components/ui/toast";
 import { Pipeline, PipelineCard } from "./PipelineTypes";
-import { useMoveApplication, usePipelineStages } from "./PipelineService";
-import { getApplicationsByStage } from "@/lib/api";
+import { fetchPipelineApplications, useMoveApplication, usePipelineStages } from "@/hooks/pipeline";
 
 export default function PipelineBoard() {
   const queryClient = useQueryClient();
@@ -23,9 +22,8 @@ export default function PipelineBoard() {
 
   const applicationQueries = useQueries({
     queries: (stagesQuery.data ?? []).map((stage) => ({
-      queryKey: ["stage-applications", stage.id],
-      queryFn: () => getApplicationsByStage(stage.id),
-      refetchInterval: 10000,
+      queryKey: ["pipeline-applications", stage.id],
+      queryFn: () => fetchPipelineApplications(stage.id),
       onError: (error: unknown) => {
         const message = error instanceof Error ? error.message : "Unable to load applications";
         addToast({
@@ -65,8 +63,8 @@ export default function PipelineBoard() {
 
     if (!fromStage || !overStage) return;
 
-    const currentFrom = queryClient.getQueryData<PipelineCard[]>(["stage-applications", fromStage]) ?? [];
-    const currentTo = queryClient.getQueryData<PipelineCard[]>(["stage-applications", overStage]) ?? [];
+    const currentFrom = queryClient.getQueryData<PipelineCard[]>(["pipeline-applications", fromStage]) ?? [];
+    const currentTo = queryClient.getQueryData<PipelineCard[]>(["pipeline-applications", overStage]) ?? [];
 
     const activeIndex = currentFrom.findIndex((card) => card.id === active.id);
     const overIndex = over.data.current?.sortable?.index ?? currentTo.length;
@@ -84,19 +82,19 @@ export default function PipelineBoard() {
     const updatedCard: PipelineCard = { ...movingCard, stageId: overStage };
     if (fromStage === overStage) {
       const reordered = arrayMove(optimisticTo, activeIndex, overIndex);
-      queryClient.setQueryData(["stage-applications", fromStage], reordered);
+      queryClient.setQueryData(["pipeline-applications", fromStage], reordered);
     } else {
       optimisticTo.splice(overIndex, 0, updatedCard);
-      queryClient.setQueryData(["stage-applications", fromStage], optimisticFrom);
-      queryClient.setQueryData(["stage-applications", overStage], optimisticTo);
+      queryClient.setQueryData(["pipeline-applications", fromStage], optimisticFrom);
+      queryClient.setQueryData(["pipeline-applications", overStage], optimisticTo);
     }
 
     moveMutation.mutate(
-      { appId: movingCard.applicationId, stageId: overStage },
+      { id: movingCard.applicationId, stageId: overStage },
       {
         onError: () => {
-          queryClient.setQueryData(["stage-applications", fromStage], currentFrom);
-          queryClient.setQueryData(["stage-applications", overStage], currentTo);
+          queryClient.setQueryData(["pipeline-applications", fromStage], currentFrom);
+          queryClient.setQueryData(["pipeline-applications", overStage], currentTo);
         },
       }
     );

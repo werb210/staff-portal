@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import api from "@/lib/api";
+
+import { api } from "@/lib/api";
 
 export function useApplicationFull(id: string) {
   return useQuery({
