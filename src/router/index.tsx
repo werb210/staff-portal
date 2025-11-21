@@ -1,6 +1,9 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import AppLayout from "@/components/layout/AppLayout";
 import LoginPage from "@/features/auth/LoginPage";
+import ForgotPasswordPage from "@/features/auth/ForgotPasswordPage";
+import ResetPasswordPage from "@/features/auth/ResetPasswordPage";
+import LogoutPage from "@/features/auth/LogoutPage";
 import PipelinePage from "@/features/pipeline/PipelinePage";
 import ContactsPage from "@/pages/Contacts";
 import ContactDetailPage from "@/pages/contacts/ContactDetailPage";
@@ -27,12 +30,31 @@ import ReferrerApplicationsPage from "@/pages/referrer/ReferrerApplicationsPage"
 import ReferrerApplicationDetailPage from "@/pages/referrer/ReferrerApplicationDetailPage";
 import ReferrerPerformancePage from "@/pages/referrer/ReferrerPerformancePage";
 import Dashboard from "@/pages/Dashboard";
-import Settings from "@/pages/Settings";
+import AdminDashboard from "@/pages/admin/AdminDashboard";
+import SettingsIndex from "@/pages/settings/SettingsIndex";
+import ProfileSettings from "@/pages/settings/ProfileSettings";
+import UserManagement from "@/pages/settings/UserManagement";
+import IntegrationSettings from "@/pages/settings/IntegrationSettings";
+import AnalyticsOverview from "@/pages/analytics/AnalyticsOverview";
+import MarketingAnalytics from "@/pages/analytics/MarketingAnalytics";
+import LenderAnalytics from "@/pages/analytics/LenderAnalytics";
 
 export const router = createBrowserRouter([
   {
     path: "/login",
     element: <LoginPage />,
+  },
+  {
+    path: "/forgot-password",
+    element: <ForgotPasswordPage />,
+  },
+  {
+    path: "/reset-password/:token",
+    element: <ResetPasswordPage />,
+  },
+  {
+    path: "/logout",
+    element: <LogoutPage />,
   },
   {
     path: "/lender/login",
@@ -67,7 +89,15 @@ export const router = createBrowserRouter([
       { path: "/marketing/ai-writer", element: <MarketingAIWriterPage /> },
       { path: "/marketing/campaigns", element: <MarketingCampaignsPage /> },
       { path: "/marketing/ads", element: <MarketingAdsPage /> },
-      { path: "/settings", element: <Settings /> },
+      { path: "/admin", element: <AdminDashboard /> },
+      { path: "/settings", element: <SettingsIndex /> },
+      { path: "/settings/profile", element: <ProfileSettings /> },
+      { path: "/settings/users", element: <UserManagement /> },
+      { path: "/settings/integrations", element: <IntegrationSettings /> },
+      { path: "/analytics", element: <AnalyticsOverview /> },
+      { path: "/analytics/applications", element: <AnalyticsOverview /> },
+      { path: "/analytics/marketing", element: <MarketingAnalytics /> },
+      { path: "/analytics/lenders", element: <LenderAnalytics /> },
     ],
   },
   {
