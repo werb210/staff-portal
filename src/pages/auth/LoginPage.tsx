@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { login } from "@/api/auth";
+import http from "@/lib/http";
 import { useAuthStore } from "@/store/useAuthStore";
 
 const loginSchema = z.object({
@@ -29,10 +29,13 @@ export default function LoginPage() {
   });
 
   const mutation = useMutation({
-    mutationFn: async ({ email, password }: LoginInput) => login(email, password),
+    mutationFn: async ({ email, password }: LoginInput) => {
+      const response = await http.post("/api/users/login", { email, password });
+      return response.data as { token: string; role: string; email: string; user: Record<string, unknown> };
+    },
     onMutate: () => setErrorMessage(null),
-    onSuccess: ({ token, user }) => {
-      useAuthStore.getState().setAuth(token, user);
+    onSuccess: ({ token, role, email, user }) => {
+      useAuthStore.getState().login(token, role, email, user);
       navigate("/");
     },
     onError: (error) => {

@@ -18,21 +18,25 @@ export const router = createBrowserRouter([
     element: <LoginPage />,
   },
   {
-    element: (
-      <ProtectedRoute>
-        <QueryProvider>
-          <Layout />
-        </QueryProvider>
-      </ProtectedRoute>
-    ),
+    path: "/",
+    element: <ProtectedRoute />,
     children: [
-      { index: true, element: <Dashboard /> },
-      { path: "/contacts", element: <ContactsPage /> },
-      { path: "/companies", element: <CompaniesPage /> },
-      { path: "/deals", element: <DealsPage /> },
-      { path: "/pipeline", element: <PipelinePage /> },
-      { path: "/tags", element: <TagsPage /> },
-      { path: "/search", element: <SearchPage /> },
+      {
+        element: (
+          <QueryProvider>
+            <Layout />
+          </QueryProvider>
+        ),
+        children: [
+          { index: true, element: <Dashboard /> },
+          { path: "contacts", element: <ContactsPage /> },
+          { path: "companies", element: <CompaniesPage /> },
+          { path: "deals", element: <DealsPage /> },
+          { path: "pipeline", element: <PipelinePage /> },
+          { path: "tags", element: <TagsPage /> },
+          { path: "search", element: <SearchPage /> },
+        ],
+      },
     ],
   },
   { path: "*", element: <Navigate to="/" replace /> },
