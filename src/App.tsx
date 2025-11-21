@@ -3,8 +3,9 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import LoginPage from "./pages/auth/LoginPage";
 import Dashboard from "./pages/dashboard/Dashboard";
 import AdminPanel from "./pages/admin/AdminPanel";
+import ClientsPage from "./pages/clients/ClientsPage";
 
-import { Protected } from "./routes/protected";
+import AppLayout from "./layouts/AppLayout";
 
 export default function App() {
   return (
@@ -12,27 +13,33 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
 
-        {/* STAFF */}
         <Route
           path="/dashboard"
           element={
-            <Protected>
+            <AppLayout>
               <Dashboard />
-            </Protected>
+            </AppLayout>
           }
         />
 
-        {/* ADMIN */}
+        <Route
+          path="/clients"
+          element={
+            <AppLayout>
+              <ClientsPage />
+            </AppLayout>
+          }
+        />
+
         <Route
           path="/admin"
           element={
-            <Protected>
+            <AppLayout>
               <AdminPanel />
-            </Protected>
+            </AppLayout>
           }
         />
 
-        {/* DEFAULT → login */}
         <Route path="*" element={<LoginPage />} />
       </Routes>
     </BrowserRouter>
