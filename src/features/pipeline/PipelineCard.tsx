@@ -25,7 +25,7 @@ function badgeClass(status: PipelineDocument["status"]) {
 export default function PipelineCardComponent({ card, onOpen }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: card.id,
-    data: { stage: card.stage, card },
+    data: { stage: card.stageId, card },
   });
 
   const style = {
