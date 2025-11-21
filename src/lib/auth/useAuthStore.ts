@@ -1,35 +1,32 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
 
-export interface UserSession {
+interface User {
   id: string;
   email: string;
-  role: "admin" | "staff" | "lender" | "referrer";
+  role: string;
 }
 
 interface AuthState {
   token: string | null;
-  user: UserSession | null;
-  login: (token: string, user: UserSession) => void;
+  user: User | null;
+
+  setAuth: (token: string, user: User) => void;
   logout: () => void;
 }
 
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set) => ({
+export const useAuthStore = create<AuthState>((set) => ({
+  token: null,
+  user: null,
+
+  setAuth: (token, user) =>
+    set(() => ({
+      token,
+      user,
+    })),
+
+  logout: () =>
+    set(() => ({
       token: null,
       user: null,
-
-      login: (token, user) => {
-        set({ token, user });
-      },
-
-      logout: () => {
-        set({ token: null, user: null });
-      },
-    }),
-    {
-      name: "bf-staff-auth", // localStorage key
-    }
-  )
-);
+    })),
+}));
