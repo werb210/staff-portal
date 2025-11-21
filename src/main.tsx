@@ -2,6 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
 import "./index.css";
+import api from "./lib/api"; // <-- new
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import GlobalErrorBoundary from "@/components/GlobalErrorBoundary";
 import { ToastProvider } from "@/components/ui/toast";
