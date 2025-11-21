@@ -1,48 +1,47 @@
-import { ReactNode, useMemo } from "react";
+import { useEffect } from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { verifyToken } from "@/services/authService";
+import { useSessionStore } from "@/store/sessionStore";
+import LoadingOverlay from "../feedback/LoadingOverlay";
 
-const TOKEN_KEY = "accessToken";
-
-type Role = "admin" | "staff" | "marketing" | "lender" | "referrer";
-
-interface ProtectedRouteProps {
-  allow?: Role[];
-  children?: ReactNode;
+interface Props {
+  allow?: ("admin" | "staff" | "marketing" | "lender" | "referrer")[];
+  children?: React.ReactNode;
 }
 
-interface TokenPayload {
-  exp?: number;
-  role?: Role;
-}
-
-const decodeToken = (token: string): TokenPayload | null => {
-  try {
-    const [, payload] = token.split(".");
-    const decoded = JSON.parse(atob(payload));
-    return decoded as TokenPayload;
-  } catch (err) {
-    console.error("Failed to decode token", err);
-    return null;
-  }
-};
-
-const isExpired = (payload: TokenPayload | null) => {
-  if (!payload?.exp) return true;
-  const now = Date.now() / 1000;
-  return payload.exp < now;
-};
-
-export const ProtectedRoute = ({ allow, children }: ProtectedRouteProps) => {
+export const ProtectedRoute = ({ allow, children }: Props) => {
   const location = useLocation();
-  const token = localStorage.getItem(TOKEN_KEY);
+  const session = useSessionStore();
 
-  const payload = useMemo(() => (token ? decodeToken(token) : null), [token]);
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["session", session.token],
+    queryFn: () => verifyToken(session.token),
+    enabled: Boolean(session.token),
+    staleTime: 5 * 60 * 1000,
+  });
 
-  if (!token || !payload || isExpired(payload)) {
+  useEffect(() => {
+    if (data?.user && data?.token) {
+      session.setSession({ user: data.user, token: data.token, expiresAt: data.expiresAt ?? null });
+    }
+  }, [data, session]);
+
+  useEffect(() => {
+    session.hydrate();
+  }, [session]);
+
+  if (!session.token && !isLoading) {
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
-  if (allow && payload.role && !allow.includes(payload.role)) {
+  if (isLoading) return <LoadingOverlay message="Validating session" />;
+
+  if (isError || !data?.user) {
+    return <Navigate to="/login" replace state={{ from: location }} />;
+  }
+
+  if (allow && data.user.role && !allow.includes(data.user.role)) {
     return <Navigate to="/forbidden" replace />;
   }
 

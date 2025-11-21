@@ -1,28 +1,13 @@
 import { Outlet } from "react-router-dom";
-import Sidebar from "./Sidebar";
-import TopNav from "./TopNav";
-import { useNavStore } from "@/store/navStore";
-import { cn } from "@/lib/utils";
+import Sidebar from "@/components/navigation/Sidebar";
+import Topbar from "@/components/navigation/Topbar";
 
 export default function AppLayout({ children }: { children?: React.ReactNode }) {
-  const mobileOpen = useNavStore((s) => s.open);
-  const setOpen = useNavStore((s) => s.setOpen);
-
   return (
-    <div className="min-h-screen bg-gray-50 md:pl-16">
+    <div className="min-h-screen bg-slate-50 pl-16 md:pl-64">
       <Sidebar />
-
-      {mobileOpen && (
-        <div
-          className="fixed inset-0 z-30 bg-black/40 md:hidden"
-          onClick={() => setOpen(false)}
-        >
-          <div className={cn("h-full w-64 bg-white p-4 shadow-xl")}>{<Sidebar />}</div>
-        </div>
-      )}
-
-      <div className="flex min-h-screen flex-col">
-        <TopNav />
+      <div className="ml-0 flex min-h-screen flex-col md:ml-64">
+        <Topbar />
         <main className="flex-1 p-6">{children ?? <Outlet />}</main>
       </div>
     </div>
