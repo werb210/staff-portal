@@ -1,9 +1,10 @@
 import { Fragment } from "react";
-import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
+import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
+import { useAuthStore } from "../core/auth.store";
 
 const navItems = [
   { label: "Dashboard", to: "/" },
@@ -35,6 +36,8 @@ function buildBreadcrumbs(pathname: string) {
 
 export function AdminLayout() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const logout = useAuthStore((state) => state.logout);
   const breadcrumbs = buildBreadcrumbs(location.pathname);
 
   return (
@@ -83,7 +86,14 @@ export function AdminLayout() {
                   <Input type="search" placeholder="Search portal" className="w-64" />
                 </div>
                 <Badge variant="success">Role: Staff</Badge>
-                <Button variant="secondary" size="sm">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => {
+                    logout();
+                    navigate("/login", { replace: true });
+                  }}
+                >
                   Sign out
                 </Button>
               </div>

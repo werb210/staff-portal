@@ -24,6 +24,10 @@ apiClient.interceptors.response.use(
 
     if (status === 401) {
       getAuthState().logout();
+
+      if (typeof window !== "undefined" && window.location.pathname !== "/login") {
+        window.location.replace("/login");
+      }
     }
 
     return Promise.reject(error);
