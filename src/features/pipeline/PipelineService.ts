@@ -13,10 +13,11 @@ export async function moveCard(
   positionIndex: number
 ): Promise<void> {
   await api.patch("/api/pipeline/move", {
-    appId,
+    applicationId: appId,
     fromStage,
     toStage,
     positionIndex,
+    movedAt: new Date().toISOString(),
   });
 }
 

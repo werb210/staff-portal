@@ -37,6 +37,11 @@ export default function PipelineCardComponent({ card, onOpen }: Props) {
   const rejectedCount = docStatuses.filter((doc) => doc.status === "rejected").length;
   const missingCount = docStatuses.filter((doc) => doc.status === "missing").length;
 
+  const docsUploaded = card.docsUploaded ?? card.documentCompletion ?? 0;
+  const docsRequired = card.docsRequired ?? 0;
+  const completionPercent = card.documentCompletion ??
+    (docsRequired > 0 ? Math.min(100, (docsUploaded / docsRequired) * 100) : 0);
+
   return (
     <div
       ref={setNodeRef}
@@ -60,19 +65,18 @@ export default function PipelineCardComponent({ card, onOpen }: Props) {
         <p className="font-semibold text-gray-900">{card.businessName}</p>
         <span className="text-xs text-gray-500">{card.applicationId}</span>
       </div>
-      <p className="text-sm text-gray-600">{card.contactName}</p>
+      <p className="text-sm text-gray-600">Applicant: {card.contactName}</p>
       <p className="text-sm text-gray-700">Product: {card.productType}</p>
-      <p className="text-sm text-gray-700">
-        Amount: ${card.amountRequested.toLocaleString()}
-      </p>
+      <p className="text-sm text-gray-700">Amount requested: ${card.amountRequested.toLocaleString()}</p>
+      <p className="text-sm text-gray-700">Docs: {docsUploaded}/{docsRequired || "?"}</p>
       <p className="text-xs text-gray-500 mt-1">Last activity {new Date(card.updatedAt).toLocaleString()}</p>
 
       <div className="mt-3 space-y-2">
         <div className="flex items-center justify-between text-xs text-slate-600">
           <span>Document completion</span>
-          <span>{Math.round(card.documentCompletion ?? 0)}%</span>
+          <span>{Math.round(completionPercent)}%</span>
         </div>
-        <Progress value={card.documentCompletion ?? 0} />
+        <Progress value={completionPercent} />
       </div>
 
       <div className="mt-2 flex flex-wrap gap-1">
@@ -103,6 +107,15 @@ export default function PipelineCardComponent({ card, onOpen }: Props) {
       </div>
 
       <div className="mt-2 flex gap-2 flex-wrap">
+        {card.ocrStatus && (
+          <Badge variant={card.ocrStatus === "completed" ? "outline" : "secondary"}>
+            OCR: {card.ocrStatus}
+          </Badge>
+        )}
+        {card.bankingStatus && <Badge variant="secondary">Banking: {card.bankingStatus}</Badge>}
+        {typeof card.likelihoodScore === "number" && (
+          <Badge variant="success">Likelihood {Math.round(card.likelihoodScore)}%</Badge>
+        )}
         {card.hasMissingDocs && <Badge variant="outline">Missing docs</Badge>}
         {card.hasOcrConflicts && <Badge variant="destructive">OCR conflict</Badge>}
         {card.hasBankingAnomalies && <Badge variant="secondary">Banking anomalies</Badge>}

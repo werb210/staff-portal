@@ -8,25 +8,26 @@ import ErrorState from "@/components/states/ErrorState";
 import { getPipeline, moveCard } from "./PipelineService";
 import { Pipeline, PipelineCard, PipelineStage } from "./PipelineTypes";
 import PipelineColumns from "./PipelineColumns";
+import { useToast } from "@/components/ui/toast";
 
 const STAGES: { key: PipelineStage; label: string }[] = [
   { key: "new", label: "New" },
   { key: "requires_docs", label: "Requires Docs" },
-  { key: "in_review", label: "In Review" },
-  { key: "ready_for_lender", label: "Ready for Lender" },
-  { key: "sent_to_lender", label: "Sent to Lender" },
+  { key: "reviewing", label: "Reviewing" },
+  { key: "ready_for_lenders", label: "Ready for Lenders" },
+  { key: "sent_to_lenders", label: "Sent to Lenders" },
   { key: "funded", label: "Funded" },
-  { key: "closed", label: "Closed" },
+  { key: "closed_withdrawn", label: "Closed / Withdrawn" },
 ];
 
 const EMPTY_PIPELINE: Pipeline = {
   new: [],
   requires_docs: [],
-  in_review: [],
-  ready_for_lender: [],
-  sent_to_lender: [],
+  reviewing: [],
+  ready_for_lenders: [],
+  sent_to_lenders: [],
   funded: [],
-  closed: [],
+  closed_withdrawn: [],
 };
 
 function normalizePipeline(data?: Pipeline | null): Pipeline {
@@ -42,6 +43,7 @@ export default function PipelineBoard() {
   const queryClient = useQueryClient();
   const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
   const [selectedStage, setSelectedStage] = useState<PipelineStage | undefined>();
+  const { addToast } = useToast();
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
@@ -65,6 +67,12 @@ export default function PipelineBoard() {
       toStage: PipelineStage;
       positionIndex: number;
     }) => moveCard(appId, fromStage, toStage, positionIndex),
+    onSuccess: () => {
+      addToast({ title: "Move saved", description: "Pipeline updated", variant: "success" });
+    },
+    onError: () => {
+      addToast({ title: "Failed to move", description: "Reverting position", variant: "destructive" });
+    },
     onSettled: () => queryClient.invalidateQueries({ queryKey: ["pipeline"] }),
   });
 

@@ -13,10 +13,11 @@ import CompanyDrawer from "./CompanyDrawer";
 interface Company {
   id: string;
   name: string;
-  industry?: string;
+  owners?: string;
+  type?: string;
+  province?: string;
   employees?: number;
   annualRevenue?: number;
-  contacts?: number;
   applications?: number;
 }
 
@@ -39,8 +40,10 @@ export default function CompaniesPage() {
 
   const columns: ColumnDef<Company>[] = useMemo(
     () => [
-      { accessorKey: "name", header: "Name" },
-      { accessorKey: "industry", header: "Industry" },
+      { accessorKey: "name", header: "Business name" },
+      { accessorKey: "owners", header: "Owners" },
+      { accessorKey: "type", header: "Type (Corp / LLC / Sole Prop)" },
+      { accessorKey: "province", header: "Province" },
       {
         accessorKey: "employees",
         header: "Employees",
@@ -52,13 +55,8 @@ export default function CompaniesPage() {
         cell: ({ row }) => (row.original.annualRevenue ? `$${row.original.annualRevenue.toLocaleString()}` : "-"),
       },
       {
-        accessorKey: "contacts",
-        header: "Associated Contacts",
-        cell: ({ row }) => <Badge variant="outline">{row.original.contacts ?? 0}</Badge>,
-      },
-      {
         accessorKey: "applications",
-        header: "Linked Applications",
+        header: "Applications count",
         cell: ({ row }) => <Badge variant="secondary">{row.original.applications ?? 0}</Badge>,
       },
     ],
