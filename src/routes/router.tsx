@@ -2,7 +2,7 @@ import { createBrowserRouter } from "react-router-dom";
 
 import LoginPage from "../features/auth/LoginPage";
 import DashboardPage from "../features/dashboard/DashboardPage";
-import PipelinePage from "../features/pipeline/PipelinePage";
+import PipelinePage from "../pages/pipeline";
 import ApplicationsPage from "../features/applications/ApplicationsPage";
 import DocumentsPage from "../features/documents/DocumentsPage";
 import LendersPage from "../features/lenders/LendersPage";
