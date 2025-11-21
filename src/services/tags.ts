@@ -1,7 +1,7 @@
-import api from "@/lib/api";
+import { http } from "@/lib/http";
 
 export const TagsAPI = {
-  list: () => api.get("/api/tags"),
-  create: (data: any) => api.post("/api/tags", data),
-  delete: (id: string) => api.delete(`/api/tags/${id}`),
+  list: () => http.get("/api/tags"),
+  create: (data: any) => http.post("/api/tags", data),
+  delete: (id: string) => http.delete(`/api/tags/${id}`),
 };
