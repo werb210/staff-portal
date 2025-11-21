@@ -6,11 +6,11 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { useMoveApplication, usePipelineApplications, usePipelineStages } from "@/hooks/pipeline";
+import { usePipelineDrawer } from "@/hooks/pipelineDrawer";
 import { PipelineCard as PipelineCardType } from "@/features/pipeline/PipelineTypes";
 
 interface PipelineCardProps {
   application: PipelineCardType;
-  onOpen?: (applicationId: string) => void;
 }
 
 function formatLastActivity(updatedAt: string) {
@@ -24,19 +24,20 @@ function formatLastActivity(updatedAt: string) {
   return `${diffDays}d ago`;
 }
 
-export function PipelineCard({ application, onOpen }: PipelineCardProps) {
+export function PipelineCard({ application }: PipelineCardProps) {
   usePipelineStages();
   usePipelineApplications();
   const moveMutation = useMoveApplication();
+  const drawer = usePipelineDrawer();
 
   const handleOpen = useCallback(() => {
     const applicationId = application.applicationId ?? application.id;
-    if (onOpen) {
-      onOpen(applicationId);
+    if (applicationId) {
+      drawer.open(applicationId);
       return;
     }
     toast("Opening application");
-  }, [application.applicationId, application.id, onOpen]);
+  }, [application.applicationId, application.id, drawer]);
 
   const handleDragStart = useCallback(
     (event: React.DragEvent<HTMLDivElement>) => {
