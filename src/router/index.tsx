@@ -1,5 +1,5 @@
 import React from "react";
-import { createBrowserRouter, Navigate } from "react-router-dom";
+import { createBrowserRouter, Navigate, useLocation } from "react-router-dom";
 
 import App from "../App";
 import { AdminLayout } from "../layouts/AdminLayout";
@@ -13,12 +13,15 @@ import ReportsPage from "../pages/ReportsPage";
 import SearchPage from "../pages/SearchPage";
 import SettingsPage from "../pages/SettingsPage";
 import TagsPage from "../pages/TagsPage";
+import { useAuthStore } from "../core/auth.store";
 
-const ProtectedRoute: React.FC<{ allowedRoles: string[]; children: React.ReactNode }> = ({ allowedRoles, children }) => {
-  const userRole = "staff";
+const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const location = useLocation();
+  const accessToken = useAuthStore((state) => state.accessToken);
+  const from = `${location.pathname}${location.search}`;
 
-  if (!allowedRoles.includes(userRole)) {
-    return <Navigate to="/login" replace />;
+  if (!accessToken) {
+    return <Navigate to="/login" state={{ from }} replace />;
   }
 
   return <>{children}</>;
@@ -27,7 +30,7 @@ const ProtectedRoute: React.FC<{ allowedRoles: string[]; children: React.ReactNo
 const LoginPage = React.lazy(() => import("../pages/auth/LoginPage"));
 
 const protectedElement = (
-  <ProtectedRoute allowedRoles={["admin", "staff"]}>
+  <ProtectedRoute>
     <AdminLayout />
   </ProtectedRoute>
 );
