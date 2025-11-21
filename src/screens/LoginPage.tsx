@@ -1,72 +1,64 @@
-import { FormEvent, useState } from "react";
-import { Navigate } from "react-router-dom";
+import { useState } from "react";
 import { useAuth } from "../providers/AuthProvider";
 
 export default function LoginPage() {
-  const { login, token } = useAuth();
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  if (token) return <Navigate to="/" replace />;
-
-  async function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
-    setLoading(true);
+    setError("");
 
     try {
       await login(email, password);
     } catch (err: any) {
-      setError(err?.message || "Login failed");
-    } finally {
-      setLoading(false);
+      setError(err?.response?.data?.message || "Invalid email or password");
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
-      <div className="bg-white w-full max-w-md rounded-lg shadow p-6 space-y-4">
-        <div className="text-center space-y-1">
-          <h1 className="text-2xl font-semibold text-gray-800">Staff Portal Login</h1>
-          <p className="text-gray-500 text-sm">Sign in with your email and password.</p>
-        </div>
+    <div className="h-screen flex items-center justify-center bg-gray-100">
+      <form
+        onSubmit={handleSubmit}
+        className="bg-white w-full max-w-sm p-8 rounded-lg shadow"
+      >
+        <h1 className="text-xl font-semibold mb-6 text-center">Staff Portal Login</h1>
 
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <div className="space-y-1">
-            <label className="text-sm text-gray-600">Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-          </div>
+        {error && (
+          <div className="mb-4 p-2 bg-red-100 text-red-700 rounded">{error}</div>
+        )}
 
-          <div className="space-y-1">
-            <label className="text-sm text-gray-600">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-          </div>
+        <label className="block mb-4">
+          <span className="text-gray-700 text-sm">Email</span>
+          <input
+            type="email"
+            className="mt-1 w-full border px-3 py-2 rounded"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+        </label>
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
+        <label className="block mb-6">
+          <span className="text-gray-700 text-sm">Password</span>
+          <input
+            type="password"
+            className="mt-1 w-full border px-3 py-2 rounded"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+        </label>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-2 rounded-md bg-blue-600 text-white font-medium hover:bg-blue-700 disabled:opacity-60"
-          >
-            {loading ? "Signing in..." : "Sign In"}
-          </button>
-        </form>
-      </div>
+        <button
+          type="submit"
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-md"
+        >
+          Login
+        </button>
+      </form>
     </div>
   );
 }
