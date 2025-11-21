@@ -23,6 +23,7 @@ import {
 } from "./ApplicationDrawerService";
 import { useApplicationFull } from "./useApplicationFull";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/toast";
 
 interface Props {
   appId: string;
@@ -79,11 +80,11 @@ export default function ApplicationDrawer({ appId, open, onClose, stage }: Props
     const map: Record<string, { label: string; variant: any }> = {
       new: { label: "New", variant: "outline" },
       requires_docs: { label: "Requires Docs", variant: "warning" },
-      in_review: { label: "In Review", variant: "outline" },
-      ready_for_lender: { label: "Ready for Lender", variant: "success" },
-      sent_to_lender: { label: "Sent to Lender", variant: "default" },
+      reviewing: { label: "Reviewing", variant: "outline" },
+      ready_for_lenders: { label: "Ready for Lenders", variant: "success" },
+      sent_to_lenders: { label: "Sent to Lenders", variant: "default" },
       funded: { label: "Funded", variant: "success" },
-      closed: { label: "Closed", variant: "secondary" },
+      closed_withdrawn: { label: "Closed / Withdrawn", variant: "secondary" },
     };
     return map[stage ?? ""] ?? { label: stage ?? "", variant: "outline" };
   }, [stage]);
@@ -279,6 +280,17 @@ function FinancialsTabContent({ data }: { data: any }) {
 }
 
 function LendersTabContent({ data, appId }: { data: any[]; appId: string }) {
+  const { addToast } = useToast();
+
+  async function handleSend(lenderId: string) {
+    try {
+      await sendToLender({ appId, lenderId });
+      addToast({ title: "Lender sent", description: "Application shared", variant: "success" });
+    } catch (err) {
+      addToast({ title: "Send failed", description: String(err), variant: "destructive" });
+    }
+  }
+
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
       {data.map((lender) => (
@@ -293,7 +305,7 @@ function LendersTabContent({ data, appId }: { data: any[]; appId: string }) {
           <p className="mt-2 text-sm text-slate-700">{lender.summary}</p>
           <Button
             className="mt-3"
-            onClick={() => sendToLender({ appId, lenderId: lender.id })}
+            onClick={() => handleSend(lender.id)}
           >
             Send to lender
           </Button>

@@ -23,6 +23,8 @@ interface Contact {
   phone?: string;
   company?: string;
   lastActivity?: string;
+  createdAt?: string;
+  pipelineCount?: number;
   status: "Lead" | "Active" | "Inactive";
 }
 
@@ -110,8 +112,19 @@ export default function ContactsPage() {
       { accessorKey: "phone", header: "Phone" },
       { accessorKey: "company", header: "Company" },
       {
+        accessorKey: "pipelineCount",
+        header: "Pipeline Applications",
+        cell: ({ row }) => row.original.pipelineCount ?? 0,
+      },
+      {
+        accessorKey: "createdAt",
+        header: "Created at",
+        cell: ({ row }) =>
+          row.original.createdAt ? new Date(row.original.createdAt).toLocaleDateString() : "—",
+      },
+      {
         accessorKey: "lastActivity",
-        header: "Last Activity",
+        header: "Last contacted",
         cell: ({ row }) => (
           <span className="text-sm text-slate-600">
             {row.original.lastActivity

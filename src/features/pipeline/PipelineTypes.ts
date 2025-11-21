@@ -1,11 +1,11 @@
 export type PipelineStage =
   | "new"
   | "requires_docs"
-  | "in_review"
-  | "ready_for_lender"
-  | "sent_to_lender"
+  | "reviewing"
+  | "ready_for_lenders"
+  | "sent_to_lenders"
   | "funded"
-  | "closed";
+  | "closed_withdrawn";
 
 export type DocumentStatus = "accepted" | "rejected" | "pending" | "missing";
 
@@ -26,6 +26,11 @@ export interface PipelineCard {
   updatedAt: string;
   documents?: PipelineDocument[];
   documentCompletion?: number;
+  docsUploaded?: number;
+  docsRequired?: number;
+  ocrStatus?: "pending" | "completed" | "conflict";
+  bankingStatus?: "pending" | "analyzing" | "complete";
+  likelihoodScore?: number;
   hasMissingDocs?: boolean;
   hasOcrConflicts?: boolean;
   hasBankingAnomalies?: boolean;

@@ -8,6 +8,11 @@ import Companies from "@/pages/Companies";
 import CompanyDetailPage from "@/pages/companies/CompanyDetailPage";
 import DocumentCenter from "@/pages/documents/DocumentCenter";
 import DocumentDetailsPage from "@/pages/documents/DocumentDetailsPage";
+import DocumentUpload from "@/pages/documents/DocumentUpload";
+import MarketingWorkspacePage from "@/pages/marketing/MarketingWorkspacePage";
+import MarketingAIWriterPage from "@/pages/marketing/MarketingAIWriterPage";
+import MarketingCampaignsPage from "@/pages/marketing/MarketingCampaignsPage";
+import MarketingAdsPage from "@/pages/marketing/MarketingAdsPage";
 import ForbiddenPage from "@/pages/Forbidden";
 import ProtectedRoute from "./ProtectedRoute";
 import LenderLoginPage from "@/pages/lender/LenderLoginPage";
@@ -56,7 +61,12 @@ export const router = createBrowserRouter([
       { path: "/companies", element: <Companies /> },
       { path: "/companies/:id", element: <CompanyDetailPage /> },
       { path: "/documents", element: <DocumentCenter /> },
+      { path: "/documents/upload", element: <DocumentUpload /> },
       { path: "/documents/:id", element: <DocumentDetailsPage /> },
+      { path: "/marketing", element: <MarketingWorkspacePage /> },
+      { path: "/marketing/ai-writer", element: <MarketingAIWriterPage /> },
+      { path: "/marketing/campaigns", element: <MarketingCampaignsPage /> },
+      { path: "/marketing/ads", element: <MarketingAdsPage /> },
       { path: "/settings", element: <Settings /> },
     ],
   },
