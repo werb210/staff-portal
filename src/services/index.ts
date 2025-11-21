@@ -4,4 +4,4 @@ export * from "./ocr";
 export * from "./search";
 export * from "./tags";
 export * from "./health";
-export * from "./auth";
+export * from "./api/auth";
