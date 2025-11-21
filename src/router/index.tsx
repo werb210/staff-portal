@@ -1,15 +1,14 @@
-import { createBrowserRouter, Navigate } from "react-router-dom";
-
-import AppLayout from "@/components/layout/AppLayout";
-import CompaniesPage from "@/pages/Companies";
-import ContactsPage from "@/pages/Contacts";
-import Dashboard from "@/pages/Dashboard";
-import DealsPage from "@/pages/deals/DealsPage";
-import LoginPage from "@/pages/auth/LoginPage";
-import PipelinePage from "@/pages/Pipeline";
-import SearchPage from "@/features/search/SearchPage";
-import TagsPage from "@/features/tags/TagsPage";
-import ProtectedRoute from "./ProtectedRoute";
+import { Navigate, Outlet, createBrowserRouter } from "react-router-dom";
+import Layout from "../components/layout/Layout";
+import ProtectedRoute from "../components/auth/ProtectedRoute";
+import LoginPage from "../pages/auth/LoginPage";
+import Dashboard from "../pages/dashboard/Dashboard";
+import ContactsPage from "../pages/contacts/ContactsPage";
+import CompaniesPage from "../pages/companies/CompaniesPage";
+import DealsPage from "../pages/deals/DealsPage";
+import PipelinePage from "../pages/pipeline/PipelinePage";
+import TagsPage from "../pages/tags/TagsPage";
+import SearchPage from "../pages/search/SearchPage";
 
 export const router = createBrowserRouter([
   {
@@ -19,12 +18,13 @@ export const router = createBrowserRouter([
   {
     element: (
       <ProtectedRoute>
-        <AppLayout />
+        <Layout>
+          <Outlet />
+        </Layout>
       </ProtectedRoute>
     ),
     children: [
       { index: true, element: <Dashboard /> },
-      { path: "/dashboard", element: <Dashboard /> },
       { path: "/contacts", element: <ContactsPage /> },
       { path: "/companies", element: <CompaniesPage /> },
       { path: "/deals", element: <DealsPage /> },
@@ -35,5 +35,3 @@ export const router = createBrowserRouter([
   },
   { path: "*", element: <Navigate to="/" replace /> },
 ]);
-
-export default router;
