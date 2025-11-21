@@ -7,12 +7,16 @@ export async function getPipeline(): Promise<Pipeline> {
 }
 
 export async function moveCard(
-  cardId: string,
-  toStage: PipelineStage
+  appId: string,
+  fromStage: PipelineStage,
+  toStage: PipelineStage,
+  positionIndex: number
 ): Promise<void> {
   await api.patch("/api/pipeline/move", {
-    cardId,
-    stage: toStage,
+    appId,
+    fromStage,
+    toStage,
+    positionIndex,
   });
 }
 

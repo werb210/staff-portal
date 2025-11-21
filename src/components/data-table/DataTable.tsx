@@ -16,6 +16,7 @@ interface DataTableProps<TData, TValue> {
   data: TData[];
   filterColumn?: keyof TData;
   enablePagination?: boolean;
+  onRowClick?: (row: TData) => void;
 }
 
 export function DataTable<TData, TValue>({
@@ -23,6 +24,7 @@ export function DataTable<TData, TValue>({
   data,
   filterColumn,
   enablePagination = true,
+  onRowClick,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [filter, setFilter] = useState("");
@@ -72,7 +74,11 @@ export function DataTable<TData, TValue>({
           <TableBody>
             {table.getRowModel().rows.length ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
+                <TableRow
+                  key={row.id}
+                  className={onRowClick ? "cursor-pointer hover:bg-slate-50" : undefined}
+                  onClick={() => onRowClick?.(row.original)}
+                >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
                       {flexRender(
