@@ -1,12 +1,10 @@
 import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DrawerSkeleton } from "@/ui/skeletons";
-import { PipelineCard as PipelineCardType } from "@/features/pipeline/PipelineTypes";
-import { getApplicationDetails } from "@/lib/api";
 import { useToast } from "@/components/ui/toast";
+import { useApplicationDetails } from "@/hooks/pipeline";
 
 interface PipelineDrawerProps {
   appId: string | null;
@@ -51,13 +49,17 @@ export default function PipelineDrawer({ appId, open, onClose }: PipelineDrawerP
     setTab("application");
   }, [appId]);
 
-  const detailsQuery = useQuery<PipelineCardType, Error>({
-    queryKey: ["application-detail", appId],
-    queryFn: () => getApplicationDetails(appId ?? ""),
-    enabled: open && Boolean(appId),
-    onError: (error) =>
-      addToast({ title: "Unable to load application", description: error.message, variant: "destructive" }),
-  });
+  const detailsQuery = useApplicationDetails(open ? appId : null);
+
+  useEffect(() => {
+    if (detailsQuery.error) {
+      addToast({
+        title: "Unable to load application",
+        description: detailsQuery.error.message,
+        variant: "destructive",
+      });
+    }
+  }, [addToast, detailsQuery.error]);
 
   const application = detailsQuery.data;
   const amountFormatter = new Intl.NumberFormat("en-US", {

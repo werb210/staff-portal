@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import api from "@/lib/api";
+
+import { api } from "@/lib/api";
 import { PagedApplicationsResponse } from "@/types/application";
 
 export function useApplicationsPaged(
@@ -20,7 +21,7 @@ export function useApplicationsPaged(
         sortDirection,
       });
 
-      const res = await api.get(`/api/applications/paged?${params.toString()}`);
+      const res = await api.get(`/applications/paged?${params.toString()}`);
       return res.data;
     },
   });

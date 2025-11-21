@@ -1,6 +1,7 @@
 export interface PipelineStage {
   id: string;
   name: string;
+  order?: number;
 }
 
 export type DocumentStatus = "accepted" | "rejected" | "pending" | "missing";

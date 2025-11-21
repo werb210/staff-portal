@@ -3,11 +3,10 @@ import { DragDropContext, DropResult } from "@hello-pangea/dnd";
 import { useQueries, useQueryClient, UseQueryResult } from "@tanstack/react-query";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/components/ui/toast";
-import { useMoveApplication, usePipelineStages } from "@/features/pipeline/PipelineService";
 import { PipelineCard as PipelineCardType, PipelineStage } from "@/features/pipeline/PipelineTypes";
+import { fetchPipelineApplications, useMoveApplication, usePipelineStages } from "@/hooks/pipeline";
 import PipelineColumn from "./PipelineColumn";
 import PipelineDrawer from "./PipelineDrawer";
-import { getApplicationsByStage } from "@/lib/api";
 
 function PipelineBoardSkeleton() {
   return (
@@ -37,9 +36,8 @@ export default function PipelineBoard() {
 
   const applicationQueries = useQueries({
     queries: stageList.map((stage) => ({
-      queryKey: ["stage-applications", stage.id],
-      queryFn: () => getApplicationsByStage(stage.id),
-      refetchInterval: 10000,
+      queryKey: ["pipeline-applications", stage.id],
+      queryFn: () => fetchPipelineApplications(stage.id),
       onError: (error: Error) =>
         addToast({
           title: "Unable to load applications",
@@ -73,8 +71,8 @@ export default function PipelineBoard() {
 
     if (fromStage === toStage && source.index === destination.index) return;
 
-    const fromKey = ["stage-applications", fromStage];
-    const toKey = ["stage-applications", toStage];
+    const fromKey = ["pipeline-applications", fromStage];
+    const toKey = ["pipeline-applications", toStage];
 
     const currentFrom = queryClient.getQueryData<PipelineCardType[]>(fromKey) ?? [];
     const currentTo = queryClient.getQueryData<PipelineCardType[]>(toKey) ?? [];
@@ -99,7 +97,7 @@ export default function PipelineBoard() {
     }
 
     moveMutation.mutate(
-      { appId: movingCard.applicationId, stageId: toStage },
+      { id: movingCard.applicationId, stageId: toStage },
       {
         onError: () => {
           queryClient.setQueryData(fromKey, currentFrom);
