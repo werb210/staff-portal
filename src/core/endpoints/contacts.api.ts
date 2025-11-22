@@ -1,4 +1,4 @@
-import apiClient from "@/api/client";
+import apiClient from "@/lib/http";
 
 export interface ContactFilters {
   search?: string;
