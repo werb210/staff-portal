@@ -1,4 +1,4 @@
-import apiClient from "../api";
+import apiClient from "@/api/client";
 
 export interface LoginPayload {
   email: string;
@@ -11,6 +11,6 @@ export interface LoginResponse<TUser = unknown> {
 }
 
 export const login = <TUser = unknown>(payload: LoginPayload) =>
-  apiClient.post<LoginResponse<TUser>>("/api/users/login", payload);
+  apiClient.post<LoginResponse<TUser>>("/api/auth/login", payload);
 
-export const fetchCurrentUser = <TUser = unknown>() => apiClient.get<TUser>("/api/users/me");
+export const fetchCurrentUser = <TUser = unknown>() => apiClient.get<TUser>("/api/auth/me");

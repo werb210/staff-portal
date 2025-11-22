@@ -1,4 +1,4 @@
-import apiClient from "../../core/api";
+import apiClient from "@/api/client";
 
 export interface DocumentRecord {
   id: string;

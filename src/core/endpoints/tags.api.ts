@@ -1,4 +1,4 @@
-import apiClient from "../api";
+import apiClient from "@/api/client";
 
 export interface TagPayload {
   name?: string;
