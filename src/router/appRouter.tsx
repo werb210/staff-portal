@@ -7,6 +7,8 @@ import Dashboard from "@/pages/dashboard/Dashboard";
 import ContactsPage from "@/pages/contacts/ContactsPage";
 import CompaniesPage from "@/pages/companies/CompaniesPage";
 import DealsPage from "@/pages/deals/DealsPage";
+import ApplicationsPage from "@/pages/applications/ApplicationsPage";
+import ApplicationViewPage from "@/pages/applications/ApplicationViewPage";
 
 export const appRouter = createBrowserRouter([
   {
@@ -26,7 +28,9 @@ export const appRouter = createBrowserRouter([
       { path: "dashboard", element: <Dashboard /> },
       { path: "contacts", element: <ContactsPage /> },
       { path: "companies", element: <CompaniesPage /> },
-      { path: "deals", element: <DealsPage /> }
+      { path: "deals", element: <DealsPage /> },
+      { path: "applications", element: <ApplicationsPage /> },
+      { path: "applications/:id", element: <ApplicationViewPage /> }
     ]
   },
 
