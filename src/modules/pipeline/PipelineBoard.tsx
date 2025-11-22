@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import { DragDropContext, DropResult } from "react-beautiful-dnd";
 
-import { PageLayout } from "../../components/layout/PageLayout";
 import { Alert, AlertDescription, AlertTitle } from "../../components/ui/alert";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
@@ -45,16 +44,17 @@ export function PipelineBoard() {
   };
 
   return (
-    <PageLayout
-      title="Pipeline"
-      description="Track application momentum and move deals forward with drag-and-drop."
-      badge="Sales"
-      actions={
+    <div className="space-y-4">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h2 className="text-2xl font-semibold">Pipeline</h2>
+          <p className="text-gray-700">Track application momentum and move deals forward with drag-and-drop.</p>
+        </div>
         <Button variant="secondary" size="sm" onClick={() => void fetchPipeline()} disabled={isLoading}>
           Refresh
         </Button>
-      }
-    >
+      </div>
+
       {error ? (
         <Alert variant="destructive">
           <AlertTitle>Pipeline unavailable</AlertTitle>
@@ -87,6 +87,6 @@ export function PipelineBoard() {
           </DragDropContext>
         </CardContent>
       </Card>
-    </PageLayout>
+    </div>
   );
 }
