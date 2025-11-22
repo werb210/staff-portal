@@ -5,7 +5,7 @@ import { RouterProvider } from 'react-router-dom';
 
 import './index.css';
 import queryClient from './core/queryClient';
-import { AppRouter } from './router';
+import router from './router';
 import { useAuthStore } from '@/store/authStore';
 
 useAuthStore.getState().hydrate();
@@ -13,7 +13,7 @@ useAuthStore.getState().hydrate();
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
-      <RouterProvider router={AppRouter} />
+      <RouterProvider router={router} />
     </QueryClientProvider>
   </React.StrictMode>,
 );
