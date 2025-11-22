@@ -1,29 +1,37 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
+
+interface User {
+  id: string;
+  email: string;
+  role: string;
+}
 
 interface AuthState {
   token: string | null;
-  user: any | null;
-  role: string | null;
+  user: User | null;
 
-  setAuth: (token: string, user: any) => void;
+  setAuth: (token: string, user: User) => void;
   logout: () => void;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
-  token: localStorage.getItem("token"),
-  user: null,
-  role: localStorage.getItem("role"),
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set) => ({
+      token: null,
+      user: null,
 
-  setAuth: (token, user) => {
-    localStorage.setItem("token", token);
-    localStorage.setItem("role", user.role || "staff");
+      setAuth: (token, user) =>
+        set(() => ({ token, user })),
 
-    set({ token, user, role: user.role || "staff" });
-  },
-
-  logout: () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("role");
-    set({ token: null, user: null, role: null });
-  }
-}));
+      logout: () =>
+        set(() => ({
+          token: null,
+          user: null
+        }))
+    }),
+    {
+      name: "boreal_staff_auth"
+    }
+  )
+);

@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import api from "@/lib/api/http";
 import { useAuthStore } from "@/store/authStore";
-import { login } from "@/api/auth";
+import { useNavigate } from "react-router-dom";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -9,50 +9,61 @@ export default function LoginPage() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  async function handleSubmit(e: any) {
+  const handleSubmit = async (e: any) => {
     e.preventDefault();
+    setLoading(true);
     setError("");
 
     try {
-      const data = await login(email, password);
-      setAuth(data.token, data.user);
+      const res = await api.post("/api/users/login", {
+        email,
+        password
+      });
+
+      const { token, user } = res.data;
+      setAuth(token, user);
 
       navigate("/dashboard");
     } catch (err: any) {
-      setError("Invalid credentials");
-      console.error(err);
+      setError("Invalid login");
+    } finally {
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="w-full h-screen flex items-center justify-center bg-gray-100">
       <form
         onSubmit={handleSubmit}
-        className="bg-white p-6 rounded shadow w-96 space-y-4"
+        className="w-96 bg-white p-8 shadow-md rounded"
       >
-        <h1 className="text-xl font-bold">Login</h1>
+        <h1 className="text-2xl mb-6 font-semibold">Staff Login</h1>
+
+        {error && <p className="text-red-600 mb-4">{error}</p>}
 
         <input
-          className="w-full border p-2 rounded"
+          className="border p-2 w-full mb-4"
           placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
 
         <input
-          className="w-full border p-2 rounded"
+          className="border p-2 w-full mb-4"
           type="password"
           placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
 
-        {error && <p className="text-red-500 text-sm">{error}</p>}
-
-        <button className="w-full p-2 bg-black text-white rounded">
-          Login
+        <button
+          disabled={loading}
+          className="w-full p-2 bg-black text-white rounded"
+        >
+          {loading ? "Loading..." : "Login"}
         </button>
       </form>
     </div>
