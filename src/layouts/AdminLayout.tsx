@@ -7,7 +7,8 @@ import { Input } from "../components/ui/input";
 import { useAuthStore } from "../core/auth.store";
 
 const navItems = [
-  { label: "Dashboard", to: "/" },
+  { label: "Dashboard", to: "/dashboard" },
+  { label: "Pipeline", to: "/pipeline" },
   { label: "Contacts", to: "/contacts" },
   { label: "Companies", to: "/companies" },
   { label: "Deals", to: "/deals" },
@@ -15,7 +16,8 @@ const navItems = [
   { label: "Documents", to: "/documents" },
   { label: "Search", to: "/search" },
   { label: "Tags", to: "/tags" },
-  { label: "Pipeline", to: "/pipeline" },
+  { label: "Marketing", to: "/marketing" },
+  { label: "Analytics", to: "/analytics" },
   { label: "Reports", to: "/reports" },
   { label: "Settings", to: "/settings" },
 ];
@@ -31,13 +33,14 @@ function buildBreadcrumbs(pathname: string) {
     return { label, href };
   });
 
-  return [{ label: "Dashboard", href: "/" }, ...crumbs];
+  return [{ label: "Dashboard", href: "/dashboard" }, ...crumbs];
 }
 
 export function AdminLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const logout = useAuthStore((state) => state.logout);
+  const role = useAuthStore((state) => state.role ?? "Staff");
   const breadcrumbs = buildBreadcrumbs(location.pathname);
 
   return (
@@ -45,7 +48,7 @@ export function AdminLayout() {
       <div className="flex min-h-screen">
         <aside className="hidden w-64 flex-col border-r border-slate-200 bg-white/90 px-4 py-6 backdrop-blur lg:flex">
           <div className="mb-6 flex items-center justify-between px-2">
-            <Link to="/" className="text-lg font-bold tracking-tight text-indigo-700">
+            <Link to="/dashboard" className="text-lg font-bold tracking-tight text-indigo-700">
               Staff Portal
             </Link>
             <Badge variant="outline">v1.0</Badge>
@@ -60,7 +63,7 @@ export function AdminLayout() {
                     isActive ? "bg-indigo-50 text-indigo-700 ring-1 ring-inset ring-indigo-100" : "text-slate-700"
                   }`
                 }
-                end={item.to === "/"}
+                end={item.to === "/dashboard"}
               >
                 <span className="h-2 w-2 rounded-full bg-indigo-500/60" aria-hidden />
                 {item.label}
@@ -85,7 +88,7 @@ export function AdminLayout() {
                 <div className="hidden md:block">
                   <Input type="search" placeholder="Search portal" className="w-64" />
                 </div>
-                <Badge variant="success">Role: Staff</Badge>
+                <Badge variant="success">Role: {role}</Badge>
                 <Button
                   variant="secondary"
                   size="sm"

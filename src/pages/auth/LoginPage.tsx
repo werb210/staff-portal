@@ -28,9 +28,9 @@ export default function LoginPage() {
   }, [accessToken, from, navigate]);
 
   const { mutate, isPending, isError, error } = useMutation({
-    mutationFn: async () => (await login({ email, password })).data,
+    mutationFn: async () => (await login<{ role?: string | null }>({ email, password })).data,
     onSuccess: (data) => {
-      setTokens({ accessToken: data.token });
+      setTokens({ accessToken: data.token, role: data.user?.role ?? null });
       navigate(from, { replace: true });
     },
   });
