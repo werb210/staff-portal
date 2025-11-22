@@ -4,7 +4,7 @@ import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-do
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
-import { useAuthStore } from "../core/auth.store";
+import { useAuthStore } from "@/store/authStore";
 
 const navItems = [
   { label: "Dashboard", to: "/" },

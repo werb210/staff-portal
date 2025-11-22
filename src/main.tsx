@@ -6,6 +6,9 @@ import { RouterProvider } from 'react-router-dom';
 import './index.css';
 import queryClient from './core/queryClient';
 import { AppRouter } from './router';
+import { useAuthStore } from '@/store/authStore';
+
+useAuthStore.getState().hydrate();
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
