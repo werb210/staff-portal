@@ -10,6 +10,7 @@ export default function Layout() {
     { label: "Contacts", path: "/contacts" },
     { label: "Companies", path: "/companies" },
     { label: "Deals", path: "/deals" },
+    { label: "Pipeline", path: "/pipeline" },
     { label: "Applications", path: "/applications" }
   ];
 
