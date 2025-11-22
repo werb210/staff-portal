@@ -9,7 +9,8 @@ export default function Layout() {
     { label: "Dashboard", path: "/dashboard" },
     { label: "Contacts", path: "/contacts" },
     { label: "Companies", path: "/companies" },
-    { label: "Deals", path: "/deals" }
+    { label: "Deals", path: "/deals" },
+    { label: "Applications", path: "/applications" }
   ];
 
   return (
