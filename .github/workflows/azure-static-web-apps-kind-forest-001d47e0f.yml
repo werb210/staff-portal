@@ -32,9 +32,8 @@ jobs:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: "upload"
-          #### IMPORTANT ####
           app_location: "/"
-          api_location: ""      # disable Azure Functions
+          api_location: ""
           output_location: "dist"
           skip_app_build: false
           skip_api_build: true
