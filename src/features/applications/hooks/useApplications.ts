@@ -1,8 +1,24 @@
 import { useQuery } from "@tanstack/react-query";
-import {
-  ApplicationsResponse,
-  fetchApplications
-} from "@/lib/api/applications";
+import api from "@/lib/api/http";
+
+export interface ApplicationSummary {
+  id: string;
+  businessName: string;
+  status: string;
+  createdAt: string;
+}
+
+export interface ApplicationsResponse {
+  applications: ApplicationSummary[];
+  total: number;
+}
+
+async function fetchApplications(page = 1, limit = 25): Promise<ApplicationsResponse> {
+  const res = await api.get("/api/applications", {
+    params: { page, limit }
+  });
+  return res.data;
+}
 
 export function useApplications(page: number, limit: number) {
   return useQuery({
