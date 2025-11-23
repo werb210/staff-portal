@@ -29,8 +29,10 @@ export default function ApplicationViewPage() {
         <h2 className="text-xl mt-6 mb-2">Documents</h2>
         {app.documents?.length === 0 && <p>No documents uploaded.</p>}
         <ul className="list-disc ml-6">
-          {app.documents?.map((doc) => (
-            <li key={doc.id}>{doc.fileName} ({doc.category})</li>
+          {app.documents?.map((doc: { id: string; fileName: string; category?: string }) => (
+            <li key={doc.id}>
+              {doc.fileName} ({doc.category})
+            </li>
           ))}
         </ul>
       </div>
