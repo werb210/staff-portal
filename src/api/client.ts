@@ -1,19 +1,29 @@
 import axios from 'axios';
-import { useSiloStore } from '../state/siloStore';
+import { useSiloStore, Silo } from '../state/siloStore';
 
-export function api() {
+const client = axios.create({
+  withCredentials: true,
+});
+
+client.interceptors.request.use((config) => {
   const silo = useSiloStore.getState().currentSilo;
 
-  if (!silo) throw new Error("Silo not set. Cannot call API.");
-
-  const base = {
+  const baseMap: Record<Silo, string | undefined> = {
     BF: import.meta.env.VITE_API_BF,
     BI: import.meta.env.VITE_API_BI,
     SLF: import.meta.env.VITE_API_SLF,
-  }[silo];
+  };
 
-  return axios.create({
+  const base = silo ? baseMap[silo] : baseMap.BF;
+
+  if (!base) throw new Error("Silo not set. Cannot call API.");
+
+  return {
+    ...config,
     baseURL: base,
-    withCredentials: true,
-  });
+  };
+});
+
+export function api() {
+  return client;
 }

@@ -1,4 +1,4 @@
-import { useAuthStore } from "@/store/authStore";
+import { useAuthStore } from "@/state/authStore";
 import { useNavigate } from "react-router-dom";
 
 export default function TopNav() {
@@ -9,8 +9,8 @@ export default function TopNav() {
     <div className="w-full h-14 flex items-center justify-end px-6 border-b bg-white">
       <button
         className="px-4 py-2 bg-black text-white rounded"
-        onClick={() => {
-          logout();
+        onClick={async () => {
+          await logout();
           navigate("/login");
         }}
       >
