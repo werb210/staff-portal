@@ -6,6 +6,7 @@ import dashboardRoutes from "./routes/dashboard.routes.js";
 import authRoutes from "./routes/auth.routes.js";
 import pipelineRoutes from "./routes/pipeline.routes.js";
 import documentsRoutes from "./routes/documents.js";
+import lendersRoutes from "./routes/lenders.js";
 
 const app = express();
 
@@ -19,5 +20,6 @@ app.use("/api/applications/paged", applicationsPagedRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/pipeline", pipelineRoutes);
 app.use("/api/documents", documentsRoutes);
+app.use("/api/lenders", lendersRoutes);
 
 export default app;
