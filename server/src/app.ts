@@ -8,6 +8,7 @@ import pipelineRoutes from "./routes/pipeline.routes.js";
 import documentsRoutes from "./routes/documents.js";
 import lendersRoutes from "./routes/lenders.js";
 import internalTransmissionRoutes from "./routes/_int/transmission.js";
+import signingRoutes from "./routes/signing.js";
 
 const app = express();
 
@@ -23,5 +24,6 @@ app.use("/api/pipeline", pipelineRoutes);
 app.use("/api/documents", documentsRoutes);
 app.use("/api/lenders", lendersRoutes);
 app.use("/api/_internal", internalTransmissionRoutes);
+app.use("/api/signing", signingRoutes);
 
 export default app;

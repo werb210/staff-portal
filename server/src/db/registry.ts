@@ -10,6 +10,7 @@ export const registry = {
   ocrResults: (prisma as any).ocrResult,
   documents: (prisma as any).document,
   documentVersions: (prisma as any).documentVersion,
+  signingSessions: (prisma as any).signingSession,
   lenders: (prisma as any).lender,
   transmissionLog: (prisma as any).transmissionLog,
   blob: {
