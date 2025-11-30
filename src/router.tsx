@@ -1,5 +1,6 @@
 import { createBrowserRouter } from 'react-router-dom';
 import DashboardPage from './pages/DashboardPage';
+import ApplicationPage from './pages/ApplicationPage';
 import LoginPage from './pages/LoginPage';
 import RequireAuth from './components/auth/RequireAuth';
 
@@ -13,6 +14,14 @@ const router = createBrowserRouter([
     element: (
       <RequireAuth>
         <DashboardPage />
+      </RequireAuth>
+    )
+  },
+  {
+    path: "/applications/:id",
+    element: (
+      <RequireAuth>
+        <ApplicationPage />
       </RequireAuth>
     )
   }
