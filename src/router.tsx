@@ -3,6 +3,7 @@ import DashboardPage from './pages/DashboardPage';
 import ApplicationPage from './pages/ApplicationPage';
 import LoginPage from './pages/LoginPage';
 import RequireAuth from './components/auth/RequireAuth';
+import CommunicationsPage from './pages/CommunicationsPage';
 
 const router = createBrowserRouter([
   {
@@ -22,6 +23,14 @@ const router = createBrowserRouter([
     element: (
       <RequireAuth>
         <ApplicationPage />
+      </RequireAuth>
+    )
+  },
+  {
+    path: "/communications",
+    element: (
+      <RequireAuth>
+        <CommunicationsPage />
       </RequireAuth>
     )
   }
