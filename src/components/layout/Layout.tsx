@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
-import { useAuthStore } from "@/store/authStore";
+import { useAuthStore } from "@/state/authStore";
 
 export default function Layout() {
   const { logout } = useAuthStore();

@@ -6,7 +6,7 @@ interface SiloState {
   currentSilo: Silo | null;
   allowedSilos: Silo[];
   roles: Record<Silo, string>;
-  setSilo: (silo: Silo) => void;
+  setSilo: (silo: Silo | null) => void;
   setAllowed: (allowed: Silo[]) => void;
   setRoles: (roles: Record<Silo, string>) => void;
 }
