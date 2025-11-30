@@ -1,6 +1,12 @@
+// src/pages/DashboardPage.tsx
 import React from 'react';
-import Dashboard from './dashboard/Dashboard';
+import PipelineBoard from '../components/pipeline/PipelineBoard';
 
 export default function DashboardPage() {
-  return <Dashboard />;
+  return (
+    <div style={{ padding: "20px" }}>
+      <h1>Pipeline Overview</h1>
+      <PipelineBoard />
+    </div>
+  );
 }
