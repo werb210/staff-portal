@@ -5,6 +5,7 @@ import LoginPage from './pages/LoginPage';
 import RequireAuth from './components/auth/RequireAuth';
 import CommunicationsPage from './pages/CommunicationsPage';
 import DocumentManagerPage from './pages/DocumentManagerPage';
+import LenderAdminPage from './pages/LenderAdminPage';
 
 const router = createBrowserRouter([
   {
@@ -40,6 +41,14 @@ const router = createBrowserRouter([
     element: (
       <RequireAuth>
         <CommunicationsPage />
+      </RequireAuth>
+    )
+  },
+  {
+    path: "/admin/lenders",
+    element: (
+      <RequireAuth>
+        <LenderAdminPage />
       </RequireAuth>
     )
   }
