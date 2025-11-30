@@ -4,6 +4,7 @@ import ApplicationPage from './pages/ApplicationPage';
 import LoginPage from './pages/LoginPage';
 import RequireAuth from './components/auth/RequireAuth';
 import CommunicationsPage from './pages/CommunicationsPage';
+import DocumentManagerPage from './pages/DocumentManagerPage';
 
 const router = createBrowserRouter([
   {
@@ -23,6 +24,14 @@ const router = createBrowserRouter([
     element: (
       <RequireAuth>
         <ApplicationPage />
+      </RequireAuth>
+    )
+  },
+  {
+    path: "/application/:id/documents",
+    element: (
+      <RequireAuth>
+        <DocumentManagerPage />
       </RequireAuth>
     )
   },
