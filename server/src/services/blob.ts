@@ -17,7 +17,7 @@ const blobService = new BlobServiceClient(
   credential
 );
 
-const containerClient = blobService.getContainerClient(containerName);
+export const containerClient = blobService.getContainerClient(containerName);
 
 /**
  * Build silo-safe path:
