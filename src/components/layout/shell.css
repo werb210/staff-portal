@@ -1,7 +1,7 @@
+
 .shell {
   min-height: 100vh;
-  background: #f8fafc;
-  color: #0f172a;
+  color: #e2f1f4;
   display: flex;
   flex-direction: column;
 }
@@ -11,9 +11,10 @@
   align-items: center;
   justify-content: space-between;
   padding: 1rem 1.5rem;
-  background: #0f172a;
-  color: #fff;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background: linear-gradient(90deg, rgba(11, 27, 43, 0.92), rgba(19, 75, 112, 0.9));
+  color: #e2f1f4;
+  border-bottom: 1px solid rgba(136, 201, 191, 0.35);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
 }
 
 .logo {
@@ -29,20 +30,20 @@
 .silo-switch button {
   padding: 0.5rem 0.75rem;
   border-radius: 6px;
-  border: 1px solid transparent;
-  background: #1e293b;
-  color: #e2e8f0;
+  border: 1px solid rgba(136, 201, 191, 0.45);
+  background: rgba(22, 42, 62, 0.65);
+  color: #e2f1f4;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .silo-switch button.active {
-  background: #38bdf8;
-  color: #0f172a;
+  background: linear-gradient(135deg, #1b998b, #2dd4bf);
+  color: #0b1b2b;
 }
 
 .silo-switch button:hover {
-  border-color: #94a3b8;
+  border-color: #8fcad0;
 }
 
 .role {
@@ -52,4 +53,8 @@
 .shell-main {
   padding: 1.5rem;
   flex: 1;
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(4px);
+  border-left: 1px solid rgba(136, 201, 191, 0.2);
+  border-right: 1px solid rgba(136, 201, 191, 0.2);
 }
