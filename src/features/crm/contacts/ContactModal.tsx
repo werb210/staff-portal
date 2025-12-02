@@ -1,99 +1,165 @@
-import React, { useEffect, useState } from "react";
-import { cn } from "../../../lib/utils";
+import React, { useState, useEffect } from "react";
+import { Contact, ContactForm } from "./types";
 
-export type ContactForm = {
-  id?: string;
-  name: string;
-  email: string;
-  company: string;
-  tags: string[];
-};
-
-type ContactModalProps = {
+export default function ContactModal({
+  open,
+  onClose,
+  onSave,
+  initial,
+}: {
   open: boolean;
   onClose: () => void;
-  onSave: (contact: ContactForm) => void;
-  initial?: ContactForm | null;
-};
-
-export function ContactModal({ open, onClose, onSave, initial }: ContactModalProps) {
-  const [form, setForm] = useState<ContactForm>({ name: "", email: "", company: "", tags: [] });
+  onSave: (data: ContactForm) => void;
+  initial?: Contact | null;
+}) {
+  const [form, setForm] = useState<ContactForm>({
+    firstName: "",
+    lastName: "",
+    title: "",
+    email: "",
+    phone: "",
+    company: "",
+    tags: [],
+  });
 
   useEffect(() => {
-    if (initial) {
-      setForm(initial);
-    } else {
-      setForm({ name: "", email: "", company: "", tags: [] });
-    }
+    if (initial)
+      setForm({
+        firstName: initial.firstName,
+        lastName: initial.lastName,
+        title: initial.title ?? "",
+        email: initial.email,
+        phone: initial.phone ?? "",
+        company: initial.company ?? "",
+        tags: [...initial.tags],
+      });
   }, [initial]);
-
-  const updateField = (key: keyof ContactForm, value: string | string[]) => {
-    setForm((prev) => ({ ...prev, [key]: value }));
-  };
-
-  const handleSubmit = () => {
-    onSave(form);
-    onClose();
-  };
 
   if (!open) return null;
 
+  const update = (key: keyof ContactForm, val: any) =>
+    setForm((f) => ({ ...f, [key]: val }));
+
+  const addTag = (t: string) => {
+    if (!t.trim() || form.tags.includes(t.trim())) return;
+    update("tags", [...form.tags, t.trim()]);
+  };
+
+  const removeTag = (t: string) =>
+    update(
+      "tags",
+      form.tags.filter((x) => x !== t)
+    );
+
+  let tagInput = "";
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/30 p-4">
-      <div className="w-full max-w-lg rounded-xl bg-white p-5 shadow-xl">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-slate-900">{initial ? "Edit" : "Add"} contact</h3>
-          <button className="text-sm text-slate-500" onClick={onClose}>
-            Close
-          </button>
+    <div className="fixed inset-0 bg-black/40 flex justify-center items-center p-4 z-50">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-lg p-6">
+        <h2 className="text-lg font-semibold mb-4">
+          {initial ? "Edit Contact" : "New Contact"}
+        </h2>
+
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          <input
+            type="text"
+            placeholder="First name"
+            value={form.firstName}
+            onChange={(e) => update("firstName", e.target.value)}
+            className="rounded border px-3 py-2 text-sm"
+          />
+          <input
+            type="text"
+            placeholder="Last name"
+            value={form.lastName}
+            onChange={(e) => update("lastName", e.target.value)}
+            className="rounded border px-3 py-2 text-sm"
+          />
+
+          <input
+            type="text"
+            placeholder="Title"
+            value={form.title}
+            onChange={(e) => update("title", e.target.value)}
+            className="rounded border px-3 py-2 text-sm"
+          />
+
+          <input
+            type="email"
+            placeholder="Email"
+            value={form.email}
+            onChange={(e) => update("email", e.target.value)}
+            className="rounded border px-3 py-2 text-sm"
+          />
+
+          <input
+            type="text"
+            placeholder="Phone"
+            value={form.phone}
+            onChange={(e) => update("phone", e.target.value)}
+            className="rounded border px-3 py-2 text-sm"
+          />
+
+          <input
+            type="text"
+            placeholder="Company"
+            value={form.company}
+            onChange={(e) => update("company", e.target.value)}
+            className="rounded border px-3 py-2 text-sm"
+          />
         </div>
 
-        <div className="mt-4 space-y-3 text-sm">
-          <label className="block">
-            <span className="text-slate-600">Name</span>
+        <div className="mb-4">
+          <div className="text-xs font-medium text-slate-600 mb-1">Tags</div>
+
+          <div className="flex gap-2">
             <input
-              value={form.name}
-              onChange={(e) => updateField("name", e.target.value)}
-              className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2"
+              id="tagInput"
+              type="text"
+              placeholder="Add tag"
+              onChange={(e) => (tagInput = e.target.value)}
+              className="rounded border px-3 py-2 text-sm flex-1"
             />
-          </label>
-          <label className="block">
-            <span className="text-slate-600">Email</span>
-            <input
-              value={form.email}
-              onChange={(e) => updateField("email", e.target.value)}
-              className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2"
-            />
-          </label>
-          <label className="block">
-            <span className="text-slate-600">Company</span>
-            <input
-              value={form.company}
-              onChange={(e) => updateField("company", e.target.value)}
-              className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2"
-            />
-          </label>
-          <label className="block">
-            <span className="text-slate-600">Tags (comma separated)</span>
-            <input
-              value={form.tags.join(", ")}
-              onChange={(e) => updateField("tags", e.target.value.split(",").map((t) => t.trim()).filter(Boolean))}
-              className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2"
-            />
-          </label>
+            <button
+              onClick={() => {
+                addTag(tagInput);
+                (document.getElementById("tagInput") as HTMLInputElement).value =
+                  "";
+              }}
+              className="rounded bg-indigo-600 text-white px-3 text-sm"
+            >
+              Add
+            </button>
+          </div>
+
+          <div className="flex gap-1 mt-2 flex-wrap">
+            {form.tags.map((t) => (
+              <span
+                key={t}
+                className="rounded bg-indigo-100 text-indigo-700 px-2 py-[2px] text-xs font-medium flex items-center gap-1"
+              >
+                {t}
+                <button
+                  className="text-indigo-700"
+                  onClick={() => removeTag(t)}
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
         </div>
 
-        <div className="mt-5 flex justify-end gap-2">
-          <button className="rounded-md border border-slate-200 px-3 py-2 text-sm" onClick={onClose}>
+        <div className="flex justify-end gap-2">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-sm rounded border bg-white"
+          >
             Cancel
           </button>
           <button
-            className={cn(
-              "rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500",
-              !form.name && "opacity-60",
-            )}
-            onClick={handleSubmit}
-            disabled={!form.name}
+            onClick={() => onSave(form)}
+            className="px-4 py-2 text-sm rounded bg-indigo-600 text-white"
           >
             Save
           </button>
