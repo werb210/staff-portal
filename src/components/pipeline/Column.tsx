@@ -1,61 +1,40 @@
 import React from "react";
-import { ApplicationCard, ApplicationCardSkeleton, EmptyColumn } from ".";
-import { Card } from "@/components/ui/card";
+import ColumnContainer from "./ColumnContainer";
+import { ApplicationCard } from "./index";
 
 export interface PipelineApplication {
   id: string;
   businessName: string;
   contactName: string;
   stage: string;
-  score?: number | null;
+  score: number | null;
 }
 
 interface Props {
-  label: string;
+  title: string;
+  stage: string;
   apps: PipelineApplication[];
-  loading?: boolean;
-  onCardClick?: (id: string) => void;
 }
 
-export default function Column({
-  label,
-  apps,
-  loading = false,
-  onCardClick,
-}: Props) {
+export default function Column({ title, stage, apps }: Props) {
   return (
-    <div className="flex flex-col h-full w-[320px]">
-      {/* Column Header */}
-      <div className="px-2 py-3 flex justify-between items-center bg-gray-100 rounded-md border mb-2">
-        <h2 className="text-sm font-semibold">{label}</h2>
-        <span className="text-xs bg-gray-200 rounded-full px-2 py-1">
-          {apps.length}
-        </span>
+    <ColumnContainer stage={stage}>
+      <div className="px-4 py-3 border-b border-slate-200">
+        <h2 className="font-semibold text-slate-700">{title}</h2>
       </div>
 
-      {/* Card List */}
-      <div className="overflow-y-auto pr-1 flex flex-col gap-3">
-        {loading &&
-          Array.from({ length: 4 }).map((_, i) => (
-            <ApplicationCardSkeleton key={i} />
-          ))}
-
-        {!loading && apps.length === 0 && <EmptyColumn label={label} />}
-
-        {!loading &&
+      <div className="flex flex-col gap-3 p-4">
+        {apps.length === 0 ? (
+          <div className="text-slate-400 text-sm italic">No applications</div>
+        ) : (
           apps.map((app) => (
-            <div key={app.id}>
-              <ApplicationCard
-                id={app.id}
-                businessName={app.businessName}
-                contactName={app.contactName}
-                stage={app.stage}
-                score={app.score}
-                onClick={() => onCardClick?.(app.id)}
-              />
-            </div>
-          ))}
+            <ApplicationCard
+              key={app.id}
+              {...app}
+            />
+          ))
+        )}
       </div>
-    </div>
+    </ColumnContainer>
   );
 }

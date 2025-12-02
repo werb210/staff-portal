@@ -1,14 +1,12 @@
 import React from "react";
-import { Card, CardHeader, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { useDraggable } from "@dnd-kit/core";
 
 interface Props {
   id: string;
   businessName: string;
   contactName: string;
   stage: string;
-  score?: number | null;
-  onClick?: () => void;
+  score: number | null;
 }
 
 export default function ApplicationCard({
@@ -17,29 +15,34 @@ export default function ApplicationCard({
   contactName,
   stage,
   score,
-  onClick,
 }: Props) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } =
+    useDraggable({
+      id,
+      data: { stage },
+    });
+
+  const style: React.CSSProperties = {
+    transform: transform
+      ? `translate(${transform.x}px, ${transform.y}px)`
+      : undefined,
+    opacity: isDragging ? 0.4 : 1,
+  };
+
   return (
-    <Card
-      className="cursor-pointer transition-all hover:shadow-lg border border-gray-200"
-      onClick={onClick}
+    <div
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
+      style={style}
+      className="bg-white shadow border rounded-xl p-4 cursor-grab active:cursor-grabbing select-none transition"
     >
-      <CardHeader>
-        <div className="flex justify-between items-center">
-          <h3 className="font-semibold">{businessName}</h3>
-          <Badge variant="outline">{stage}</Badge>
-        </div>
-      </CardHeader>
+      <div className="font-semibold text-slate-700">{businessName}</div>
+      <div className="text-sm text-slate-500">{contactName}</div>
 
-      <CardContent>
-        <p className="text-sm text-gray-600">Contact: {contactName}</p>
-
-        {score !== undefined && score !== null && (
-          <p className="text-sm text-gray-800 mt-2">
-            Score: <strong>{score}</strong>
-          </p>
-        )}
-      </CardContent>
-    </Card>
+      {score !== null && (
+        <div className="mt-2 text-xs text-slate-400">Score: {score}</div>
+      )}
+    </div>
   );
 }
