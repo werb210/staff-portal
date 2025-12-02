@@ -1,31 +1,25 @@
 import React from "react";
-import Column, { PipelineApplication } from "./Column";
+import { useDroppable } from "@dnd-kit/core";
 
 interface Props {
-  columns: {
-    label: string;
-    apps: PipelineApplication[];
-  }[];
-  loading?: boolean;
-  onCardClick?: (id: string) => void;
+  stage: string;
+  children: React.ReactNode;
 }
 
-export default function ColumnContainer({
-  columns,
-  loading = false,
-  onCardClick,
-}: Props) {
+export default function ColumnContainer({ stage, children }: Props) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: `droppable-${stage}`,
+    data: { stage },
+  });
+
   return (
-    <div className="flex gap-4 overflow-x-auto h-full pb-4">
-      {columns.map((col) => (
-        <Column
-          key={col.label}
-          label={col.label}
-          apps={col.apps}
-          loading={loading}
-          onCardClick={onCardClick}
-        />
-      ))}
+    <div
+      ref={setNodeRef}
+      className={`flex flex-col w-[350px] bg-slate-50 rounded-xl border 
+      transition-all 
+      ${isOver ? "border-blue-500 bg-blue-50" : "border-slate-200"}`}
+    >
+      {children}
     </div>
   );
 }
