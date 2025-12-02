@@ -5,11 +5,13 @@ import { useCompanies } from "../hooks/useCompanies";
 export default function CompaniesPage() {
   const { list, create } = useCompanies();
   const [name, setName] = useState("");
+  const [website, setWebsite] = useState("");
 
   const handleCreate = () => {
     if (!name.trim()) return;
-    create.mutate({ name });
+    create.mutate({ name, website });
     setName("");
+    setWebsite("");
   };
 
   if (list.isLoading) return <div>Loading companies…</div>;
@@ -26,12 +28,20 @@ export default function CompaniesPage() {
           onChange={(e) => setName(e.target.value)}
           style={{ padding: 8, marginRight: 10 }}
         />
+        <input
+          placeholder="Website (optional)"
+          value={website}
+          onChange={(e) => setWebsite(e.target.value)}
+          style={{ padding: 8, marginRight: 10 }}
+        />
         <button onClick={handleCreate}>Add</button>
       </div>
 
       <ul>
         {list.data?.map((c: any) => (
-          <li key={c.id}>{c.name ?? "Unnamed Company"}</li>
+          <li key={c.id}>
+            {c.name} {c.website ? `(${c.website})` : ""}
+          </li>
         ))}
       </ul>
     </div>
