@@ -41,6 +41,14 @@ export default function Sidebar() {
         >
           Contacts
         </NavLink>
+        <NavLink
+          to="/notifications"
+          className={({ isActive }) =>
+            isActive ? "bf-nav-item active" : "bf-nav-item"
+          }
+        >
+          Notifications
+        </NavLink>
       </nav>
 
       <RoleNav />

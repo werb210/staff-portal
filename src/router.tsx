@@ -6,6 +6,7 @@ import LoginPage from "./pages/auth/LoginPage";
 import CompaniesPage from "./pages/CompaniesPage";
 import ProductsPage from "./pages/ProductsPage";
 import TasksPage from "./pages/TasksPage";
+import NotificationsPage from "./pages/NotificationsPage";
 
 export default function AppRouter() {
   const token = localStorage.getItem("token");
@@ -24,6 +25,7 @@ export default function AppRouter() {
             <Route path="/companies" element={<CompaniesPage />} />
             <Route path="/products" element={<ProductsPage />} />
             <Route path="/tasks" element={<TasksPage />} />
+            <Route path="/notifications" element={<NotificationsPage />} />
           </>
         ) : (
           <Route path="*" element={<Navigate to="/login" />} />
