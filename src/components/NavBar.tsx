@@ -1,54 +1,46 @@
-import React from "react";
-import ThemeSwitcher from "./ThemeSwitcher";
-import TopBarSearch from "./TopBarSearch";
+import { useAuthStore } from "../state/authStore";
 
 export default function NavBar() {
+  const user = useAuthStore((s) => s.user);
+  const logout = useAuthStore((s) => s.logout);
+
   return (
-    <header className="flex items-center justify-between h-16 px-6 bg-white shadow">
-      <div className="flex items-center gap-3">
-        <div className="rounded-full bg-indigo-600 px-3 py-1 text-sm font-bold text-white">
-          BF
-        </div>
+    <div
+      style={{
+        width: "100%",
+        height: "60px",
+        background: "#1b2533",
+        color: "white",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        padding: "0 20px",
+        boxSizing: "border-box",
+      }}
+    >
+      <div style={{ fontWeight: "bold", fontSize: 20 }}>Boreal Staff Portal</div>
 
-        <div>
-          <div className="text-sm font-semibold text-slate-900">
-            Boreal Staff Portal
+      <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
+        {user && (
+          <div style={{ fontSize: 14 }}>
+            {user.email} — {user.role}
           </div>
-          <div className="text-xs text-slate-500">Operations console</div>
-        </div>
-      </div>
-
-      <div className="flex-1 flex justify-center">
-        <TopBarSearch />
-      </div>
-
-      <div className="flex items-center gap-3">
-        <ThemeSwitcher />
+        )}
 
         <button
-          className="relative rounded-full border border-slate-300 bg-white p-2 shadow-sm hover:bg-slate-100"
-          aria-label="notifications"
+          style={{
+            background: "#d9534f",
+            color: "white",
+            padding: "6px 14px",
+            borderRadius: 4,
+            cursor: "pointer",
+            border: "none",
+          }}
+          onClick={() => logout()}
         >
-          <span className="absolute -right-1 -top-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white">
-            3
-          </span>
-
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={1.5}
-            stroke="currentColor"
-            className="h-5 w-5 text-slate-700"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M14.857 17.657A2 2 0 0113 19H11a2 2 0 01-1.857-1.343M19 10c0 3.866-3.134 7-7 7s-7-3.134-7-7a7 7 0 1114 0z"
-            />
-          </svg>
+          Logout
         </button>
       </div>
-    </header>
+    </div>
   );
 }
