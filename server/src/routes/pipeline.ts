@@ -83,4 +83,50 @@ r.get("/:id/banking", (req, res) => {
   });
 });
 
+r.get("/:id/ocr", (req, res) => {
+  const { id } = req.params;
+
+  res.json({
+    success: true,
+    data: {
+      id,
+      balanceSheet: {
+        Assets: "$150,000",
+        Liabilities: "$60,000",
+        Equity: "$90,000",
+      },
+      incomeStatement: {
+        Revenue: "$120,000",
+        "Cost of Goods Sold": "$45,000",
+        "Net Income": "$30,000",
+      },
+      cashFlow: {
+        "Operating Cash Flow": "$25,000",
+        "Investing Cash Flow": "-$5,000",
+        "Financing Cash Flow": "$10,000",
+      },
+      taxes: {
+        "Federal Tax": "$8,000",
+        "Provincial Tax": "$4,000",
+        SIN: "123-456-789",
+      },
+      contracts: {
+        "Contract Start Date": "2024-01-15",
+        "Contract Value": "$60,000",
+        Website: "https://example.com",
+      },
+      invoices: {
+        "Invoice Number": "INV-001",
+        "Invoice Total": "$12,500",
+        SIN: "123-456-780", // mismatch to demonstrate highlighting
+      },
+      requiredItems: {
+        SIN: "123-456-789",
+        Website: "https://example.com",
+        "Business Number": "BN-987654321",
+      },
+    },
+  });
+});
+
 export default r;
