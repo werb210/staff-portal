@@ -2,9 +2,10 @@ import { PipelineApp } from "../../api/pipeline";
 
 interface Props {
   app: PipelineApp;
+  onOpen: (id: string) => void;
 }
 
-export default function PipelineCard({ app }: Props) {
+export default function PipelineCard({ app, onOpen }: Props) {
   return (
     <div
       style={{
@@ -17,6 +18,7 @@ export default function PipelineCard({ app }: Props) {
       }}
       draggable
       data-id={app.id}
+      onDoubleClick={() => onOpen(app.id)}
     >
       <div style={{ fontWeight: 600, marginBottom: 4 }}>{app.businessName}</div>
       <div style={{ fontSize: 13, color: "#666" }}>
