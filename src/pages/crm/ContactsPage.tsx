@@ -21,7 +21,7 @@ export default function ContactsPage() {
         </thead>
 
         <tbody>
-          {list.data?.map((c) => (
+          {list.data?.map((c: any) => (
             <tr key={c.id}>
               <td style={{ padding: 6 }}>{c.name || "N/A"}</td>
               <td style={{ padding: 6 }}>{c.email || "N/A"}</td>

@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { useQueryErrorResetBoundary } from "@tanstack/react-query";
-import { ErrorBoundary } from "react-error-boundary";
+import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
 import { useGlobalLoading } from "../../state/loadingStore";
 
 export default function AsyncBoundary({
@@ -14,7 +14,7 @@ export default function AsyncBoundary({
   return (
     <ErrorBoundary
       onReset={reset}
-      fallbackRender={({ error, resetErrorBoundary }) => (
+      fallbackRender={({ error, resetErrorBoundary }: FallbackProps) => (
         <div className="p-10">
           <h1 className="text-xl font-bold mb-3">Failed to load</h1>
           <pre className="text-red-600 mb-4">{String(error)}</pre>
