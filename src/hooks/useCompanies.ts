@@ -18,7 +18,7 @@ export function useCompanies() {
       const res = await api.post("/companies", payload);
       return res.data;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["companies"] }),
+    onSuccess: () => qc.invalidateQueries(["companies"]),
   });
 
   return { list, create };
