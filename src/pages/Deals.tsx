@@ -1,11 +1,10 @@
 import MainLayout from "../layouts/MainLayout";
+import DealsTable from "../components/DealsTable";
 
 export default function Deals() {
   return (
     <MainLayout>
-      <div style={{ padding: 20 }}>
-        <h1>Deals</h1>
-      </div>
+      <DealsTable />
     </MainLayout>
   );
 }
