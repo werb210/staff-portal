@@ -16,3 +16,155 @@ a {
 body {
   margin: 0;
 }
+
+.bf-app-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: #0f172a0d;
+}
+
+.bf-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  background: #0f1823;
+  color: #e2e8f0;
+  border-bottom: 1px solid #1f2937;
+}
+
+.bf-topbar-left {
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.bf-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.bf-main {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  flex: 1;
+  min-height: 0;
+}
+
+.bf-sidebar {
+  display: flex;
+  flex-direction: column;
+  background: #0f1823;
+  color: #cbd5e1;
+  height: 100%;
+  border-right: 1px solid #1f2937;
+}
+
+.bf-sidebar-header {
+  padding: 20px;
+  border-bottom: 1px solid #1f2937;
+}
+
+.bf-logo {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.bf-nav {
+  display: flex;
+  flex-direction: column;
+  padding: 12px 0;
+}
+
+.bf-nav-item {
+  padding: 12px 20px;
+  color: #cbd5e1;
+  text-decoration: none;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.bf-nav-item:hover {
+  background: #1f2937;
+  color: #fff;
+}
+
+.bf-nav-item.active {
+  background: #2563eb;
+  color: #fff;
+  font-weight: 600;
+}
+
+.bf-sidebar-footer {
+  margin-top: auto;
+  padding: 12px 20px;
+  font-size: 12px;
+  color: #94a3b8;
+  border-top: 1px solid #1f2937;
+}
+
+.bf-content {
+  padding: 24px;
+  overflow-y: auto;
+  background: #f8fafc;
+}
+
+.bf-user-menu {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 10px;
+  background: #111827;
+  border: 1px solid #1f2937;
+  border-radius: 10px;
+}
+
+.bf-user-info {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.bf-user-name {
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.bf-user-role {
+  font-size: 12px;
+  color: #93c5fd;
+}
+
+.bf-logout-btn {
+  border: none;
+  background: #ef4444;
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.15s ease;
+}
+
+.bf-logout-btn:hover {
+  background: #dc2626;
+}
+
+.bf-page {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bf-page-title {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.bf-page-description {
+  color: #475569;
+  margin: 0;
+}
