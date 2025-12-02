@@ -8,11 +8,17 @@ import DocumentManagerPage from './pages/DocumentManagerPage';
 import LenderAdminPage from './pages/LenderAdminPage';
 import RoleManagementPage from './pages/Admin/RoleManagementPage';
 import AdminUsersPage from './pages/Admin/AdminUsersPage';
+import RequireAdmin from './components/auth/RequireAdmin';
+import Unauthorized from './pages/Unauthorized';
 
 const router = createBrowserRouter([
   {
     path: "/login",
     element: <LoginPage />
+  },
+  {
+    path: "/unauthorized",
+    element: <Unauthorized />
   },
   {
     path: "/",
@@ -65,9 +71,9 @@ const router = createBrowserRouter([
   {
     path: "/admin/users",
     element: (
-      <RequireAuth>
+      <RequireAdmin>
         <AdminUsersPage />
-      </RequireAuth>
+      </RequireAdmin>
     )
   }
 ]);

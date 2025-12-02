@@ -1,31 +1,93 @@
 import { create } from "zustand";
-import { fetchCurrentUser } from "../api/auth";
+import { getAuthToken, setAuthToken, clearAuthToken } from "../utils/authToken";
+import axios from "axios";
 
-interface AuthState {
-  user: any | null;
+export type Role = "admin" | "staff" | "marketing" | "lender" | "referrer";
+
+type User = {
+  id: string;
+  email: string;
+  name: string | null;
+  role: Role;
+};
+
+type AuthState = {
+  user: User | null;
+  token: string | null;
   loading: boolean;
-  loadUser: () => Promise<void>;
-  setUser: (u: any | null) => void;
+  error: string | null;
+
+  login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
-}
+
+  restore: () => Promise<void>;
+};
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
-  loading: true,
+  token: getAuthToken(),
+  loading: false,
+  error: null,
 
-  loadUser: async () => {
+  login: async (email, password) => {
+    set({ loading: true, error: null });
+
     try {
-      const data = await fetchCurrentUser();
-      set({ user: data.user, loading: false });
-    } catch {
-      set({ user: null, loading: false });
+      const api = axios.create({
+        baseURL: import.meta.env.VITE_API_URL,
+      });
+
+      const res = await api.post("/api/auth/login", { email, password });
+
+      const token = res.data.token;
+      const user = res.data.user;
+
+      setAuthToken(token);
+
+      set({
+        token,
+        user,
+        loading: false,
+      });
+
+      return true;
+    } catch (err: any) {
+      set({
+        error: err?.message ?? "Login failed",
+        loading: false,
+      });
+      return false;
     }
   },
 
-  setUser: (u) => set({ user: u }),
-
   logout: () => {
-    localStorage.removeItem("bf_token");
-    set({ user: null });
-  }
+    clearAuthToken();
+    set({
+      token: null,
+      user: null,
+      error: null,
+    });
+  },
+
+  restore: async () => {
+    const token = getAuthToken();
+    if (!token) return;
+
+    try {
+      const api = axios.create({
+        baseURL: import.meta.env.VITE_API_URL,
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const res = await api.get("/api/auth/me");
+
+      set({
+        token,
+        user: res.data.user,
+      });
+    } catch {
+      clearAuthToken();
+      set({ token: null, user: null });
+    }
+  },
 }));

@@ -5,6 +5,8 @@ import GlobalSearch from "./components/search/GlobalSearch";
 import useGlobalSearchShortcut from "./hooks/useGlobalSearchShortcut";
 import NotificationToasts from "./components/notifications/NotificationToasts";
 import { initWebSocket } from "./ws/client";
+import RequireAuth from "./components/auth/RequireAuth";
+import RequireAdmin from "./components/auth/RequireAdmin";
 
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
@@ -14,19 +16,20 @@ import Deals from "./pages/Deals";
 import Pipeline from "./pages/Pipeline";
 import Documents from "./pages/Documents";
 import Lenders from "./pages/Lenders";
-import ProtectedRoute from "./routes/ProtectedRoute";
 import AuditLogPage from "./pages/Admin/AuditLogPage";
 import RoleManagementPage from "./pages/Admin/RoleManagementPage";
+import AdminUsersPage from "./pages/Admin/AdminUsersPage";
+import Unauthorized from "./pages/Unauthorized";
 
 export default function App() {
-  const loadUser = useAuthStore((s) => s.loadUser);
+  const restore = useAuthStore((s) => s.restore);
   const user = useAuthStore((s) => s.user);
 
   useGlobalSearchShortcut();
 
   useEffect(() => {
-    loadUser();
-  }, []);
+    restore();
+  }, [restore]);
 
   useEffect(() => {
     if (user) initWebSocket();
@@ -38,77 +41,86 @@ export default function App() {
       <NotificationToasts />
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/unauthorized" element={<Unauthorized />} />
 
         <Route
           path="/"
           element={
-            <ProtectedRoute>
+            <RequireAuth>
               <Dashboard />
-            </ProtectedRoute>
+            </RequireAuth>
           }
         />
         <Route
           path="/contacts"
           element={
-            <ProtectedRoute>
+            <RequireAuth>
               <Contacts />
-            </ProtectedRoute>
+            </RequireAuth>
           }
         />
         <Route
           path="/companies"
           element={
-            <ProtectedRoute>
+            <RequireAuth>
               <Companies />
-            </ProtectedRoute>
+            </RequireAuth>
           }
         />
         <Route
           path="/deals"
           element={
-            <ProtectedRoute>
+            <RequireAuth>
               <Deals />
-            </ProtectedRoute>
+            </RequireAuth>
           }
         />
         <Route
           path="/pipeline"
           element={
-            <ProtectedRoute>
+            <RequireAuth>
               <Pipeline />
-            </ProtectedRoute>
+            </RequireAuth>
           }
         />
         <Route
           path="/documents"
           element={
-            <ProtectedRoute>
+            <RequireAuth>
               <Documents />
-            </ProtectedRoute>
+            </RequireAuth>
           }
         />
         <Route
           path="/lenders"
           element={
-            <ProtectedRoute>
+            <RequireAuth>
               <Lenders />
-            </ProtectedRoute>
+            </RequireAuth>
           }
         />
         <Route
           path="/admin/audit"
           element={
-            <ProtectedRoute>
+            <RequireAdmin>
               <AuditLogPage />
-            </ProtectedRoute>
+            </RequireAdmin>
           }
         />
         <Route
           path="/admin/roles"
           element={
-            <ProtectedRoute>
+            <RequireAdmin>
               <RoleManagementPage />
-            </ProtectedRoute>
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/users"
+          element={
+            <RequireAdmin>
+              <AdminUsersPage />
+            </RequireAdmin>
           }
         />
       </Routes>
