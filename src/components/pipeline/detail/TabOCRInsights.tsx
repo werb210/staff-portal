@@ -1,92 +1,119 @@
 import { usePipelineDetailStore } from "@/state/pipelineDetailStore";
 import clsx from "clsx";
 
-export default function TabOCRInsights() {
-  const ocr = usePipelineDetailStore((s) => s.ocrResults);
+type OcrEntry = {
+  field: string;
+  value: string;
+  documentId: string | number;
+};
 
-  if (!ocr) {
-    return <div className="text-gray-600">No OCR data available.</div>;
+type GroupedEntries = Record<string, { value: string; documentId: string | number }[]>;
+
+const CATEGORIES: Record<string, string[]> = {
+  "Balance Sheet Data": ["Total Assets", "Total Liabilities", "Equity", "Retained Earnings"],
+  "Income Statement": ["Revenue", "COGS", "Gross Profit", "Net Income"],
+  "Cash Flow Statements": ["Operating Cash Flow", "Investing Cash Flow", "Financing Cash Flow"],
+  Taxes: ["GST Number", "Federal Tax ID", "Provincial Tax ID"],
+  Contracts: ["Contract Start Date", "Contract End Date", "Contract Value"],
+  Invoices: ["Invoice Number", "Invoice Total", "Invoice Date"],
+};
+
+const ALWAYS_SCAN = ["SIN", "Website URL", "Phone", "Email", "Business Number"];
+
+export default function TabOCRInsights() {
+  const { ocrResults } = usePipelineDetailStore();
+  const ocr = ocrResults as OcrEntry[] | null;
+
+  if (!ocr || ocr.length === 0) {
+    return <div className="text-gray-700">No OCR data found.</div>;
   }
 
-  // Expected backend shape:
-  // {
-  //   balanceSheet: { field: value, ... }
-  //   incomeStatement: { ... }
-  //   cashFlow: { ... }
-  //   taxes: { ... }
-  //   contracts: { ... }
-  //   invoices: { ... }
-  //   requiredItems: { ... }  // Always scanned across all docs
-  // }
-
-  const groups = [
-    { key: "balanceSheet", label: "Balance Sheet Data" },
-    { key: "incomeStatement", label: "Income Statement" },
-    { key: "cashFlow", label: "Cash Flow Statements" },
-    { key: "taxes", label: "Tax Documents" },
-    { key: "contracts", label: "Contracts" },
-    { key: "invoices", label: "Invoices" },
-  ];
-
-  const highlightIfMismatch = (field: string) => {
-    const values: string[] = [];
-
-    for (const g of groups) {
-      const groupData = ocr[g.key];
-      if (groupData && groupData[field] !== undefined) {
-        values.push(String(groupData[field]));
-      }
-    }
-
-    // If multiple values exist and they don't match → mismatch
-    const unique = new Set(values.map((v) => v.trim()));
-    return unique.size > 1;
-  };
-
-  const renderGroup = (data: Record<string, unknown> | undefined | null) => {
-    if (!data || Object.keys(data).length === 0) {
-      return <div className="text-gray-600 italic">No recognized OCR fields</div>;
-    }
-
-    return (
-      <div className="space-y-2">
-        {Object.entries(data).map(([field, value]) => {
-          const mismatch = highlightIfMismatch(field);
-
-          return (
-            <div
-              key={field}
-              className={clsx(
-                "flex justify-between py-1 border-b border-gray-200",
-                mismatch && "bg-red-100 text-red-800 font-bold"
-              )}
-            >
-              <span className="font-medium">{field}</span>
-              <span>{String(value ?? "—")}</span>
-            </div>
-          );
-        })}
-      </div>
-    );
-  };
+  const grouped = groupOCRByCategory(ocr);
 
   return (
-    <div className="space-y-12">
-      {groups.map((g) => (
-        <section key={g.key}>
-          <h2 className="text-xl font-bold mb-3">{g.label}</h2>
-          <div className="bg-white shadow rounded-lg p-4">
-            {renderGroup(ocr[g.key])}
-          </div>
-        </section>
+    <div className="space-y-8">
+      {Object.entries(CATEGORIES).map(([categoryName, fields]) => (
+        <CategoryBlock key={categoryName} title={categoryName} fields={fields} grouped={grouped} />
       ))}
 
-      <section>
-        <h2 className="text-xl font-bold mb-3">Items Required (All Document Types)</h2>
-        <div className="bg-white shadow rounded-lg p-4">
-          {renderGroup(ocr.requiredItems)}
-        </div>
-      </section>
+      <CategoryBlock title="Items Required" fields={ALWAYS_SCAN} grouped={grouped} />
     </div>
+  );
+}
+
+function groupOCRByCategory(ocrList: OcrEntry[]): GroupedEntries {
+  return ocrList.reduce<GroupedEntries>((acc, entry) => {
+    const { field, value, documentId } = entry;
+
+    if (!acc[field]) {
+      acc[field] = [];
+    }
+
+    acc[field].push({ value, documentId });
+    return acc;
+  }, {});
+}
+
+type CategoryBlockProps = {
+  title: string;
+  fields: string[];
+  grouped: GroupedEntries;
+};
+
+function CategoryBlock({ title, fields, grouped }: CategoryBlockProps) {
+  return (
+    <div className="border p-4 rounded-md bg-white shadow">
+      <h3 className="text-xl font-semibold mb-3">{title}</h3>
+
+      <table className="w-full text-left border-collapse">
+        <thead>
+          <tr>
+            <th className="border-b p-2">Field</th>
+            <th className="border-b p-2">Values</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {fields.map((field) => (
+            <FieldRow key={field} field={field} entries={grouped[field] || []} />
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+type FieldRowProps = {
+  field: string;
+  entries: { value: string; documentId: string | number }[];
+};
+
+function FieldRow({ field, entries }: FieldRowProps) {
+  if (!entries.length) {
+    return (
+      <tr>
+        <td className="p-2 border-b text-gray-600">{field}</td>
+        <td className="p-2 border-b text-gray-400 italic">—</td>
+      </tr>
+    );
+  }
+
+  const uniqueValues = [...new Set(entries.map((e) => e.value))];
+  const conflict = uniqueValues.length > 1;
+
+  return (
+    <tr className={clsx(conflict && "bg-red-100")}>
+      <td className="p-2 border-b font-medium">{field}</td>
+      <td className="p-2 border-b">
+        <ul className="space-y-1">
+          {entries.map((entry, index) => (
+            <li key={`${entry.documentId}-${index}`}>
+              <span className="font-semibold">{entry.value}</span>
+              <span className="text-gray-500 text-sm"> (doc {entry.documentId})</span>
+            </li>
+          ))}
+        </ul>
+      </td>
+    </tr>
   );
 }
