@@ -1,46 +1,49 @@
-// src/components/pipeline/PipelineColumn.tsx
-import React from 'react';
-import { usePipelineStore } from '../../state/pipelineStore';
-import ApplicationCard from './ApplicationCard';
+import type React from "react";
+import { PipelineApp } from "../../api/pipeline";
+import PipelineCard from "./PipelineCard";
 
-export default function PipelineColumn({
-  title,
-  apps,
-}: {
-  title: string;
-  apps: any[];
-}) {
-  const move = usePipelineStore((s) => s.move);
+interface Props {
+  label: string;
+  stage: string;
+  apps: PipelineApp[];
+  onDropCard: (id: string, stage: string) => void;
+}
 
-  function onDrop(e: React.DragEvent) {
-    const appId = e.dataTransfer.getData("appId");
-    move(appId, title);
-  }
-
-  function onDragOver(e: React.DragEvent) {
+export default function PipelineColumn({ label, stage, apps, onDropCard }: Props) {
+  const onDragOver = (e: React.DragEvent) => {
     e.preventDefault();
-  }
+  };
+
+  const onDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    const id = e.dataTransfer.getData("text/plain");
+    if (id) onDropCard(id, stage);
+  };
 
   return (
     <div
-      onDrop={onDrop}
-      onDragOver={onDragOver}
       style={{
-        minWidth: "280px",
-        background: "#f1f1f1",
-        padding: "10px",
-        borderRadius: "6px",
+        flex: 1,
+        padding: 10,
+        background: "#f4f4f4",
+        borderRadius: 6,
+        minHeight: "80vh",
+        display: "flex",
+        flexDirection: "column",
       }}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
     >
-      <h2>
-        {title} ({apps.length})
-      </h2>
+      <div style={{ fontWeight: 700, marginBottom: 10 }}>{label}</div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-        {apps.map((app) => (
-          <ApplicationCard key={app.id} app={app} />
-        ))}
-      </div>
+      {apps.map((a) => (
+        <div
+          key={a.id}
+          onDragStart={(e) => e.dataTransfer.setData("text/plain", a.id)}
+        >
+          <PipelineCard app={a} />
+        </div>
+      ))}
     </div>
   );
 }

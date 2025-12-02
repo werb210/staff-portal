@@ -3,6 +3,7 @@ import MainLayout from "../layouts/MainLayout";
 import ContactsTable from "../components/ContactsTable";
 import CompaniesTable from "../components/CompaniesTable";
 import DealsTable from "../components/DealsTable";
+import PipelineBoard from "../components/pipeline/PipelineBoard";
 
 const tabs = [
   {
@@ -16,6 +17,10 @@ const tabs = [
   {
     label: "Deals",
     content: <DealsTable />,
+  },
+  {
+    label: "Pipeline",
+    content: <PipelineBoard />,
   },
 ];
 
