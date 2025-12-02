@@ -2,10 +2,10 @@
 import { useContacts } from "../../hooks/useContacts";
 
 export default function ContactsPage() {
-  const { data, isLoading, error } = useContacts();
+  const { list } = useContacts();
 
-  if (isLoading) return <div>Loading contacts…</div>;
-  if (error) return <div>Error loading contacts</div>;
+  if (list.isLoading) return <div>Loading contacts…</div>;
+  if (list.error) return <div>Error loading contacts</div>;
 
   return (
     <div style={{ padding: 24 }}>
@@ -21,7 +21,7 @@ export default function ContactsPage() {
         </thead>
 
         <tbody>
-          {data?.map((c) => (
+          {list.data?.map((c) => (
             <tr key={c.id}>
               <td style={{ padding: 6 }}>{c.name || "N/A"}</td>
               <td style={{ padding: 6 }}>{c.email || "N/A"}</td>
