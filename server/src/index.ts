@@ -3,6 +3,7 @@ import searchRoutes from "./routes/search.js";
 import notificationsRoutes from "./routes/notifications.js";
 import auditViewerRoutes from "./routes/auditViewer.js";
 import roleManagementRoutes from "./routes/roleManagement.routes.js";
+import pipelineRoutes from "./routes/pipeline.js";
 
 const app = express();
 
@@ -12,5 +13,6 @@ app.use("/api/search", searchRoutes);
 app.use("/api/notifications", notificationsRoutes);
 app.use("/api/audit", auditViewerRoutes);
 app.use("/api/roles", roleManagementRoutes);
+app.use("/api/pipeline", pipelineRoutes);
 
 export default app;
