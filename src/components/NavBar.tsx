@@ -1,4 +1,5 @@
 import { useAuthStore } from "../state/authStore";
+import NotificationBell from "./notifications/NotificationBell";
 
 export default function NavBar() {
   const user = useAuthStore((s) => s.user);
@@ -21,6 +22,7 @@ export default function NavBar() {
       <div style={{ fontWeight: "bold", fontSize: 20 }}>Boreal Staff Portal</div>
 
       <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
+        <NotificationBell />
         {user && (
           <div style={{ fontSize: 14 }}>
             {user.email} — {user.role}
