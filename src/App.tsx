@@ -15,7 +15,7 @@ import Pipeline from "./pages/Pipeline";
 import Documents from "./pages/Documents";
 import Lenders from "./pages/Lenders";
 import ProtectedRoute from "./routes/ProtectedRoute";
-import AuditLogsPage from "./pages/Admin/AuditLogsPage";
+import AuditLogPage from "./pages/Admin/AuditLogPage";
 import RoleManagementPage from "./pages/Admin/RoleManagementPage";
 
 export default function App() {
@@ -99,7 +99,7 @@ export default function App() {
           path="/admin/audit"
           element={
             <ProtectedRoute>
-              <AuditLogsPage />
+              <AuditLogPage />
             </ProtectedRoute>
           }
         />

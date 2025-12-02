@@ -1,58 +1,37 @@
 import { create } from "zustand";
-import { searchAuditLogs } from "../api/audit";
+import { AuditFilter, AuditRecord, fetchAuditLogs } from "../api/audit";
 
-export interface AuditLogRow {
-  id: number;
-  eventType: string;
-  userId: string | null;
-  details: unknown;
-  createdAt: string;
-}
+type State = {
+  records: AuditRecord[];
+  loading: boolean;
+  error: string | null;
+  filter: AuditFilter;
+  selected: AuditRecord | null;
 
-interface AuditFilters {
-  eventType?: string;
-  userId?: string;
-  keyword?: string;
-  from?: string;
-  to?: string;
-}
-
-interface AuditState {
-  rows: AuditLogRow[];
-  total: number;
-  page: number;
-  pageSize: number;
-  filters: AuditFilters;
+  setFilter: (patch: Partial<AuditFilter>) => void;
   load: () => Promise<void>;
-  setFilters: (filters: AuditFilters) => void;
-  setPage: (page: number) => void;
-}
+  select: (rec: AuditRecord | null) => void;
+};
 
-export const useAuditStore = create<AuditState>((set, get) => ({
-  rows: [],
-  total: 0,
-  page: 1,
-  pageSize: 25,
-  filters: {},
+export const useAuditStore = create<State>((set, get) => ({
+  records: [],
+  loading: false,
+  error: null,
+  filter: {},
+  selected: null,
 
-  async load() {
-    const { filters, page, pageSize } = get();
-    const data = await searchAuditLogs({ ...filters, page, pageSize });
-    set({
-      rows: data.rows,
-      total: data.total,
-      page: data.page,
-      pageSize: data.pageSize,
-    });
-  },
+  setFilter: (patch) => set({ filter: { ...get().filter, ...patch } }),
 
-  setFilters(f: AuditFilters) {
-    set({ filters: f, page: 1 });
-    get().load();
-  },
+  select: (rec) => set({ selected: rec }),
 
-  setPage(p: number) {
-    set({ page: p });
-    get().load();
+  load: async () => {
+    set({ loading: true, error: null });
+    try {
+      const { filter } = get();
+      const rows = await fetchAuditLogs(filter);
+      set({ records: rows, loading: false });
+    } catch (err: any) {
+      set({ error: err?.message ?? "Failed to load audit logs", loading: false });
+    }
   },
 }));

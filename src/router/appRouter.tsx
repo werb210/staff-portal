@@ -10,6 +10,7 @@ import DealsPage from "@/pages/deals/DealsPage";
 import ApplicationsPage from "@/pages/applications/ApplicationsPage";
 import ApplicationDetailPage from "@/pages/applications/ApplicationDetailPage";
 import PipelinePage from "@/pages/pipeline/PipelinePage";
+import AuditLogPage from "@/pages/Admin/AuditLogPage";
 
 export const appRouter = createBrowserRouter([
   {
@@ -32,7 +33,8 @@ export const appRouter = createBrowserRouter([
       { path: "deals", element: <DealsPage /> },
       { path: "applications", element: <ApplicationsPage /> },
       { path: "applications/:id", element: <ApplicationDetailPage /> },
-      { path: "pipeline", element: <PipelinePage /> }
+      { path: "pipeline", element: <PipelinePage /> },
+      { path: "admin/audit", element: <AuditLogPage /> }
     ]
   },
 
