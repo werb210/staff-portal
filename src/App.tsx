@@ -15,6 +15,7 @@ import Pipeline from "./pages/Pipeline";
 import Documents from "./pages/Documents";
 import Lenders from "./pages/Lenders";
 import ProtectedRoute from "./routes/ProtectedRoute";
+import AuditLogsPage from "./pages/Admin/AuditLogsPage";
 
 export default function App() {
   const loadUser = useAuthStore((s) => s.loadUser);
@@ -90,6 +91,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <Lenders />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/audit"
+          element={
+            <ProtectedRoute>
+              <AuditLogsPage />
             </ProtectedRoute>
           }
         />
