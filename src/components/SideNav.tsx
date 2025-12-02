@@ -1,30 +1,37 @@
 import React from "react";
+import { NavLink } from "react-router-dom";
 
-const navItems = [
-  { label: "Dashboard", href: "/" },
-  { label: "Pipeline", href: "/pipeline" },
-  { label: "Applications", href: "/applications" },
-  { label: "Documents", href: "/documents" },
-  { label: "CRM", href: "/crm" },
-  { label: "Lenders", href: "/lenders" },
-  { label: "Chat", href: "/chat" },
-];
+const navItem = (to: string, label: string) => (
+  <NavLink
+    to={to}
+    className={({ isActive }) =>
+      `block rounded-md px-4 py-2 text-sm font-medium ${
+        isActive
+          ? "bg-indigo-600 text-white"
+          : "text-slate-700 hover:bg-slate-200"
+      }`
+    }
+  >
+    {label}
+  </NavLink>
+);
 
 export default function SideNav() {
   return (
-    <nav className="flex h-full flex-col gap-2">
-      {navItems.map((item) => (
-        <a
-          key={item.label}
-          href={item.href}
-          className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-indigo-50 hover:text-indigo-700"
-        >
-          {item.label}
-        </a>
-      ))}
-      <div className="mt-auto rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
-        Quick filters and navigation live here for the mock layout.
+    <aside className="w-64 bg-white border-r border-slate-200 p-4 overflow-y-auto">
+      <div className="text-xs font-bold text-slate-500 uppercase mb-2">
+        Navigation
       </div>
-    </nav>
+
+      <nav className="space-y-1">
+        {navItem("/pipeline", "Pipeline")}
+        {navItem("/contacts", "Contacts")}
+        {navItem("/companies", "Companies")}
+        {navItem("/lenders", "Lenders")}
+        {navItem("/documents", "Documents")}
+        {navItem("/chat", "Chat")}
+        {navItem("/settings", "Settings")}
+      </nav>
+    </aside>
   );
 }
