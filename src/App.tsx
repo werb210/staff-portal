@@ -3,6 +3,8 @@ import { useAuthStore } from "./state/authStore";
 import { useEffect } from "react";
 import GlobalSearch from "./components/search/GlobalSearch";
 import useGlobalSearchShortcut from "./hooks/useGlobalSearchShortcut";
+import NotificationToasts from "./components/notifications/NotificationToasts";
+import { initWebSocket } from "./ws/client";
 
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
@@ -16,6 +18,7 @@ import ProtectedRoute from "./routes/ProtectedRoute";
 
 export default function App() {
   const loadUser = useAuthStore((s) => s.loadUser);
+  const user = useAuthStore((s) => s.user);
 
   useGlobalSearchShortcut();
 
@@ -23,9 +26,14 @@ export default function App() {
     loadUser();
   }, []);
 
+  useEffect(() => {
+    if (user) initWebSocket();
+  }, [user]);
+
   return (
     <BrowserRouter>
       <GlobalSearch />
+      <NotificationToasts />
       <Routes>
         <Route path="/login" element={<Login />} />
 
