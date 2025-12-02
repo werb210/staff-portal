@@ -15,14 +15,14 @@ export default function ContactsTable({
     return (
       c.firstName.toLowerCase().includes(q) ||
       c.lastName.toLowerCase().includes(q) ||
-      c.email.toLowerCase().includes(q) ||
+      (c.email ?? "").toLowerCase().includes(q) ||
       (c.company ?? "").toLowerCase().includes(q)
     );
   });
 
   return (
     <div className="bg-white shadow rounded-lg p-4">
-      <div className="flex justify-between items-center mb-3">
+      <div className="flex justify-between mb-3">
         <input
           type="text"
           placeholder="Search contacts..."
@@ -36,8 +36,8 @@ export default function ContactsTable({
         <thead>
           <tr className="text-left text-slate-600 border-b">
             <th className="py-2">Name</th>
-            <th>Email</th>
             <th>Company</th>
+            <th>Email</th>
             <th>Tags</th>
             <th></th>
           </tr>
@@ -49,8 +49,8 @@ export default function ContactsTable({
               <td className="py-2 font-medium">
                 {c.firstName} {c.lastName}
               </td>
-              <td>{c.email}</td>
               <td>{c.company ?? "—"}</td>
+              <td>{c.email ?? "—"}</td>
               <td>
                 <div className="flex gap-1 flex-wrap">
                   {c.tags.map((t) => (
