@@ -1,119 +1,221 @@
-import { usePipelineDetailStore } from "@/state/pipelineDetailStore";
 import clsx from "clsx";
+import { usePipelineDetailStore } from "@/state/pipelineDetailStore";
 
-type OcrEntry = {
-  field: string;
-  value: string;
-  documentId: string | number;
+/**
+ * HARD GROUPS — required by user spec
+ */
+const GROUPS = {
+  balance_sheet: "Balance Sheet Data",
+  income_statement: "Income Statement",
+  cash_flow: "Cash Flow Statements",
+  taxes: "Taxes",
+  contracts: "Contracts",
+  invoices: "Invoices",
 };
 
-type GroupedEntries = Record<string, { value: string; documentId: string | number }[]>;
-
-const CATEGORIES: Record<string, string[]> = {
-  "Balance Sheet Data": ["Total Assets", "Total Liabilities", "Equity", "Retained Earnings"],
-  "Income Statement": ["Revenue", "COGS", "Gross Profit", "Net Income"],
-  "Cash Flow Statements": ["Operating Cash Flow", "Investing Cash Flow", "Financing Cash Flow"],
-  Taxes: ["GST Number", "Federal Tax ID", "Provincial Tax ID"],
-  Contracts: ["Contract Start Date", "Contract End Date", "Contract Value"],
-  Invoices: ["Invoice Number", "Invoice Total", "Invoice Date"],
-};
-
-const ALWAYS_SCAN = ["SIN", "Website URL", "Phone", "Email", "Business Number"];
+/**
+ * FIELDS THAT MUST ALWAYS BE SCANNED ("Items Required")
+ * Even if documentType doesn't match.
+ */
+const ALWAYS_REQUIRED = [
+  "SIN",
+  "Website URL",
+  "Business Number",
+  "NAICS",
+  "Incorporation Date",
+  "Legal Name",
+  "Trade Name",
+  "Phone Number",
+  "Email",
+];
 
 export default function TabOCRInsights() {
-  const { ocrResults } = usePipelineDetailStore();
-  const ocr = ocrResults as OcrEntry[] | null;
+  const { ocr } = usePipelineDetailStore();
 
   if (!ocr || ocr.length === 0) {
-    return <div className="text-gray-700">No OCR data found.</div>;
+    return <div className="text-gray-700">No OCR results found.</div>;
   }
 
-  const grouped = groupOCRByCategory(ocr);
+  // Organize by docType groups
+  const grouped = Object.entries(GROUPS).reduce((acc, [key, label]) => {
+    acc[label] = ocr.filter((r) => r.documentType === key);
+    return acc;
+  }, {} as Record<string, { documentType: string; id: string | number; fields?: Record<string, string> }[]>);
+
+  // Build global lookup for "Items Required"
+  const globalFieldMap = buildGlobalFieldMap(ocr);
 
   return (
-    <div className="space-y-8">
-      {Object.entries(CATEGORIES).map(([categoryName, fields]) => (
-        <CategoryBlock key={categoryName} title={categoryName} fields={fields} grouped={grouped} />
+    <div className="space-y-12">
+      {Object.entries(grouped).map(([groupLabel, records]) => (
+        <CategoryBlock
+          key={groupLabel}
+          groupLabel={groupLabel}
+          records={records}
+          globalFieldMap={globalFieldMap}
+        />
       ))}
 
-      <CategoryBlock title="Items Required" fields={ALWAYS_SCAN} grouped={grouped} />
+      {/* FINAL BLOCK — ALWAYS REQUIRED FIELDS */}
+      <AlwaysRequiredBlock globalFieldMap={globalFieldMap} />
     </div>
   );
 }
 
-function groupOCRByCategory(ocrList: OcrEntry[]): GroupedEntries {
-  return ocrList.reduce<GroupedEntries>((acc, entry) => {
-    const { field, value, documentId } = entry;
+/**
+ * Build a global hashmap of:
+ *   fieldLabel → [value1, value2, ...]
+ */
+function buildGlobalFieldMap(
+  allRows: { fields?: Record<string, string | number | null> }[]
+): Record<string, (string | number | null | undefined)[]> {
+  const out: Record<string, (string | number | null | undefined)[]> = {};
 
-    if (!acc[field]) {
-      acc[field] = [];
-    }
+  allRows.forEach((row) => {
+    const fields = row.fields || {};
+    Object.entries(fields).forEach(([label, value]) => {
+      if (!out[label]) out[label] = [];
+      out[label].push(value);
+    });
+  });
 
-    acc[field].push({ value, documentId });
-    return acc;
-  }, {});
+  return out;
 }
 
-type CategoryBlockProps = {
-  title: string;
-  fields: string[];
-  grouped: GroupedEntries;
-};
-
-function CategoryBlock({ title, fields, grouped }: CategoryBlockProps) {
+function CategoryBlock({
+  groupLabel,
+  records,
+  globalFieldMap,
+}: {
+  groupLabel: string;
+  records: { id: string | number; fields?: Record<string, string | number | null> }[];
+  globalFieldMap: Record<string, (string | number | null | undefined)[]>;
+}) {
   return (
-    <div className="border p-4 rounded-md bg-white shadow">
-      <h3 className="text-xl font-semibold mb-3">{title}</h3>
+    <div className="border rounded-lg bg-white p-6 shadow">
+      <h2 className="text-2xl font-semibold mb-4">{groupLabel}</h2>
 
-      <table className="w-full text-left border-collapse">
-        <thead>
-          <tr>
-            <th className="border-b p-2">Field</th>
-            <th className="border-b p-2">Values</th>
-          </tr>
-        </thead>
+      {records.length === 0 && (
+        <div className="text-gray-400 italic">No documents for this category.</div>
+      )}
 
-        <tbody>
-          {fields.map((field) => (
-            <FieldRow key={field} field={field} entries={grouped[field] || []} />
-          ))}
-        </tbody>
-      </table>
+      {records.map((doc) => (
+        <DocumentBlock
+          key={doc.id}
+          doc={doc}
+          globalFieldMap={globalFieldMap}
+        />
+      ))}
     </div>
   );
 }
 
-type FieldRowProps = {
-  field: string;
-  entries: { value: string; documentId: string | number }[];
-};
-
-function FieldRow({ field, entries }: FieldRowProps) {
-  if (!entries.length) {
-    return (
-      <tr>
-        <td className="p-2 border-b text-gray-600">{field}</td>
-        <td className="p-2 border-b text-gray-400 italic">—</td>
-      </tr>
-    );
-  }
-
-  const uniqueValues = [...new Set(entries.map((e) => e.value))];
-  const conflict = uniqueValues.length > 1;
+function DocumentBlock({
+  doc,
+  globalFieldMap,
+}: {
+  doc: { id: string | number; fields?: Record<string, string | number | null> };
+  globalFieldMap: Record<string, (string | number | null | undefined)[]>;
+}) {
+  const fields = doc.fields || {};
 
   return (
-    <tr className={clsx(conflict && "bg-red-100")}>
-      <td className="p-2 border-b font-medium">{field}</td>
-      <td className="p-2 border-b">
-        <ul className="space-y-1">
-          {entries.map((entry, index) => (
-            <li key={`${entry.documentId}-${index}`}>
-              <span className="font-semibold">{entry.value}</span>
-              <span className="text-gray-500 text-sm"> (doc {entry.documentId})</span>
-            </li>
-          ))}
-        </ul>
-      </td>
-    </tr>
+    <div className="mt-6 border rounded p-4 bg-gray-50">
+      <h3 className="text-lg font-semibold mb-3">
+        Document ID: <span className="font-mono">{doc.id}</span>
+      </h3>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {Object.entries(fields).map(([label, value]) => {
+          const isMismatch = detectMismatch(label, globalFieldMap);
+          return (
+            <Metric
+              key={label}
+              label={label}
+              value={value}
+              isMismatch={isMismatch}
+            />
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function detectMismatch(label: string, globalFieldMap: Record<string, (string | number | null | undefined)[]>) {
+  if (!globalFieldMap[label]) return false;
+  const values = globalFieldMap[label].filter((v) => v != null);
+
+  if (values.length <= 1) return false;
+
+  // If ANY mismatch among values → highlight
+  return new Set(values.map((v) => String(v).trim())).size > 1;
+}
+
+function Metric({
+  label,
+  value,
+  isMismatch,
+}: {
+  label: string;
+  value: string | number | null;
+  isMismatch: boolean;
+}) {
+  return (
+    <div
+      className={clsx(
+        "p-3 border rounded bg-white",
+        isMismatch && "bg-red-100 border-red-500"
+      )}
+    >
+      <div className="text-sm font-semibold text-gray-700">{label}</div>
+      <div className="text-gray-900 text-sm">{String(value)}</div>
+      {isMismatch && (
+        <div className="text-xs text-red-700 mt-1">
+          Mismatch detected across documents
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AlwaysRequiredBlock({
+  globalFieldMap,
+}: {
+  globalFieldMap: Record<string, (string | number | null | undefined)[]>;
+}) {
+  return (
+    <div className="border rounded-lg bg-white p-6 shadow">
+      <h2 className="text-2xl font-semibold mb-4">Items Required (Global Scan)</h2>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {ALWAYS_REQUIRED.map((label) => {
+          const values = globalFieldMap[label] || [];
+          const mismatch =
+            values.length > 1 &&
+            new Set(values.map((v) => String(v).trim())).size > 1;
+
+          return (
+            <div
+              key={label}
+              className={clsx(
+                "p-3 border rounded bg-white",
+                mismatch && "bg-red-100 border-red-500"
+              )}
+            >
+              <div className="text-sm font-semibold">{label}</div>
+              <div className="text-gray-900 text-sm">
+                {values.length ? values.join(", ") : "—"}
+              </div>
+              {mismatch && (
+                <div className="text-xs text-red-700 mt-1">
+                  Mismatch across documents
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
