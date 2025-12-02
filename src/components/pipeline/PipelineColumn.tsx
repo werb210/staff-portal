@@ -7,9 +7,16 @@ interface Props {
   stage: string;
   apps: PipelineApp[];
   onDropCard: (id: string, stage: string) => void;
+  onOpen: (id: string) => void;
 }
 
-export default function PipelineColumn({ label, stage, apps, onDropCard }: Props) {
+export default function PipelineColumn({
+  label,
+  stage,
+  apps,
+  onDropCard,
+  onOpen,
+}: Props) {
   const onDragOver = (e: React.DragEvent) => {
     e.preventDefault();
   };
@@ -41,7 +48,7 @@ export default function PipelineColumn({ label, stage, apps, onDropCard }: Props
           key={a.id}
           onDragStart={(e) => e.dataTransfer.setData("text/plain", a.id)}
         >
-          <PipelineCard app={a} />
+          <PipelineCard app={a} onOpen={onOpen} />
         </div>
       ))}
     </div>

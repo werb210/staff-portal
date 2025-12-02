@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { fetchPipeline, updateStage, PipelineApp } from "../../api/pipeline";
 import PipelineColumn from "./PipelineColumn";
+import ApplicationDrawer from "../application/ApplicationDrawer";
 
 const STAGES = [
   { key: "requires_docs", label: "Requires Docs" },
@@ -14,6 +15,8 @@ const STAGES = [
 export default function PipelineBoard() {
   const [apps, setApps] = useState<PipelineApp[]>([]);
   const [loading, setLoading] = useState(true);
+  const [drawerId, setDrawerId] = useState<string | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const load = () => {
     setLoading(true);
@@ -34,6 +37,11 @@ export default function PipelineBoard() {
     load();
   };
 
+  const openDrawer = (id: string) => {
+    setDrawerId(id);
+    setDrawerOpen(true);
+  };
+
   if (loading) return <div style={{ padding: 20 }}>Loading pipeline...</div>;
 
   return (
@@ -45,8 +53,15 @@ export default function PipelineBoard() {
           stage={col.key}
           apps={apps.filter((a) => a.stage === col.key)}
           onDropCard={move}
+          onOpen={openDrawer}
         />
       ))}
+
+      <ApplicationDrawer
+        id={drawerId}
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+      />
     </div>
   );
 }
