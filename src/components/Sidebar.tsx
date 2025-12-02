@@ -17,6 +17,14 @@ export default function Sidebar() {
         >
           Companies
         </NavLink>
+        <NavLink
+          to="/contacts"
+          className={({ isActive }) =>
+            isActive ? "bf-nav-item active" : "bf-nav-item"
+          }
+        >
+          Contacts
+        </NavLink>
       </nav>
 
       <RoleNav />
