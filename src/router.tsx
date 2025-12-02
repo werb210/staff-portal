@@ -4,6 +4,7 @@ import Dashboard from "./pages/Dashboard";
 import ContactsPage from "./pages/ContactsPage";
 import LoginPage from "./pages/auth/LoginPage";
 import CompaniesPage from "./pages/CompaniesPage";
+import ProductsPage from "./pages/ProductsPage";
 
 export default function AppRouter() {
   const token = localStorage.getItem("token");
@@ -20,6 +21,7 @@ export default function AppRouter() {
             <Route path="/" element={<Dashboard />} />
             <Route path="/contacts" element={<ContactsPage />} />
             <Route path="/companies" element={<CompaniesPage />} />
+            <Route path="/products" element={<ProductsPage />} />
           </>
         ) : (
           <Route path="*" element={<Navigate to="/login" />} />

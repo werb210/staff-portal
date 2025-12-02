@@ -18,7 +18,7 @@ export function useContacts() {
       const res = await api.post("/contacts", payload);
       return res.data;
     },
-    onSuccess: () => qc.invalidateQueries(["contacts"]),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["contacts"] }),
   });
 
   return { list, create };
