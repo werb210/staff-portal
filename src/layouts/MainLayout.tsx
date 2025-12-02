@@ -1,15 +1,16 @@
+import type { ReactNode } from "react";
 import NavBar from "../components/NavBar";
 import Sidebar from "../components/Sidebar";
 
-export default function MainLayout({ children }: { children: React.ReactNode }) {
+export default function MainLayout({ children }: { children: ReactNode }) {
   return (
-    <div style={{ width: "100%", height: "100vh", display: "flex", flexDirection: "column" }}>
+    <div className="bf-app-layout">
       <NavBar />
 
-      <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+      <div className="bf-main">
         <Sidebar />
 
-        <div style={{ flex: 1, overflowY: "auto" }}>{children}</div>
+        <div className="bf-content">{children}</div>
       </div>
     </div>
   );

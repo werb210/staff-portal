@@ -16,9 +16,11 @@ import Deals from "./pages/Deals";
 import Pipeline from "./pages/Pipeline";
 import Documents from "./pages/Documents";
 import Lenders from "./pages/Lenders";
+import Marketing from "./pages/Marketing";
 import AuditLogPage from "./pages/Admin/AuditLogPage";
 import RoleManagementPage from "./pages/Admin/RoleManagementPage";
 import AdminUsersPage from "./pages/Admin/AdminUsersPage";
+import Referrals from "./pages/Referrals";
 import Unauthorized from "./pages/Unauthorized";
 
 export default function App() {
@@ -45,6 +47,14 @@ export default function App() {
 
         <Route
           path="/"
+          element={
+            <RequireAuth>
+              <Dashboard />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/dashboard"
           element={
             <RequireAuth>
               <Dashboard />
@@ -96,6 +106,22 @@ export default function App() {
           element={
             <RequireAuth>
               <Lenders />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/marketing"
+          element={
+            <RequireAuth>
+              <Marketing />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/referrals"
+          element={
+            <RequireAuth>
+              <Referrals />
             </RequireAuth>
           }
         />

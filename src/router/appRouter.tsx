@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import { Protected } from "@/router/guards";
 import Layout from "@/components/layout/Layout";
+import RequireAdmin from "@/components/auth/RequireAdmin";
 
 import LoginPage from "@/pages/auth/LoginPage";
 import Dashboard from "@/pages/dashboard/Dashboard";
@@ -10,6 +11,11 @@ import DealsPage from "@/pages/deals/DealsPage";
 import ApplicationsPage from "@/pages/applications/ApplicationsPage";
 import ApplicationDetailPage from "@/pages/applications/ApplicationDetailPage";
 import PipelinePage from "@/pages/pipeline/PipelinePage";
+import Documents from "@/pages/Documents";
+import Lenders from "@/pages/Lenders";
+import Marketing from "@/pages/Marketing";
+import Referrals from "@/pages/Referrals";
+import AdminUsersPage from "@/pages/Admin/AdminUsersPage";
 import AuditLogPage from "@/pages/Admin/AuditLogPage";
 
 export const appRouter = createBrowserRouter([
@@ -34,6 +40,15 @@ export const appRouter = createBrowserRouter([
       { path: "applications", element: <ApplicationsPage /> },
       { path: "applications/:id", element: <ApplicationDetailPage /> },
       { path: "pipeline", element: <PipelinePage /> },
+      { path: "documents", element: <Documents /> },
+      { path: "lenders", element: <Lenders /> },
+      { path: "marketing", element: <Marketing /> },
+      { path: "referrals", element: <Referrals /> },
+      { path: "admin/users", element: (
+        <RequireAdmin>
+          <AdminUsersPage />
+        </RequireAdmin>
+      ) },
       { path: "admin/audit", element: <AuditLogPage /> }
     ]
   },
