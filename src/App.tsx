@@ -16,6 +16,7 @@ import Documents from "./pages/Documents";
 import Lenders from "./pages/Lenders";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import AuditLogsPage from "./pages/Admin/AuditLogsPage";
+import RoleManagementPage from "./pages/Admin/RoleManagementPage";
 
 export default function App() {
   const loadUser = useAuthStore((s) => s.loadUser);
@@ -99,6 +100,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <AuditLogsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/roles"
+          element={
+            <ProtectedRoute>
+              <RoleManagementPage />
             </ProtectedRoute>
           }
         />
