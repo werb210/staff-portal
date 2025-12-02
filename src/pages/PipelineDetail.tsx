@@ -8,6 +8,7 @@ import TabBanking from "@/components/pipeline/detail/TabBanking";
 import TabFinancials from "@/components/pipeline/detail/TabFinancials";
 import TabDocuments from "@/components/pipeline/detail/TabDocuments";
 import TabLenders from "@/components/pipeline/detail/TabLenders";
+import TabOCRInsights from "@/components/pipeline/detail/TabOCRInsights";
 
 export default function PipelineDetail() {
   const { id } = useParams();
@@ -37,6 +38,7 @@ export default function PipelineDetail() {
           <TabsTrigger value="banking">Banking</TabsTrigger>
           <TabsTrigger value="financials">Financials</TabsTrigger>
           <TabsTrigger value="documents">Documents</TabsTrigger>
+          <TabsTrigger value="ocr">OCR Insights</TabsTrigger>
           <TabsTrigger value="lenders">Lenders</TabsTrigger>
         </TabsList>
 
@@ -55,6 +57,10 @@ export default function PipelineDetail() {
 
           <TabsContent value="documents">
             <TabDocuments />
+          </TabsContent>
+
+          <TabsContent value="ocr">
+            <TabOCRInsights />
           </TabsContent>
 
           <TabsContent value="lenders">
