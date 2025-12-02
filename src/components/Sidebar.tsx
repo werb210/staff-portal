@@ -26,6 +26,14 @@ export default function Sidebar() {
           Products
         </NavLink>
         <NavLink
+          to="/tasks"
+          className={({ isActive }) =>
+            isActive ? "bf-nav-item active" : "bf-nav-item"
+          }
+        >
+          Tasks
+        </NavLink>
+        <NavLink
           to="/contacts"
           className={({ isActive }) =>
             isActive ? "bf-nav-item active" : "bf-nav-item"
