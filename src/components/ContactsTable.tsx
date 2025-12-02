@@ -1,21 +1,28 @@
 import { useEffect, useState } from "react";
 import { fetchContacts, Contact } from "../api/contacts";
+import AddContactModal from "./AddContactModal";
 
 export default function ContactsTable() {
   const [rows, setRows] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
+  const [showAdd, setShowAdd] = useState(false);
 
-  useEffect(() => {
+  const load = () => {
+    setLoading(true);
     fetchContacts()
       .then((data) => {
         setRows(data);
         setLoading(false);
       })
-      .catch((e) => {
+      .catch(() => {
         setErr("Failed to load contacts");
         setLoading(false);
       });
+  };
+
+  useEffect(() => {
+    load();
   }, []);
 
   if (loading)
@@ -28,22 +35,23 @@ export default function ContactsTable() {
       </div>
     );
 
-  if (rows.length === 0)
-    return (
-      <div style={{ padding: 20 }}>
-        No contacts found.
-      </div>
-    );
-
   return (
     <div style={{ padding: 20 }}>
-      <h2>Contacts</h2>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          marginBottom: 20,
+        }}
+      >
+        <h2>Contacts</h2>
+        <button onClick={() => setShowAdd(true)}>+ Add Contact</button>
+      </div>
 
       <table
         style={{
           width: "100%",
           borderCollapse: "collapse",
-          marginTop: 20,
         }}
       >
         <thead>
@@ -67,6 +75,13 @@ export default function ContactsTable() {
           ))}
         </tbody>
       </table>
+
+      {showAdd && (
+        <AddContactModal
+          onClose={() => setShowAdd(false)}
+          onCreated={load}
+        />
+      )}
     </div>
   );
 }
@@ -82,4 +97,3 @@ const td = {
   padding: "10px",
   textAlign: "left" as const,
 };
-
