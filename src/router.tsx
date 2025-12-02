@@ -1,81 +1,61 @@
-import { createBrowserRouter } from 'react-router-dom';
-import DashboardPage from './pages/DashboardPage';
-import ApplicationPage from './pages/ApplicationPage';
-import LoginPage from './pages/LoginPage';
-import RequireAuth from './components/auth/RequireAuth';
-import CommunicationsPage from './pages/CommunicationsPage';
-import DocumentManagerPage from './pages/DocumentManagerPage';
-import LenderAdminPage from './pages/LenderAdminPage';
-import RoleManagementPage from './pages/Admin/RoleManagementPage';
-import AdminUsersPage from './pages/Admin/AdminUsersPage';
-import RequireAdmin from './components/auth/RequireAdmin';
-import Unauthorized from './pages/Unauthorized';
+import { createBrowserRouter } from "react-router-dom";
+import ProtectedRoute from "./auth/ProtectedRoute";
+import AppLayout from "./layouts/AppLayout";
 
-const router = createBrowserRouter([
+import LoginPage from "./pages/auth/LoginPage";
+import Dashboard from "./pages/dashboard/Dashboard";
+import CRM from "./pages/crm/CRM";
+import Pipeline from "./pages/pipeline/Pipeline";
+
+import UsersAdmin from "./pages/admin/UsersAdmin";
+import AuditAdmin from "./pages/admin/AuditAdmin";
+
+import LenderProducts from "./pages/lender/LenderProducts";
+import LenderReports from "./pages/lender/LenderReports";
+
+import ReferrerReferrals from "./pages/referrer/ReferrerReferrals";
+import ReferrerPerformance from "./pages/referrer/ReferrerPerformance";
+
+export const router = createBrowserRouter([
+  { path: "/login", element: <LoginPage /> },
+
   {
-    path: "/login",
-    element: <LoginPage />
+    element: <ProtectedRoute />,
+    children: [
+      {
+        element: <AppLayout />,
+        children: [
+          { path: "/dashboard", element: <Dashboard /> },
+          { path: "/crm", element: <CRM /> },
+          { path: "/pipeline", element: <Pipeline /> },
+
+          {
+            element: <ProtectedRoute roles={["admin"]} />,
+            children: [
+              { path: "/admin/users", element: <UsersAdmin /> },
+              { path: "/admin/audit", element: <AuditAdmin /> },
+            ],
+          },
+
+          {
+            element: <ProtectedRoute roles={["lender"]} />,
+            children: [
+              { path: "/lender/products", element: <LenderProducts /> },
+              { path: "/lender/reports", element: <LenderReports /> },
+            ],
+          },
+
+          {
+            element: <ProtectedRoute roles={["referrer"]} />,
+            children: [
+              { path: "/referrer/referrals", element: <ReferrerReferrals /> },
+              { path: "/referrer/performance", element: <ReferrerPerformance /> },
+            ],
+          },
+        ],
+      },
+    ],
   },
-  {
-    path: "/unauthorized",
-    element: <Unauthorized />
-  },
-  {
-    path: "/",
-    element: (
-      <RequireAuth>
-        <DashboardPage />
-      </RequireAuth>
-    )
-  },
-  {
-    path: "/applications/:id",
-    element: (
-      <RequireAuth>
-        <ApplicationPage />
-      </RequireAuth>
-    )
-  },
-  {
-    path: "/application/:id/documents",
-    element: (
-      <RequireAuth>
-        <DocumentManagerPage />
-      </RequireAuth>
-    )
-  },
-  {
-    path: "/communications",
-    element: (
-      <RequireAuth>
-        <CommunicationsPage />
-      </RequireAuth>
-    )
-  },
-  {
-    path: "/admin/lenders",
-    element: (
-      <RequireAuth>
-        <LenderAdminPage />
-      </RequireAuth>
-    )
-  },
-  {
-    path: "/admin/roles",
-    element: (
-      <RequireAuth>
-        <RoleManagementPage />
-      </RequireAuth>
-    )
-  },
-  {
-    path: "/admin/users",
-    element: (
-      <RequireAdmin>
-        <AdminUsersPage />
-      </RequireAdmin>
-    )
-  }
+
+  { path: "*", element: <LoginPage /> },
 ]);
-
-export default router;
