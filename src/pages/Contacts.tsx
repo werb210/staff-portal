@@ -1,11 +1,11 @@
 import MainLayout from "../layouts/MainLayout";
+import ContactsTable from "../components/ContactsTable";
 
 export default function Contacts() {
   return (
     <MainLayout>
-      <div style={{ padding: 20 }}>
-        <h1>Contacts</h1>
-      </div>
+      <ContactsTable />
     </MainLayout>
   );
 }
+
