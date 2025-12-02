@@ -9,7 +9,7 @@ import TasksPage from "./pages/TasksPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import Pipeline from "./pages/Pipeline";
-import PipelineDetail from "./pages/PipelineDetail";
+import PipelineDetail from "@/pages/PipelineDetail";
 
 export default function AppRouter() {
   const token = localStorage.getItem("token");
