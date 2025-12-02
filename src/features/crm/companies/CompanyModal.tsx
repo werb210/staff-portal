@@ -1,101 +1,171 @@
-import React, { useEffect, useState } from "react";
-import { cn } from "../../../lib/utils";
+import React, { useState, useEffect } from "react";
+import { Company, CompanyForm } from "./types";
 
-export type CompanyForm = {
-  id?: string;
-  name: string;
-  sector: string;
-  city: string;
-  stage: string;
-};
-
-type CompanyModalProps = {
+export default function CompanyModal({
+  open,
+  onClose,
+  onSave,
+  initial,
+}: {
   open: boolean;
   onClose: () => void;
-  onSave: (company: CompanyForm) => void;
-  initial?: CompanyForm | null;
-};
-
-export function CompanyModal({ open, onClose, onSave, initial }: CompanyModalProps) {
-  const [form, setForm] = useState<CompanyForm>({ name: "", sector: "", city: "", stage: "Prospect" });
+  onSave: (data: CompanyForm) => void;
+  initial?: Company | null;
+}) {
+  const [form, setForm] = useState<CompanyForm>({
+    name: "",
+    industry: "",
+    phone: "",
+    website: "",
+    email: "",
+    address: "",
+    tags: [],
+  });
 
   useEffect(() => {
     if (initial) {
-      setForm(initial);
-    } else {
-      setForm({ name: "", sector: "", city: "", stage: "Prospect" });
+      setForm({
+        name: initial.name,
+        industry: initial.industry ?? "",
+        phone: initial.phone ?? "",
+        website: initial.website ?? "",
+        email: initial.email ?? "",
+        address: initial.address ?? "",
+        tags: [...initial.tags],
+      });
     }
   }, [initial]);
 
-  const update = (key: keyof CompanyForm, value: string) => setForm((prev) => ({ ...prev, [key]: value }));
-
-  const handleSave = () => {
-    onSave(form);
-    onClose();
-  };
-
   if (!open) return null;
 
+  const update = (key: keyof CompanyForm, val: any) =>
+    setForm((f) => ({ ...f, [key]: val }));
+
+  const addTag = (t: string) => {
+    if (!t.trim() || form.tags.includes(t.trim())) return;
+    update("tags", [...form.tags, t.trim()]);
+  };
+
+  const removeTag = (t: string) =>
+    update(
+      "tags",
+      form.tags.filter((x) => x !== t)
+    );
+
+  let tagInput = "";
+
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/30 p-4">
-      <div className="w-full max-w-lg rounded-xl bg-white p-5 shadow-xl">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-slate-900">{initial ? "Edit" : "Add"} company</h3>
-          <button className="text-sm text-slate-500" onClick={onClose}>
-            Close
-          </button>
+    <div className="fixed inset-0 bg-black/40 flex justify-center items-center p-4 z-50">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-lg p-6">
+        <h2 className="text-lg font-semibold mb-4">
+          {initial ? "Edit Company" : "New Company"}
+        </h2>
+
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          <input
+            type="text"
+            placeholder="Company name"
+            value={form.name}
+            onChange={(e) => update("name", e.target.value)}
+            className="rounded border px-3 py-2 text-sm"
+          />
+
+          <input
+            type="text"
+            placeholder="Industry"
+            value={form.industry}
+            onChange={(e) => update("industry", e.target.value)}
+            className="rounded border px-3 py-2 text-sm"
+          />
+
+          <input
+            type="text"
+            placeholder="Phone"
+            value={form.phone}
+            onChange={(e) => update("phone", e.target.value)}
+            className="rounded border px-3 py-2 text-sm"
+          />
+
+          <input
+            type="text"
+            placeholder="Website"
+            value={form.website}
+            onChange={(e) => update("website", e.target.value)}
+            className="rounded border px-3 py-2 text-sm"
+          />
+
+          <input
+            type="email"
+            placeholder="Email"
+            value={form.email}
+            onChange={(e) => update("email", e.target.value)}
+            className="rounded border px-3 py-2 text-sm"
+          />
+
+          <input
+            type="text"
+            placeholder="Address"
+            value={form.address}
+            onChange={(e) => update("address", e.target.value)}
+            className="rounded border px-3 py-2 text-sm col-span-2"
+          />
         </div>
 
-        <div className="mt-4 space-y-3 text-sm">
-          <label className="block">
-            <span className="text-slate-600">Name</span>
+        <div className="mb-4">
+          <div className="text-xs font-medium text-slate-600 mb-1">Tags</div>
+
+          <div className="flex gap-2">
             <input
-              value={form.name}
-              onChange={(e) => update("name", e.target.value)}
-              className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2"
+              id="companyTagInput"
+              type="text"
+              placeholder="Add tag"
+              onChange={(e) => (tagInput = e.target.value)}
+              className="rounded border px-3 py-2 text-sm flex-1"
             />
-          </label>
-          <label className="block">
-            <span className="text-slate-600">Sector</span>
-            <input
-              value={form.sector}
-              onChange={(e) => update("sector", e.target.value)}
-              className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2"
-            />
-          </label>
-          <label className="block">
-            <span className="text-slate-600">City</span>
-            <input
-              value={form.city}
-              onChange={(e) => update("city", e.target.value)}
-              className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2"
-            />
-          </label>
-          <label className="block">
-            <span className="text-slate-600">Stage</span>
-            <select
-              value={form.stage}
-              onChange={(e) => update("stage", e.target.value)}
-              className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2"
+            <button
+              onClick={() => {
+                addTag(tagInput);
+                (
+                  document.getElementById(
+                    "companyTagInput"
+                  ) as HTMLInputElement
+                ).value = "";
+              }}
+              className="rounded bg-indigo-600 text-white px-3 text-sm"
             >
-              <option>Prospect</option>
-              <option>Active</option>
-              <option>Closed</option>
-            </select>
-          </label>
+              Add
+            </button>
+          </div>
+
+          <div className="flex gap-1 mt-2 flex-wrap">
+            {form.tags.map((t) => (
+              <span
+                key={t}
+                className="rounded bg-green-100 text-green-700 px-2 py-[2px] text-xs font-medium flex items-center gap-1"
+              >
+                {t}
+                <button
+                  className="text-green-700"
+                  onClick={() => removeTag(t)}
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
         </div>
 
-        <div className="mt-5 flex justify-end gap-2">
-          <button className="rounded-md border border-slate-200 px-3 py-2 text-sm" onClick={onClose}>
+        <div className="flex justify-end gap-2">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-sm rounded border bg-white"
+          >
             Cancel
           </button>
+
           <button
-            className={cn(
-              "rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500",
-              !form.name && "opacity-60",
-            )}
-            onClick={handleSave}
-            disabled={!form.name}
+            onClick={() => onSave(form)}
+            className="px-4 py-2 text-sm rounded bg-indigo-600 text-white"
           >
             Save
           </button>
