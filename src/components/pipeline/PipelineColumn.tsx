@@ -1,56 +1,23 @@
-import type React from "react";
-import { PipelineApp } from "../../api/pipeline";
+import { usePipelineStore } from "@/state/pipelineStore";
 import PipelineCard from "./PipelineCard";
 
-interface Props {
-  label: string;
-  stage: string;
-  apps: PipelineApp[];
-  onDropCard: (id: string, stage: string) => void;
-  onOpen: (id: string) => void;
-}
+type PipelineColumnProps = {
+  stageId: string;
+  title: string;
+};
 
-export default function PipelineColumn({
-  label,
-  stage,
-  apps,
-  onDropCard,
-  onOpen,
-}: Props) {
-  const onDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-  };
-
-  const onDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    const id = e.dataTransfer.getData("text/plain");
-    if (id) onDropCard(id, stage);
-  };
+export default function PipelineColumn({ stageId, title }: PipelineColumnProps) {
+  const apps = usePipelineStore((s) => s.byStage(stageId));
 
   return (
-    <div
-      style={{
-        flex: 1,
-        padding: 10,
-        background: "#f4f4f4",
-        borderRadius: 6,
-        minHeight: "80vh",
-        display: "flex",
-        flexDirection: "column",
-      }}
-      onDragOver={onDragOver}
-      onDrop={onDrop}
-    >
-      <div style={{ fontWeight: 700, marginBottom: 10 }}>{label}</div>
+    <div className="w-80 bg-gray-100 rounded-xl p-4 flex flex-col gap-3">
+      <div className="font-semibold text-lg pb-2 border-b">{title}</div>
 
-      {apps.map((a) => (
-        <div
-          key={a.id}
-          onDragStart={(e) => e.dataTransfer.setData("text/plain", a.id)}
-        >
-          <PipelineCard app={a} onOpen={onOpen} />
-        </div>
-      ))}
+      <div className="flex flex-col gap-3">
+        {apps.map((a) => (
+          <PipelineCard key={a.id} app={a} />
+        ))}
+      </div>
     </div>
   );
 }

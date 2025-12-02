@@ -1,29 +1,18 @@
-import { PipelineApp } from "../../api/pipeline";
+import { useNavigate } from "react-router-dom";
+import { Card, CardContent } from "@/components/ui/card";
 
-interface Props {
-  app: PipelineApp;
-  onOpen: (id: string) => void;
-}
+export default function PipelineCard({ app }: { app: any }) {
+  const nav = useNavigate();
 
-export default function PipelineCard({ app, onOpen }: Props) {
   return (
-    <div
-      style={{
-        background: "#fff",
-        borderRadius: 6,
-        padding: 12,
-        marginBottom: 10,
-        boxShadow: "0 1px 3px rgba(0,0,0,0.15)",
-        cursor: "grab",
-      }}
-      draggable
-      data-id={app.id}
-      onDoubleClick={() => onOpen(app.id)}
+    <Card
+      className="cursor-pointer hover:shadow-lg transition-all"
+      onClick={() => nav(`/pipeline/${app.id}`)}
     >
-      <div style={{ fontWeight: 600, marginBottom: 4 }}>{app.businessName}</div>
-      <div style={{ fontSize: 13, color: "#666" }}>
-        {new Date(app.createdAt).toLocaleString()}
-      </div>
-    </div>
+      <CardContent className="p-4">
+        <div className="font-semibold">{app.businessName}</div>
+        <div className="text-sm text-gray-600">{app.primaryContact}</div>
+      </CardContent>
+    </Card>
   );
 }
