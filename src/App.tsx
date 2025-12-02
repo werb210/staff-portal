@@ -7,6 +7,9 @@ import NotificationToasts from "./components/notifications/NotificationToasts";
 import { initWebSocket } from "./ws/client";
 import RequireAuth from "./components/auth/RequireAuth";
 import RequireAdmin from "./components/auth/RequireAdmin";
+import ErrorBoundary from "./components/system/ErrorBoundary";
+import LoadingOverlay from "./components/system/LoadingOverlay";
+import AsyncBoundary from "./components/system/AsyncBoundary";
 
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
@@ -38,118 +41,126 @@ export default function App() {
   }, [user]);
 
   return (
-    <BrowserRouter>
-      <GlobalSearch />
-      <NotificationToasts />
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/unauthorized" element={<Unauthorized />} />
+    <>
+      <LoadingOverlay />
 
-        <Route
-          path="/"
-          element={
-            <RequireAuth>
-              <Dashboard />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/dashboard"
-          element={
-            <RequireAuth>
-              <Dashboard />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/contacts"
-          element={
-            <RequireAuth>
-              <Contacts />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/companies"
-          element={
-            <RequireAuth>
-              <Companies />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/deals"
-          element={
-            <RequireAuth>
-              <Deals />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/pipeline"
-          element={
-            <RequireAuth>
-              <Pipeline />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/documents"
-          element={
-            <RequireAuth>
-              <Documents />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/lenders"
-          element={
-            <RequireAuth>
-              <Lenders />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/marketing"
-          element={
-            <RequireAuth>
-              <Marketing />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/referrals"
-          element={
-            <RequireAuth>
-              <Referrals />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/admin/audit"
-          element={
-            <RequireAdmin>
-              <AuditLogPage />
-            </RequireAdmin>
-          }
-        />
-        <Route
-          path="/admin/roles"
-          element={
-            <RequireAdmin>
-              <RoleManagementPage />
-            </RequireAdmin>
-          }
-        />
-        <Route
-          path="/admin/users"
-          element={
-            <RequireAdmin>
-              <AdminUsersPage />
-            </RequireAdmin>
-          }
-        />
-      </Routes>
-    </BrowserRouter>
+      <ErrorBoundary>
+        <AsyncBoundary>
+          <BrowserRouter>
+            <GlobalSearch />
+            <NotificationToasts />
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route path="/unauthorized" element={<Unauthorized />} />
+
+              <Route
+                path="/"
+                element={
+                  <RequireAuth>
+                    <Dashboard />
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="/dashboard"
+                element={
+                  <RequireAuth>
+                    <Dashboard />
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="/contacts"
+                element={
+                  <RequireAuth>
+                    <Contacts />
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="/companies"
+                element={
+                  <RequireAuth>
+                    <Companies />
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="/deals"
+                element={
+                  <RequireAuth>
+                    <Deals />
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="/pipeline"
+                element={
+                  <RequireAuth>
+                    <Pipeline />
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="/documents"
+                element={
+                  <RequireAuth>
+                    <Documents />
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="/lenders"
+                element={
+                  <RequireAuth>
+                    <Lenders />
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="/marketing"
+                element={
+                  <RequireAuth>
+                    <Marketing />
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="/referrals"
+                element={
+                  <RequireAuth>
+                    <Referrals />
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="/admin/audit"
+                element={
+                  <RequireAdmin>
+                    <AuditLogPage />
+                  </RequireAdmin>
+                }
+              />
+              <Route
+                path="/admin/roles"
+                element={
+                  <RequireAdmin>
+                    <RoleManagementPage />
+                  </RequireAdmin>
+                }
+              />
+              <Route
+                path="/admin/users"
+                element={
+                  <RequireAdmin>
+                    <AdminUsersPage />
+                  </RequireAdmin>
+                }
+              />
+            </Routes>
+          </BrowserRouter>
+        </AsyncBoundary>
+      </ErrorBoundary>
+    </>
   );
 }
