@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { loginRequest } from "../api/auth";
 import { useAuthStore } from "../state/authStore";
 
 export default function Login() {
-  const setUser = useAuthStore((s) => s.setUser);
+  const login = useAuthStore((s) => s.login);
+  const loading = useAuthStore((s) => s.loading);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -12,12 +12,11 @@ export default function Login() {
   const handleLogin = async () => {
     setErr("");
 
-    try {
-      const res = await loginRequest(email, password);
-      localStorage.setItem("bf_token", res.token);
-      setUser(res.user);
+    const success = await login(email, password);
+
+    if (success) {
       window.location.href = "/";
-    } catch {
+    } else {
       setErr("Invalid credentials");
     }
   };
@@ -50,8 +49,9 @@ export default function Login() {
       <button
         style={{ marginTop: 20, width: "100%" }}
         onClick={handleLogin}
+        disabled={loading}
       >
-        Login
+        {loading ? "Authenticating..." : "Login"}
       </button>
     </div>
   );

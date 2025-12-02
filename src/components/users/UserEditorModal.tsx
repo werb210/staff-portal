@@ -1,21 +1,22 @@
 import { useState, useEffect } from "react";
 import { useUsersStore } from "../../state/usersStore";
 import type { UserRecord } from "../../api/users";
+import type { Role } from "../../state/authStore";
 
-const roles: UserRecord["role"][] = ["admin", "staff", "marketing", "lender", "referrer"];
+const roles: Role[] = ["admin", "staff", "marketing", "lender", "referrer"];
 
 export default function UserEditorModal() {
   const { editing, selected, closeEditor, save, saving } = useUsersStore();
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
-  const [role, setRole] = useState<UserRecord["role"]>("staff");
+  const [role, setRole] = useState<Role>("staff");
   const [password, setPassword] = useState("");
 
   useEffect(() => {
     if (selected) {
       setEmail(selected.email);
       setName(selected.name ?? "");
-      setRole(selected.role);
+      setRole(selected.role as Role);
       setPassword("");
     } else {
       setEmail("");
@@ -46,7 +47,7 @@ export default function UserEditorModal() {
             />
           )}
 
-          <select value={role} onChange={(e) => setRole(e.target.value)}>
+          <select value={role} onChange={(e) => setRole(e.target.value as Role)}>
             {roles.map((r) => (
               <option key={r} value={r}>
                 {r}
@@ -58,7 +59,7 @@ export default function UserEditorModal() {
         <div style={{ marginTop: 16, display: "flex", gap: 12 }}>
           <button
             disabled={saving}
-            onClick={() => save({ email, name, password, role })}
+            onClick={() => save({ email, name, password, role: role as UserRecord["role"] })}
           >
             {saving ? "Saving…" : "Save"}
           </button>

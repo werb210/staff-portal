@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import type { Role } from "../../state/authStore";
 import { useRoleStore } from "../../state/roleStore";
 
 export default function RoleTable() {
@@ -6,7 +7,7 @@ export default function RoleTable() {
 
   useEffect(() => {
     load();
-  }, []);
+  }, [load]);
 
   return (
     <table style={{ width: "100%", marginTop: 20 }}>
@@ -20,17 +21,18 @@ export default function RoleTable() {
       </thead>
 
       <tbody>
-        {users.map((u: any) => (
+        {users.map((u) => (
           <tr key={u.id}>
             <td>{u.email}</td>
 
             <td>
               <select
                 value={u.role}
-                onChange={(e) => changeRole(u.id, e.target.value)}
+                onChange={(e) => changeRole(u.id, e.target.value as Role)}
               >
                 <option value="admin">Admin</option>
                 <option value="staff">Staff</option>
+                <option value="marketing">Marketing</option>
                 <option value="lender">Lender</option>
                 <option value="referrer">Referrer</option>
               </select>

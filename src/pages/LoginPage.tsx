@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { loginRequest } from '../api/auth';
 import { useAuthStore } from '../state/authStore';
 import './login.css';
 
 export default function LoginPage() {
-  const setUser = useAuthStore((s) => s.setUser);
-  const [loading, setLoading] = useState(false);
+  const login = useAuthStore((s) => s.login);
+  const loading = useAuthStore((s) => s.loading);
+  const storeError = useAuthStore((s) => s.error);
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -14,18 +14,14 @@ export default function LoginPage() {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true);
     setError("");
 
-    try {
-      const res = await loginRequest(email, password);
-      localStorage.setItem("bf_token", res.token);
-      setUser(res.user);
+    const success = await login(email, password);
+
+    if (success) {
       navigate("/");
-    } catch (err) {
-      setError("Invalid credentials");
-    } finally {
-      setLoading(false);
+    } else {
+      setError(storeError ?? "Invalid credentials");
     }
   }
 
@@ -48,7 +44,9 @@ export default function LoginPage() {
           onChange={(e) => setPassword(e.target.value)}
         />
 
-        {error && <div className="error">{error}</div>}
+        {(error || storeError) && (
+          <div className="error">{error || storeError}</div>
+        )}
 
         <button disabled={loading} type="submit">
           {loading ? "Authenticating..." : "Login"}
