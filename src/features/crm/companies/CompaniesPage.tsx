@@ -8,12 +8,11 @@ export default function CompaniesPage() {
     {
       id: "c1",
       name: "Marshall Holdings",
-      industry: "Manufacturing",
-      email: "info@marshall.com",
+      industry: "Finance",
       website: "https://marshall.com",
-      phone: "555-778-2211",
-      address: "12 Industrial Ave",
-      tags: ["Factoring", "High Priority"],
+      phone: "555-441-2200",
+      address: "100 King St W, Toronto",
+      tags: ["Enterprise", "Top Client"],
       createdAt: new Date().toISOString(),
     },
   ]);
@@ -53,7 +52,7 @@ export default function CompaniesPage() {
             setEditing(null);
             setModalOpen(true);
           }}
-          className="rounded bg-indigo-600 text-white px-4 py-2 text-sm"
+          className="rounded bg-emerald-600 text-white px-4 py-2 text-sm"
         >
           New Company
         </button>
