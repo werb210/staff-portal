@@ -42,4 +42,45 @@ r.get("/:id", (req, res) => {
   });
 });
 
+r.get("/:id/banking", (req, res) => {
+  const { id } = req.params;
+
+  res.json({
+    success: true,
+    data: {
+      id,
+      avgDailyBalance: "$7,200",
+      avgMonthlyRevenue: "$25,000",
+      nsfCount90: 1,
+      overdraftDays90: 2,
+      totalDeposits90: "$75,000",
+      largestDeposit: "$12,500",
+      depositVolatility: "12%",
+      revenueTrend3mo: "Up 5%",
+      expenseTrend3mo: "Flat",
+      netCashFlow: "$3,200",
+      negativeDays: 1,
+      nsfRiskLevel: "Low",
+      overdraftRisk: "Moderate",
+      volatilityRisk: "Low",
+      cashFlowStability: "Stable",
+      raw: {
+        balances: [
+          { date: "2024-03-01", balance: 7100 },
+          { date: "2024-04-01", balance: 7200 },
+          { date: "2024-05-01", balance: 7300 },
+        ],
+        deposits: [
+          { date: "2024-05-15", amount: 12500 },
+          { date: "2024-05-02", amount: 8300 },
+          { date: "2024-04-18", amount: 9100 },
+        ],
+        nsfEvents: [
+          { date: "2024-03-12", amount: 85 },
+        ],
+      },
+    },
+  });
+});
+
 export default r;
