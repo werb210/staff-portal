@@ -1,34 +1,45 @@
-// src/components/pipeline/ApplicationCard.tsx
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import React from "react";
+import { Card, CardHeader, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
-export default function ApplicationCard({ app }: any) {
-  const navigate = useNavigate();
+interface Props {
+  id: string;
+  businessName: string;
+  contactName: string;
+  stage: string;
+  score?: number | null;
+  onClick?: () => void;
+}
 
-  function onDragStart(e: React.DragEvent) {
-    e.dataTransfer.setData("appId", app.id);
-  }
-
-  function openDetail() {
-    navigate(`/applications/${app.id}`);
-  }
-
+export default function ApplicationCard({
+  id,
+  businessName,
+  contactName,
+  stage,
+  score,
+  onClick,
+}: Props) {
   return (
-    <div
-      draggable
-      onDragStart={onDragStart}
-      onClick={openDetail}
-      style={{
-        padding: "10px",
-        background: "white",
-        borderRadius: "6px",
-        boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-        cursor: "grab",
-      }}
+    <Card
+      className="cursor-pointer transition-all hover:shadow-lg border border-gray-200"
+      onClick={onClick}
     >
-      <strong>{app.businessName}</strong>
-      <div>{app.applicantName}</div>
-      <div>Requested: ${app.requestedAmount}</div>
-    </div>
+      <CardHeader>
+        <div className="flex justify-between items-center">
+          <h3 className="font-semibold">{businessName}</h3>
+          <Badge variant="outline">{stage}</Badge>
+        </div>
+      </CardHeader>
+
+      <CardContent>
+        <p className="text-sm text-gray-600">Contact: {contactName}</p>
+
+        {score !== undefined && score !== null && (
+          <p className="text-sm text-gray-800 mt-2">
+            Score: <strong>{score}</strong>
+          </p>
+        )}
+      </CardContent>
+    </Card>
   );
 }
