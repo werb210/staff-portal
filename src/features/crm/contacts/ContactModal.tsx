@@ -15,24 +15,25 @@ export default function ContactModal({
   const [form, setForm] = useState<ContactForm>({
     firstName: "",
     lastName: "",
-    title: "",
+    company: "",
     email: "",
     phone: "",
-    company: "",
+    title: "",
     tags: [],
   });
 
   useEffect(() => {
-    if (initial)
+    if (initial) {
       setForm({
         firstName: initial.firstName,
         lastName: initial.lastName,
-        title: initial.title ?? "",
-        email: initial.email,
-        phone: initial.phone ?? "",
         company: initial.company ?? "",
+        email: initial.email ?? "",
+        phone: initial.phone ?? "",
+        title: initial.title ?? "",
         tags: [...initial.tags],
       });
+    }
   }, [initial]);
 
   if (!open) return null;
@@ -68,6 +69,7 @@ export default function ContactModal({
             onChange={(e) => update("firstName", e.target.value)}
             className="rounded border px-3 py-2 text-sm"
           />
+
           <input
             type="text"
             placeholder="Last name"
@@ -78,9 +80,9 @@ export default function ContactModal({
 
           <input
             type="text"
-            placeholder="Title"
-            value={form.title}
-            onChange={(e) => update("title", e.target.value)}
+            placeholder="Company"
+            value={form.company}
+            onChange={(e) => update("company", e.target.value)}
             className="rounded border px-3 py-2 text-sm"
           />
 
@@ -102,9 +104,9 @@ export default function ContactModal({
 
           <input
             type="text"
-            placeholder="Company"
-            value={form.company}
-            onChange={(e) => update("company", e.target.value)}
+            placeholder="Title"
+            value={form.title}
+            onChange={(e) => update("title", e.target.value)}
             className="rounded border px-3 py-2 text-sm"
           />
         </div>
@@ -114,7 +116,7 @@ export default function ContactModal({
 
           <div className="flex gap-2">
             <input
-              id="tagInput"
+              id="contactTagInput"
               type="text"
               placeholder="Add tag"
               onChange={(e) => (tagInput = e.target.value)}
@@ -123,8 +125,11 @@ export default function ContactModal({
             <button
               onClick={() => {
                 addTag(tagInput);
-                (document.getElementById("tagInput") as HTMLInputElement).value =
-                  "";
+                (
+                  document.getElementById(
+                    "contactTagInput"
+                  ) as HTMLInputElement
+                ).value = "";
               }}
               className="rounded bg-indigo-600 text-white px-3 text-sm"
             >
@@ -157,6 +162,7 @@ export default function ContactModal({
           >
             Cancel
           </button>
+
           <button
             onClick={() => onSave(form)}
             className="px-4 py-2 text-sm rounded bg-indigo-600 text-white"

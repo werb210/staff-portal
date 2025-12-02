@@ -6,14 +6,14 @@ import { Contact, ContactForm } from "./types";
 export default function ContactsPage() {
   const [contacts, setContacts] = useState<Contact[]>([
     {
-      id: "1",
-      firstName: "John",
-      lastName: "Marshall",
-      email: "john@demo.com",
+      id: "p1",
+      firstName: "Sarah",
+      lastName: "Levine",
       company: "Marshall Holdings",
-      phone: "555-312-7781",
-      title: "Owner",
-      tags: ["Factoring", "VIP"],
+      email: "slevine@marshall.com",
+      phone: "555-441-2299",
+      title: "Director of Finance",
+      tags: ["VIP", "Strong Lead"],
       createdAt: new Date().toISOString(),
     },
   ]);
@@ -38,6 +38,7 @@ export default function ContactsPage() {
         },
       ]);
     }
+
     setModalOpen(false);
     setEditing(null);
   };
@@ -69,11 +70,11 @@ export default function ContactsPage() {
       <ContactModal
         open={modalOpen}
         initial={editing}
-        onSave={save}
         onClose={() => {
           setModalOpen(false);
           setEditing(null);
         }}
+        onSave={save}
       />
     </div>
   );
