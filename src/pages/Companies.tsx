@@ -1,11 +1,10 @@
 import MainLayout from "../layouts/MainLayout";
+import CompaniesTable from "../components/CompaniesTable";
 
 export default function Companies() {
   return (
     <MainLayout>
-      <div style={{ padding: 20 }}>
-        <h1>Companies</h1>
-      </div>
+      <CompaniesTable />
     </MainLayout>
   );
 }
