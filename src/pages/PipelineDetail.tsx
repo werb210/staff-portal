@@ -4,7 +4,7 @@ import { usePipelineDetailStore } from "@/state/pipelineDetailStore";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 import TabApplication from "@/components/pipeline/detail/TabApplication";
-import TabBanking from "@/components/pipeline/detail/TabBanking";
+import TabBankingAnalysis from "@/components/pipeline/detail/TabBankingAnalysis";
 import TabFinancials from "@/components/pipeline/detail/TabFinancials";
 import TabDocuments from "@/components/pipeline/detail/TabDocuments";
 import TabLenders from "@/components/pipeline/detail/TabLenders";
@@ -48,7 +48,7 @@ export default function PipelineDetail() {
           </TabsContent>
 
           <TabsContent value="banking">
-            <TabBanking />
+            <TabBankingAnalysis />
           </TabsContent>
 
           <TabsContent value="financials">
