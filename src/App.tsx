@@ -1,16 +1,32 @@
-import React from 'react';
-import { RouterProvider } from 'react-router-dom';
-import router from './router';
-import Shell from './components/layout/Shell';
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { useAuthStore } from "./state/authStore";
+import { useEffect } from "react";
+
+import Login from "./pages/Login";
+import Dashboard from "./pages/Dashboard";
+import ProtectedRoute from "./routes/ProtectedRoute";
 
 export default function App() {
+  const loadUser = useAuthStore((s) => s.loadUser);
+
+  useEffect(() => {
+    loadUser();
+  }, []);
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0b1b2b] via-[#134b70] to-[#0f766e] text-slate-50">
-      <div className="min-h-screen bg-white/5 backdrop-blur-md">
-        <Shell>
-          <RouterProvider router={router} />
-        </Shell>
-      </div>
-    </div>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
+    </BrowserRouter>
   );
 }

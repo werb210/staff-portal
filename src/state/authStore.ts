@@ -1,59 +1,31 @@
-import { create } from 'zustand';
-import { api } from '../api/client';
-import { Silo, useSiloStore } from './siloStore';
-import { User } from '../types/User';
+import { create } from "zustand";
+import { fetchCurrentUser } from "../api/auth";
 
 interface AuthState {
-  user: User | null;
+  user: any | null;
   loading: boolean;
-
-  login: (email: string, password: string) => Promise<void>;
-  logout: () => Promise<void>;
-  setUser: (u: User | null) => void;
+  loadUser: () => Promise<void>;
+  setUser: (u: any | null) => void;
+  logout: () => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
-  loading: false,
+  loading: true,
 
-  setUser: (u) => set({ user: u }),
-
-  login: async (email, password) => {
-    set({ loading: true });
-    const client = api();
-
+  loadUser: async () => {
     try {
-      const res = await client.post('/auth/login', { email, password });
-
-      const user: User = res.data.user;
-
-      // Set user
-      set({ user, loading: false });
-
-      // Configure silo store
-      const allSilos = user.silos || [];
-      const roles = user.roles || {};
-
-      useSiloStore.getState().setAllowed(allSilos as Silo[]);
-      useSiloStore.getState().setRoles(roles);
-
-      // Default silo = first allowed
-      if (allSilos.length > 0) {
-        useSiloStore.getState().setSilo(allSilos[0] as Silo);
-      }
-    } catch (err) {
-      set({ loading: false });
-      throw err;
+      const data = await fetchCurrentUser();
+      set({ user: data.user, loading: false });
+    } catch {
+      set({ user: null, loading: false });
     }
   },
 
-  logout: async () => {
-    try {
-      const client = api();
-      await client.post('/auth/logout');
-    } catch (err) {}
+  setUser: (u) => set({ user: u }),
 
-    set({ user: null, loading: false });
-    useSiloStore.getState().setSilo(null);
-  },
+  logout: () => {
+    localStorage.removeItem("bf_token");
+    set({ user: null });
+  }
 }));

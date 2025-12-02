@@ -1,21 +1,31 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { loginRequest } from '../api/auth';
 import { useAuthStore } from '../state/authStore';
 import './login.css';
 
 export default function LoginPage() {
-  const { login, loading } = useAuthStore();
+  const setUser = useAuthStore((s) => s.setUser);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setLoading(true);
+    setError("");
+
     try {
-      await login(email, password);
-      navigate('/');
+      const res = await loginRequest(email, password);
+      localStorage.setItem("bf_token", res.token);
+      setUser(res.user);
+      navigate("/");
     } catch (err) {
-      // Errors handled by login
+      setError("Invalid credentials");
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -37,6 +47,8 @@ export default function LoginPage() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
+
+        {error && <div className="error">{error}</div>}
 
         <button disabled={loading} type="submit">
           {loading ? "Authenticating..." : "Login"}
