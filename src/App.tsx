@@ -1,6 +1,8 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useAuthStore } from "./state/authStore";
 import { useEffect } from "react";
+import GlobalSearch from "./components/search/GlobalSearch";
+import useGlobalSearchShortcut from "./hooks/useGlobalSearchShortcut";
 
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
@@ -15,12 +17,15 @@ import ProtectedRoute from "./routes/ProtectedRoute";
 export default function App() {
   const loadUser = useAuthStore((s) => s.loadUser);
 
+  useGlobalSearchShortcut();
+
   useEffect(() => {
     loadUser();
   }, []);
 
   return (
     <BrowserRouter>
+      <GlobalSearch />
       <Routes>
         <Route path="/login" element={<Login />} />
 
