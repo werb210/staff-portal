@@ -5,6 +5,7 @@ import { queryClient } from "./lib/queryClient";
 import AppRouter from "./router";
 import "./index.css";
 import GlobalLoader from "./components/GlobalLoader";
+import ErrorToast from "./components/ErrorToast";
 
 const rootElement = document.getElementById("root") as HTMLElement;
 
@@ -13,6 +14,7 @@ ReactDOM.createRoot(rootElement).render(
     <QueryClientProvider client={queryClient}>
       <AppRouter />
       <GlobalLoader />
+      <ErrorToast />
     </QueryClientProvider>
   </React.StrictMode>
 );
