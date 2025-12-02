@@ -15,7 +15,7 @@ export default function CompaniesTable({
     return (
       c.name.toLowerCase().includes(q) ||
       (c.industry ?? "").toLowerCase().includes(q) ||
-      (c.email ?? "").toLowerCase().includes(q)
+      (c.website ?? "").toLowerCase().includes(q)
     );
   });
 
@@ -36,7 +36,7 @@ export default function CompaniesTable({
           <tr className="text-left text-slate-600 border-b">
             <th className="py-2">Company</th>
             <th>Industry</th>
-            <th>Email</th>
+            <th>Website</th>
             <th>Tags</th>
             <th></th>
           </tr>
@@ -47,13 +47,13 @@ export default function CompaniesTable({
             <tr key={c.id} className="border-b last:border-none">
               <td className="py-2 font-medium">{c.name}</td>
               <td>{c.industry ?? "—"}</td>
-              <td>{c.email ?? "—"}</td>
+              <td>{c.website ?? "—"}</td>
               <td>
                 <div className="flex gap-1 flex-wrap">
                   {c.tags.map((t) => (
                     <span
                       key={t}
-                      className="rounded bg-green-100 text-green-700 px-2 py-[2px] text-xs font-medium"
+                      className="rounded bg-emerald-100 text-emerald-700 px-2 py-[2px] text-xs font-medium"
                     >
                       {t}
                     </span>
@@ -63,7 +63,7 @@ export default function CompaniesTable({
               <td className="text-right">
                 <button
                   onClick={() => onEdit(c)}
-                  className="text-indigo-600 hover:text-indigo-800 font-medium"
+                  className="text-emerald-700 hover:text-emerald-900 font-medium"
                 >
                   Edit
                 </button>

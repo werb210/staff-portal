@@ -15,9 +15,8 @@ export default function CompanyModal({
   const [form, setForm] = useState<CompanyForm>({
     name: "",
     industry: "",
-    phone: "",
     website: "",
-    email: "",
+    phone: "",
     address: "",
     tags: [],
   });
@@ -27,9 +26,8 @@ export default function CompanyModal({
       setForm({
         name: initial.name,
         industry: initial.industry ?? "",
-        phone: initial.phone ?? "",
         website: initial.website ?? "",
-        email: initial.email ?? "",
+        phone: initial.phone ?? "",
         address: initial.address ?? "",
         tags: [...initial.tags],
       });
@@ -80,14 +78,6 @@ export default function CompanyModal({
 
           <input
             type="text"
-            placeholder="Phone"
-            value={form.phone}
-            onChange={(e) => update("phone", e.target.value)}
-            className="rounded border px-3 py-2 text-sm"
-          />
-
-          <input
-            type="text"
             placeholder="Website"
             value={form.website}
             onChange={(e) => update("website", e.target.value)}
@@ -95,10 +85,10 @@ export default function CompanyModal({
           />
 
           <input
-            type="email"
-            placeholder="Email"
-            value={form.email}
-            onChange={(e) => update("email", e.target.value)}
+            type="text"
+            placeholder="Phone"
+            value={form.phone}
+            onChange={(e) => update("phone", e.target.value)}
             className="rounded border px-3 py-2 text-sm"
           />
 
@@ -131,7 +121,7 @@ export default function CompanyModal({
                   ) as HTMLInputElement
                 ).value = "";
               }}
-              className="rounded bg-indigo-600 text-white px-3 text-sm"
+              className="rounded bg-emerald-600 text-white px-3 text-sm"
             >
               Add
             </button>
@@ -141,11 +131,11 @@ export default function CompanyModal({
             {form.tags.map((t) => (
               <span
                 key={t}
-                className="rounded bg-green-100 text-green-700 px-2 py-[2px] text-xs font-medium flex items-center gap-1"
+                className="rounded bg-emerald-100 text-emerald-700 px-2 py-[2px] text-xs font-medium flex items-center gap-1"
               >
                 {t}
                 <button
-                  className="text-green-700"
+                  className="text-emerald-700"
                   onClick={() => removeTag(t)}
                 >
                   ×
@@ -165,7 +155,7 @@ export default function CompanyModal({
 
           <button
             onClick={() => onSave(form)}
-            className="px-4 py-2 text-sm rounded bg-indigo-600 text-white"
+            className="px-4 py-2 text-sm rounded bg-emerald-600 text-white"
           >
             Save
           </button>
