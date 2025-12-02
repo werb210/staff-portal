@@ -1,40 +1,33 @@
 import React from "react";
-import ColumnContainer from "./ColumnContainer";
-import { ApplicationCard } from "./index";
-
-export interface PipelineApplication {
-  id: string;
-  businessName: string;
-  contactName: string;
-  stage: string;
-  score: number | null;
-}
+import { useDroppable } from "@dnd-kit/core";
+import ApplicationCard from "./ApplicationCard";
 
 interface Props {
   title: string;
   stage: string;
-  apps: PipelineApplication[];
+  apps: any[];
 }
 
 export default function Column({ title, stage, apps }: Props) {
-  return (
-    <ColumnContainer stage={stage}>
-      <div className="px-4 py-3 border-b border-slate-200">
-        <h2 className="font-semibold text-slate-700">{title}</h2>
-      </div>
+  const { setNodeRef, isOver } = useDroppable({
+    id: `drop-${stage}`,
+    data: { stage },
+  });
 
-      <div className="flex flex-col gap-3 p-4">
-        {apps.length === 0 ? (
-          <div className="text-slate-400 text-sm italic">No applications</div>
-        ) : (
-          apps.map((app) => (
-            <ApplicationCard
-              key={app.id}
-              {...app}
-            />
-          ))
-        )}
+  return (
+    <div
+      ref={setNodeRef}
+      className={`w-80 flex-shrink-0 rounded-lg border p-4 transition-colors ${
+        isOver ? "bg-blue-50 border-blue-400" : "bg-gray-50 border-gray-300"
+      }`}
+    >
+      <h2 className="font-bold text-lg mb-3">{title}</h2>
+
+      <div className="flex flex-col gap-3">
+        {apps.map((app: any) => (
+          <ApplicationCard key={app.id} {...app} stage={stage} />
+        ))}
       </div>
-    </ColumnContainer>
+    </div>
   );
 }
