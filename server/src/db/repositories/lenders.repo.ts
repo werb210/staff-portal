@@ -1,4 +1,4 @@
-import db from "../db.js";
+import { db } from "../db.js";
 import { lenders } from "../schema/lenders.js";
 import { eq, ilike } from "drizzle-orm";
 

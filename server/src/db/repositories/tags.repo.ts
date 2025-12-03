@@ -1,4 +1,4 @@
-import db from "../db.js";
+import { db } from "../db.js";
 import { tags } from "../schema/tags.js";
 import { eq, ilike } from "drizzle-orm";
 

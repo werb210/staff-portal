@@ -1,4 +1,4 @@
-import db from "../db.js";
+import { db } from "../db.js";
 import { auditLogs } from "../schema/audit.js";
 import { and, eq } from "drizzle-orm";
 import { safeDetails } from "../../utils/safeDetails.js";

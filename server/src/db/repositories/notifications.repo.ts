@@ -1,4 +1,4 @@
-import db from "../db.js";
+import { db } from "../db.js";
 import { notifications } from "../schema/notifications.js";
 import { eq, and } from "drizzle-orm";
 

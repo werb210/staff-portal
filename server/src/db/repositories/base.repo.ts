@@ -1,4 +1,4 @@
-import db from "../db.js";
+import { db } from "../db.js";
 
 /**
  * A minimal base repository class that all other repos will extend.

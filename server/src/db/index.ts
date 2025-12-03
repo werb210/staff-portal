@@ -1,4 +1,4 @@
-export { default as db } from "./db.js";
+export * from "./db.js";
 
 export * from "./schema/users.js";
 export * from "./schema/contacts.js";

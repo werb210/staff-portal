@@ -1,4 +1,4 @@
-import db from "../db.js";
+import { db } from "../db.js";
 import { applications } from "../schema/applications.js";
 import { eq } from "drizzle-orm";
 
