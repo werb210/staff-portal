@@ -3,19 +3,16 @@ import contactsController from "../controllers/contactsController";
 
 const router = Router();
 
-// GET /api/contacts
+// list
 router.get("/", contactsController.list);
 
-// GET /api/contacts/:id
-router.get("/:id", contactsController.getById);
+// search: GET /api/contacts/search?q=alex
+router.get("/search", contactsController.search);
 
-// POST /api/contacts
+// CRUD
+router.get("/:id", contactsController.get);
 router.post("/", contactsController.create);
-
-// PUT /api/contacts/:id
 router.put("/:id", contactsController.update);
-
-// DELETE /api/contacts/:id
 router.delete("/:id", contactsController.remove);
 
 export default router;
