@@ -1,4 +1,3 @@
-// server/src/routes/index.ts
 import { Router } from "express";
 
 import contactsRoutes from "./contacts.routes";
@@ -8,13 +7,11 @@ import tagsRoutes from "./tags.routes";
 
 const router = Router();
 
-// Core CRUD modules
 router.use("/contacts", contactsRoutes);
 router.use("/companies", companiesRoutes);
 router.use("/products", productsRoutes);
 router.use("/tags", tagsRoutes);
 
-// Health check
 router.get("/_int/health", (_req, res) => {
   res.json({ ok: true, status: "healthy" });
 });
