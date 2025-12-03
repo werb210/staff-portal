@@ -3,13 +3,13 @@ import messagesController from "../controllers/messagesController.js";
 
 const router = Router();
 
-// GET all messages for a contact
-router.get("/:contactId", messagesController.getMessages);
+router.get("/", messagesController.list);
+router.get("/contact/:contactId", messagesController.byContact);
+router.get("/company/:companyId", messagesController.byCompany);
+router.get("/:id", messagesController.get);
 
-// POST new message for a contact
-router.post("/:contactId", messagesController.postMessage);
-
-// DELETE a message
-router.delete("/:id", messagesController.deleteMessage);
+router.post("/", messagesController.create);
+router.post("/:id/pin", messagesController.pin);
+router.post("/:id/unpin", messagesController.unpin);
 
 export default router;

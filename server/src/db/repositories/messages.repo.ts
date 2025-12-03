@@ -3,10 +3,17 @@ import { db } from "../db.js";
 import { messages } from "../schema/messages.js";
 
 export type MessageRecord = typeof messages.$inferSelect;
-export type CreateMessage = typeof messages.$inferInsert;
 
-export const messagesRepo = {
-  async getAll(): Promise<MessageRecord[]> {
+export interface MessageCreateInput {
+  contactId?: string | null;
+  companyId?: string | null;
+  createdByUserId: string;
+  body: string;
+  pinned?: boolean;
+}
+
+const messagesRepo = {
+  async list(): Promise<MessageRecord[]> {
     return db.select().from(messages).orderBy(desc(messages.created_at));
   },
 
@@ -15,16 +22,45 @@ export const messagesRepo = {
     return record;
   },
 
-  async getByContact(contactId: string): Promise<MessageRecord[]> {
-    return db.select().from(messages).where(eq(messages.contact_id, contactId)).orderBy(desc(messages.created_at));
+  async listByContact(contactId: string): Promise<MessageRecord[]> {
+    return db
+      .select()
+      .from(messages)
+      .where(eq(messages.contact_id, contactId))
+      .orderBy(desc(messages.created_at));
   },
 
-  async create(data: CreateMessage) {
-    const [row] = await db.insert(messages).values(data).returning();
+  async listByCompany(companyId: string): Promise<MessageRecord[]> {
+    return db
+      .select()
+      .from(messages)
+      .where(eq(messages.company_id, companyId))
+      .orderBy(desc(messages.created_at));
+  },
+
+  async create(data: MessageCreateInput) {
+    const [row] = await db
+      .insert(messages)
+      .values({
+        contact_id: data.contactId ?? null,
+        company_id: data.companyId ?? null,
+        created_by_user_id: data.createdByUserId,
+        body: data.body,
+        pinned: data.pinned ?? false,
+      })
+      .returning();
     return row;
   },
 
-  async delete(id: string) {
-    return db.delete(messages).where(eq(messages.id, id)).execute();
+  async pin(id: string) {
+    const [row] = await db.update(messages).set({ pinned: true }).where(eq(messages.id, id)).returning();
+    return row;
+  },
+
+  async unpin(id: string) {
+    const [row] = await db.update(messages).set({ pinned: false }).where(eq(messages.id, id)).returning();
+    return row;
   },
 };
+
+export default messagesRepo;
