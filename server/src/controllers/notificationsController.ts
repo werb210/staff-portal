@@ -1,37 +1,58 @@
 import { Request, Response } from "express";
-import { notificationsService } from "../services/notificationsService.js";
+import notificationsService from "../services/notificationsService.js";
 
-export const notificationsController = {
-  async list(_req: Request, res: Response) {
-    res.json(await notificationsService.list());
+export default {
+  async list(req: Request, res: Response) {
+    try {
+      const items = await notificationsService.listForUser(req.params.userId);
+      res.json({ ok: true, items });
+    } catch (err: any) {
+      res.status(400).json({ ok: false, error: err.message });
+    }
   },
 
-  async get(req: Request, res: Response) {
-    const { id } = req.params;
-    const item = await notificationsService.get(id);
-    if (!item) return res.status(404).json({ error: "Not found" });
-    res.json(item);
-  },
-
-  async listByContact(req: Request, res: Response) {
-    const { contactId } = req.params;
-    res.json(await notificationsService.listByContact(contactId));
-  },
-
-  async create(req: Request, res: Response) {
-    const created = await notificationsService.create(req.body);
-    res.json(created);
+  async unread(req: Request, res: Response) {
+    try {
+      const count = await notificationsService.unreadCount(req.params.userId);
+      res.json({ ok: true, count });
+    } catch (err: any) {
+      res.status(400).json({ ok: false, error: err.message });
+    }
   },
 
   async markRead(req: Request, res: Response) {
-    const { id } = req.params;
-    await notificationsService.markRead(id);
-    res.json({ success: true });
+    try {
+      const item = await notificationsService.markRead(req.params.id);
+      res.json({ ok: true, item });
+    } catch (err: any) {
+      res.status(400).json({ ok: false, error: err.message });
+    }
   },
 
-  async remove(req: Request, res: Response) {
-    const { id } = req.params;
-    await notificationsService.remove(id);
-    res.json({ success: true });
+  async markAllRead(req: Request, res: Response) {
+    try {
+      const result = await notificationsService.markAllRead(req.params.userId);
+      res.json({ ok: true, result });
+    } catch (err: any) {
+      res.status(400).json({ ok: false, error: err.message });
+    }
+  },
+
+  async create(req: Request, res: Response) {
+    try {
+      const item = await notificationsService.create(req.body);
+      res.status(201).json({ ok: true, item });
+    } catch (err: any) {
+      res.status(400).json({ ok: false, error: err.message });
+    }
+  },
+
+  async delete(req: Request, res: Response) {
+    try {
+      const item = await notificationsService.delete(req.params.id);
+      res.json({ ok: true, item });
+    } catch (err: any) {
+      res.status(400).json({ ok: false, error: err.message });
+    }
   },
 };
