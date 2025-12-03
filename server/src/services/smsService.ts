@@ -1,4 +1,4 @@
-import { smsLogsRepo } from "../db/repositories/smsLogs.repo.js";
+import smsLogsRepo from "../db/repositories/smsLogs.repo.js";
 
 /**
  * Simplified SMS pipeline (logging only).
@@ -6,7 +6,7 @@ import { smsLogsRepo } from "../db/repositories/smsLogs.repo.js";
  */
 export const smsService = {
   async list() {
-    return smsLogsRepo.getAll();
+    return smsLogsRepo.list();
   },
 
   async get(id: string) {
@@ -29,11 +29,12 @@ export const smsService = {
       throw new Error("to and body are required");
     }
 
-    const logged = await smsLogsRepo.create({
+    const logged = await smsLogsRepo.createLog({
       phone: payload.to,
       body: payload.body,
-      contact_id: payload.contact_id ?? null,
-      status: "logged",
+      contactId: payload.contact_id ?? null,
+      direction: "outgoing",
+      status: "queued",
     });
 
     return { logged };
