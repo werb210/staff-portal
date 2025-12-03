@@ -43,8 +43,10 @@ export const auditViewerRepo = {
       .limit(pageSize)
       .offset(offset);
 
-    const [{ count }] = await db
-      .select({ count: db.fn.count() })
+    const dbWithFns = db as any;
+
+    const [{ count }] = await (dbWithFns as any)
+      .select({ count: dbWithFns.fn.count() })
       .from(auditLogs)
       .where(where);
 

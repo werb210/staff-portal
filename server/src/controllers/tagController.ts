@@ -5,7 +5,7 @@ import { safeDetails } from "../utils/safeDetails.js";
 
 const mapTag = (record: any) => {
   if (!record || record.eventType !== "tag") return null;
-  const details = safeDetails(record.details);
+  const details = safeDetails(record.details as Record<string, any>);
   return { id: record.id, ...details, createdAt: record.createdAt };
 };
 
@@ -33,14 +33,10 @@ export const tagController = {
     if (!existing || existing.eventType !== "tag")
       return res.status(404).json({ success: false, error: "Tag not found" });
 
-    const base = typeof existing.details === "object" ? existing.details : {};
-    const safeIncoming = req.body && typeof req.body === "object" ? req.body : {};
+    const base = safeDetails(existing.details as Record<string, any>);
+    const patch = safeDetails(req.body as Record<string, any>);
 
-    const merged = {
-      ...base,
-      ...(safeIncoming.name !== undefined ? { name: safeIncoming.name } : {}),
-      ...(safeIncoming.color !== undefined ? { color: safeIncoming.color } : {}),
-    };
+    const merged = { ...base, ...patch };
 
     const updated = await auditLogsRepo.update(req.params.id, merged);
     res.json({ success: true, data: mapTag(updated) });

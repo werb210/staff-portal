@@ -8,15 +8,9 @@ try {
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import path from "path";
 import routes from "./routes/index.js";
-import { fileURLToPath } from "url";
 
 const app = express();
-
-// Required for ESM resolution in Azure
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 // Core middleware
 app.use(cors());

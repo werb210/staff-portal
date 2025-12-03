@@ -3,7 +3,7 @@ import { Router } from "express";
 const r = Router();
 
 // Mock pipeline detail endpoint
-r.get("/:id", (req, res) => {
+r.get("/:id", (req: any, res: any) => {
   const { id } = req.params;
 
   res.json({
@@ -42,7 +42,7 @@ r.get("/:id", (req, res) => {
   });
 });
 
-r.get("/:id/banking", (req, res) => {
+r.get("/:id/banking", (req: any, res: any) => {
   const { id } = req.params;
 
   res.json({
@@ -83,7 +83,7 @@ r.get("/:id/banking", (req, res) => {
   });
 });
 
-r.get("/:id/ocr", (req, res) => {
+r.get("/:id/ocr", (req: any, res: any) => {
   const { id } = req.params;
 
   res.json({

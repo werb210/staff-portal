@@ -1,2 +1,3 @@
-export const safeDetails = (val: any): Record<string, unknown> =>
-  val && typeof val === "object" ? val : {};
+export const safeDetails = (value: any): Record<string, any> => {
+  return value && typeof value === "object" ? (value as Record<string, any>) : {};
+};

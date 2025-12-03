@@ -1,0 +1,31 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "CommonJS",
+    "lib": ["ES2020"],
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "moduleResolution": "Node",
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "jsx": "react-jsx",
+    "noEmitOnError": false,
+    "skipLibCheck": true,
+    "strict": false,
+    "noImplicitAny": false,
+    "baseUrl": "./src",
+    "paths": {
+      "@/*": ["./*"]
+    }
+  },
+  "include": [
+    "./src/index.ts",
+    "./src/controllers/**/*",
+    "./src/db/**/*",
+    "./src/routes/**/*",
+    "./src/utils/**/*",
+    "./src/middleware/**/*",
+    "./src/ws/**/*"
+  ],
+  "exclude": ["./dist", "node_modules"]
+}
