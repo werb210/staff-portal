@@ -2,7 +2,8 @@
   "compilerOptions": {
     "target": "ES2022",
     "module": "ESNext",
-    "moduleResolution": "NodeNext",
+    "moduleResolution": "Bundler",
+    "jsx": "react-jsx",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
@@ -11,5 +12,12 @@
     "resolveJsonModule": true,
     "allowSyntheticDefaultImports": true
   },
-  "include": ["src"]
+  "include": [
+    "src/index.ts",
+    "src/routes/index.ts",
+    "src/db/db.ts",
+    "src/db/index.ts",
+    "src/db/schema/**/*.ts",
+    "src/db/repositories/contacts.repo.ts"
+  ]
 }
