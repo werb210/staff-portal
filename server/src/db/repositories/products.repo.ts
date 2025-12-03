@@ -1,22 +1,29 @@
-export type Product = Record<string, any> & { id?: string };
+import db from "../db.js";
+import { products } from "../schema/products.js";
+import { eq } from "drizzle-orm";
 
-export const productsRepo = {
-  async findMany(): Promise<Product[]> {
-    return [];
+export default {
+  async findMany() {
+    return await db.select().from(products);
   },
-  async findById(id: string): Promise<Product | null> {
-    return { id } as Product;
+
+  async findById(id: string) {
+    const rows = await db.select().from(products).where(eq(products.id, id));
+    return rows[0] || null;
   },
-  async create(payload: Product): Promise<Product> {
-    return { ...payload, id: payload.id ?? `product-${Date.now()}` };
+
+  async create(data: any) {
+    const rows = await db.insert(products).values(data).returning();
+    return rows[0];
   },
-  async update(id: string, payload: Product): Promise<Product> {
-    return { ...payload, id };
+
+  async update(id: string, data: any) {
+    const rows = await db.update(products).set(data).where(eq(products.id, id)).returning();
+    return rows[0];
   },
-  async delete(id: string): Promise<boolean> {
-    return Boolean(id);
-  },
+
+  async delete(id: string) {
+    const rows = await db.delete(products).where(eq(products.id, id)).returning();
+    return rows[0];
+  }
 };
-
-export default productsRepo;
-export { productsRepo };
