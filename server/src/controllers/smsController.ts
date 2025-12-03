@@ -21,14 +21,14 @@ export const smsController = {
   },
 
   async send(req: Request, res: Response) {
-    const { phone, message, contact_id } = req.body;
+    const { to, message, contact_id } = req.body;
 
-    if (!phone || !message) {
-      return res.status(400).json({ error: "phone and message are required" });
+    if (!to || !message) {
+      return res.status(400).json({ error: "to and message are required" });
     }
 
     const result = await smsService.send({
-      phone,
+      to,
       message,
       contact_id,
     });
