@@ -1,49 +1,48 @@
 import messagesRepo, { MessageCreateInput } from "../db/repositories/messages.repo.js";
 
-function assertString(value: unknown, label: string) {
-  if (!value || typeof value !== "string") {
-    throw new Error(`${label} is required`);
-  }
-  return value;
+function assertStr(x: any, label: string): string {
+  if (!x || typeof x !== "string") throw new Error(`${label} is required`);
+  return x;
 }
 
 export default {
-  async list() {
-    return messagesRepo.list();
+  async listForUser(userId: string) {
+    return messagesRepo.listForUser(assertStr(userId, "userId"));
   },
 
-  async get(id: string) {
-    const safeId = assertString(id, "id");
-    const record = await messagesRepo.getById(safeId);
-    if (!record) throw new Error("Message not found");
-    return record;
+  async listForApplication(applicationId: string) {
+    return messagesRepo.listForApplication(assertStr(applicationId, "applicationId"));
   },
 
-  async listByContact(contactId: string) {
-    return messagesRepo.listByContact(assertString(contactId, "contactId"));
+  async listForContact(contactId: string) {
+    return messagesRepo.listForContact(assertStr(contactId, "contactId"));
   },
 
-  async listByCompany(companyId: string) {
-    return messagesRepo.listByCompany(assertString(companyId, "companyId"));
+  async unreadCount(userId: string) {
+    return messagesRepo.unreadCount(assertStr(userId, "userId"));
+  },
+
+  async markRead(id: string) {
+    return messagesRepo.markRead(assertStr(id, "id"));
+  },
+
+  async markThreadRead(userId: string, contactId: string) {
+    return messagesRepo.markThreadRead(assertStr(userId, "userId"), assertStr(contactId, "contactId"));
   },
 
   async create(raw: any) {
     const payload: MessageCreateInput = {
+      senderId: assertStr(raw.senderId, "senderId"),
+      recipientId: assertStr(raw.recipientId, "recipientId"),
+      body: assertStr(raw.body, "body"),
+      applicationId: raw.applicationId ?? null,
       contactId: raw.contactId ?? null,
-      companyId: raw.companyId ?? null,
-      createdByUserId: assertString(raw.createdByUserId, "createdByUserId"),
-      body: assertString(raw.body, "body"),
-      pinned: raw.pinned ?? false,
+      attachmentId: raw.attachmentId ?? null,
     };
-
     return messagesRepo.create(payload);
   },
 
-  async pin(id: string) {
-    return messagesRepo.pin(assertString(id, "id"));
-  },
-
-  async unpin(id: string) {
-    return messagesRepo.unpin(assertString(id, "id"));
+  async delete(id: string) {
+    return messagesRepo.delete(assertStr(id, "id"));
   },
 };
