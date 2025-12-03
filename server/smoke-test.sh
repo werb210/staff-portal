@@ -21,7 +21,7 @@ echo "==[3] Start server on port 5000 =="
 export PORT="${PORT:-5000}"
 
 # Start server in background
-node dist/index.js &
+node "$ROOT_DIR/dist/index.js" &
 SERVER_PID=$!
 
 cleanup() {
