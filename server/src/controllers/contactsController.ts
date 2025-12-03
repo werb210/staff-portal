@@ -1,32 +1,46 @@
 import { Request, Response } from "express";
-import { contactsService } from "../services/contactsService.js";
+import contactsService from "../services/contactsService";
 
-export const contactsController = {
-  async list(_req: Request, res: Response) {
-    res.json(await contactsService.list());
+const contactsController = {
+  list: async (req: Request, res: Response) => {
+    const filter = req.query ?? {};
+    const data = await contactsService.findMany(filter);
+    res.json({ success: true, data });
   },
 
-  async get(req: Request, res: Response) {
+  getById: async (req: Request, res: Response) => {
     const { id } = req.params;
-    const item = await contactsService.get(id);
-    if (!item) return res.status(404).json({ error: "Not found" });
-    res.json(item);
+    const data = await contactsService.findById(id);
+    if (!data) return res.status(404).json({ success: false, error: "Not found" });
+    res.json({ success: true, data });
   },
 
-  async create(req: Request, res: Response) {
-    const created = await contactsService.create(req.body);
-    res.json(created);
+  create: async (req: Request, res: Response) => {
+    const payload = req.body ?? {};
+    const created = await contactsService.create(payload);
+    res.status(201).json({ success: true, data: created });
   },
 
-  async update(req: Request, res: Response) {
+  update: async (req: Request, res: Response) => {
     const { id } = req.params;
-    const updated = await contactsService.update(id, req.body);
-    res.json(updated);
+    const payload = req.body ?? {};
+    const updated = await contactsService.update(id, payload);
+
+    if (!updated)
+      return res.status(404).json({ success: false, error: "Not found" });
+
+    res.json({ success: true, data: updated });
   },
 
-  async remove(req: Request, res: Response) {
+  remove: async (req: Request, res: Response) => {
     const { id } = req.params;
-    await contactsService.remove(id);
-    res.json({ success: true });
+    const deleted = await contactsService.delete(id);
+
+    if (!deleted)
+      return res.status(404).json({ success: false, error: "Not found" });
+
+    res.json({ success: true, data: deleted });
   }
 };
+
+export default contactsController;
