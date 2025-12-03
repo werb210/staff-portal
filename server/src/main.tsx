@@ -6,15 +6,18 @@ import AppRouter from "./router";
 import "./index.css";
 import GlobalLoader from "./components/GlobalLoader";
 import ErrorToast from "./components/ErrorToast";
+import NotificationStreamProvider from "./context/NotificationStreamProvider";
 
 const rootElement = document.getElementById("root") as HTMLElement;
 
 ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
-      <AppRouter />
-      <GlobalLoader />
-      <ErrorToast />
+      <NotificationStreamProvider>
+        <AppRouter />
+        <GlobalLoader />
+        <ErrorToast />
+      </NotificationStreamProvider>
     </QueryClientProvider>
   </React.StrictMode>
 );

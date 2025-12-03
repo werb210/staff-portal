@@ -1,4 +1,5 @@
 import notificationsRepo, { NotificationCreateInput } from "../db/repositories/notifications.repo.js";
+import { pushNotification } from "../realtime/socketServer.js";
 
 function must(x: any, msg: string): string {
   if (!x || typeof x !== "string") throw new Error(msg);
@@ -34,7 +35,9 @@ export default {
       relatedId: raw.relatedId ?? null,
       read: raw.read ?? false,
     };
-    return notificationsRepo.create(payload);
+    const saved = await notificationsRepo.create(payload);
+    pushNotification(saved.userId, { event: "notification", data: saved });
+    return saved;
   },
 
   async delete(id: string) {
