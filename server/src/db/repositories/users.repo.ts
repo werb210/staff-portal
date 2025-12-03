@@ -1,51 +1,38 @@
-import db from "../db.js";
+// server/src/db/repositories/users.repo.ts
+import { db } from "../db.js";
 import { users } from "../schema/users.js";
 import { eq } from "drizzle-orm";
-import { safeDetails } from "../../utils/safeDetails.js";
 
 export const usersRepo = {
-  async create(data: any) {
-    const [created] = await db.insert(users).values({
-      email: data.email,
-      passwordHash: data.passwordHash,
-      role: data.role
-    }).returning();
-    return created;
-  },
-
-  async update(id: string, data: any) {
-    const [updated] = await db
-      .update(users)
-      .set({
-        email: data.email,
-        passwordHash: data.passwordHash,
-        role: data.role
-      })
-      .where(eq(users.id, id))
-      .returning();
-    return updated;
-  },
-
-  async delete(id: string) {
-    const [deleted] = await db
-      .delete(users)
-      .where(eq(users.id, id))
-      .returning();
-    return deleted;
+  async findByEmail(email: string) {
+    const rows = await db.select().from(users).where(eq(users.email, email));
+    return rows[0] ?? null;
   },
 
   async findById(id: string) {
-    const [row] = await db.select().from(users).where(eq(users.id, id));
-    return row || null;
+    const rows = await db.select().from(users).where(eq(users.id, id));
+    return rows[0] ?? null;
   },
 
-  async findMany(filter: Record<string, unknown> = {}) {
-    const safeFilter = safeDetails(filter);
+  async create(data: any) {
+    const rows = await db.insert(users).values(data).returning();
+    return rows[0];
+  },
 
-    if (safeFilter.email) {
-      return await db.select().from(users).where(eq(users.email, safeFilter.email as string));
+  async update(id: string, data: any) {
+    const rows = await db.update(users).set(data).where(eq(users.id, id)).returning();
+    return rows[0] ?? null;
+  },
+
+  async findMany(filter: any = {}) {
+    let query = db.select().from(users);
+
+    if (filter.email) {
+      query = query.where(eq(users.email, filter.email));
     }
-    return await db.select().from(users);
+
+    const rows = await query;
+    return rows;
   }
 };
 
