@@ -2,6 +2,7 @@ import { Router } from "express";
 
 import contactsRoutes from "./contacts.routes.js";
 import companiesRoutes from "./companies.routes.js";
+import emailRoutes from "./email.routes.js";
 import emailLogsRoutes from "./emailLogs.routes.js";
 import messagesRoutes from "./messages.routes.js";
 import notificationsRoutes from "./notifications.routes.js";
@@ -18,6 +19,7 @@ const router = Router();
 // Feature routes
 router.use("/contacts", contactsRoutes);
 router.use("/companies", companiesRoutes);
+router.use("/email", emailRoutes);
 router.use("/email-logs", emailLogsRoutes);
 router.use("/messages", messagesRoutes);
 router.use("/notifications", notificationsRoutes);
