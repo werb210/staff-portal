@@ -1,26 +1,25 @@
-// server/src/services/companiesService.ts
-import CompaniesRepo from "../db/repositories/companies.repo";
+import companiesRepo from "../db/repositories/companies.repo.js";
 
-export const CompaniesService = {
+export const companiesService = {
   async list() {
-    return CompaniesRepo.findAll();
+    return companiesRepo.findMany();
   },
 
   async get(id: string) {
-    return CompaniesRepo.findById(id);
+    return companiesRepo.findById(id);
   },
 
-  async create(data: { name: string; website?: string; phone?: string }) {
-    return CompaniesRepo.create(data);
+  async create(payload: any) {
+    return companiesRepo.create(payload);
   },
 
-  async update(id: string, data: Partial<{ name: string; website: string; phone: string }>) {
-    return CompaniesRepo.update(id, data);
+  async update(id: string, payload: any) {
+    return companiesRepo.update(id, payload);
   },
 
-  async delete(id: string) {
-    return CompaniesRepo.remove(id);
-  },
+  async remove(id: string) {
+    return companiesRepo.delete(id);
+  }
 };
 
-export default CompaniesService;
+export default companiesService;
