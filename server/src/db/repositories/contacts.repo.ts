@@ -48,4 +48,54 @@ export const contactsRepo = {
 
     const merged = {
       ...safeDetails(existing.details),
-      ...safeDetails
+      ...safeDetails(data),
+    };
+
+    const [updated] = await db
+      .update(auditLogs)
+      .set({ details: merged })
+      .where(eq(auditLogs.id, id))
+      .returning();
+
+    return mapRecord(updated);
+  },
+
+  async delete(id: string) {
+    const [deleted] = await db
+      .delete(auditLogs)
+      .where(eq(auditLogs.id, id))
+      .returning();
+
+    return mapRecord(deleted);
+  },
+
+  async findById(id: string) {
+    const [record] = await db
+      .select()
+      .from(auditLogs)
+      .where(eq(auditLogs.id, id));
+
+    if (!record || record.eventType !== "contact") return null;
+
+    return mapRecord(record);
+  },
+
+  async findMany(filter: Record<string, unknown> = {}) {
+    const where = buildWhere({
+      ...safeDetails(filter),
+      eventType: "contact",
+    });
+
+    const query = db.select().from(auditLogs);
+    if (where) query.where(where);
+
+    const results = await query;
+
+    return results
+      .filter((r) => r.eventType === "contact")
+      .map(mapRecord)
+      .filter(Boolean);
+  },
+};
+
+export default contactsRepo;
