@@ -1,18 +1,16 @@
 import { drizzle } from "drizzle-orm/node-postgres";
-import pg from "pg";
-import "../config/env.js";
+import pkg from "pg";
+const { Pool } = pkg;
 
-const { Pool } = pg;
-
-if (!process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL is missing.");
-}
+// NOTE: for now the app boots even if DATABASE_URL is missing
+const connectionString = process.env.DATABASE_URL || "";
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
+  connectionString,
+  ssl: connectionString.includes("azure") ? { rejectUnauthorized: false } : false,
 });
 
+// Single Drizzle instance
 const db = drizzle(pool);
 
 export default db;
