@@ -1,11 +1,10 @@
 import { Router } from "express";
-import companiesController from "../controllers/companiesController.js";
 
 const router = Router();
 
-router.get("/", companiesController.list);
-router.get("/:id", companiesController.get);
-router.post("/", companiesController.create);
-router.put("/:id", companiesController.update);
+// placeholder route
+router.get("/", async (_req, res) => {
+  res.json({ message: "companies endpoint online" });
+});
 
 export default router;
