@@ -1,29 +1,52 @@
-import db from "../db";
-import { contacts } from "../schema/contacts";
+import db from "../db.js";
+import { contacts } from "../schema/contacts.js";
 import { eq } from "drizzle-orm";
 
-export default {
-  async findMany() {
-    return await db.select().from(contacts);
-  },
-
-  async findById(id: string) {
-    const rows = await db.select().from(contacts).where(eq(contacts.id, id));
-    return rows[0] || null;
-  },
-
+export const contactsRepo = {
   async create(data: any) {
-    const rows = await db.insert(contacts).values(data).returning();
-    return rows[0];
+    const [created] = await db.insert(contacts).values({
+      firstName: data.firstName,
+      lastName: data.lastName,
+      email: data.email,
+      phone: data.phone,
+      companyId: data.companyId
+    }).returning();
+    return created;
   },
 
   async update(id: string, data: any) {
-    const rows = await db.update(contacts).set(data).where(eq(contacts.id, id)).returning();
-    return rows[0];
+    const [updated] = await db.update(contacts)
+      .set({
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+        phone: data.phone,
+        companyId: data.companyId
+      })
+      .where(eq(contacts.id, id))
+      .returning();
+    return updated;
   },
 
   async delete(id: string) {
-    const rows = await db.delete(contacts).where(eq(contacts.id, id)).returning();
-    return rows[0];
+    const [removed] = await db.delete(contacts)
+      .where(eq(contacts.id, id))
+      .returning();
+    return removed;
+  },
+
+  async findById(id: string) {
+    const [row] = await db.select().from(contacts).where(eq(contacts.id, id));
+    return row || null;
+  },
+
+  async findMany(filter: any = {}) {
+    if (filter.companyId) {
+      return await db.select().from(contacts)
+        .where(eq(contacts.companyId, filter.companyId));
+    }
+    return await db.select().from(contacts);
   }
 };
+
+export default contactsRepo;

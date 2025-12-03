@@ -1,29 +1,44 @@
-import db from "../db";
-import { companies } from "../schema/companies";
+import db from "../db.js";
+import { companies } from "../schema/companies.js";
 import { eq } from "drizzle-orm";
 
-export default {
-  async findMany() {
-    return await db.select().from(companies);
-  },
-
-  async findById(id: string) {
-    const rows = await db.select().from(companies).where(eq(companies.id, id));
-    return rows[0] || null;
-  },
-
+export const companiesRepo = {
   async create(data: any) {
-    const rows = await db.insert(companies).values(data).returning();
-    return rows[0];
+    const [created] = await db.insert(companies).values({
+      name: data.name,
+      website: data.website,
+      address: data.address
+    }).returning();
+    return created;
   },
 
   async update(id: string, data: any) {
-    const rows = await db.update(companies).set(data).where(eq(companies.id, id)).returning();
-    return rows[0];
+    const [updated] = await db.update(companies)
+      .set({
+        name: data.name,
+        website: data.website,
+        address: data.address
+      })
+      .where(eq(companies.id, id))
+      .returning();
+    return updated;
   },
 
   async delete(id: string) {
-    const rows = await db.delete(companies).where(eq(companies.id, id)).returning();
-    return rows[0];
+    const [removed] = await db.delete(companies)
+      .where(eq(companies.id, id))
+      .returning();
+    return removed;
+  },
+
+  async findById(id: string) {
+    const [row] = await db.select().from(companies).where(eq(companies.id, id));
+    return row || null;
+  },
+
+  async findMany() {
+    return await db.select().from(companies);
   }
 };
+
+export default companiesRepo;
