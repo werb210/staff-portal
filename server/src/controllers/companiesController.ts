@@ -1,45 +1,32 @@
-// server/src/controllers/companiesController.ts
-import { Request, Response } from "express";
-import CompaniesService from "../services/companiesService";
+import asyncHandler from "../utils/asyncHandler";
+import companiesRepo from "../db/repositories/companies.repo";
 
-export const CompaniesController = {
-  async list(req: Request, res: Response) {
-    const results = await CompaniesService.list();
-    res.json({ success: true, data: results });
-  },
+export default {
+  list: asyncHandler(async (_req, res) => {
+    const data = await companiesRepo.findMany();
+    res.json({ success: true, data });
+  }),
 
-  async get(req: Request, res: Response) {
-    const id = req.params.id;
-    const record = await CompaniesService.get(id);
-    if (!record) {
-      return res.status(404).json({ success: false, error: "Company not found" });
-    }
-    res.json({ success: true, data: record });
-  },
+  get: asyncHandler(async (req, res) => {
+    const item = await companiesRepo.findById(req.params.id);
+    if (!item) return res.status(404).json({ error: "Not found" });
+    res.json({ success: true, data: item });
+  }),
 
-  async create(req: Request, res: Response) {
-    const record = await CompaniesService.create(req.body);
-    res.json({ success: true, data: record });
-  },
+  create: asyncHandler(async (req, res) => {
+    const created = await companiesRepo.create(req.body);
+    res.status(201).json({ success: true, data: created });
+  }),
 
-  async update(req: Request, res: Response) {
-    const id = req.params.id;
-    const record = await CompaniesService.update(id, req.body);
-    res.json({ success: true, data: record });
-  },
+  update: asyncHandler(async (req, res) => {
+    const updated = await companiesRepo.update(req.params.id, req.body);
+    if (!updated) return res.status(404).json({ error: "Not found" });
+    res.json({ success: true, data: updated });
+  }),
 
-  async remove(req: Request, res: Response) {
-    const id = req.params.id;
-    const record = await CompaniesService.delete(id);
-    if (!record) {
-      return res.status(404).json({ success: false, error: "Company not found" });
-    }
-    res.json({ success: true, data: record });
-  },
-
-  async delete(req: Request, res: Response) {
-    return CompaniesController.remove(req, res);
-  },
+  remove: asyncHandler(async (req, res) => {
+    const removed = await companiesRepo.delete(req.params.id);
+    if (!removed) return res.status(404).json({ error: "Not found" });
+    res.json({ success: true, data: removed });
+  })
 };
-
-export default CompaniesController;

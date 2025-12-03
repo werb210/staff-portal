@@ -1,35 +1,32 @@
-import { Request, Response } from "express";
-import productsRepo from "../db/repositories/products.repo.js";
+import asyncHandler from "../utils/asyncHandler";
+import productsRepo from "../db/repositories/products.repo";
 
 export default {
-  list: async (_req: Request, res: Response) => {
-    const rows = await productsRepo.findAll();
-    res.json(rows);
-  },
+  list: asyncHandler(async (_req, res) => {
+    const data = await productsRepo.findMany();
+    res.json({ success: true, data });
+  }),
 
-  get: async (req: Request, res: Response) => {
-    const id = Number(req.params.id);
-    const row = await productsRepo.findById(id);
-    if (!row) return res.status(404).json({ error: "Not found" });
-    res.json(row);
-  },
+  get: asyncHandler(async (req, res) => {
+    const item = await productsRepo.findById(req.params.id);
+    if (!item) return res.status(404).json({ error: "Not found" });
+    res.json({ success: true, data: item });
+  }),
 
-  create: async (req: Request, res: Response) => {
+  create: asyncHandler(async (req, res) => {
     const created = await productsRepo.create(req.body);
-    res.status(201).json(created);
-  },
+    res.status(201).json({ success: true, data: created });
+  }),
 
-  update: async (req: Request, res: Response) => {
-    const id = Number(req.params.id);
-    const updated = await productsRepo.update(id, req.body);
+  update: asyncHandler(async (req, res) => {
+    const updated = await productsRepo.update(req.params.id, req.body);
     if (!updated) return res.status(404).json({ error: "Not found" });
-    res.json(updated);
-  },
+    res.json({ success: true, data: updated });
+  }),
 
-  remove: async (req: Request, res: Response) => {
-    const id = Number(req.params.id);
-    const deleted = await productsRepo.remove(id);
-    if (!deleted) return res.status(404).json({ error: "Not found" });
-    res.json(deleted);
-  }
+  remove: asyncHandler(async (req, res) => {
+    const removed = await productsRepo.delete(req.params.id);
+    if (!removed) return res.status(404).json({ error: "Not found" });
+    res.json({ success: true, data: removed });
+  })
 };
