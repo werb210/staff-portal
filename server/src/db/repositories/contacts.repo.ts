@@ -1,68 +1,88 @@
 // server/src/db/repositories/contacts.repo.ts
-// NOTE: This is a SAFE STUB for the staff-portal backend.
-// It is only here so the portal can BUILD and RUN without needing a real DB
-// behind the contacts repository. All DB work happens on the Staff-Server.
+// Temporary in-memory contacts repository for staff-portal backend.
+// This keeps the app compiling until the Staff-Server API integration is wired in.
 
-export type ContactRecord = {
+import db from "../db"; // mock adapter
+
+export interface ContactRecord {
   id: string;
-  [key: string]: unknown;
+  name: string;
+  email?: string;
+  phone?: string;
+  details?: Record<string, unknown>;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// -----------------------------------------------------------------------------
+// In-memory store (runtime only)
+// -----------------------------------------------------------------------------
+const memoryStore: Map<string, ContactRecord> = new Map();
+
+// -----------------------------------------------------------------------------
+// Utilities
+// -----------------------------------------------------------------------------
+const now = () => new Date();
+
+function makeId() {
+  return Math.random().toString(36).substring(2, 12);
+}
+
+// -----------------------------------------------------------------------------
+// CRUD METHODS
+// -----------------------------------------------------------------------------
+async function create(data: Partial<ContactRecord>): Promise<ContactRecord> {
+  const id = makeId();
+  const record: ContactRecord = {
+    id,
+    name: data.name ?? "Unnamed",
+    email: data.email,
+    phone: data.phone,
+    details: data.details ?? {},
+    createdAt: now(),
+    updatedAt: now(),
+  };
+
+  memoryStore.set(id, record);
+  return record;
+}
+
+async function findById(id: string): Promise<ContactRecord | null> {
+  return memoryStore.get(id) ?? null;
+}
+
+async function list(): Promise<ContactRecord[]> {
+  return Array.from(memoryStore.values());
+}
+
+async function update(
+  id: string,
+  data: Partial<ContactRecord>
+): Promise<ContactRecord | null> {
+  const existing = memoryStore.get(id);
+  if (!existing) return null;
+
+  const updated: ContactRecord = {
+    ...existing,
+    ...data,
+    updatedAt: now(),
+  };
+
+  memoryStore.set(id, updated);
+  return updated;
+}
+
+async function remove(id: string): Promise<boolean> {
+  return memoryStore.delete(id);
+}
+
+// -----------------------------------------------------------------------------
+// Export shape (final API)
+// -----------------------------------------------------------------------------
+export default {
+  create,
+  findById,
+  list,
+  update,
+  remove,
 };
-
-const contactsRepo = {
-  /**
-   * List contacts with an optional filter.
-   * In this stub, always returns an empty array.
-   */
-  async findMany(_filter: Record<string, unknown> = {}): Promise<ContactRecord[]> {
-    return [];
-  },
-
-  /**
-   * Find a single contact by ID.
-   * In this stub, always returns null.
-   */
-  async findById(_id: string): Promise<ContactRecord | null> {
-    return null;
-  },
-
-  /**
-   * Search contacts by a query string.
-   * In this stub, always returns an empty array.
-   */
-  async search(_query: string): Promise<ContactRecord[]> {
-    return [];
-  },
-
-  /**
-   * Create a new contact.
-   * In this stub, throws to make it obvious this should not be used
-   * for real persistence in the staff-portal. The real DB lives on Staff-Server.
-   */
-  async create(_data: Record<string, unknown>): Promise<ContactRecord> {
-    throw new Error(
-      "contactsRepo.create is not implemented in staff-portal. Use Staff-Server API instead."
-    );
-  },
-
-  /**
-   * Update an existing contact.
-   * In this stub, throws for the same reason as create().
-   */
-  async update(_id: string, _data: Record<string, unknown>): Promise<ContactRecord | null> {
-    throw new Error(
-      "contactsRepo.update is not implemented in staff-portal. Use Staff-Server API instead."
-    );
-  },
-
-  /**
-   * Delete an existing contact.
-   * In this stub, throws for the same reason as create()/update().
-   */
-  async delete(_id: string): Promise<void> {
-    throw new Error(
-      "contactsRepo.delete is not implemented in staff-portal. Use Staff-Server API instead."
-    );
-  },
-};
-
-export default contactsRepo;
