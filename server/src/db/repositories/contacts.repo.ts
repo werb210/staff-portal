@@ -1,96 +1,62 @@
-// server/src/db/repositories/contacts.repo.ts
-// Temporary in-memory contacts repository for staff-portal backend.
-// This keeps the app compiling until the Staff-Server API integration is wired in.
+import { eq, and } from "drizzle-orm";
+import { db } from "../db.js";
+import { auditLogs } from "../schema/audit.js";
 
-import db from "../db.js"; // mock adapter
+const safe = (v: any) => (v && typeof v === "object" ? v : {});
 
-export interface ContactRecord {
-  id: string;
-  name: string;
-  email?: string;
-  phone?: string;
-  details?: Record<string, unknown>;
-  createdAt: Date;
-  updatedAt: Date;
-}
+export const contactsRepo = {
+  async create(data: Record<string, unknown>) {
+    const [row] = await db
+      .insert(auditLogs)
+      .values({ eventType: "contact", details: safe(data) })
+      .returning();
+    return row;
+  },
 
-// -----------------------------------------------------------------------------
-// In-memory store (runtime only)
-// -----------------------------------------------------------------------------
-const memoryStore: Map<string, ContactRecord> = new Map();
+  async update(id: string, data: Record<string, unknown>) {
+    const [existing] = await db.select().from(auditLogs).where(eq(auditLogs.id, id));
+    if (!existing || existing.eventType !== "contact") return null;
 
-// -----------------------------------------------------------------------------
-// Utilities
-// -----------------------------------------------------------------------------
-const now = () => new Date();
+    const merged = { ...safe(existing.details), ...safe(data) };
 
-function makeId() {
-  return Math.random().toString(36).substring(2, 12);
-}
+    const [updated] = await db
+      .update(auditLogs)
+      .set({ details: merged })
+      .where(eq(auditLogs.id, id))
+      .returning();
 
-// -----------------------------------------------------------------------------
-// CRUD METHODS
-// -----------------------------------------------------------------------------
-async function create(data: Partial<ContactRecord>): Promise<ContactRecord> {
-  const id = makeId();
-  const record: ContactRecord = {
-    id,
-    name: data.name ?? "Unnamed",
-    email: data.email,
-    phone: data.phone,
-    details: data.details ?? {},
-    createdAt: now(),
-    updatedAt: now(),
-  };
+    return updated;
+  },
 
-  memoryStore.set(id, record);
-  return record;
-}
+  async delete(id: string) {
+    const [deleted] = await db
+      .delete(auditLogs)
+      .where(eq(auditLogs.id, id))
+      .returning();
+    return deleted;
+  },
 
-async function findById(id: string): Promise<ContactRecord | null> {
-  return memoryStore.get(id) ?? null;
-}
+  async findById(id: string) {
+    const [record] = await db.select().from(auditLogs).where(eq(auditLogs.id, id));
+    if (!record || record.eventType !== "contact") return null;
+    return record;
+  },
 
-async function list(): Promise<ContactRecord[]> {
-  return Array.from(memoryStore.values());
-}
+  async findMany(filter: Record<string, unknown> = {}) {
+    const conditions = Object.entries(filter)
+      .filter(([, v]) => v !== undefined)
+      .map(([key, v]) => eq((auditLogs as any)[key], v));
 
-async function findMany(_filter: Partial<ContactRecord> = {}): Promise<ContactRecord[]> {
-  // Filtering is intentionally simple for the in-memory mock store.
-  // Once a real database is wired in, the filter can be applied directly.
-  return list();
-}
+    const where =
+      conditions.length === 0
+        ? undefined
+        : conditions.length === 1
+        ? conditions[0]
+        : and(...conditions);
 
-async function update(
-  id: string,
-  data: Partial<ContactRecord>
-): Promise<ContactRecord | null> {
-  const existing = memoryStore.get(id);
-  if (!existing) return null;
-
-  const updated: ContactRecord = {
-    ...existing,
-    ...data,
-    updatedAt: now(),
-  };
-
-  memoryStore.set(id, updated);
-  return updated;
-}
-
-async function remove(id: string): Promise<boolean> {
-  return memoryStore.delete(id);
-}
-
-// -----------------------------------------------------------------------------
-// Export shape (final API)
-// -----------------------------------------------------------------------------
-export default {
-  create,
-  findById,
-  findMany,
-  list,
-  update,
-  remove,
-  delete: remove,
+    const rows = await db.select().from(auditLogs).where(where);
+    return rows.filter((r) => r.eventType === "contact");
+  },
 };
+
+export default contactsRepo;

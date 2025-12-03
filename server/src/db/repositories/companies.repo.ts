@@ -1,5 +1,5 @@
 // server/src/db/repositories/companies.repo.ts
-import db from "../db";
+import { db } from "../db.js";
 import { eq } from "drizzle-orm";
 import { companies } from "../schema/companies";
 
