@@ -2,45 +2,42 @@ import { Request, Response } from "express";
 import contactsService from "../services/contactsService";
 
 const contactsController = {
-  list: async (req: Request, res: Response) => {
-    const filter = req.query ?? {};
-    const data = await contactsService.findMany(filter);
+  list: async (_req: Request, res: Response) => {
+    const data = await contactsService.list();
     res.json({ success: true, data });
   },
 
-  getById: async (req: Request, res: Response) => {
-    const { id } = req.params;
-    const data = await contactsService.findById(id);
-    if (!data) return res.status(404).json({ success: false, error: "Not found" });
-    res.json({ success: true, data });
+  get: async (req: Request, res: Response) => {
+    const record = await contactsService.get(req.params.id);
+    if (!record)
+      return res.status(404).json({ success: false, error: "Not found" });
+    res.json({ success: true, data: record });
   },
 
   create: async (req: Request, res: Response) => {
-    const payload = req.body ?? {};
-    const created = await contactsService.create(payload);
+    const created = await contactsService.create(req.body ?? {});
     res.status(201).json({ success: true, data: created });
   },
 
   update: async (req: Request, res: Response) => {
-    const { id } = req.params;
-    const payload = req.body ?? {};
-    const updated = await contactsService.update(id, payload);
-
+    const updated = await contactsService.update(req.params.id, req.body ?? {});
     if (!updated)
       return res.status(404).json({ success: false, error: "Not found" });
-
     res.json({ success: true, data: updated });
   },
 
   remove: async (req: Request, res: Response) => {
-    const { id } = req.params;
-    const deleted = await contactsService.delete(id);
-
-    if (!deleted)
+    const removed = await contactsService.remove(req.params.id);
+    if (!removed)
       return res.status(404).json({ success: false, error: "Not found" });
+    res.json({ success: true, data: removed });
+  },
 
-    res.json({ success: true, data: deleted });
-  }
+  search: async (req: Request, res: Response) => {
+    const q = (req.query.q as string) || "";
+    const results = await contactsService.search(q);
+    res.json({ success: true, data: results });
+  },
 };
 
 export default contactsController;

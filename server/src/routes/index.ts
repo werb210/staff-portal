@@ -36,3 +36,6 @@ export default router;
 import searchRoutes from "./search.routes";
 
 router.use("/search", searchRoutes);
+
+import contactsRoutes from "./contacts.routes";
+router.use("/contacts", contactsRoutes);

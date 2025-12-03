@@ -1,24 +1,29 @@
 import contactsRepo from "../db/repositories/contacts.repo";
 
 const contactsService = {
-  async create(data: Record<string, unknown>) {
-    return contactsRepo.create(data);
+  async list() {
+    return await contactsRepo.findMany({});
   },
 
-  async update(id: string, data: Record<string, unknown>) {
-    return contactsRepo.update(id, data);
+  async get(id: string) {
+    return await contactsRepo.findById(id);
   },
 
-  async delete(id: string) {
-    return contactsRepo.delete(id);
+  async create(payload: Record<string, any>) {
+    return await contactsRepo.create(payload);
   },
 
-  async findById(id: string) {
-    return contactsRepo.findById(id);
+  async update(id: string, payload: Record<string, any>) {
+    return await contactsRepo.update(id, payload);
   },
 
-  async findMany(filter: Record<string, unknown> = {}) {
-    return contactsRepo.findMany(filter);
+  async remove(id: string) {
+    return await contactsRepo.delete(id);
+  },
+
+  async search(term: string) {
+    if (!term) return [];
+    return await contactsRepo.findMany({ name: term });
   },
 };
 
