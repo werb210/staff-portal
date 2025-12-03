@@ -1,5 +1,5 @@
-import db from "../db.js";
-import { companies } from "../schema/companies.js";
+import db from "../db";
+import { companies } from "../schema/companies";
 import { eq } from "drizzle-orm";
 
 export default {

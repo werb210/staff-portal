@@ -1,5 +1,5 @@
-import db from "../db.js";
-import { users } from "../schema/users.js";
+import db from "../db";
+import { users } from "../schema/users";
 import { eq } from "drizzle-orm";
 
 export default {
