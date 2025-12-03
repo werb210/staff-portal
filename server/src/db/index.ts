@@ -14,3 +14,5 @@ export * from "./schema/smsQueue.js";
 export * from "./schema/timeline.js";
 export * from "./schema/emailLogs.js";
 export * from "./schema/messages.js";
+export * from "./schema/conversations.js";
+export * from "./schema/chatMessages.js";
