@@ -6,15 +6,18 @@ export type NotificationRecord = typeof notifications.$inferSelect;
 
 export interface NotificationCreateInput {
   userId: string;
+  type: string;
   title: string;
   body: string;
-  type?: string | null;
+  applicationId?: string | null;
+  contactId?: string | null;
   relatedEntity?: string | null;
   relatedId?: string | null;
+  read?: boolean;
 }
 
 const notificationsRepo = {
-  async listByUser(userId: string) {
+  async listForUser(userId: string) {
     return db
       .select()
       .from(notifications)
@@ -48,7 +51,10 @@ const notificationsRepo = {
   },
 
   async create(data: NotificationCreateInput) {
-    const [row] = await db.insert(notifications).values(data).returning();
+    const [row] = await db
+      .insert(notifications)
+      .values({ ...data, read: data.read ?? false })
+      .returning();
     return row;
   },
 

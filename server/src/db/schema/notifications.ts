@@ -3,6 +3,8 @@ import { boolean, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 export const notifications = pgTable("notifications", {
   id: uuid("id").defaultRandom().primaryKey(),
   userId: uuid("user_id").notNull(),
+  applicationId: uuid("application_id"),
+  contactId: uuid("contact_id"),
   title: text("title").notNull(),
   body: text("body").notNull(),
   type: text("type"),
