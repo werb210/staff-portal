@@ -1,28 +1,38 @@
+// server/src/controllers/companiesController.ts
 import { Request, Response } from "express";
-import companiesRepo from "../db/repositories/companies.repo.js";
+import CompaniesService from "../services/companiesService";
 
-export default {
-  list: async (_req: Request, res: Response) => {
-    const rows = await companiesRepo.findAll();
-    res.json(rows);
+export const CompaniesController = {
+  async list(req: Request, res: Response) {
+    const results = await CompaniesService.list();
+    res.json({ success: true, data: results });
   },
 
-  get: async (req: Request, res: Response) => {
-    const id = Number(req.params.id);
-    const row = await companiesRepo.findById(id);
-    if (!row) return res.status(404).json({ error: "Not found" });
-    res.json(row);
+  async get(req: Request, res: Response) {
+    const id = req.params.id;
+    const record = await CompaniesService.get(id);
+    if (!record) {
+      return res.status(404).json({ success: false, error: "Company not found" });
+    }
+    res.json({ success: true, data: record });
   },
 
-  create: async (req: Request, res: Response) => {
-    const created = await companiesRepo.create(req.body);
-    res.status(201).json(created);
+  async create(req: Request, res: Response) {
+    const record = await CompaniesService.create(req.body);
+    res.json({ success: true, data: record });
   },
 
-  update: async (req: Request, res: Response) => {
-    const id = Number(req.params.id);
-    const updated = await companiesRepo.update(id, req.body);
-    if (!updated) return res.status(404).json({ error: "Not found" });
-    res.json(updated);
-  }
+  async update(req: Request, res: Response) {
+    const id = req.params.id;
+    const record = await CompaniesService.update(id, req.body);
+    res.json({ success: true, data: record });
+  },
+
+  async delete(req: Request, res: Response) {
+    const id = req.params.id;
+    await CompaniesService.delete(id);
+    res.json({ success: true });
+  },
 };
+
+export default CompaniesController;
