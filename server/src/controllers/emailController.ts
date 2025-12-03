@@ -3,37 +3,37 @@ import { emailService } from "../services/emailService.js";
 
 export const emailController = {
   async list(_req: Request, res: Response) {
-    const items = await emailService.list();
-    res.json(items);
+    res.json(await emailService.list());
   },
 
   async get(req: Request, res: Response) {
     const { id } = req.params;
-    const item = await emailService.get(id);
-    if (!item) return res.status(404).json({ error: "Not found" });
-    res.json(item);
+    const result = await emailService.get(id);
+    if (!result) return res.status(404).json({ error: "Not found" });
+    res.json(result);
   },
 
   async listByContact(req: Request, res: Response) {
     const { contactId } = req.params;
-    const items = await emailService.listByContact(contactId);
-    res.json(items);
+    res.json(await emailService.listByContact(contactId));
   },
 
   async send(req: Request, res: Response) {
-    const { email, subject, body, contact_id } = req.body;
+    const { to, subject, body, contact_id } = req.body;
 
-    if (!email || !subject || !body) {
-      return res.status(400).json({ error: "email, subject, body are required" });
+    if (!to || !subject || !body) {
+      return res.status(400).json({
+        error: "to, subject, and body are required",
+      });
     }
 
-    const sent = await emailService.send({
-      email,
+    const result = await emailService.send({
+      to,
       subject,
       body,
       contact_id,
     });
 
-    res.json(sent);
+    res.json(result);
   },
 };

@@ -1,5 +1,11 @@
 import { emailLogsRepo } from "../db/repositories/emailLogs.repo.js";
 
+/**
+ * Basic email pipeline:
+ * - logs outbound emails
+ * - returns history
+ * Full SMTP integration added in later blocks.
+ */
 export const emailService = {
   async list() {
     return emailLogsRepo.getAll();
@@ -14,24 +20,26 @@ export const emailService = {
   },
 
   /**
-   * Simulated email send pipeline
-   * In V3 this will call SendGrid / Office 365 / SMTP.
+   * Simulate sending an email
    */
   async send(payload: {
     contact_id?: string;
-    email: string;
+    to: string;
     subject: string;
     body: string;
   }) {
-    // pretend sending succeeded
-    const result = await emailLogsRepo.create({
+    if (!payload.to || !payload.subject || !payload.body)
+      throw new Error("to, subject, and body are required");
+
+    // Log it
+    const saved = await emailLogsRepo.create({
       contact_id: payload.contact_id,
-      email: payload.email,
+      email: payload.to,
       subject: payload.subject,
       body: payload.body,
       status: "sent",
     });
 
-    return result;
+    return saved;
   },
 };
