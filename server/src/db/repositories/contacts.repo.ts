@@ -2,7 +2,7 @@
 // Temporary in-memory contacts repository for staff-portal backend.
 // This keeps the app compiling until the Staff-Server API integration is wired in.
 
-import db from "../db"; // mock adapter
+import db from "../db.js"; // mock adapter
 
 export interface ContactRecord {
   id: string;
