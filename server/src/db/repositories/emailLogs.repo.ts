@@ -1,5 +1,5 @@
 import { desc, eq } from "drizzle-orm";
-import { db } from "../db.js";
+import db from "../db.js";
 import { emailLogs } from "../schema/emailLogs.js";
 
 export type EmailLogRecord = typeof emailLogs.$inferSelect;

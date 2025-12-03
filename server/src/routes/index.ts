@@ -10,6 +10,8 @@ import tagsRoutes from "./tags.routes.js";
 import searchRoutes from "./search.routes.js";
 import healthRoutes from "./health.routes.js";
 import usersRoutes from "./users.routes.js";
+import smsLogsRoutes from "./smsLogs.routes.js";
+import smsQueueRoutes from "./smsQueue.routes.js";
 
 const router = Router();
 
@@ -21,6 +23,8 @@ router.use("/messages", messagesRoutes);
 router.use("/notifications", notificationsRoutes);
 router.use("/products", productsRoutes);
 router.use("/tags", tagsRoutes);
+router.use("/sms-logs", smsLogsRoutes);
+router.use("/sms-queue", smsQueueRoutes);
 router.use("/search", searchRoutes);
 router.use("/users", usersRoutes);
 
