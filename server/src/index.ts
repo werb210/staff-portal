@@ -1,7 +1,9 @@
 import express from "express";
 import cors from "cors";
 import path from "path";
+import http from "http";
 import routes from "./routes/index";
+import { initSocketServer } from "./realtime/socketServer.js";
 
 const app = express();
 
@@ -29,8 +31,13 @@ app.get("*", (_req, res) => {
   });
 });
 
+const server = http.createServer(app);
+
+// Start WebSocket server
+initSocketServer(server);
+
 // Start server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`Staff Portal backend listening on port ${PORT}`);
 });
