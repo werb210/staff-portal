@@ -1,88 +1,44 @@
 import { Request, Response } from "express";
-import notificationsService from "../services/notificationsService.js";
+import { notificationsRepo } from "../db/repositories/notifications.repo.js";
 
-export default {
-  async list(req: Request, res: Response) {
-    try {
-      const userId = (req as any).user?.id;
-      const items = await notificationsService.listForUser(userId);
-      res.json({ ok: true, items });
-    } catch (err: any) {
-      res.status(400).json({ ok: false, error: err.message });
-    }
+export const notificationsController = {
+  getForUser: async (req: Request, res: Response) => {
+    const userId = req.params.userId;
+    const list = await notificationsRepo.findForUser(userId);
+    res.json({ success: true, data: list });
   },
 
-  async listForUser(req: Request, res: Response) {
-    try {
-      const items = await notificationsService.listForUser(req.params.userId);
-      res.json({ ok: true, items });
-    } catch (err: any) {
-      res.status(400).json({ ok: false, error: err.message });
+  create: async (req: Request, res: Response) => {
+    const { userId, title, message } = req.body;
+
+    if (!userId || !title || !message) {
+      return res.status(400).json({
+        success: false,
+        error: "Missing fields (userId, title, message required)",
+      });
     }
+
+    const created = await notificationsRepo.create({ userId, title, message });
+    res.status(201).json({ success: true, data: created });
   },
 
-  async unread(req: Request, res: Response) {
-    try {
-      const count = await notificationsService.unreadCount(req.params.userId);
-      res.json({ ok: true, count });
-    } catch (err: any) {
-      res.status(400).json({ ok: false, error: err.message });
-    }
+  markRead: async (req: Request, res: Response) => {
+    const id = Number(req.params.id);
+    const updated = await notificationsRepo.markRead(id);
+
+    if (!updated)
+      return res.status(404).json({ success: false, error: "Notification not found" });
+
+    res.json({ success: true, data: updated });
   },
 
-  async unreadForCurrent(req: Request, res: Response) {
-    try {
-      const userId = (req as any).user?.id;
-      const count = await notificationsService.unreadCount(userId);
-      res.json({ ok: true, count });
-    } catch (err: any) {
-      res.status(400).json({ ok: false, error: err.message });
-    }
-  },
+  delete: async (req: Request, res: Response) => {
+    const id = Number(req.params.id);
+    const deleted = await notificationsRepo.delete(id);
 
-  async markRead(req: Request, res: Response) {
-    try {
-      const item = await notificationsService.markRead(req.params.id);
-      res.json({ ok: true, item });
-    } catch (err: any) {
-      res.status(400).json({ ok: false, error: err.message });
-    }
-  },
+    if (!deleted)
+      return res.status(404).json({ success: false, error: "Notification not found" });
 
-  async markAllRead(req: Request, res: Response) {
-    try {
-      const result = await notificationsService.markAllRead(req.params.userId);
-      res.json({ ok: true, result });
-    } catch (err: any) {
-      res.status(400).json({ ok: false, error: err.message });
-    }
-  },
-
-  async markAllReadForCurrent(req: Request, res: Response) {
-    try {
-      const userId = (req as any).user?.id;
-      const result = await notificationsService.markAllRead(userId);
-      res.json({ ok: true, result });
-    } catch (err: any) {
-      res.status(400).json({ ok: false, error: err.message });
-    }
-  },
-
-  async create(req: Request, res: Response) {
-    try {
-      const item = await notificationsService.create(req.body);
-      res.status(201).json({ ok: true, item });
-    } catch (err: any) {
-      res.status(400).json({ ok: false, error: err.message });
-    }
-  },
-
-  async delete(req: Request, res: Response) {
-    try {
-      const item = await notificationsService.delete(req.params.id);
-      res.json({ ok: true, item });
-    } catch (err: any) {
-      res.status(400).json({ ok: false, error: err.message });
-    }
+    res.json({ success: true });
   },
 };

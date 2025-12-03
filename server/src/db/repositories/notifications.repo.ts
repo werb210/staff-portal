@@ -1,70 +1,28 @@
-import { and, count, desc, eq } from "drizzle-orm";
-import { db } from "../db.js";
-import { notifications } from "../schema/notifications.js";
+import db from "../db.js";
+import { eq } from "drizzle-orm";
+import { notifications, NotificationRecord, CreateNotification } from "../schema/notifications.js";
 
-export type NotificationRecord = typeof notifications.$inferSelect;
-
-export interface NotificationCreateInput {
-  userId: string;
-  type: string;
-  title: string;
-  body: string;
-  applicationId?: string | null;
-  contactId?: string | null;
-  relatedEntity?: string | null;
-  relatedId?: string | null;
-  read?: boolean;
-}
-
-const notificationsRepo = {
-  async listForUser(userId: string) {
-    return db
-      .select()
-      .from(notifications)
-      .where(eq(notifications.userId, userId))
-      .orderBy(desc(notifications.createdAt));
+export const notificationsRepo = {
+  async findForUser(userId: string): Promise<NotificationRecord[]> {
+    return await db.select().from(notifications).where(eq(notifications.userId, userId));
   },
 
-  async unreadCount(userId: string) {
-    const [row] = await db
-      .select({ value: count() })
-      .from(notifications)
-      .where(and(eq(notifications.userId, userId), eq(notifications.read, false)));
-    return Number(row?.value ?? 0);
+  async create(data: CreateNotification): Promise<NotificationRecord> {
+    const [inserted] = await db.insert(notifications).values(data).returning();
+    return inserted;
   },
 
-  async markRead(id: string) {
-    const [row] = await db
+  async markRead(id: number): Promise<NotificationRecord | undefined> {
+    const [updated] = await db
       .update(notifications)
-      .set({ read: true })
+      .set({ isRead: true })
       .where(eq(notifications.id, id))
       .returning();
-    return row;
+    return updated;
   },
 
-  async markAllRead(userId: string) {
-    return db
-      .update(notifications)
-      .set({ read: true })
-      .where(and(eq(notifications.userId, userId), eq(notifications.read, false)))
-      .returning();
+  async delete(id: number): Promise<boolean> {
+    const [deleted] = await db.delete(notifications).where(eq(notifications.id, id)).returning();
+    return deleted ? true : false;
   },
-
-  async create(data: NotificationCreateInput) {
-    const [row] = await db
-      .insert(notifications)
-      .values({ ...data, read: data.read ?? false })
-      .returning();
-    return row;
-  },
-
-  async delete(id: string) {
-    const [row] = await db
-      .delete(notifications)
-      .where(eq(notifications.id, id))
-      .returning();
-    return row;
-  }
 };
-
-export default notificationsRepo;
