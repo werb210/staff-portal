@@ -1,8 +1,20 @@
+import "dotenv/config";
 import app from "./app.js";
-import "./config/env.js";
 
-const PORT = Number(process.env.PORT) || 5000;
+const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-  console.log(`Staff Portal API running on port ${PORT}`);
-});
+async function start() {
+  try {
+    console.log("Starting Staff-Portal backend...");
+
+    app.listen(PORT, () => {
+      console.log(`Staff-Portal API running on port ${PORT}`);
+    });
+
+  } catch (err) {
+    console.error("Fatal startup error:", err);
+    process.exit(1);
+  }
+}
+
+start();

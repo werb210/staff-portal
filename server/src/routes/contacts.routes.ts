@@ -1,11 +1,10 @@
 import { Router } from "express";
-import contactsController from "../controllers/contactsController.js";
 
 const router = Router();
 
-router.get("/", contactsController.list);
-router.get("/:id", contactsController.get);
-router.post("/", contactsController.create);
-router.put("/:id", contactsController.update);
+// placeholder route
+router.get("/", async (_req, res) => {
+  res.json({ message: "contacts endpoint online" });
+});
 
 export default router;

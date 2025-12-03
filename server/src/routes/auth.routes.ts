@@ -1,8 +1,10 @@
 import { Router } from "express";
-import authController from "../controllers/authController.js";
 
 const router = Router();
 
-router.post("/login", authController.login);
+// placeholder login route
+router.post("/login", async (_req, res) => {
+  res.json({ message: "login endpoint online" });
+});
 
 export default router;
