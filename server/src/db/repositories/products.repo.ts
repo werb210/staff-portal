@@ -1,6 +1,7 @@
 import db from "../db.js";
 import { products } from "../schema/products.js";
 import { eq } from "drizzle-orm";
+import { safeDetails } from "../../utils/safeDetails.js";
 
 export const productsRepo = {
   async create(data: any) {
@@ -41,9 +42,11 @@ export const productsRepo = {
   },
 
   async findMany(filter: any = {}) {
-    if (filter.lenderId) {
+    const safeFilter = safeDetails(filter);
+
+    if (safeFilter.lenderId) {
       return await db.select().from(products)
-        .where(eq(products.lenderId, filter.lenderId));
+        .where(eq(products.lenderId, safeFilter.lenderId as string));
     }
     return await db.select().from(products);
   }
