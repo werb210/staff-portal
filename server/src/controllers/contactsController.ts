@@ -1,28 +1,66 @@
+// server/src/controllers/contactsController.ts
+// Express controllers for contact CRUD operations.
+
 import { Request, Response } from "express";
-import contactsRepo from "../db/repositories/contacts.repo.js";
+import contactsService from "../services/contactsService";
 
-export default {
-  list: async (_req: Request, res: Response) => {
-    const rows = await contactsRepo.findAll();
-    res.json(rows);
-  },
+export async function create(req: Request, res: Response) {
+  try {
+    const contact = await contactsService.createContact(req.body);
+    res.status(201).json(contact);
+  } catch (err: any) {
+    console.error("Create contact failed:", err);
+    res.status(500).json({ error: "Failed to create contact" });
+  }
+}
 
-  get: async (req: Request, res: Response) => {
-    const id = Number(req.params.id);
-    const row = await contactsRepo.findById(id);
-    if (!row) return res.status(404).json({ error: "Not found" });
-    res.json(row);
-  },
+export async function list(req: Request, res: Response) {
+  try {
+    const contacts = await contactsService.listContacts();
+    res.json(contacts);
+  } catch (err: any) {
+    console.error("List contacts failed:", err);
+    res.status(500).json({ error: "Failed to list contacts" });
+  }
+}
 
-  create: async (req: Request, res: Response) => {
-    const created = await contactsRepo.create(req.body);
-    res.status(201).json(created);
-  },
+export async function get(req: Request, res: Response) {
+  try {
+    const contact = await contactsService.getContact(req.params.id);
+    if (!contact) return res.status(404).json({ error: "Not found" });
+    res.json(contact);
+  } catch (err: any) {
+    console.error("Get contact failed:", err);
+    res.status(500).json({ error: "Failed to fetch contact" });
+  }
+}
 
-  update: async (req: Request, res: Response) => {
-    const id = Number(req.params.id);
-    const updated = await contactsRepo.update(id, req.body);
+export async function update(req: Request, res: Response) {
+  try {
+    const updated = await contactsService.updateContact(req.params.id, req.body);
     if (!updated) return res.status(404).json({ error: "Not found" });
     res.json(updated);
+  } catch (err: any) {
+    console.error("Update contact failed:", err);
+    res.status(500).json({ error: "Failed to update contact" });
   }
+}
+
+export async function remove(req: Request, res: Response) {
+  try {
+    const ok = await contactsService.deleteContact(req.params.id);
+    if (!ok) return res.status(404).json({ error: "Not found" });
+    res.json({ success: true });
+  } catch (err: any) {
+    console.error("Delete contact failed:", err);
+    res.status(500).json({ error: "Failed to delete contact" });
+  }
+}
+
+export default {
+  create,
+  list,
+  get,
+  update,
+  remove,
 };
