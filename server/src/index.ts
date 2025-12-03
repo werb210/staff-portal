@@ -1,3 +1,10 @@
+// --- DISABLE APPLICATION INSIGHTS (Azure iKey bug) ---
+try {
+  delete process.env.APPLICATIONINSIGHTS_CONNECTION_STRING;
+  delete process.env.APPINSIGHTS_INSTRUMENTATIONKEY;
+} catch {}
+// ------------------------------------------------------
+
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
