@@ -5,7 +5,9 @@ export const emailLogs = pgTable("email_logs", {
   contact_id: uuid("contact_id"),
   email: text("email").notNull(),
   subject: text("subject").notNull(),
+  html: text("html"),
+  text: text("text"),
   body: text("body").notNull(),
-  status: text("status").default("sent"),
+  status: text("status").default("logged"),
   created_at: timestamp("created_at").defaultNow(),
 });
