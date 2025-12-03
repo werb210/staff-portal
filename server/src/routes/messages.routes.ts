@@ -1,12 +1,15 @@
 import { Router } from "express";
-import { messagesController } from "../controllers/messagesController.js";
+import messagesController from "../controllers/messagesController.js";
 
 const router = Router();
 
-router.get("/", messagesController.list);
-router.get("/contact/:contactId", messagesController.listByContact);
-router.get("/:id", messagesController.get);
-router.post("/", messagesController.create);
-router.delete("/:id", messagesController.remove);
+// GET all messages for a contact
+router.get("/:contactId", messagesController.getMessages);
+
+// POST new message for a contact
+router.post("/:contactId", messagesController.postMessage);
+
+// DELETE a message
+router.delete("/:id", messagesController.deleteMessage);
 
 export default router;
