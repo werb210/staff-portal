@@ -3,8 +3,7 @@ import { smsService } from "../services/smsService.js";
 
 export const smsController = {
   async list(_req: Request, res: Response) {
-    const items = await smsService.list();
-    res.json(items);
+    res.json(await smsService.list());
   },
 
   async get(req: Request, res: Response) {
@@ -16,20 +15,21 @@ export const smsController = {
 
   async listByContact(req: Request, res: Response) {
     const { contactId } = req.params;
-    const items = await smsService.listByContact(contactId);
-    res.json(items);
+    res.json(await smsService.listByContact(contactId));
   },
 
   async send(req: Request, res: Response) {
-    const { to, message, contact_id } = req.body;
+    const { to, body, contact_id } = req.body;
 
-    if (!to || !message) {
-      return res.status(400).json({ error: "to and message are required" });
+    if (!to || !body) {
+      return res.status(400).json({
+        error: "to and body are required",
+      });
     }
 
     const result = await smsService.send({
       to,
-      message,
+      body,
       contact_id,
     });
 

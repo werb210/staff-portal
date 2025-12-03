@@ -1,9 +1,8 @@
 import { smsLogsRepo } from "../db/repositories/smsLogs.repo.js";
-import { smsQueueRepo } from "../db/repositories/smsQueue.repo.js";
 
 /**
- * Basic SMS pipeline: log immediately and queue for delivery.
- * Twilio integration will be added in a later version.
+ * Simplified SMS pipeline (logging only).
+ * Real Twilio integration comes later in its own block.
  */
 export const smsService = {
   async list() {
@@ -19,31 +18,24 @@ export const smsService = {
   },
 
   /**
-   * Queue + log an SMS
+   * Log an SMS (sending comes in a later dedicated block)
    */
   async send(payload: {
-    contact_id?: string;
     to: string;
-    message: string;
+    body: string;
+    contact_id?: string;
   }) {
-    if (!payload.to || !payload.message) {
-      throw new Error("to and message are required");
+    if (!payload.to || !payload.body) {
+      throw new Error("to and body are required");
     }
 
-    const queued = await smsQueueRepo.enqueue({
-      contact_id: payload.contact_id ?? null,
-      phone: payload.to,
-      body: payload.message,
-      status: "queued",
-    });
-
     const logged = await smsLogsRepo.create({
-      contact_id: payload.contact_id ?? null,
       phone: payload.to,
-      body: payload.message,
-      status: "queued",
+      body: payload.body,
+      contact_id: payload.contact_id ?? null,
+      status: "logged",
     });
 
-    return { queued, logged };
+    return { logged };
   },
 };
