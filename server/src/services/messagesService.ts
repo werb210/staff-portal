@@ -1,23 +1,24 @@
-import { CreateMessage, messagesRepo } from "../db/repositories/messages.repo.js";
+import messagesRepo from "../db/repositories/messages.repo.js";
 
-export const messagesService = {
-  async list() {
-    return messagesRepo.getAll();
-  },
+export async function getMessagesForContact(contactId: string) {
+  return messagesRepo.findByContact(contactId);
+}
 
-  async get(id: string) {
-    return messagesRepo.getById(id);
-  },
+export async function createMessage(contactId: string, sender: string, body: string) {
+  return messagesRepo.create({
+    contactId,
+    sender,
+    body,
+    createdAt: new Date(),
+  });
+}
 
-  async listByContact(contactId: string) {
-    return messagesRepo.getByContact(contactId);
-  },
+export async function deleteMessage(id: string) {
+  return messagesRepo.delete(id);
+}
 
-  async create(payload: CreateMessage) {
-    return messagesRepo.create(payload);
-  },
-
-  async remove(id: string) {
-    return messagesRepo.delete(id);
-  },
+export default {
+  getMessagesForContact,
+  createMessage,
+  deleteMessage,
 };
