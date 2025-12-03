@@ -1,13 +1,12 @@
 import { Request, Response } from "express";
-import asyncHandler from "../utils/asyncHandler.js";
-import { searchService } from "../services/searchService.js";
+import searchService from "../services/searchService";
 
-export const searchController = {
-  global: asyncHandler(async (req: Request, res: Response) => {
-    const q = (req.query.q ?? "").toString().trim();
-    const results = await searchService.globalSearch(q);
-    res.status(200).json({ success: true, query: q, results });
-  }),
+const searchController = {
+  globalSearch: async (req: Request, res: Response) => {
+    const q = req.query.q as string;
+    const results = await searchService.search(q || "");
+    res.json({ success: true, data: results });
+  },
 };
 
 export default searchController;
