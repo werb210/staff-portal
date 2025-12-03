@@ -27,7 +27,7 @@ export const emailLogsRepo = {
     const [row] = await db
       .insert(emailLogs)
       .values({
-        status: data.status ?? "sent",
+        status: data.status ?? "logged",
         ...data,
       })
       .returning();
@@ -35,3 +35,5 @@ export const emailLogsRepo = {
     return row;
   },
 };
+
+export default emailLogsRepo;
