@@ -6,10 +6,13 @@ export default function errorHandler(
   res: Response,
   _next: NextFunction
 ) {
-  console.error("API Error:", err);
+  console.error("ERROR:", err);
 
-  return res.status(500).json({
-    success: false,
-    message: err?.message || "Internal Server Error",
+  const status = err.status || 500;
+  const message = err.message || "Internal server error";
+
+  res.status(status).json({
+    error: message,
+    stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
   });
 }
