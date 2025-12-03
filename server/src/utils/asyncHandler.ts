@@ -1,5 +1,8 @@
-export default function asyncHandler(fn: any) {
-  return function wrapped(req: any, res: any, next: any) {
-    Promise.resolve(fn(req, res, next)).catch(next);
-  };
+import { Request, Response, NextFunction } from "express";
+
+export default function asyncHandler(
+  fn: (req: Request, res: Response, next: NextFunction) => Promise<any>
+) {
+  return (req: Request, res: Response, next: NextFunction) =>
+    fn(req, res, next).catch(next);
 }

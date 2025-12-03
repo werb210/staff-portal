@@ -1,11 +1,8 @@
-import express from "express";
-import routes from "./routes/index";
-
-const app = express();
-app.use(express.json());
-app.use("/api", routes);
+import app from "./app.js";
+import "./config/env.js";
 
 const PORT = Number(process.env.PORT) || 5000;
+
 app.listen(PORT, () => {
-  console.log(`Staff-Portal backend running on port ${PORT}`);
+  console.log(`Staff Portal API running on port ${PORT}`);
 });
