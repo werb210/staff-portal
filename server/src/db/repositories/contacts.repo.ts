@@ -1,5 +1,5 @@
-import db from "../db.js";
-import { contacts } from "../schema/contacts.js";
+import db from "../db";
+import { contacts } from "../schema/contacts";
 import { eq } from "drizzle-orm";
 
 export default {

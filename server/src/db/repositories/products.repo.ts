@@ -1,5 +1,5 @@
-import db from "../db.js";
-import { products } from "../schema/products.js";
+import db from "../db";
+import { products } from "../schema/products";
 import { eq } from "drizzle-orm";
 
 export default {

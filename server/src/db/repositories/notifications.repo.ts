@@ -1,5 +1,5 @@
-import { db } from "../db.js";
-import { notifications } from "../schema/notifications.js";
+import db from "../db";
+import { notifications } from "../schema/notifications";
 import { eq, and } from "drizzle-orm";
 
 export const notificationsRepo = {
