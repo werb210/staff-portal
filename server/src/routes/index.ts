@@ -42,3 +42,8 @@ router.use("/contacts", contactsRoutes);
 import companiesRoutes from "./companies.routes";
 
 router.use("/companies", companiesRoutes);
+import pipelineStageRoutes from "./pipelineStage.routes";
+import pipelineEventsRoutes from "./pipelineEvents.routes";
+
+router.use("/pipeline-stages", pipelineStageRoutes);
+router.use("/pipeline-events", pipelineEventsRoutes);
