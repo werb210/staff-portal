@@ -1,11 +1,11 @@
-import { pgTable, uuid, text, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, json } from "drizzle-orm/pg-core";
 
 export const companies = pgTable("companies", {
-  id: uuid("id").defaultRandom().primaryKey(),
-
-  name: text("name"),
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  industry: text("industry"),
   website: text("website"),
-  address: text("address"),
-
+  details: json("details"),
   createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow()
 });

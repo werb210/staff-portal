@@ -1,14 +1,12 @@
-import { pgTable, uuid, text, timestamp, integer } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, integer, timestamp, json } from "drizzle-orm/pg-core";
 
 export const products = pgTable("products", {
-  id: uuid("id").defaultRandom().primaryKey(),
-
-  lenderId: uuid("lender_id"),
-  name: text("name"),
-  type: text("type"),
-
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
   minAmount: integer("min_amount"),
   maxAmount: integer("max_amount"),
-
+  details: json("details"),
   createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow()
 });
