@@ -1,6 +1,6 @@
 // server/src/db/repositories/contacts.repo.ts
 import { and, eq } from "drizzle-orm";
-import { db } from "../db.js";
+import db from "../db.js";
 import { auditLogs } from "../schema/audit.js";
 
 const buildWhere = (filter: Record<string, unknown> = {}) => {
