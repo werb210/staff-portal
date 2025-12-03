@@ -12,3 +12,4 @@ export * from "./schema/notifications.js";
 export * from "./schema/smsLogs.js";
 export * from "./schema/smsQueue.js";
 export * from "./schema/timeline.js";
+export * from "./schema/emailLogs.js";

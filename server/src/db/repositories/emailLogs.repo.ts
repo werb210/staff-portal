@@ -1,12 +1,18 @@
 import { desc, eq } from "drizzle-orm";
 import db from "../db.js";
+import { contacts } from "../schema/contacts.js";
 import { emailLogs } from "../schema/emailLogs.js";
 
 export type EmailLogRecord = typeof emailLogs.$inferSelect;
 export type EmailLogInsert = typeof emailLogs.$inferInsert;
 
+type EmailLogWithContact = {
+  email_logs: EmailLogRecord;
+  contacts: typeof contacts.$inferSelect;
+};
+
 export const emailLogsRepo = {
-  async getAll(): Promise<EmailLogRecord[]> {
+  async list(): Promise<EmailLogRecord[]> {
     return db.select().from(emailLogs).orderBy(desc(emailLogs.created_at));
   },
 
@@ -23,7 +29,18 @@ export const emailLogsRepo = {
       .orderBy(desc(emailLogs.created_at));
   },
 
-  async create(data: EmailLogInsert) {
+  async getByCompany(companyId: string): Promise<EmailLogRecord[]> {
+    const rows = await db
+      .select()
+      .from(emailLogs)
+      .innerJoin(contacts, eq(emailLogs.contact_id, contacts.id))
+      .where(eq(contacts.company_id, companyId))
+      .orderBy(desc(emailLogs.created_at));
+
+    return rows.map((row: EmailLogWithContact) => row.email_logs);
+  },
+
+  async createLog(data: EmailLogInsert) {
     const [row] = await db
       .insert(emailLogs)
       .values({
@@ -35,5 +52,3 @@ export const emailLogsRepo = {
     return row;
   },
 };
-
-export default emailLogsRepo;

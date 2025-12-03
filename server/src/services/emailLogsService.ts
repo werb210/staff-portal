@@ -1,8 +1,8 @@
-import { emailLogsRepo } from "../db/repositories/emailLogs.repo.js";
+import { emailLogsRepo, type EmailLogInsert } from "../db/repositories/emailLogs.repo.js";
 
 export const emailLogsService = {
   async list() {
-    return emailLogsRepo.getAll();
+    return emailLogsRepo.list();
   },
 
   async get(id: string) {
@@ -13,7 +13,13 @@ export const emailLogsService = {
     return emailLogsRepo.getByContact(contactId);
   },
 
-  async create(payload: any) {
-    return emailLogsRepo.create(payload);
+  async listByCompany(companyId: string) {
+    return emailLogsRepo.getByCompany(companyId);
+  },
+
+  async create(data: EmailLogInsert) {
+    return emailLogsRepo.createLog(data);
   },
 };
+
+export default emailLogsService;
