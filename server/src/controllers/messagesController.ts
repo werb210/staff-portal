@@ -2,67 +2,75 @@ import { Request, Response } from "express";
 import messagesService from "../services/messagesService.js";
 
 export default {
-  async list(_req: Request, res: Response) {
+  async listForUser(req: Request, res: Response) {
     try {
-      const items = await messagesService.list();
+      const items = await messagesService.listForUser(req.params.userId);
       res.json({ ok: true, items });
-    } catch (err: any) {
-      res.status(500).json({ ok: false, error: err.message });
+    } catch (e: any) {
+      res.status(400).json({ ok: false, error: e.message });
     }
   },
 
-  async get(req: Request, res: Response) {
+  async listForApplication(req: Request, res: Response) {
     try {
-      const item = await messagesService.get(req.params.id);
-      res.json({ ok: true, item });
-    } catch (err: any) {
-      const status = err.message.includes("not found") ? 404 : 400;
-      res.status(status).json({ ok: false, error: err.message });
+      const items = await messagesService.listForApplication(req.params.applicationId);
+      res.json({ ok: true, items });
+    } catch (e: any) {
+      res.status(400).json({ ok: false, error: e.message });
     }
   },
 
-  async byContact(req: Request, res: Response) {
+  async listForContact(req: Request, res: Response) {
     try {
-      const items = await messagesService.listByContact(req.params.contactId);
+      const items = await messagesService.listForContact(req.params.contactId);
       res.json({ ok: true, items });
-    } catch (err: any) {
-      res.status(400).json({ ok: false, error: err.message });
+    } catch (e: any) {
+      res.status(400).json({ ok: false, error: e.message });
     }
   },
 
-  async byCompany(req: Request, res: Response) {
+  async unread(req: Request, res: Response) {
     try {
-      const items = await messagesService.listByCompany(req.params.companyId);
-      res.json({ ok: true, items });
-    } catch (err: any) {
-      res.status(400).json({ ok: false, error: err.message });
+      const count = await messagesService.unreadCount(req.params.userId);
+      res.json({ ok: true, count });
+    } catch (e: any) {
+      res.status(400).json({ ok: false, error: e.message });
+    }
+  },
+
+  async markRead(req: Request, res: Response) {
+    try {
+      const result = await messagesService.markRead(req.params.id);
+      res.json({ ok: true, result });
+    } catch (e: any) {
+      res.status(400).json({ ok: false, error: e.message });
+    }
+  },
+
+  async markThreadRead(req: Request, res: Response) {
+    try {
+      const result = await messagesService.markThreadRead(req.params.userId, req.params.contactId);
+      res.json({ ok: true, result });
+    } catch (e: any) {
+      res.status(400).json({ ok: false, error: e.message });
     }
   },
 
   async create(req: Request, res: Response) {
     try {
-      const item = await messagesService.create(req.body);
-      res.status(201).json({ ok: true, item });
-    } catch (err: any) {
-      res.status(400).json({ ok: false, error: err.message });
+      const msg = await messagesService.create(req.body);
+      res.status(201).json({ ok: true, msg });
+    } catch (e: any) {
+      res.status(400).json({ ok: false, error: e.message });
     }
   },
 
-  async pin(req: Request, res: Response) {
+  async delete(req: Request, res: Response) {
     try {
-      const item = await messagesService.pin(req.params.id);
-      res.json({ ok: true, item });
-    } catch (err: any) {
-      res.status(400).json({ ok: false, error: err.message });
-    }
-  },
-
-  async unpin(req: Request, res: Response) {
-    try {
-      const item = await messagesService.unpin(req.params.id);
-      res.json({ ok: true, item });
-    } catch (err: any) {
-      res.status(400).json({ ok: false, error: err.message });
+      const result = await messagesService.delete(req.params.id);
+      res.json({ ok: true, result });
+    } catch (e: any) {
+      res.status(400).json({ ok: false, error: e.message });
     }
   },
 };
