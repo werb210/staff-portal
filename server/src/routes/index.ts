@@ -39,3 +39,6 @@ router.use("/search", searchRoutes);
 
 import contactsRoutes from "./contacts.routes";
 router.use("/contacts", contactsRoutes);
+import companiesRoutes from "./companies.routes";
+
+router.use("/companies", companiesRoutes);

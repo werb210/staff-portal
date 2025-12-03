@@ -1,25 +1,35 @@
-import companiesRepo from "../db/repositories/companies.repo.js";
+import companiesRepo from "../db/repositories/companies.repo";
+import contactsRepo from "../db/repositories/contacts.repo";
 
-export const companiesService = {
+const companiesService = {
   async list() {
-    return companiesRepo.findMany();
+    return await companiesRepo.findMany({});
   },
 
   async get(id: string) {
-    return companiesRepo.findById(id);
+    return await companiesRepo.findById(id);
   },
 
-  async create(payload: any) {
-    return companiesRepo.create(payload);
+  async create(payload: Record<string, any>) {
+    return await companiesRepo.create(payload);
   },
 
-  async update(id: string, payload: any) {
-    return companiesRepo.update(id, payload);
+  async update(id: string, payload: Record<string, any>) {
+    return await companiesRepo.update(id, payload);
   },
 
   async remove(id: string) {
-    return companiesRepo.delete(id);
-  }
+    return await companiesRepo.delete(id);
+  },
+
+  async search(term: string) {
+    if (!term) return [];
+    return await companiesRepo.findMany({ name: term });
+  },
+
+  async getContacts(companyId: string) {
+    return await contactsRepo.findMany({ companyId });
+  },
 };
 
 export default companiesService;
