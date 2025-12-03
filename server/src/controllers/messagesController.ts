@@ -1,31 +1,50 @@
 import { Request, Response } from "express";
-import { messagesService } from "../services/messagesService.js";
+import messagesService from "../services/messagesService.js";
 
-export const messagesController = {
-  async list(_req: Request, res: Response) {
-    res.json(await messagesService.list());
-  },
-
-  async get(req: Request, res: Response) {
-    const { id } = req.params;
-    const msg = await messagesService.get(id);
-    if (!msg) return res.status(404).json({ error: "Not found" });
-    res.json(msg);
-  },
-
-  async listByContact(req: Request, res: Response) {
+export async function getMessages(req: Request, res: Response) {
+  try {
     const { contactId } = req.params;
-    res.json(await messagesService.listByContact(contactId));
-  },
+    if (!contactId) return res.status(400).json({ error: "contactId required" });
 
-  async create(req: Request, res: Response) {
-    const created = await messagesService.create(req.body);
-    res.json(created);
-  },
+    const messages = await messagesService.getMessagesForContact(contactId);
+    res.json(messages);
+  } catch (err: any) {
+    console.error("getMessages error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+}
 
-  async remove(req: Request, res: Response) {
+export async function postMessage(req: Request, res: Response) {
+  try {
+    const { contactId } = req.params;
+    const { sender, body } = req.body;
+
+    if (!contactId) return res.status(400).json({ error: "contactId required" });
+    if (!sender || !body) return res.status(400).json({ error: "sender and body required" });
+
+    const message = await messagesService.createMessage(contactId, sender, body);
+    res.status(201).json(message);
+  } catch (err: any) {
+    console.error("postMessage error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+}
+
+export async function deleteMessage(req: Request, res: Response) {
+  try {
     const { id } = req.params;
-    await messagesService.remove(id);
+    if (!id) return res.status(400).json({ error: "id required" });
+
+    await messagesService.deleteMessage(id);
     res.json({ success: true });
-  },
+  } catch (err: any) {
+    console.error("deleteMessage error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+}
+
+export default {
+  getMessages,
+  postMessage,
+  deleteMessage,
 };
