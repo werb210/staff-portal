@@ -1,22 +1,29 @@
-export type Company = Record<string, any> & { id?: string };
+import db from "../db.js";
+import { companies } from "../schema/companies.js";
+import { eq } from "drizzle-orm";
 
-export const companiesRepo = {
-  async findMany(): Promise<Company[]> {
-    return [];
+export default {
+  async findMany() {
+    return await db.select().from(companies);
   },
-  async findById(id: string): Promise<Company | null> {
-    return { id } as Company;
+
+  async findById(id: string) {
+    const rows = await db.select().from(companies).where(eq(companies.id, id));
+    return rows[0] || null;
   },
-  async create(payload: Company): Promise<Company> {
-    return { ...payload, id: payload.id ?? `company-${Date.now()}` };
+
+  async create(data: any) {
+    const rows = await db.insert(companies).values(data).returning();
+    return rows[0];
   },
-  async update(id: string, payload: Company): Promise<Company> {
-    return { ...payload, id };
+
+  async update(id: string, data: any) {
+    const rows = await db.update(companies).set(data).where(eq(companies.id, id)).returning();
+    return rows[0];
   },
-  async delete(id: string): Promise<boolean> {
-    return Boolean(id);
-  },
+
+  async delete(id: string) {
+    const rows = await db.delete(companies).where(eq(companies.id, id)).returning();
+    return rows[0];
+  }
 };
-
-export default companiesRepo;
-export { companiesRepo };

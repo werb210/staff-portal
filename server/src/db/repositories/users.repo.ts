@@ -1,23 +1,15 @@
-export type User = {
-  id: string;
-  email: string;
-  passwordHash: string;
-  role: string;
-};
+import db from "../db.js";
+import { users } from "../schema/users.js";
+import { eq } from "drizzle-orm";
 
-const demoUser: User = {
-  id: "demo-user",
-  email: "demo@example.com",
-  passwordHash: "",
-  role: "user",
-};
-
-export const usersRepo = {
-  async findByEmail(email: string): Promise<User | null> {
-    if (email === demoUser.email) return demoUser;
-    return null;
+export default {
+  async findByEmail(email: string) {
+    const result = await db.select().from(users).where(eq(users.email, email));
+    return result[0] || null;
   },
-};
 
-export default usersRepo;
-export { usersRepo };
+  async create(data: any) {
+    const inserted = await db.insert(users).values(data).returning();
+    return inserted[0];
+  }
+};
