@@ -2,6 +2,7 @@ import { Router } from "express";
 
 import contactsRoutes from "./contacts.routes.js";
 import companiesRoutes from "./companies.routes.js";
+import messagesRoutes from "./messages.routes.js";
 import productsRoutes from "./products.routes.js";
 import tagsRoutes from "./tags.routes.js";
 import searchRoutes from "./search.routes.js";
@@ -13,6 +14,7 @@ const router = Router();
 // Feature routes
 router.use("/contacts", contactsRoutes);
 router.use("/companies", companiesRoutes);
+router.use("/messages", messagesRoutes);
 router.use("/products", productsRoutes);
 router.use("/tags", tagsRoutes);
 router.use("/search", searchRoutes);
