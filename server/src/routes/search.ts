@@ -10,7 +10,7 @@ const r = Router();
 
 r.get(
   "/",
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: any, res: any) => {
     const q = (req.query.q || "").toString().toLowerCase().trim();
     if (!q) return res.json({ success: true, data: [] });
 

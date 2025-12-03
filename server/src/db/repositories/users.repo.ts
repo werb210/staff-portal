@@ -1,5 +1,5 @@
 // server/src/db/repositories/users.repo.ts
-import { db } from "../db.js";
+import db from "../db.js";
 import { users } from "../schema/users.js";
 import { eq } from "drizzle-orm";
 
@@ -24,8 +24,13 @@ export const usersRepo = {
     return rows[0] ?? null;
   },
 
+  async delete(id: string) {
+    const rows = await db.delete(users).where(eq(users.id, id)).returning();
+    return rows[0] ?? null;
+  },
+
   async findMany(filter: any = {}) {
-    let query = db.select().from(users);
+    let query: any = db.select().from(users);
 
     if (filter.email) {
       query = query.where(eq(users.email, filter.email));
