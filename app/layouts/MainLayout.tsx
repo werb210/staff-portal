@@ -27,12 +27,7 @@ export default function MainLayout({ sidebar, children }: MainLayoutProps) {
         </main>
       </div>
 
-      <ChatDrawer isOpen={isChatOpen} onClose={handleClose}>
-        {/* Empty drawer content – will be filled in Blocks 61–64 */}
-        <div className="text-center text-gray-500 mt-20">
-          Loading chat…
-        </div>
-      </ChatDrawer>
+      <ChatDrawer isOpen={isChatOpen} onClose={handleClose} />
 
       <ChatLauncher />
     </>
