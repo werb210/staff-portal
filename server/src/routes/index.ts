@@ -47,3 +47,6 @@ import pipelineEventsRoutes from "./pipelineEvents.routes";
 
 router.use("/pipeline-stages", pipelineStageRoutes);
 router.use("/pipeline-events", pipelineEventsRoutes);
+import pipelineBoardRoutes from "./pipelineBoard.routes";
+
+router.use("/pipeline-board", pipelineBoardRoutes);
