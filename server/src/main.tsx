@@ -7,6 +7,7 @@ import "./index.css";
 import GlobalLoader from "./components/GlobalLoader";
 import ErrorToast from "./components/ErrorToast";
 import NotificationStreamProvider from "./context/NotificationStreamProvider";
+import MessageStreamProvider from "./context/MessageStreamProvider";
 
 const rootElement = document.getElementById("root") as HTMLElement;
 
@@ -14,9 +15,11 @@ ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
       <NotificationStreamProvider>
-        <AppRouter />
-        <GlobalLoader />
-        <ErrorToast />
+        <MessageStreamProvider>
+          <AppRouter />
+          <GlobalLoader />
+          <ErrorToast />
+        </MessageStreamProvider>
       </NotificationStreamProvider>
     </QueryClientProvider>
   </React.StrictMode>
