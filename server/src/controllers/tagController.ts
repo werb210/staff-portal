@@ -9,45 +9,72 @@ const mapTag = (record: any) => {
   return { id: record.id, ...details, createdAt: record.createdAt };
 };
 
+const isDbConfigured = Boolean(process.env.DATABASE_URL);
+const respondUnavailable = (res: Response) =>
+  res.status(503).json({ success: false, error: "Database not configured" });
+const respondEmpty = (res: Response) => res.json({ success: true, data: [] });
+
 export const tagController = {
   list: asyncHandler(async (_req: Request, res: Response) => {
-    const rows = await auditLogsRepo.findMany({ eventType: "tag" });
-    res.json({ success: true, data: rows.map(mapTag).filter(Boolean) });
+    if (!isDbConfigured) return respondEmpty(res);
+    try {
+      const rows = await auditLogsRepo.findMany({ eventType: "tag" });
+      return res.json({ success: true, data: rows.map(mapTag).filter(Boolean) });
+    } catch (_err) {
+      return respondEmpty(res);
+    }
   }),
 
   create: asyncHandler(async (req: Request, res: Response) => {
+    if (!isDbConfigured) return respondUnavailable(res);
     const { name, color = null } = req.body ?? {};
     if (!name || typeof name !== "string")
       return res.status(400).json({ success: false, error: "Missing or invalid 'name'" });
 
-    const created = await auditLogsRepo.create({
-      eventType: "tag",
-      details: { name, color }
-    });
+    try {
+      const created = await auditLogsRepo.create({
+        eventType: "tag",
+        details: { name, color }
+      });
 
-    res.status(201).json({ success: true, data: mapTag(created) });
+      res.status(201).json({ success: true, data: mapTag(created) });
+    } catch (_err) {
+      res.status(503).json({ success: false, error: "Unable to create tag" });
+    }
   }),
 
   update: asyncHandler(async (req: Request, res: Response) => {
-    const existing = await auditLogsRepo.findById(req.params.id);
-    if (!existing || existing.eventType !== "tag")
-      return res.status(404).json({ success: false, error: "Tag not found" });
+    if (!isDbConfigured) return respondUnavailable(res);
 
-    const base = safeDetails(existing.details as Record<string, any>);
-    const patch = safeDetails(req.body as Record<string, any>);
+    try {
+      const existing = await auditLogsRepo.findById(req.params.id);
+      if (!existing || existing.eventType !== "tag")
+        return res.status(404).json({ success: false, error: "Tag not found" });
 
-    const merged = { ...base, ...patch };
+      const base = safeDetails(existing.details as Record<string, any>);
+      const patch = safeDetails(req.body as Record<string, any>);
 
-    const updated = await auditLogsRepo.update(req.params.id, merged);
-    res.json({ success: true, data: mapTag(updated) });
+      const merged = { ...base, ...patch };
+
+      const updated = await auditLogsRepo.update(req.params.id, merged);
+      res.json({ success: true, data: mapTag(updated) });
+    } catch (_err) {
+      res.status(503).json({ success: false, error: "Unable to update tag" });
+    }
   }),
 
   remove: asyncHandler(async (req: Request, res: Response) => {
-    const deleted = await auditLogsRepo.delete(req.params.id);
-    if (!deleted || deleted.eventType !== "tag")
-      return res.status(404).json({ success: false, error: "Tag not found" });
+    if (!isDbConfigured) return respondUnavailable(res);
 
-    res.json({ success: true, data: mapTag(deleted) });
+    try {
+      const deleted = await auditLogsRepo.delete(req.params.id);
+      if (!deleted || deleted.eventType !== "tag")
+        return res.status(404).json({ success: false, error: "Tag not found" });
+
+      res.json({ success: true, data: mapTag(deleted) });
+    } catch (_err) {
+      res.status(503).json({ success: false, error: "Unable to delete tag" });
+    }
   })
 };
 
