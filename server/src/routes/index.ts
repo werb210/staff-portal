@@ -1,4 +1,5 @@
 import { Router } from "express";
+
 import authRoutes from "./auth.routes";
 import contactsRoutes from "./contacts.routes";
 import companiesRoutes from "./companies.routes";
@@ -13,6 +14,6 @@ router.use("/contacts", contactsRoutes);
 router.use("/companies", companiesRoutes);
 router.use("/products", productsRoutes);
 router.use("/tags", tagsRoutes);
-router.use("/_int", healthRoutes);
+router.use("/health", healthRoutes);
 
 export default router;
