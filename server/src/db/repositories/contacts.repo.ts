@@ -1,7 +1,6 @@
+import { and, eq } from "drizzle-orm";
 import db from "../db.js";
-import { contacts } from "../schema/contacts.js";
-import { eq } from "drizzle-orm";
-import { safeDetails } from "../../utils/safeDetails.js";
+import auditLogs from "../schema/audit.js";
 
 type ContactInput = Record<string, any>;
 
