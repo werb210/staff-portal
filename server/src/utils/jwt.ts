@@ -1,15 +1,20 @@
 import jwt from "jsonwebtoken";
 
-const JWT_SECRET = process.env.JWT_SECRET || "dev-secret";
+const ACCESS_SECRET = process.env.JWT_ACCESS_SECRET || "dev-access-secret";
+const REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || "dev-refresh-secret";
 
-export const signToken = (payload: Record<string, any>) => {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: "7d" });
-};
+export function signAccessToken(payload: any) {
+  return jwt.sign(payload, ACCESS_SECRET, { expiresIn: "15m" });
+}
 
-export const verifyToken = (token: string) => {
-  try {
-    return jwt.verify(token, JWT_SECRET);
-  } catch (err) {
-    return null;
-  }
-};
+export function signRefreshToken(payload: any) {
+  return jwt.sign(payload, REFRESH_SECRET, { expiresIn: "7d" });
+}
+
+export function verifyAccessToken(token: string) {
+  return jwt.verify(token, ACCESS_SECRET);
+}
+
+export function verifyRefreshToken(token: string) {
+  return jwt.verify(token, REFRESH_SECRET);
+}

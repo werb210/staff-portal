@@ -1,15 +1,18 @@
-export default function requireAuth(req: any, res: any, next: any) {
+import { Request, Response, NextFunction } from "express";
+import { verifyAccessToken } from "../utils/jwt.js";
+
+export function requireAuth(req: any, res: Response, next: NextFunction) {
   const header = req.headers.authorization;
-  const token = header?.toString().replace("Bearer ", "");
-  const headerUser = req.headers["x-user-id"];
-  const userId = typeof headerUser === "string" ? headerUser : token;
-  const roleHeader = req.headers["x-user-role"];
-  const role = typeof roleHeader === "string" ? roleHeader : undefined;
+  if (!header || !header.startsWith("Bearer "))
+    return res.status(401).json({ error: "Missing bearer token" });
 
-  if (!userId) {
-    return res.status(401).json({ success: false, message: "Unauthorized" });
+  const token = header.replace("Bearer ", "").trim();
+
+  try {
+    const decoded = verifyAccessToken(token);
+    req.user = decoded;
+    next();
+  } catch (err) {
+    return res.status(401).json({ error: "Invalid or expired token" });
   }
-
-  req.user = { id: userId, role };
-  next();
 }
