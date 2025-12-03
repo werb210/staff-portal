@@ -1,38 +1,37 @@
-import { desc, eq } from "drizzle-orm";
-import { db } from "../db.js";
+import db from "../db.js";
 import { notifications } from "../schema/notifications.js";
+import { eq } from "drizzle-orm";
 
 export type NotificationRecord = typeof notifications.$inferSelect;
-export type NotificationInsert = typeof notifications.$inferInsert;
+export type CreateNotification = typeof notifications.$inferInsert;
 
 export const notificationsRepo = {
   async getAll(): Promise<NotificationRecord[]> {
-    return db.select().from(notifications).orderBy(desc(notifications.created_at));
+    return db.select().from(notifications);
   },
 
   async getById(id: string): Promise<NotificationRecord | undefined> {
-    const [record] = await db.select().from(notifications).where(eq(notifications.id, id));
-    return record;
-  },
-
-  async getByContact(contactId: string): Promise<NotificationRecord[]> {
-    return db
+    const rows = await db
       .select()
       .from(notifications)
-      .where(eq(notifications.contact_id, contactId))
-      .orderBy(desc(notifications.created_at));
+      .where(eq(notifications.id, id));
+    return rows[0];
   },
 
-  async create(data: NotificationInsert) {
-    const [row] = await db.insert(notifications).values({ read: false, ...data }).returning();
+  async create(data: CreateNotification): Promise<NotificationRecord> {
+    const [row] = await db.insert(notifications).values(data).returning();
     return row;
   },
 
-  async markRead(id: string) {
-    return db.update(notifications).set({ read: true }).where(eq(notifications.id, id)).execute();
-  },
-
-  async delete(id: string) {
-    return db.delete(notifications).where(eq(notifications.id, id)).execute();
-  },
+  async update(
+    id: string,
+    data: Partial<CreateNotification>
+  ): Promise<NotificationRecord> {
+    const [row] = await db
+      .update(notifications)
+      .set(data)
+      .where(eq(notifications.id, id))
+      .returning();
+    return row;
+  }
 };
