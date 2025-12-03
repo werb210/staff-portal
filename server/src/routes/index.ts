@@ -2,37 +2,28 @@ import { Router } from "express";
 
 import contactsRoutes from "./contacts.routes.js";
 import companiesRoutes from "./companies.routes.js";
-import emailRoutes from "./email.routes.js";
-import emailLogsRoutes from "./emailLogs.routes.js";
+import applicationsRoutes from "./applications.routes.js";
+import documentsRoutes from "./documents.routes.js";
+import timelineRoutes from "./timeline.routes.js";
 import messagesRoutes from "./messages.routes.js";
-import notificationsRoutes from "./notifications.routes.js";
-import productsRoutes from "./products.routes.js";
+import notificationsRoutes from "./notifications.routes.js";   // <-- NEW
 import tagsRoutes from "./tags.routes.js";
-import searchRoutes from "./search.routes.js";
-import healthRoutes from "./health.routes.js";
 import usersRoutes from "./users.routes.js";
-import smsRoutes from "./sms.routes.js";
-import smsLogsRoutes from "./smsLogs.routes.js";
-import smsQueueRoutes from "./smsQueue.routes.js";
+import productsRoutes from "./products.routes.js";
+import lendersRoutes from "./lenders.routes.js";
 
 const router = Router();
 
-// Feature routes
 router.use("/contacts", contactsRoutes);
 router.use("/companies", companiesRoutes);
-router.use("/email", emailRoutes);
-router.use("/email-logs", emailLogsRoutes);
+router.use("/applications", applicationsRoutes);
+router.use("/documents", documentsRoutes);
+router.use("/timeline", timelineRoutes);
 router.use("/messages", messagesRoutes);
-router.use("/notifications", notificationsRoutes);
-router.use("/products", productsRoutes);
+router.use("/notifications", notificationsRoutes);   // <-- NEW MOUNT
 router.use("/tags", tagsRoutes);
-router.use("/sms", smsRoutes);
-router.use("/sms-logs", smsLogsRoutes);
-router.use("/sms-queue", smsQueueRoutes);
-router.use("/search", searchRoutes);
 router.use("/users", usersRoutes);
-
-// Internal health check
-router.use("/_int", healthRoutes);
+router.use("/products", productsRoutes);
+router.use("/lenders", lendersRoutes);
 
 export default router;
