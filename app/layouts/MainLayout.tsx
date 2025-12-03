@@ -1,6 +1,7 @@
 import React from "react";
 import { useAtom } from "jotai";
 import ChatDrawer from "@/components/chat/ChatDrawer";
+import ChatLauncher from "@/components/chat/ChatLauncher";
 import { chatDrawerOpenAtom, closeChatDrawer } from "@/state/chatDrawerState";
 
 interface MainLayoutProps {
@@ -32,6 +33,8 @@ export default function MainLayout({ sidebar, children }: MainLayoutProps) {
           Loading chat…
         </div>
       </ChatDrawer>
+
+      <ChatLauncher />
     </>
   );
 }
