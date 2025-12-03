@@ -1,9 +1,9 @@
 import { Router } from "express";
-import searchController from "../controllers/searchController.js";
+import searchController from "../controllers/searchController";
 
 const router = Router();
 
-// GET /api/search?q=term
-router.get("/", searchController.global);
+// GET /api/search?q=abc
+router.get("/", searchController.globalSearch);
 
 export default router;

@@ -33,3 +33,6 @@ router.use("/sms-logs", smsLogsRoutes);
 router.use("/chat", chatRoutes);
 
 export default router;
+import searchRoutes from "./search.routes";
+
+router.use("/search", searchRoutes);

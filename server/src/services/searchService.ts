@@ -1,39 +1,28 @@
-import { contactsRepo } from "../db/repositories/contacts.repo.js";
+import contactsRepo from "../db/repositories/contacts.repo";
+import companiesRepo from "../db/repositories/companies.repo";
 
-export type SearchResult = {
-  id: string;
-  type: "contact";
-  label: string;
-  email?: string | null;
-  phone?: string | null;
+const normalize = (record: any, type: string) => {
+  if (!record) return null;
+  return {
+    id: record.id,
+    type,
+    ...record,
+  };
 };
 
-export const searchService = {
-  async globalSearch(query: string): Promise<SearchResult[]> {
+const searchService = {
+  async search(query: string) {
     if (!query || typeof query !== "string") return [];
 
-    const q = query.toLowerCase();
+    const filter = { name: query };
 
-    const contacts = await contactsRepo.getAll();
-    const matchedContacts = contacts
-      .filter((c) => {
-        const name = `${c.first_name ?? ""} ${c.last_name ?? ""}`.trim().toLowerCase();
-        const email = (c.email ?? "").toLowerCase();
-        const phone = (c.phone ?? "").toLowerCase();
-        return name.includes(q) || email.includes(q) || phone.includes(q);
-      })
-      .map((c) => ({
-        id: c.id,
-        type: "contact" as const,
-        label:
-          `${c.first_name ?? ""} ${c.last_name ?? ""}`.trim() ||
-          c.email ||
-          "Untitled Contact",
-        email: c.email ?? null,
-        phone: c.phone ?? null,
-      }));
+    const contacts = await contactsRepo.findMany(filter);
+    const companies = await companiesRepo.findMany(filter);
 
-    return matchedContacts;
+    const mappedContacts = contacts.map((c) => normalize(c, "contact"));
+    const mappedCompanies = companies.map((c) => normalize(c, "company"));
+
+    return [...mappedContacts, ...mappedCompanies].filter(Boolean);
   },
 };
 
