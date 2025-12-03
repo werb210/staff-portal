@@ -1,20 +1,36 @@
-// server/src/index.ts
-// Entry point for staff-portal backend
-// Runs Express and loads the unified router.
-
 import express from "express";
+import cors from "cors";
+import path from "path";
 import routes from "./routes/index";
 
 const app = express();
+
+// Basic middleware
+app.use(cors());
 app.use(express.json());
 
-// Mount API routes
+// API routes
 app.use("/api", routes);
 
-const PORT = Number(process.env.PORT) || 5000;
-
-app.listen(PORT, () => {
-  console.log(`Staff Portal API running on port ${PORT}`);
+// Simple root route (optional)
+app.get("/", (_req, res) => {
+  res.status(200).send("Boreal Staff Portal API");
 });
 
-export default app;
+// Serve frontend build (if/when wired)
+const FRONTEND_BUILD_DIR = path.join(process.cwd(), "dist");
+app.use(express.static(FRONTEND_BUILD_DIR));
+
+app.get("*", (_req, res) => {
+  res.sendFile(path.join(FRONTEND_BUILD_DIR, "index.html"), (err) => {
+    if (err) {
+      res.status(404).send("Not Found");
+    }
+  });
+});
+
+// Start server
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`Staff Portal backend listening on port ${PORT}`);
+});
