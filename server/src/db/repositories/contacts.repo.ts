@@ -1,100 +1,65 @@
-// server/src/db/repositories/contacts.repo.ts
-import { and, eq } from "drizzle-orm";
 import db from "../db.js";
-import { auditLogs } from "../schema/audit.js";
+import { contacts } from "../schema/contacts.js";
+import { eq } from "drizzle-orm";
+import { safeDetails } from "../../utils/safeDetails.js";
 
-const buildWhere = (filter: Record<string, unknown> = {}) => {
-  const conditions = Object.entries(filter)
-    .filter(([, value]) => value !== undefined)
-    .map(([key, value]) => eq((auditLogs as any)[key], value as any));
+type ContactInput = Record<string, any>;
 
-  if (conditions.length === 0) return undefined;
-  return conditions.length === 1 ? conditions[0] : and(...conditions);
-};
+const buildValues = (data: ContactInput) => {
+  const values: Record<string, any> = {};
 
-const safeDetails = (value: any): Record<string, unknown> => {
-  return value && typeof value === "object" ? value : {};
-};
+  if (data.firstName !== undefined) values.firstName = data.firstName;
+  if (data.lastName !== undefined) values.lastName = data.lastName;
+  if (data.email !== undefined) values.email = data.email;
+  if (data.phone !== undefined) values.phone = data.phone;
+  if (data.companyId !== undefined) values.companyId = data.companyId;
 
-const mapRecord = (record: any) => {
-  if (!record) return null;
-
-  const details = safeDetails(record.details);
-
-  return {
-    id: record.id,
-    ...details,
-    createdAt: record.createdAt,
-  };
+  return values;
 };
 
 export const contactsRepo = {
-  async create(data: Record<string, unknown>) {
-    const [created] = await db
-      .insert(auditLogs)
-      .values({ eventType: "contact", details: safeDetails(data) })
-      .returning();
-
-    return mapRecord(created);
+  async create(data: ContactInput) {
+    const payload = buildValues(data);
+    const [created] = await db.insert(contacts).values(payload).returning();
+    return created;
   },
 
-  async update(id: string, data: Record<string, unknown>) {
-    const [existing] = await db
-      .select()
-      .from(auditLogs)
-      .where(eq(auditLogs.id, id));
-
-    if (!existing || existing.eventType !== "contact") return null;
-
-    const merged = {
-      ...safeDetails(existing.details),
-      ...safeDetails(data),
-    };
-
+  async update(id: string, data: ContactInput) {
+    const payload = buildValues(data);
+    if (Object.keys(payload).length === 0) return this.findById(id);
     const [updated] = await db
-      .update(auditLogs)
-      .set({ details: merged })
-      .where(eq(auditLogs.id, id))
+      .update(contacts)
+      .set(payload)
+      .where(eq(contacts.id, id))
       .returning();
 
-    return mapRecord(updated);
+    return updated ?? null;
   },
 
   async delete(id: string) {
-    const [deleted] = await db
-      .delete(auditLogs)
-      .where(eq(auditLogs.id, id))
+    const [removed] = await db
+      .delete(contacts)
+      .where(eq(contacts.id, id))
       .returning();
 
-    return mapRecord(deleted);
+    return removed ?? null;
   },
 
   async findById(id: string) {
-    const [record] = await db
-      .select()
-      .from(auditLogs)
-      .where(eq(auditLogs.id, id));
-
-    if (!record || record.eventType !== "contact") return null;
-
-    return mapRecord(record);
+    const [row] = await db.select().from(contacts).where(eq(contacts.id, id));
+    return row ?? null;
   },
 
-  async findMany(filter: Record<string, unknown> = {}) {
-    const where = buildWhere({
-      ...safeDetails(filter),
-      eventType: "contact",
-    });
+  async findMany(filter: ContactInput = {}) {
+    const safeFilter = safeDetails(filter);
+    let query: any = db.select().from(contacts);
 
-    const query = db.select().from(auditLogs);
-    if (where) query.where(where);
+    if (safeFilter.companyId) {
+      query = query.where(eq(contacts.companyId, safeFilter.companyId));
+    }
 
-    const results = await query;
-
-    return results
-      .filter((r) => r.eventType === "contact")
-      .map(mapRecord)
-      .filter(Boolean);
+    const rows = await query;
+    return rows;
   },
 };
 

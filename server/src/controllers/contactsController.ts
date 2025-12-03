@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import contactsRepo from "../db/repositories/contacts.repo";
+import contactsRepo from "../db/repositories/contacts.repo.js";
 import asyncHandler from "../utils/asyncHandler.js";
 
 const isDbConfigured = Boolean(process.env.DATABASE_URL);
