@@ -1,10 +1,13 @@
+// server/src/routes/companies.routes.ts
 import { Router } from "express";
+import CompaniesController from "../controllers/companiesController";
 
 const router = Router();
 
-// placeholder route
-router.get("/", async (_req, res) => {
-  res.json({ message: "companies endpoint online" });
-});
+router.get("/", CompaniesController.list);
+router.get("/:id", CompaniesController.get);
+router.post("/", CompaniesController.create);
+router.put("/:id", CompaniesController.update);
+router.delete("/:id", CompaniesController.delete);
 
 export default router;
