@@ -1,44 +1,28 @@
 import db from "../db.js";
 import { companies } from "../schema/companies.js";
-import { eq } from "drizzle-orm";
+import { eq, ilike } from "drizzle-orm";
 
-export const companiesRepo = {
-  async create(data: any) {
-    const [created] = await db.insert(companies).values({
-      name: data.name,
-      website: data.website,
-      address: data.address
-    }).returning();
-    return created;
+export default {
+  async findAll() {
+    return db.select().from(companies);
   },
 
-  async update(id: string, data: any) {
-    const [updated] = await db.update(companies)
-      .set({
-        name: data.name,
-        website: data.website,
-        address: data.address
-      })
-      .where(eq(companies.id, id))
-      .returning();
-    return updated;
+  async search(query: string) {
+    return db.select().from(companies).where(ilike(companies.name, `%${query}%`));
   },
 
-  async delete(id: string) {
-    const [removed] = await db.delete(companies)
-      .where(eq(companies.id, id))
-      .returning();
-    return removed;
+  async findById(id: number) {
+    const rows = await db.select().from(companies).where(eq(companies.id, id));
+    return rows[0] || null;
   },
 
-  async findById(id: string) {
-    const [row] = await db.select().from(companies).where(eq(companies.id, id));
-    return row || null;
+  async create(data: Omit<typeof companies.$inferInsert, "id">) {
+    const rows = await db.insert(companies).values(data).returning();
+    return rows[0];
   },
 
-  async findMany() {
-    return await db.select().from(companies);
+  async update(id: number, data: Partial<typeof companies.$inferInsert>) {
+    const rows = await db.update(companies).set(data).where(eq(companies.id, id)).returning();
+    return rows[0];
   }
 };
-
-export default companiesRepo;

@@ -1,55 +1,28 @@
 import db from "../db.js";
 import { products } from "../schema/products.js";
-import { eq } from "drizzle-orm";
-import { safeDetails } from "../../utils/safeDetails.js";
+import { eq, ilike } from "drizzle-orm";
 
-export const productsRepo = {
-  async create(data: any) {
-    const [created] = await db.insert(products).values({
-      lenderId: data.lenderId,
-      name: data.name,
-      type: data.type,
-      minAmount: data.minAmount,
-      maxAmount: data.maxAmount
-    }).returning();
-    return created;
+export default {
+  async findAll() {
+    return db.select().from(products);
   },
 
-  async update(id: string, data: any) {
-    const [updated] = await db.update(products)
-      .set({
-        lenderId: data.lenderId,
-        name: data.name,
-        type: data.type,
-        minAmount: data.minAmount,
-        maxAmount: data.maxAmount
-      })
-      .where(eq(products.id, id))
-      .returning();
-    return updated;
+  async search(query: string) {
+    return db.select().from(products).where(ilike(products.name, `%${query}%`));
   },
 
-  async delete(id: string) {
-    const [removed] = await db.delete(products)
-      .where(eq(products.id, id))
-      .returning();
-    return removed;
+  async findById(id: number) {
+    const rows = await db.select().from(products).where(eq(products.id, id));
+    return rows[0] || null;
   },
 
-  async findById(id: string) {
-    const [row] = await db.select().from(products).where(eq(products.id, id));
-    return row || null;
+  async create(data: Omit<typeof products.$inferInsert, "id">) {
+    const rows = await db.insert(products).values(data).returning();
+    return rows[0];
   },
 
-  async findMany(filter: any = {}) {
-    const safeFilter = safeDetails(filter);
-
-    if (safeFilter.lenderId) {
-      return await db.select().from(products)
-        .where(eq(products.lenderId, safeFilter.lenderId as string));
-    }
-    return await db.select().from(products);
+  async update(id: number, data: Partial<typeof products.$inferInsert>) {
+    const rows = await db.update(products).set(data).where(eq(products.id, id)).returning();
+    return rows[0];
   }
 };
-
-export default productsRepo;
