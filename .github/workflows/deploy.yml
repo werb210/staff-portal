@@ -1,0 +1,47 @@
+name: Deploy Staff Server to Azure
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        working-directory: server
+        run: npm ci
+
+      - name: Build server (no type checking)
+        working-directory: server
+        run: |
+          if [ -f "tsconfig.deploy.json" ]; then
+            npx tsc -p tsconfig.deploy.json
+          else
+            npm run build
+          fi
+
+      - name: Prepare Azure artifact (include node_modules)
+        run: |
+          mkdir azure_bundle
+          cp -r server/dist azure_bundle/dist
+          cp server/package.json azure_bundle/
+          cp server/package-lock.json azure_bundle/
+          cp -r server/node_modules azure_bundle/node_modules
+
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: azure_bundle
