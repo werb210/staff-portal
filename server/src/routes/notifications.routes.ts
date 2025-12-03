@@ -1,63 +1,18 @@
 import { Router } from "express";
-import { notificationsRepo } from "../db/repositories/notifications.repo.js";
+import controller from "../controllers/notificationsController.js";
 
 const router = Router();
 
-/**
- * GET /api/notifications
- * Returns all notifications
- */
-router.get("/", async (req, res) => {
-  try {
-    const rows = await notificationsRepo.getAll();
-    res.json(rows);
-  } catch (err: any) {
-    console.error("GET /notifications error:", err);
-    res.status(500).json({ error: "Failed to fetch notifications" });
-  }
-});
+// Fetch
+router.get("/user/:userId", controller.list);
+router.get("/user/:userId/unread", controller.unread);
 
-/**
- * GET /api/notifications/:id
- * Return a single notification by ID
- */
-router.get("/:id", async (req, res) => {
-  try {
-    const row = await notificationsRepo.getById(req.params.id);
-    if (!row) return res.status(404).json({ error: "Not found" });
-    res.json(row);
-  } catch (err: any) {
-    console.error("GET /notifications/:id error:", err);
-    res.status(500).json({ error: "Failed to fetch notification" });
-  }
-});
+// Mark read
+router.post("/:id/read", controller.markRead);
+router.post("/user/:userId/read-all", controller.markAllRead);
 
-/**
- * POST /api/notifications
- * Create new notification
- */
-router.post("/", async (req, res) => {
-  try {
-    const row = await notificationsRepo.create(req.body);
-    res.status(201).json(row);
-  } catch (err: any) {
-    console.error("POST /notifications error:", err);
-    res.status(500).json({ error: "Failed to create notification" });
-  }
-});
-
-/**
- * PUT /api/notifications/:id
- * Update existing notification
- */
-router.put("/:id", async (req, res) => {
-  try {
-    const row = await notificationsRepo.update(req.params.id, req.body);
-    res.json(row);
-  } catch (err: any) {
-    console.error("PUT /notifications/:id error:", err);
-    res.status(500).json({ error: "Failed to update notification" });
-  }
-});
+// Create + delete
+router.post("/", controller.create);
+router.delete("/:id", controller.delete);
 
 export default router;
