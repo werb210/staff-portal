@@ -2,8 +2,8 @@ import { smsLogsRepo } from "../db/repositories/smsLogs.repo.js";
 import { smsQueueRepo } from "../db/repositories/smsQueue.repo.js";
 
 /**
- * This service mirrors the server's SMS system.
- * Real Twilio integration will be plugged in during V3.
+ * Basic SMS pipeline: log immediately and queue for delivery.
+ * Twilio integration will be added in a later version.
  */
 export const smsService = {
   async list() {
@@ -19,32 +19,31 @@ export const smsService = {
   },
 
   /**
-   * Simulate sending SMS
-   * Real implementation in V3 will hit Twilio API.
+   * Queue + log an SMS
    */
   async send(payload: {
     contact_id?: string;
-    phone: string;
+    to: string;
     message: string;
   }) {
-    if (!payload.phone || !payload.message) {
-      throw new Error("phone and message required");
+    if (!payload.to || !payload.message) {
+      throw new Error("to and message are required");
     }
 
     const queued = await smsQueueRepo.enqueue({
-      contact_id: payload.contact_id,
-      phone: payload.phone,
+      contact_id: payload.contact_id ?? null,
+      phone: payload.to,
       body: payload.message,
       status: "queued",
     });
 
-    const sent = await smsLogsRepo.create({
-      contact_id: payload.contact_id,
-      phone: payload.phone,
+    const logged = await smsLogsRepo.create({
+      contact_id: payload.contact_id ?? null,
+      phone: payload.to,
       body: payload.message,
-      status: "sent",
+      status: "queued",
     });
 
-    return { queued, sent };
+    return { queued, logged };
   },
 };
