@@ -55,6 +55,12 @@ async function list(): Promise<ContactRecord[]> {
   return Array.from(memoryStore.values());
 }
 
+async function findMany(_filter: Partial<ContactRecord> = {}): Promise<ContactRecord[]> {
+  // Filtering is intentionally simple for the in-memory mock store.
+  // Once a real database is wired in, the filter can be applied directly.
+  return list();
+}
+
 async function update(
   id: string,
   data: Partial<ContactRecord>
@@ -82,7 +88,9 @@ async function remove(id: string): Promise<boolean> {
 export default {
   create,
   findById,
+  findMany,
   list,
   update,
   remove,
+  delete: remove,
 };
