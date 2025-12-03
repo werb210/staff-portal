@@ -1,8 +1,7 @@
 import "dotenv/config";
 import app from "./app.js";
 
-// IMPORTANT: no ".js" here so ts-node can resolve the TS file
-import "./routes/index";
+import "./routes/index.js";
 
 const PORT = Number(process.env.PORT) || 5000;
 
