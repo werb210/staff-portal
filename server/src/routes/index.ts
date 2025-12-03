@@ -50,3 +50,5 @@ router.use("/pipeline-events", pipelineEventsRoutes);
 import pipelineBoardRoutes from "./pipelineBoard.routes";
 
 router.use("/pipeline-board", pipelineBoardRoutes);
+import tagsRoutes from "./tags.routes";
+router.use("/tags", tagsRoutes);
