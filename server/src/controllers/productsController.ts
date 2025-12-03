@@ -24,5 +24,12 @@ export default {
     const updated = await productsRepo.update(id, req.body);
     if (!updated) return res.status(404).json({ error: "Not found" });
     res.json(updated);
+  },
+
+  remove: async (req: Request, res: Response) => {
+    const id = Number(req.params.id);
+    const deleted = await productsRepo.remove(id);
+    if (!deleted) return res.status(404).json({ error: "Not found" });
+    res.json(deleted);
   }
 };

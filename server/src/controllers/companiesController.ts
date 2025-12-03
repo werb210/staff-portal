@@ -28,10 +28,17 @@ export const CompaniesController = {
     res.json({ success: true, data: record });
   },
 
-  async delete(req: Request, res: Response) {
+  async remove(req: Request, res: Response) {
     const id = req.params.id;
-    await CompaniesService.delete(id);
-    res.json({ success: true });
+    const record = await CompaniesService.delete(id);
+    if (!record) {
+      return res.status(404).json({ success: false, error: "Company not found" });
+    }
+    res.json({ success: true, data: record });
+  },
+
+  async delete(req: Request, res: Response) {
+    return CompaniesController.remove(req, res);
   },
 };
 
