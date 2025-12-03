@@ -1,55 +1,51 @@
-import db from "../db.js";
-import { contacts } from "../schema/contacts.js";
-import { eq } from "drizzle-orm";
-import { safeDetails } from "../../utils/safeDetails.js";
+// server/src/db/repositories/contacts.repo.ts
+import { and, eq } from "drizzle-orm";
+import { db } from "../db.js";
+import { auditLogs } from "../schema/audit.js";
 
-export const contactsRepo = {
-  async create(data: any) {
-    const [created] = await db.insert(contacts).values({
-      firstName: data.firstName,
-      lastName: data.lastName,
-      email: data.email,
-      phone: data.phone,
-      companyId: data.companyId
-    }).returning();
-    return created;
-  },
+const buildWhere = (filter: Record<string, unknown> = {}) => {
+  const conditions = Object.entries(filter)
+    .filter(([, value]) => value !== undefined)
+    .map(([key, value]) => eq((auditLogs as any)[key], value as any));
 
-  async update(id: string, data: any) {
-    const [updated] = await db.update(contacts)
-      .set({
-        firstName: data.firstName,
-        lastName: data.lastName,
-        email: data.email,
-        phone: data.phone,
-        companyId: data.companyId
-      })
-      .where(eq(contacts.id, id))
-      .returning();
-    return updated;
-  },
-
-  async delete(id: string) {
-    const [removed] = await db.delete(contacts)
-      .where(eq(contacts.id, id))
-      .returning();
-    return removed;
-  },
-
-  async findById(id: string) {
-    const [row] = await db.select().from(contacts).where(eq(contacts.id, id));
-    return row || null;
-  },
-
-  async findMany(filter: any = {}) {
-    const safeFilter = safeDetails(filter);
-
-    if (safeFilter.companyId) {
-      return await db.select().from(contacts)
-        .where(eq(contacts.companyId, safeFilter.companyId as string));
-    }
-    return await db.select().from(contacts);
-  }
+  if (conditions.length === 0) return undefined;
+  return conditions.length === 1 ? conditions[0] : and(...conditions);
 };
 
-export default contactsRepo;
+const safeDetails = (value: any): Record<string, unknown> => {
+  return value && typeof value === "object" ? value : {};
+};
+
+const mapRecord = (record: any) => {
+  if (!record) return null;
+
+  const details = safeDetails(record.details);
+
+  return {
+    id: record.id,
+    ...details,
+    createdAt: record.createdAt,
+  };
+};
+
+export const contactsRepo = {
+  async create(data: Record<string, unknown>) {
+    const [created] = await db
+      .insert(auditLogs)
+      .values({ eventType: "contact", details: safeDetails(data) })
+      .returning();
+
+    return mapRecord(created);
+  },
+
+  async update(id: string, data: Record<string, unknown>) {
+    const [existing] = await db
+      .select()
+      .from(auditLogs)
+      .where(eq(auditLogs.id, id));
+
+    if (!existing || existing.eventType !== "contact") return null;
+
+    const merged = {
+      ...safeDetails(existing.details),
+      ...safeDetails
