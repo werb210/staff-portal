@@ -24,5 +24,10 @@ export default {
   async update(id: number, data: Partial<typeof products.$inferInsert>) {
     const rows = await db.update(products).set(data).where(eq(products.id, id)).returning();
     return rows[0];
+  },
+
+  async remove(id: number) {
+    const rows = await db.delete(products).where(eq(products.id, id)).returning();
+    return rows[0];
   }
 };

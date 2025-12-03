@@ -1,15 +1,12 @@
-// server/src/routes/contacts.routes.ts
-// Routes for contact CRUD
-
 import { Router } from "express";
-import controller from "../controllers/contactsController";
+import contactsController from "../controllers/contactsController";
 
 const router = Router();
 
-router.get("/", controller.list);
-router.post("/", controller.create);
-router.get("/:id", controller.get);
-router.put("/:id", controller.update);
-router.delete("/:id", controller.remove);
+router.get("/", contactsController.list);
+router.get("/:id", contactsController.get);
+router.post("/", contactsController.create);
+router.put("/:id", contactsController.update);
+router.delete("/:id", contactsController.remove);
 
 export default router;
