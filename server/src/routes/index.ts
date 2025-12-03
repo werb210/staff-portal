@@ -11,6 +11,7 @@ import tagsRoutes from "./tags.routes.js";
 import usersRoutes from "./users.routes.js";
 import productsRoutes from "./products.routes.js";
 import lendersRoutes from "./lenders.routes.js";
+import emailLogsRoutes from "./emailLogs.routes.js";
 
 const router = Router();
 
@@ -25,5 +26,6 @@ router.use("/tags", tagsRoutes);
 router.use("/users", usersRoutes);
 router.use("/products", productsRoutes);
 router.use("/lenders", lendersRoutes);
+router.use("/email-logs", emailLogsRoutes);
 
 export default router;
