@@ -13,6 +13,7 @@ import productsRoutes from "./products.routes.js";
 import lendersRoutes from "./lenders.routes.js";
 import emailLogsRoutes from "./emailLogs.routes.js";
 import smsLogsRoutes from "./smsLogs.routes.js";
+import chatRoutes from "./chat.routes.js";
 
 const router = Router();
 
@@ -29,5 +30,6 @@ router.use("/products", productsRoutes);
 router.use("/lenders", lendersRoutes);
 router.use("/email-logs", emailLogsRoutes);
 router.use("/sms-logs", smsLogsRoutes);
+router.use("/chat", chatRoutes);
 
 export default router;

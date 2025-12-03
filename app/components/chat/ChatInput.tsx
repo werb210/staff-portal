@@ -2,25 +2,31 @@
 
 import React, { useState } from "react";
 import { Send } from "lucide-react";
-import { useSetAtom } from "jotai";
+import { useAtom, useSetAtom } from "jotai";
 import { chatMessagesAtom } from "@/state/chatMessages";
+import { chatConversationIdAtom } from "@/state/chatConversationId";
+import { apiSendMessage } from "@/utils/chatApi";
 
 export default function ChatInput() {
   const [text, setText] = useState("");
+  const [conversationId] = useAtom(chatConversationIdAtom);
   const pushMessage = useSetAtom(chatMessagesAtom);
 
-  const send = () => {
-    if (!text.trim()) return;
+  const send = async () => {
+    if (!text.trim() || !conversationId) return;
 
-    pushMessage((prev) => [
-      ...prev,
-      {
-        id: crypto.randomUUID(),
-        role: "staff",
-        text: text.trim(),
-        timestamp: Date.now(),
-      },
-    ]);
+    const messageText = text.trim();
+
+    const local = {
+      id: crypto.randomUUID(),
+      role: "staff" as const,
+      text: messageText,
+      timestamp: Date.now(),
+    };
+
+    pushMessage((prev) => [...prev, local]);
+
+    await apiSendMessage(conversationId, "staff", messageText);
 
     setText("");
   };

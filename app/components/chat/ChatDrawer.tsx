@@ -1,9 +1,11 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { X } from "lucide-react";
 import MessageList from "./MessageList";
 import ChatInput from "./ChatInput";
 import { useAtom } from "jotai";
 import { chatMessagesAtom } from "@/state/chatMessages";
+import { chatConversationIdAtom } from "@/state/chatConversationId";
+import { apiFetchMessages } from "@/utils/chatApi";
 
 export default function ChatDrawer({
   isOpen,
@@ -12,7 +14,22 @@ export default function ChatDrawer({
   isOpen: boolean;
   onClose: () => void;
 }) {
-  const [messages] = useAtom(chatMessagesAtom);
+  const [conversationId] = useAtom(chatConversationIdAtom);
+  const [messages, setMessages] = useAtom(chatMessagesAtom);
+
+  useEffect(() => {
+    if (!conversationId) return;
+
+    apiFetchMessages(conversationId).then((rows) => {
+      const mapped = rows.map((r: any) => ({
+        id: r.id,
+        role: r.senderRole,
+        text: r.text,
+        timestamp: new Date(r.timestamp).getTime(),
+      }));
+      setMessages(mapped);
+    });
+  }, [conversationId, setMessages]);
 
   return (
     <div
