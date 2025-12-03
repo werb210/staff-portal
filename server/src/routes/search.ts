@@ -1,7 +1,7 @@
 import { Router } from "express";
 import asyncHandler from "../utils/asyncHandler.js";
-import { contactsRepo } from "../db/repositories/contacts.repo.js";
-import { companiesRepo } from "../db/repositories/companies.repo.js";
+import contactsRepo from "../db/repositories/contacts.repo.js";
+import companiesRepo from "../db/repositories/companies.repo.js";
 import applicationsRepo from "../db/repositories/applications.repo.js";
 import productsRepo from "../db/repositories/products.repo.js";
 import lendersRepo from "../db/repositories/lenders.repo.js";
@@ -15,11 +15,11 @@ r.get(
     if (!q) return res.json({ success: true, data: [] });
 
     const [contacts, companies, apps, products, lenders] = await Promise.all([
-      contactsRepo.findMany({}),
-      companiesRepo.findMany({}),
-      applicationsRepo.findMany({}),
-      productsRepo.findMany({}),
-      lendersRepo.findMany({}),
+      contactsRepo.findMany(),
+      companiesRepo.findMany(),
+      applicationsRepo.findMany(),
+      productsRepo.findMany(),
+      lendersRepo.findMany(),
     ]);
 
     const match = (item: any) =>
