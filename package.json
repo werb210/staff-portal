@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "ts-node server/src/index.ts",
     "build": "tsc",
+    "postbuild": "cd server && ln -sf contacts.repo.js dist/db/repositories/contacts.repo",
     "start": "node server/dist/index.js",
     "lint": "echo \"(lint disabled temporarily)\""
   },

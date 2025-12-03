@@ -1,6 +1,6 @@
 import { Router } from "express";
 import asyncHandler from "../utils/asyncHandler.js";
-import contactsRepo from "../db/repositories/contacts.repo.js";
+import contactsRepo from "../db/repositories/contacts.repo";
 import companiesRepo from "../db/repositories/companies.repo.js";
 import applicationsRepo from "../db/repositories/applications.repo.js";
 import productsRepo from "../db/repositories/products.repo.js";
