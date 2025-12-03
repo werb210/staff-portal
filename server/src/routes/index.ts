@@ -1,25 +1,28 @@
 import { Router } from "express";
-import asyncHandler from "../utils/asyncHandler.js";
-import searchService from "../services/searchService.js";
+
+// Core feature routers
+import contactsRoutes from "./contacts.routes.js";
+import companiesRoutes from "./companies.routes.js";
+import productsRoutes from "./products.routes.js";
+import tagsRoutes from "./tags.routes.js";
+import searchRoutes from "./search.routes.js";
+
+// You can add more (auth, health, etc.) here as they are implemented.
+// Example (uncomment when files exist):
+// import authRoutes from "./auth.routes.js";
+// import healthRoutes from "./health.routes.js";
 
 const router = Router();
 
-// Internal health check
-router.get("/_int/health", (_req, res) => {
-  res.status(200).json({
-    ok: true,
-    service: "staff-portal-backend",
-    timestamp: new Date().toISOString(),
-  });
-});
+// Mount feature routes under /api/*
+router.use("/contacts", contactsRoutes);
+router.use("/companies", companiesRoutes);
+router.use("/products", productsRoutes);
+router.use("/tags", tagsRoutes);
+router.use("/search", searchRoutes);
 
-router.get(
-  "/search",
-  asyncHandler(async (req, res) => {
-    const q = (req.query.q ?? "") as string;
-    const data = await searchService.globalSearch(q);
-    res.status(200).json({ success: true, data });
-  })
-);
+// Example mounts (uncomment when implemented):
+// router.use("/auth", authRoutes);
+// router.use("/_int", healthRoutes);
 
 export default router;
