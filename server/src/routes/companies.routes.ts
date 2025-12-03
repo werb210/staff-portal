@@ -7,6 +7,5 @@ router.get("/", companiesController.list);
 router.get("/:id", companiesController.get);
 router.post("/", companiesController.create);
 router.put("/:id", companiesController.update);
-router.delete("/:id", companiesController.remove);
 
 export default router;
