@@ -1,61 +1,32 @@
-import { eq, and } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { db } from "../db.js";
-import { auditLogs } from "../schema/audit.js";
+import { contacts } from "../schema/contacts.js";
 
-const safe = (v: any) => (v && typeof v === "object" ? v : {});
+export type ContactRecord = typeof contacts.$inferSelect;
+export type CreateContact = typeof contacts.$inferInsert;
 
 export const contactsRepo = {
-  async create(data: Record<string, unknown>) {
-    const [row] = await db
-      .insert(auditLogs)
-      .values({ eventType: "contact", details: safe(data) })
-      .returning();
-    return row;
+  async getAll(): Promise<ContactRecord[]> {
+    return db.select().from(contacts);
   },
 
-  async update(id: string, data: Record<string, unknown>) {
-    const [existing] = await db.select().from(auditLogs).where(eq(auditLogs.id, id));
-    if (!existing || existing.eventType !== "contact") return null;
-
-    const merged = { ...safe(existing.details), ...safe(data) };
-
-    const [updated] = await db
-      .update(auditLogs)
-      .set({ details: merged })
-      .where(eq(auditLogs.id, id))
-      .returning();
-
-    return updated;
-  },
-
-  async delete(id: string) {
-    const [deleted] = await db
-      .delete(auditLogs)
-      .where(eq(auditLogs.id, id))
-      .returning();
-    return deleted;
-  },
-
-  async findById(id: string) {
-    const [record] = await db.select().from(auditLogs).where(eq(auditLogs.id, id));
-    if (!record || record.eventType !== "contact") return null;
+  async getById(id: string): Promise<ContactRecord | undefined> {
+    const [record] = await db.select().from(contacts).where(eq(contacts.id, id));
     return record;
   },
 
-  async findMany(filter: Record<string, unknown> = {}) {
-    const conditions = Object.entries(filter)
-      .filter(([, v]) => v !== undefined)
-      .map(([key, v]) => eq((auditLogs as any)[key], v));
+  async create(data: CreateContact) {
+    const [row] = await db.insert(contacts).values(data).returning();
+    return row;
+  },
 
-    const where =
-      conditions.length === 0
-        ? undefined
-        : conditions.length === 1
-        ? conditions[0]
-        : and(...conditions);
+  async update(id: string, data: Partial<ContactRecord>) {
+    const [row] = await db.update(contacts).set(data).where(eq(contacts.id, id)).returning();
+    return row;
+  },
 
-    const rows = await db.select().from(auditLogs).where(where);
-    return rows.filter((r) => r.eventType === "contact");
+  async delete(id: string) {
+    return db.delete(contacts).where(eq(contacts.id, id)).execute();
   },
 };
 
