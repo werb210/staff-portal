@@ -1,5 +1,5 @@
-import db from "../db";
-import { users } from "../schema/users";
+import db from "../db.js";
+import { users } from "../schema/users.js";
 import { eq } from "drizzle-orm";
 
 export const roleManagementRepo = {

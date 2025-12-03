@@ -7,29 +7,21 @@ try {
 
 import express from "express";
 import cors from "cors";
-import cookieParser from "cookie-parser";
-import routes from "./routes/index.js";
+import bodyParser from "body-parser";
+import { registerRoutes } from "./routes/index.js";
 
 const app = express();
-
-// Core middleware
 app.use(cors());
-app.use(express.json({ limit: "50mb" }));
-app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser());
+app.use(bodyParser.json({ limit: "50mb" }));
+app.use(bodyParser.urlencoded({ extended: true }));
+registerRoutes(app);
 
-// Mount API routes
-app.use("/api", routes);
+app.get("/api/_int/health", (req, res) => res.json({ ok: true }));
+app.get("/", (req, res) => res.send("Staff Server Running"));
 
-// Simple health route
-app.get("/api/_int/health", (_req, res) => {
-  res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
-});
-
-// Required for Azure App Service startup
-const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => {
-  console.log(`Staff API running on port ${PORT}`);
-});
+if (process.env.NODE_ENV !== "test") {
+  const port = process.env.PORT || 5000;
+  app.listen(port, () => console.log("Server running on " + port));
+}
 
 export default app;

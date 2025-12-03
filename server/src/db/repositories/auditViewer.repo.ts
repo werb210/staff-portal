@@ -1,5 +1,5 @@
-import db from "../db";
-import { auditLogs } from "../schema/audit";
+import db from "../db.js";
+import { auditLogs } from "../schema/audit.js";
 import { and, eq, gte, lte, ilike, desc } from "drizzle-orm";
 
 interface SearchParams {
