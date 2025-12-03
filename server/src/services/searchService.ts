@@ -1,4 +1,4 @@
-import contactsRepo from "../db/repositories/contacts.repo.js";
+import { contactsRepo } from "../db/repositories/contacts.repo.js";
 
 export type SearchResult = {
   id: string;
@@ -14,10 +14,10 @@ export const searchService = {
 
     const q = query.toLowerCase();
 
-    const contacts = await contactsRepo.findMany({});
+    const contacts = await contactsRepo.getAll();
     const matchedContacts = contacts
       .filter((c) => {
-        const name = (c.name ?? "").trim().toLowerCase();
+        const name = `${c.first_name ?? ""} ${c.last_name ?? ""}`.trim().toLowerCase();
         const email = (c.email ?? "").toLowerCase();
         const phone = (c.phone ?? "").toLowerCase();
         return name.includes(q) || email.includes(q) || phone.includes(q);
@@ -25,7 +25,10 @@ export const searchService = {
       .map((c) => ({
         id: c.id,
         type: "contact" as const,
-        label: c.name?.trim() || c.email || "Untitled Contact",
+        label:
+          `${c.first_name ?? ""} ${c.last_name ?? ""}`.trim() ||
+          c.email ||
+          "Untitled Contact",
         email: c.email ?? null,
         phone: c.phone ?? null,
       }));
