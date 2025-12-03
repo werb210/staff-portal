@@ -1,16 +1,15 @@
-import { drizzle } from "drizzle-orm/node-postgres";
-import pkg from "pg";
-const { Pool } = pkg;
+// server/src/db/db.ts
+// Clean stub DB adapter for staff-portal backend.
+// This backend does NOT talk to a real database.
+// All real persistence happens in Staff-Server.
 
-// NOTE: for now the app boots even if DATABASE_URL is missing
-const connectionString = process.env.DATABASE_URL || "";
+export type FakeDB = {
+  info: string;
+};
 
-const pool = new Pool({
-  connectionString,
-  ssl: connectionString.includes("azure") ? { rejectUnauthorized: false } : false,
-});
+const db: FakeDB = {
+  info: "staff-portal mock database (no persistence)",
+};
 
-// Single Drizzle instance
-const db = drizzle(pool);
-
+// Default export ONLY — real code should not import { db }
 export default db;
