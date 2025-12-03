@@ -1,33 +1,31 @@
-import { db } from "../db.js";
-import { products } from "../schema/products.js";
-import { eq, ilike } from "drizzle-orm";
+import db from "../db.js";
+import { eq } from "drizzle-orm";
+import * as products from "../schema/products.js";
 
-export default {
-  async findAll() {
+export type ProductRecord = typeof products.$inferSelect;
+export type CreateProduct = typeof products.$inferInsert;
+
+export const productsRepo = {
+  async getAll(): Promise<ProductRecord[]> {
     return db.select().from(products);
   },
 
-  async search(query: string) {
-    return db.select().from(products).where(ilike(products.name, `%${query}%`));
+  async getById(id: string): Promise<ProductRecord | undefined> {
+    const [row] = await db.select().from(products).where(eq(products.id, id));
+    return row;
   },
 
-  async findById(id: number) {
-    const rows = await db.select().from(products).where(eq(products.id, id));
-    return rows[0] || null;
+  async create(data: CreateProduct) {
+    const [row] = await db.insert(products).values(data).returning();
+    return row;
   },
 
-  async create(data: Omit<typeof products.$inferInsert, "id">) {
-    const rows = await db.insert(products).values(data).returning();
-    return rows[0];
+  async update(id: string, data: Partial<CreateProduct>) {
+    const [row] = await db
+      .update(products)
+      .set(data)
+      .where(eq(products.id, id))
+      .returning();
+    return row;
   },
-
-  async update(id: number, data: Partial<typeof products.$inferInsert>) {
-    const rows = await db.update(products).set(data).where(eq(products.id, id)).returning();
-    return rows[0];
-  },
-
-  async remove(id: number) {
-    const rows = await db.delete(products).where(eq(products.id, id)).returning();
-    return rows[0];
-  }
 };
