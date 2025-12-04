@@ -1,36 +1,30 @@
+// server/src/db/repositories/contacts.repo.ts
 import db from "../db.js";
+import { auditLogs } from "../../schema/audit.js";
 import { and, eq } from "drizzle-orm";
-import { auditLogs } from "../schema/audit.js";
-
-type Filter = Record<string, unknown>;
-
-const buildWhere = (filter: Filter = {}) => {
-  const conditions = Object.entries(filter)
-    .filter(([, value]) => value !== undefined)
-    .map(([key, value]) => eq((auditLogs as any)[key], value as any));
-
-  if (conditions.length === 0) return undefined;
-  if (conditions.length === 1) return conditions[0];
-  return and(...conditions);
-};
 
 const safeDetails = (value: any): Record<string, unknown> => {
   return value && typeof value === "object" ? value : {};
 };
 
+const buildWhere = (filter: Record<string, unknown> = {}) => {
+  const conditions = Object.entries(filter)
+    .filter(([, v]) => v !== undefined)
+    .map(([key, v]) => eq((auditLogs as any)[key], v as any));
+  if (conditions.length === 0) return undefined;
+  return conditions.length === 1 ? conditions[0] : and(...conditions);
+};
+
 const mapRecord = (record: any) => {
   if (!record) return null;
-
-  const details = safeDetails(record.details);
-
   return {
     id: record.id,
-    ...details,
+    ...safeDetails(record.details),
     createdAt: record.createdAt,
   };
 };
 
-const contactsRepo = {
+export const contactsRepo = {
   async create(data: Record<string, unknown>) {
     const [created] = await db
       .insert(auditLogs)
@@ -39,7 +33,6 @@ const contactsRepo = {
         details: safeDetails(data),
       })
       .returning();
-
     return mapRecord(created);
   },
 
@@ -85,16 +78,14 @@ const contactsRepo = {
     return mapRecord(record);
   },
 
-  async findMany(filter: Filter = {}) {
+  async findMany(filter: Record<string, unknown> = {}) {
     const where = buildWhere({
       ...filter,
       eventType: "contact",
     });
 
-    let query = db.select().from(auditLogs);
-    if (where) {
-      query = query.where(where);
-    }
+    const query = db.select().from(auditLogs);
+    if (where) query.where(where);
 
     const results = await query;
 
