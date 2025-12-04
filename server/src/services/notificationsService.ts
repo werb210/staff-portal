@@ -1,46 +1,50 @@
-import notificationsRepo, { NotificationCreateInput } from "../db/repositories/notifications.repo.js";
-import { pushNotification } from "../realtime/socketServer.js";
+import { notificationsRepo } from "../db/repositories/notifications.repo.js";
+import { usersRepo } from "../db/repositories/users.repo.js";
 
-function must(x: any, msg: string): string {
-  if (!x || typeof x !== "string") throw new Error(msg);
-  return x;
-}
-
-export default {
-  async listForUser(userId: string) {
-    return notificationsRepo.listForUser(must(userId, "userId required"));
+export const notificationsService = {
+  async create({
+    userId,
+    title,
+    message,
+    category,
+  }: {
+    userId: string;
+    title: string;
+    message: string;
+    category?: string | null;
+  }) {
+    return await notificationsRepo.create({
+      userId,
+      title,
+      message,
+      category: category || null,
+    });
   },
 
-  async unreadCount(userId: string) {
-    return notificationsRepo.unreadCount(must(userId, "userId required"));
+  async list(userId: string) {
+    return await notificationsRepo.allForUser(userId);
   },
 
   async markRead(id: string) {
-    return notificationsRepo.markRead(must(id, "notificationId required"));
+    return await notificationsRepo.markRead(id);
   },
 
-  async markAllRead(userId: string) {
-    return notificationsRepo.markAllRead(must(userId, "userId required"));
+  async unreadCount(userId: string) {
+    return await notificationsRepo.unreadCount(userId);
   },
 
-  async create(raw: any) {
-    const payload: NotificationCreateInput = {
-      userId: must(raw.userId, "userId required"),
-      type: must(raw.type ?? "general", "type required"),
-      title: must(raw.title, "title required"),
-      body: must(raw.body, "body required"),
-      applicationId: raw.applicationId ?? null,
-      contactId: raw.contactId ?? null,
-      relatedEntity: raw.relatedEntity ?? null,
-      relatedId: raw.relatedId ?? null,
-      read: raw.read ?? false,
-    };
-    const saved = await notificationsRepo.create(payload);
-    pushNotification(saved.userId, { event: "notification", data: saved });
-    return saved;
-  },
-
-  async delete(id: string) {
-    return notificationsRepo.delete(must(id, "id required"));
+  async notifyAdmins(title: string, message: string, category?: string) {
+    const admins = await usersRepo.allByRole("admin");
+    const created = [];
+    for (const admin of admins) {
+      const n = await notificationsRepo.create({
+        userId: admin.id,
+        title,
+        message,
+        category: category || null,
+      });
+      created.push(n);
+    }
+    return created;
   },
 };

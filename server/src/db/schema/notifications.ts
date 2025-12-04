@@ -1,13 +1,11 @@
-import { pgTable, serial, varchar, text, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, boolean, timestamp } from "drizzle-orm/pg-core";
 
 export const notifications = pgTable("notifications", {
-  id: serial("id").primaryKey(),
-  userId: varchar("user_id").notNull(),
-  title: varchar("title").notNull(),
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").notNull(),
+  title: text("title").notNull(),
   message: text("message").notNull(),
-  isRead: boolean("is_read").default(false),
+  category: text("category"),
+  read: boolean("read").default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
-
-export type NotificationRecord = typeof notifications.$inferSelect;
-export type CreateNotification = typeof notifications.$inferInsert;

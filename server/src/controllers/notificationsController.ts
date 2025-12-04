@@ -1,44 +1,60 @@
 import { Request, Response } from "express";
-import { notificationsRepo } from "../db/repositories/notifications.repo.js";
+import { notificationsService } from "../services/notificationsService.js";
 
 export const notificationsController = {
-  getForUser: async (req: Request, res: Response) => {
-    const userId = req.params.userId;
-    const list = await notificationsRepo.findForUser(userId);
-    res.json({ success: true, data: list });
+  async list(req: Request, res: Response) {
+    const { userId } = req.params;
+    const data = await notificationsService.list(userId);
+    return res.json({ success: true, data });
   },
 
-  create: async (req: Request, res: Response) => {
-    const { userId, title, message } = req.body;
+  async create(req: Request, res: Response) {
+    const { userId, title, message, category } = req.body;
 
     if (!userId || !title || !message) {
       return res.status(400).json({
         success: false,
-        error: "Missing fields (userId, title, message required)",
+        error: "userId, title, and message are required",
       });
     }
 
-    const created = await notificationsRepo.create({ userId, title, message });
-    res.status(201).json({ success: true, data: created });
+    const row = await notificationsService.create({
+      userId,
+      title,
+      message,
+      category: category || null,
+    });
+
+    return res.status(201).json({ success: true, data: row });
   },
 
-  markRead: async (req: Request, res: Response) => {
-    const id = Number(req.params.id);
-    const updated = await notificationsRepo.markRead(id);
-
-    if (!updated)
-      return res.status(404).json({ success: false, error: "Notification not found" });
-
-    res.json({ success: true, data: updated });
+  async read(req: Request, res: Response) {
+    const { id } = req.params;
+    const row = await notificationsService.markRead(id);
+    return res.json({ success: true, data: row });
   },
 
-  delete: async (req: Request, res: Response) => {
-    const id = Number(req.params.id);
-    const deleted = await notificationsRepo.delete(id);
+  async unread(req: Request, res: Response) {
+    const { userId } = req.params;
+    const count = await notificationsService.unreadCount(userId);
+    return res.json({ success: true, data: count });
+  },
 
-    if (!deleted)
-      return res.status(404).json({ success: false, error: "Notification not found" });
+  async notifyAdmins(req: Request, res: Response) {
+    const { title, message, category } = req.body;
 
-    res.json({ success: true });
+    if (!title || !message) {
+      return res.status(400).json({
+        success: false,
+        error: "title and message are required",
+      });
+    }
+
+    const rows = await notificationsService.notifyAdmins(
+      title,
+      message,
+      category || null
+    );
+    return res.json({ success: true, data: rows });
   },
 };

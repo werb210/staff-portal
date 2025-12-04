@@ -3,9 +3,19 @@ import { notificationsController } from "../controllers/notificationsController.
 
 const router = Router();
 
-router.get("/:userId", notificationsController.getForUser);
+// GET list for user
+router.get("/:userId", notificationsController.list);
+
+// GET unread count
+router.get("/:userId/unread-count", notificationsController.unread);
+
+// POST create notification
 router.post("/", notificationsController.create);
-router.post("/:id/read", notificationsController.markRead);
-router.delete("/:id", notificationsController.delete);
+
+// POST mark read
+router.post("/read/:id", notificationsController.read);
+
+// POST notify all admins
+router.post("/notify-admins", notificationsController.notifyAdmins);
 
 export default router;
