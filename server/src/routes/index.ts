@@ -1,11 +1,20 @@
 import { Router } from "express";
+import authRoutes from "./auth.routes.js";
+import tagsRoutes from "./tags.routes.js";
+import companiesRoutes from "./companies.routes.js";
+import contactsRoutes from "./contacts.routes.js";
 
 const router = Router();
 
-// TODO: attach real route modules here, for example:
-// import contactsRouter from "./contacts.routes.js";
-// router.use("/contacts", contactsRouter);
+router.use("/auth", authRoutes);
+router.use("/tags", tagsRoutes);
+router.use("/companies", companiesRoutes);
+router.use("/contacts", contactsRoutes);
 
-// For now this is just a stub router so that the dev server
-// and TypeScript build can successfully import "./routes/index.js".
+// internal health
+router.get("/_int/health", (req, res) =>
+  res.json({ success: true, status: "ok" })
+);
+
 export default router;
+
