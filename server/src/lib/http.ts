@@ -1,34 +1,26 @@
-// server/src/lib/http.ts
+import axios from "axios";
+import { useAuthStore } from "@/state/authStore";
 
-const API_BASE =
-  window.location.hostname.includes("localhost") ||
-  window.location.hostname.includes("127.0.0.1")
-    ? "http://localhost:5000/api"
-    : "https://boreal-staff-server.azurewebsites.net/api";
+export const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000/api",
+  withCredentials: true
+});
 
-export async function apiRequest(path: string, options: RequestInit = {}) {
-  const token = localStorage.getItem("bf_token");
+api.interceptors.request.use(config => {
+  const token = useAuthStore.getState().token;
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
 
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    ...(token ? { Authorization: `Bearer ${token}` } : {})
-  };
-
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...options,
-    headers,
-  });
-
-  // auto logout on unauthorized
-  if (res.status === 401) {
-    localStorage.removeItem("bf_token");
-    window.location.href = "/login";
+api.interceptors.response.use(
+  res => res,
+  err => {
+    if (err.response?.status === 401) {
+      useAuthStore.getState().logout();
+      window.location.href = "/login";
+    }
+    return Promise.reject(err);
   }
+);
 
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(text || `HTTP ${res.status}`);
-  }
-
-  return res.json();
-}
+export default api;
