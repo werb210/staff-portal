@@ -1,6 +1,9 @@
-import jwt from "jsonwebtoken";
-import { ENV } from "../config/env.js";
+import { useAuthStore } from "@/state/authStore";
 
-export const signToken = (payload) =>
-  jwt.sign(payload, ENV.JWT_SECRET, { expiresIn: "7d" });
+export function getToken() {
+  return useAuthStore.getState().token;
+}
 
+export function isLoggedIn() {
+  return !!useAuthStore.getState().token;
+}
