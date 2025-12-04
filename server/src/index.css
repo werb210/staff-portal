@@ -1,15 +1,5 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
 body {
-  @apply bg-gray-50 text-gray-900;
-}
-
-a {
-  @apply text-blue-600 hover:text-blue-700;
-}
-
-* {
-  box-sizing: border-box;
+  margin: 0;
+  font-family: sans-serif;
+  background: #f5f5f5;
 }
