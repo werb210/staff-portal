@@ -1,7 +1,7 @@
 import { useState } from "react";
-import MainLayout from "../layouts/MainLayout";
-import ContactsTable from "../components/ContactsTable";
-import CompaniesTable from "../components/CompaniesTable";
+import MainLayout from "../layout/MainLayout";
+import ContactsTable from "../components/contacts/ContactsTable";
+import CompaniesTable from "../components/companies/CompaniesTable";
 import DealsTable from "../components/DealsTable";
 import PipelineBoard from "../components/pipeline/PipelineBoard";
 

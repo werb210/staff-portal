@@ -1,4 +1,4 @@
-import MainLayout from "../layouts/MainLayout";
+import MainLayout from "../layout/MainLayout";
 import DealsTable from "../components/DealsTable";
 
 export default function Deals() {

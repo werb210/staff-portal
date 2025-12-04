@@ -1,6 +1,6 @@
 import { Router } from "express";
 import asyncHandler from "../utils/asyncHandler.js";
-import { contactsRepo } from "../db/repositories/contacts.repo.js";
+import contactsRepo from "../db/repositories/contacts.repo.js";
 import companiesRepo from "../db/repositories/companies.repo.js";
 import applicationsRepo from "../db/repositories/applications.repo.js";
 import productsRepo from "../db/repositories/products.repo.js";
@@ -12,8 +12,16 @@ r.get(
   "/contacts",
   asyncHandler(async (req: any, res: any) => {
     const q = (req.query.q || "").toString().toLowerCase().trim();
-    const raw = await contactsRepo.findAll();
-    const contacts = (raw.rows ?? raw) as any[];
+    const companyFilter = q.startsWith("company:") ? q.split(":")[1] : null;
+
+    let contacts: any[] = [];
+    if (companyFilter && contactsRepo.findByCompany) {
+      const filtered = await contactsRepo.findByCompany(companyFilter);
+      contacts = (filtered.rows ?? filtered) as any[];
+    } else {
+      const raw = await contactsRepo.findAll();
+      contacts = (raw.rows ?? raw) as any[];
+    }
 
     const withNames = contacts.map((c) => ({
       ...c,
@@ -23,7 +31,21 @@ r.get(
     const match = (item: any) =>
       !q || JSON.stringify(item).toLowerCase().includes(q);
 
-    const data = withNames.filter(match).slice(0, 50);
+    const data = companyFilter ? withNames.slice(0, 50) : withNames.filter(match).slice(0, 50);
+    res.json({ success: true, data });
+  })
+);
+
+r.get(
+  "/companies",
+  asyncHandler(async (req: any, res: any) => {
+    const q = (req.query.q || "").toString().toLowerCase().trim();
+    const raw = await companiesRepo.findAll();
+    const companies = (raw.rows ?? raw) as any[];
+
+    const match = (item: any) => !q || JSON.stringify(item).toLowerCase().includes(q);
+    const data = companies.filter(match).slice(0, 50);
+
     res.json({ success: true, data });
   })
 );
@@ -34,13 +56,20 @@ r.get(
     const q = (req.query.q || "").toString().toLowerCase().trim();
     if (!q) return res.json({ success: true, data: [] });
 
-    const [contacts, companies, apps, products, lenders] = await Promise.all([
-      contactsRepo.getAll(),
-      companiesRepo.findMany(),
-      applicationsRepo.findMany(),
-      productsRepo.findMany(),
-      lendersRepo.findMany(),
-    ]);
+    const [contactsRes, companiesRes, appsRes, productsRes, lendersRes] =
+      await Promise.all([
+        contactsRepo.findAll(),
+        companiesRepo.findAll(),
+        applicationsRepo.findAll(),
+        productsRepo.getAll(),
+        lendersRepo.findAll(),
+      ]);
+
+    const contacts = (contactsRes as any)?.rows ?? contactsRes;
+    const companies = (companiesRes as any)?.rows ?? companiesRes;
+    const apps = (appsRes as any)?.rows ?? appsRes;
+    const products = (productsRes as any)?.rows ?? productsRes;
+    const lenders = (lendersRes as any)?.rows ?? lendersRes;
 
     const match = (item: any) =>
       JSON.stringify(item).toLowerCase().includes(q);

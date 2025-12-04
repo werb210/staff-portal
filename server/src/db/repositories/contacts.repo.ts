@@ -17,6 +17,8 @@ const contactsRepo = {
       [data.first_name, data.last_name, data.email, data.phone, data.company_id, id]
     ),
   delete: (id: string) => db.query("DELETE FROM contacts WHERE id = $1 RETURNING id", [id]),
+  findByCompany: (companyId: string) =>
+    db.query("SELECT * FROM contacts WHERE company_id = $1 ORDER BY id DESC", [companyId]),
 };
 
 export default contactsRepo;

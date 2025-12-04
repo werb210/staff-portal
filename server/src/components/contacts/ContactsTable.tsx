@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { ContactsAPI } from "../../api/contacts";
 
+interface ContactsTableProps {
+  companyId?: string;
+}
+
 interface ContactRow {
   id: string;
   name?: string;
@@ -14,17 +18,26 @@ interface ContactRow {
 const displayName = (c: ContactRow) =>
   c.name || `${c.firstName ?? ""} ${c.lastName ?? ""}`.trim() || "Unnamed";
 
-export default function ContactsTable() {
+export default function ContactsTable(props: ContactsTableProps) {
   const [contacts, setContacts] = useState<ContactRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
 
   useEffect(() => {
-    ContactsAPI.list().then((r) => {
-      setContacts(r.data || []);
+    const load = async () => {
+      setLoading(true);
+      if (props.companyId) {
+        const r = await ContactsAPI.search(`company:${props.companyId}`);
+        setContacts(r.data || []);
+      } else {
+        const r = await ContactsAPI.list();
+        setContacts(r.data || []);
+      }
       setLoading(false);
-    });
-  }, []);
+    };
+
+    load();
+  }, [props.companyId]);
 
   const runSearch = async () => {
     if (!query.trim()) return;
