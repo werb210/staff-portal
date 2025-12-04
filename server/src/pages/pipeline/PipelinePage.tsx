@@ -1,8 +1,17 @@
+import { useEffect, useState } from "react";
+import { fetchPipeline } from "@/lib/api/pipeline";
+
 export default function PipelinePage() {
+  const [stages, setStages] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetchPipeline().then(setStages).catch(console.error);
+  }, []);
+
   return (
-    <div>
+    <>
       <h1>Pipeline</h1>
-      <p>Drag-and-drop pipeline UI will mount here.</p>
-    </div>
+      <pre>{JSON.stringify(stages, null, 2)}</pre>
+    </>
   );
 }
