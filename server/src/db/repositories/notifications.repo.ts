@@ -1,28 +1,49 @@
-import db from "../db.js";
+import { db } from "../db.js";
+import { notifications } from "../schema/notifications.js";
 import { eq } from "drizzle-orm";
-import { notifications, NotificationRecord, CreateNotification } from "../schema/notifications.js";
 
 export const notificationsRepo = {
-  async findForUser(userId: string): Promise<NotificationRecord[]> {
-    return await db.select().from(notifications).where(eq(notifications.userId, userId));
+  async create(data: {
+    userId: string;
+    title: string;
+    message: string;
+    category: string | null;
+  }) {
+    const [row] = await db
+      .insert(notifications)
+      .values({
+        userId: data.userId,
+        title: data.title,
+        message: data.message,
+        category: data.category,
+      })
+      .returning();
+    return row;
   },
 
-  async create(data: CreateNotification): Promise<NotificationRecord> {
-    const [inserted] = await db.insert(notifications).values(data).returning();
-    return inserted;
+  async allForUser(userId: string) {
+    return await db
+      .select()
+      .from(notifications)
+      .where(eq(notifications.userId, userId))
+      .orderBy(notifications.createdAt);
   },
 
-  async markRead(id: number): Promise<NotificationRecord | undefined> {
-    const [updated] = await db
+  async markRead(id: string) {
+    const [row] = await db
       .update(notifications)
-      .set({ isRead: true })
+      .set({ read: true })
       .where(eq(notifications.id, id))
       .returning();
-    return updated;
+    return row;
   },
 
-  async delete(id: number): Promise<boolean> {
-    const [deleted] = await db.delete(notifications).where(eq(notifications.id, id)).returning();
-    return deleted ? true : false;
+  async unreadCount(userId: string) {
+    const rows = await db
+      .select()
+      .from(notifications)
+      .where(eq(notifications.userId, userId));
+
+    return rows.filter((x) => !x.read).length;
   },
 };
