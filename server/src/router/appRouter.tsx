@@ -1,7 +1,6 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import { Protected } from "@/router/guards";
-import Layout from "@/layout/MainLayout";
-import RequireAdmin from "@/components/auth/RequireAdmin";
+import MainLayout from "@/layout/MainLayout";
 
 import LoginPage from "@/pages/auth/LoginPage";
 import Dashboard from "@/pages/dashboard/Dashboard";
@@ -17,24 +16,19 @@ import Marketing from "@/pages/Marketing";
 import Referrals from "@/pages/Referrals";
 import AdminUsersPage from "@/pages/Admin/AdminUsersPage";
 import AuditLogPage from "@/pages/Admin/AuditLogPage";
-import Unauthorized from "@/pages/Unauthorized";
 
 export const appRouter = createBrowserRouter([
-  {
-    path: "/login",
-    element: <LoginPage />
-  },
+  { path: "/login", element: <LoginPage /> },
 
   {
     path: "/",
     element: (
       <Protected>
-        <Layout />
+        <MainLayout />
       </Protected>
     ),
     children: [
       { index: true, element: <Dashboard /> },
-      { path: "dashboard", element: <Dashboard /> },
       { path: "contacts", element: <ContactsPage /> },
       { path: "companies", element: <CompaniesPage /> },
       { path: "deals", element: <DealsPage /> },
@@ -45,26 +39,8 @@ export const appRouter = createBrowserRouter([
       { path: "lenders", element: <Lenders /> },
       { path: "marketing", element: <Marketing /> },
       { path: "referrals", element: <Referrals /> },
-
-      {
-        path: "admin/users",
-        element: (
-          <RequireAdmin>
-            <AdminUsersPage />
-          </RequireAdmin>
-        )
-      },
-
-      {
-        path: "admin/audit",
-        element: (
-          <RequireAdmin>
-            <AuditLogPage />
-          </RequireAdmin>
-        )
-      },
-
-      { path: "unauthorized", element: <Unauthorized /> }
+      { path: "admin/users", element: <AdminUsersPage /> },
+      { path: "admin/audit", element: <AuditLogPage /> }
     ]
   },
 
