@@ -1,9 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 body {
-  margin: 0;
-  font-family: sans-serif;
-  background: #f5f6fa;
+  @apply bg-gray-50 text-gray-900;
 }
 
 a {
-  text-decoration: none;
+  @apply text-blue-600 hover:text-blue-700;
+}
+
+* {
+  box-sizing: border-box;
 }
