@@ -11,6 +11,7 @@ api.interceptors.request.use((c) => {
   return c;
 });
 
-export const fetchNotifications = () => api.get("/api/notifications").then((r) => r.data.data);
+export const fetchNotifications = (userId: string) =>
+  api.get(`/api/notifications/user/${userId}`).then((r) => r.data.data);
 
 export const markNotificationRead = (id: string) => api.post(`/api/notifications/${id}/read`);

@@ -3,7 +3,8 @@ import { fetchNotifications, markNotificationRead } from "../api/notifications";
 
 interface Notification {
   id: string;
-  title: string;
+  userId: string | null;
+  type: string;
   message: string;
   createdAt: string;
   read: boolean;
@@ -21,8 +22,16 @@ export const useNotificationsStore = create<NotificationState>((set, get) => ({
 
   async load() {
     try {
-      const data = await fetchNotifications();
-      set({ items: data });
+      const stored = localStorage.getItem("user");
+      const userId = stored ? JSON.parse(stored)?.id : null;
+
+      if (!userId) {
+        set({ items: [] });
+        return;
+      }
+
+      const data = await fetchNotifications(userId);
+      set({ items: data ?? [] });
     } catch {
       set({ items: [] });
     }

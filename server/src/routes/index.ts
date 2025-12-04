@@ -6,6 +6,7 @@ import companiesRoutes from "./companies.routes.js";
 import authRoutes from "./auth.routes.js";
 import pipelineRoutes from "./pipeline.routes.js";
 import messagesRoutes from "./messages.routes.js";
+import notificationsRoutes from "./notifications.routes.js";
 
 const router = Router();
 
@@ -24,5 +25,6 @@ router.use("/companies", companiesRoutes);
 router.use("/auth", authRoutes);
 router.use("/pipeline", pipelineRoutes);
 router.use("/messages", messagesRoutes);
+router.use("/notifications", notificationsRoutes);
 
 export default router;

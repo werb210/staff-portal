@@ -1,5 +1,6 @@
 import messagesRepo from "../db/repositories/messages.repo.js";
 import timelineRepo from "../db/repositories/timeline.repo.js";
+import notificationsService from "./notifications.service.js";
 
 const messagesService = {
   async listForApplication(applicationId: string) {
@@ -26,6 +27,13 @@ const messagesService = {
         applicationId: message.applicationId,
         type: "message",
         description: `New ${message.channel} (${message.direction}) message added`,
+      });
+
+      await notificationsService.create({
+        userId: payload.userId ?? null,
+        type: "message",
+        message: `New ${message.channel} (${message.direction}) message added`,
+        applicationId: message.applicationId,
       });
     }
 
