@@ -1,11 +1,21 @@
-import api from "../lib/api";
+// server/src/api/auth.ts
+import { apiRequest } from "../lib/http";
 
-export async function loginRequest(email: string, password: string) {
-  const res = await api.post("/auth/login", { email, password });
-  return res.data;
+export async function login(email: string, password: string) {
+  const data = await apiRequest("/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ email, password }),
+  });
+
+  localStorage.setItem("bf_token", data.token);
+  return data.user;
 }
 
-export async function fetchCurrentUser() {
-  const res = await api.get("/auth/me");
-  return res.data;
+export function logout() {
+  localStorage.removeItem("bf_token");
+  window.location.href = "/login";
+}
+
+export function getToken() {
+  return localStorage.getItem("bf_token");
 }
