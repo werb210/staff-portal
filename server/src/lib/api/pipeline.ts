@@ -1,7 +1,10 @@
-import { api } from "@/lib/apiClient";
-import { httpGet } from "@/lib/http";
-import { getToken } from "@/utils/token";
+import { get } from "./base";
+import { useAuthStore } from "@/state/authStore";
 
 export async function fetchPipeline() {
-  return httpGet(api.url("/api/pipeline"), getToken());
+  const token = useAuthStore.getState().token;
+  const data = await get("/api/pipeline", token);
+  if (Array.isArray(data)) return data;
+  if (data && Array.isArray(data.data)) return data.data;
+  return [];
 }
