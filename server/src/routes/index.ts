@@ -1,5 +1,4 @@
 import { Router } from "express";
-
 import contactsRoutes from "./contacts.routes.js";
 import tagsRoutes from "./tags.routes.js";
 import productsRoutes from "./products.routes.js";
@@ -9,7 +8,6 @@ import pipelineRoutes from "./pipeline.routes.js";
 
 const router = Router();
 
-// Health
 router.get("/_int/health", (_req, res) => {
   res.json({
     ok: true,
@@ -18,7 +16,6 @@ router.get("/_int/health", (_req, res) => {
   });
 });
 
-// API mounts
 router.use("/contacts", contactsRoutes);
 router.use("/tags", tagsRoutes);
 router.use("/products", productsRoutes);
