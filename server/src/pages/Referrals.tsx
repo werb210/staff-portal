@@ -1,8 +1,10 @@
 export default function Referrals() {
   return (
-    <div className="bf-page">
-      <h1 className="bf-page-title">Referrals</h1>
-      <p>Placeholder for referrer tracking and performance.</p>
+    <div>
+      <h1 className="text-2xl font-semibold mb-4">Referrals</h1>
+      <p className="text-sm text-gray-700">
+        Referrer performance and referral tracking will be rendered here.
+      </p>
     </div>
   );
 }
