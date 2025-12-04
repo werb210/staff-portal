@@ -1,70 +1,37 @@
-import { useEffect, useState } from "react";
-import { fetchDeals } from "@/lib/api/deals";
-
-type Deal = {
-  id: string;
-  companyName?: string;
-  amount?: number;
-  status?: string;
-};
+import { useQuery } from "@tanstack/react-query";
+import { DealsAPI } from "@/api/deals";
 
 export default function DealsPage() {
-  const [rows, setRows] = useState<Deal[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data, isLoading } = useQuery({
+    queryKey: ["deals"],
+    queryFn: () => DealsAPI.list(),
+  });
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const data = await fetchDeals();
-        if (!cancelled) {
-          setRows(
-            (data as any[]).map((d) => ({
-              id: d.id ?? d.dealId ?? String(Math.random()),
-              companyName: d.companyName ?? d.borrowerName ?? "",
-              amount: d.amount ?? d.requestedAmount ?? 0,
-              status: d.status ?? d.stage ?? ""
-            }))
-          );
-        }
-      } catch (err: any) {
-        if (!cancelled) setError(err?.message || "Failed to load deals");
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
+  if (isLoading) return <div>Loading deals...</div>;
 
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const deals = data ?? [];
 
   return (
-    <div className="bf-page">
-      <h1 className="bf-page-title">Deals</h1>
-      {loading && <div>Loading...</div>}
-      {error && <div className="bf-error">{error}</div>}
-      {!loading && !error && (
-        <table className="bf-table">
-          <thead>
-            <tr>
-              <th>Company</th>
-              <th>Amount</th>
-              <th>Status</th>
+    <div>
+      <h1 className="text-2xl font-semibold mb-4">Deals</h1>
+      <table className="min-w-full border bg-white">
+        <thead>
+          <tr className="bg-gray-100 text-left text-sm">
+            <th className="px-3 py-2 border-b">Name</th>
+            <th className="px-3 py-2 border-b">Stage</th>
+            <th className="px-3 py-2 border-b">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          {deals.map((d: any) => (
+            <tr key={d.id} className="text-sm">
+              <td className="px-3 py-2 border-b">{d.name}</td>
+              <td className="px-3 py-2 border-b">{d.stage}</td>
+              <td className="px-3 py-2 border-b">${d.amount}</td>
             </tr>
-          </thead>
-          <tbody>
-            {rows.map((d) => (
-              <tr key={d.id}>
-                <td>{d.companyName}</td>
-                <td>{d.amount?.toLocaleString?.() ?? d.amount}</td>
-                <td>{d.status}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
