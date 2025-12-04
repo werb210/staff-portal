@@ -1,7 +1,11 @@
-/* Simple logger for now */
-const logger = {
-  info: (...msg: any[]) => console.log("[INFO]", ...msg),
-  error: (...msg: any[]) => console.error("[ERROR]", ...msg),
+export const log = {
+  info: (...args: any[]) => console.log("[INFO]", ...args),
+  warn: (...args: any[]) => console.warn("[WARN]", ...args),
+  error: (...args: any[]) => console.error("[ERROR]", ...args),
+  debug: (...args: any[]) => {
+    if (process.env.ENABLE_DEBUG_LOGS === "true") {
+      console.log("[DEBUG]", ...args);
+    }
+  },
 };
 
-export default logger;
