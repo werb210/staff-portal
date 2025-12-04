@@ -1,54 +1,29 @@
 import { useState } from "react";
-import { login } from "@/api/auth";
-import { authStore } from "@/state/authStore";
 import { useNavigate } from "react-router-dom";
+import { useAuthStore } from "@/state/authStore";
 
 export default function LoginPage() {
+  const { login } = useAuthStore();
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
+  const [error, setError] = useState("");
 
-  async function onSubmit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true);
-
-    try {
-      const data = await login(email, password);
-      authStore.setState({
-        user: data.user,
-        isAuthenticated: true,
-      });
-      navigate("/");
-    } catch (err) {
-      alert("Invalid login");
-    } finally {
-      setLoading(false);
-    }
+    const ok = await login(email, password);
+    if (!ok) return setError("Invalid login");
+    navigate("/");
   }
 
   return (
-    <div className="login-container">
-      <form onSubmit={onSubmit}>
-        <h1>Staff Portal Login</h1>
-
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-
-        <button type="submit" disabled={loading}>
-          {loading ? "Signing in..." : "Login"}
-        </button>
+    <div className="login-wrapper">
+      <form className="login-form" onSubmit={submit}>
+        <h1>Boreal Staff Portal</h1>
+        <input placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} />
+        <input placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} type="password" />
+        {error && <div className="error">{error}</div>}
+        <button>Login</button>
       </form>
     </div>
   );
