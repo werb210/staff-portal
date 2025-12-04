@@ -1,6 +1,9 @@
+// server/src/types/User.ts
+export type UserRole = "admin" | "staff" | "lender" | "referrer";
+
 export interface User {
   id: string;
   email: string;
-  role: "admin" | "staff" | "lender" | "referrer";
-  name: string;
+  role: UserRole;
+  name?: string | null;
 }
