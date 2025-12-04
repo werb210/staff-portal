@@ -1,38 +1,25 @@
-import timelineRepo from "../db/repositories/timeline.repo.js";
+// server/src/services/timelineService.ts
+import { timelineRepo } from "../db/repositories/timeline.repo.js";
+import type { TimelineRecord } from "../db/schema/timeline.js";
 
-export default {
-  async list(contactId: string) {
-    if (!contactId) throw new Error("contactId is required");
-    return timelineRepo.getByContactId(contactId);
-  },
-
-  async add(contactId: string, eventType: string, description: string) {
-    if (!contactId) throw new Error("contactId is required");
-    if (!eventType) throw new Error("eventType is required");
-
-    return timelineRepo.createEvent({
-      contact_id: contactId,
-      event_type: eventType,
-      description,
-    });
-  },
-
+export const timelineService = {
   async record(
     userId: string,
-    entityType: string,
+    entity: string,
     entityId: string,
-    action: string,
-    description?: string,
-  ) {
-    if (!userId) throw new Error("userId is required");
-    if (!entityType) throw new Error("entityType is required");
-    if (!entityId) throw new Error("entityId is required");
-    if (!action) throw new Error("action is required");
-
-    return timelineRepo.createEvent({
-      contact_id: userId,
-      event_type: `${entityType}:${action}`,
-      description: description ?? `Resource ${entityId}`,
+    eventType: string,
+    message: string
+  ): Promise<TimelineRecord> {
+    return await timelineRepo.create({
+      userId,
+      entity,
+      entityId,
+      eventType,
+      message,
     });
+  },
+
+  async list(entity: string, entityId: string): Promise<TimelineRecord[]> {
+    return await timelineRepo.forEntity(entity, entityId);
   },
 };
