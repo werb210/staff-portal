@@ -1,49 +1,18 @@
-import axios from "axios";
-import { getAuthToken } from "../utils/authToken";
+import { api } from "@/lib/http";
 
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
-});
-
-api.interceptors.request.use((config) => {
-  const token = getAuthToken?.();
-  if (token) {
-    config.headers = config.headers || {};
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-
-export type UserRecord = {
+export interface User {
   id: string;
   email: string;
-  name: string | null;
-  role: "admin" | "staff" | "marketing" | "lender" | "referrer";
-  createdAt: string;
-};
-
-export type UserInput = {
-  email: string;
-  name?: string;
-  password?: string;
-  role: UserRecord["role"];
-};
-
-export async function fetchUsers(): Promise<UserRecord[]> {
-  const res = await api.get("/api/users");
-  return res.data?.data ?? [];
+  role: string;
+  name: string;
 }
 
-export async function createUser(input: UserInput): Promise<UserRecord> {
-  const res = await api.post("/api/users", input);
-  return res.data?.data;
+export async function listUsers() {
+  const res = await api.get<User[]>("/users");
+  return res.data;
 }
 
-export async function updateUser(id: string, patch: Partial<UserInput>): Promise<UserRecord> {
-  const res = await api.put(`/api/users/${id}`, patch);
-  return res.data?.data;
-}
-
-export async function deleteUser(id: string): Promise<void> {
-  await api.delete(`/api/users/${id}`);
+export async function updateUserRole(id: string, role: string) {
+  const res = await api.post(`/users/${id}/role`, { role });
+  return res.data;
 }
