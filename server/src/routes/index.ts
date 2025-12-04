@@ -8,6 +8,7 @@ import tagsRoutes from "./tags.routes.js";
 import pipelineBoardRoutes from "./pipelineBoard.routes.js";
 import notificationsRoutes from "./notifications.routes.js";
 import auditRoutes from "./audit.routes.js";
+import timelineRoutes from "./timeline.routes.js";
 
 const router = Router();
 
@@ -19,5 +20,6 @@ router.use("/tags", tagsRoutes);
 router.use("/pipeline-board", pipelineBoardRoutes);
 router.use("/notifications", notificationsRoutes);
 router.use("/audit", auditRoutes);
+router.use("/timeline", timelineRoutes);
 
 export default router;
