@@ -1,75 +1,78 @@
+// server/src/pages/auth/LoginPage.tsx
 import { FormEvent, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useLogin } from "@/hooks/useLogin";
 import { useAuthStore } from "@/state/authStore";
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const login = useAuthStore((s) => s.login);
+  const location = useLocation();
+  const from = (location.state as any)?.from?.pathname || "/";
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { mutateAsync, isPending, error } = useLogin();
+  const loading = useAuthStore((s) => s.loading);
 
-  const onSubmit = async (e: FormEvent) => {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    setSubmitting(true);
-    setError(null);
     try {
-      await login(email, password);
-      navigate("/", { replace: true });
-    } catch (err: any) {
-      setError(err?.response?.data?.error ?? "Login failed");
-    } finally {
-      setSubmitting(false);
+      await mutateAsync({ email, password });
+      navigate(from, { replace: true });
+    } catch (err) {
+      // error is surfaced below
     }
-  };
+  }
+
+  const disabled = isPending || loading;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <form
-        onSubmit={onSubmit}
-        className="bg-white shadow-md rounded px-8 pt-6 pb-8 w-full max-w-sm"
-      >
-        <h1 className="text-xl font-semibold mb-4">Staff Portal Login</h1>
+    <div className="min-h-screen flex items-center justify-center bg-slate-100">
+      <div className="w-full max-w-md bg-white shadow-md rounded-lg p-8">
+        <h1 className="text-2xl font-semibold mb-6 text-center">
+          Staff Portal Login
+        </h1>
 
-        {error && (
-          <div className="mb-3 text-sm text-red-600 border border-red-200 rounded px-3 py-2">
-            {error}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">Email</label>
+            <input
+              type="email"
+              className="w-full border rounded px-3 py-2 text-sm"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
+              required
+            />
           </div>
-        )}
 
-        <label className="block text-sm font-medium mb-1" htmlFor="email">
-          Email
-        </label>
-        <input
-          id="email"
-          type="email"
-          className="w-full border rounded px-3 py-2 mb-4"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
+          <div>
+            <label className="block text-sm font-medium mb-1">Password</label>
+            <input
+              type="password"
+              className="w-full border rounded px-3 py-2 text-sm"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
+              required
+            />
+          </div>
 
-        <label className="block text-sm font-medium mb-1" htmlFor="password">
-          Password
-        </label>
-        <input
-          id="password"
-          type="password"
-          className="w-full border rounded px-3 py-2 mb-4"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
+          {error && (
+            <p className="text-sm text-red-600">
+              {(error as any)?.message || "Login failed"}
+            </p>
+          )}
 
-        <button
-          type="submit"
-          disabled={submitting}
-          className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:opacity-60"
-        >
-          {submitting ? "Signing in..." : "Sign in"}
-        </button>
-      </form>
+          <button
+            type="submit"
+            className="w-full py-2 rounded bg-slate-900 text-white text-sm font-medium disabled:opacity-60"
+            disabled={disabled}
+          >
+            {disabled ? "Signing in..." : "Sign In"}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }
