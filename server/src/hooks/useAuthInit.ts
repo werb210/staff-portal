@@ -1,17 +1,13 @@
 import { useEffect } from "react";
-import { authStore } from "@/state/authStore";
-import { me } from "@/api/auth";
+import { useAuthStore } from "@/state/authStore";
 
 export function useAuthInit() {
+  const hydrate = useAuthStore((s) => s.hydrate);
+  const isHydrated = useAuthStore((s) => s.isHydrated);
+
   useEffect(() => {
-    async function load() {
-      try {
-        const user = await me();
-        authStore.setState({ user, isAuthenticated: true, loading: false });
-      } catch {
-        authStore.setState({ user: null, isAuthenticated: false, loading: false });
-      }
+    if (!isHydrated) {
+      hydrate();
     }
-    load();
-  }, []);
+  }, [hydrate, isHydrated]);
 }
