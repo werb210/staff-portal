@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import companiesService from "../services/companiesService";
+import { auditService } from "../services/auditService.js";
 
 const companiesController = {
   list: async (_req: Request, res: Response) => {
@@ -16,20 +17,37 @@ const companiesController = {
 
   create: async (req: Request, res: Response) => {
     const created = await companiesService.create(req.body ?? {});
+    await auditService.log(
+      req.user?.id ?? "system",
+      "CREATE",
+      "company",
+      String(created.id),
+      created
+    );
     res.status(201).json({ success: true, data: created });
   },
 
   update: async (req: Request, res: Response) => {
-    const updated = await companiesService.update(req.params.id, req.body ?? {});
+    const { id } = req.params;
+    const updated = await companiesService.update(id, req.body ?? {});
     if (!updated)
       return res.status(404).json({ success: false, error: "Not found" });
+    await auditService.log(
+      req.user?.id ?? "system",
+      "UPDATE",
+      "company",
+      String(id),
+      updated
+    );
     res.json({ success: true, data: updated });
   },
 
   remove: async (req: Request, res: Response) => {
-    const removed = await companiesService.remove(req.params.id);
+    const { id } = req.params;
+    const removed = await companiesService.remove(id);
     if (!removed)
       return res.status(404).json({ success: false, error: "Not found" });
+    await auditService.log(req.user?.id ?? "system", "DELETE", "company", String(id));
     res.json({ success: true, data: removed });
   },
 

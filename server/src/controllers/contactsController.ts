@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import contactsService from "../services/contactsService";
+import { auditService } from "../services/auditService.js";
 
 const contactsController = {
   list: async (_req: Request, res: Response) => {
@@ -16,20 +17,37 @@ const contactsController = {
 
   create: async (req: Request, res: Response) => {
     const created = await contactsService.create(req.body ?? {});
+    await auditService.log(
+      req.user?.id ?? "system",
+      "CREATE",
+      "contact",
+      String(created.id),
+      created
+    );
     res.status(201).json({ success: true, data: created });
   },
 
   update: async (req: Request, res: Response) => {
-    const updated = await contactsService.update(req.params.id, req.body ?? {});
+    const { id } = req.params;
+    const updated = await contactsService.update(id, req.body ?? {});
     if (!updated)
       return res.status(404).json({ success: false, error: "Not found" });
+    await auditService.log(
+      req.user?.id ?? "system",
+      "UPDATE",
+      "contact",
+      String(id),
+      updated
+    );
     res.json({ success: true, data: updated });
   },
 
   remove: async (req: Request, res: Response) => {
-    const removed = await contactsService.remove(req.params.id);
+    const { id } = req.params;
+    const removed = await contactsService.remove(id);
     if (!removed)
       return res.status(404).json({ success: false, error: "Not found" });
+    await auditService.log(req.user?.id ?? "system", "DELETE", "contact", String(id));
     res.json({ success: true, data: removed });
   },
 

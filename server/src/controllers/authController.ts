@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import usersRepo from "../db/repositories/users.repo.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { auditService } from "../services/auditService.js";
 
 const JWT_SECRET = process.env.JWT_SECRET || "dev-secret";
 
@@ -23,6 +24,7 @@ export default {
       expiresIn: "7d",
     });
 
+    await auditService.log(user.id, "LOGIN", "user", user.id);
     res.json({ token, user: { id: user.id, email: user.email, role: user.role } });
   }
 };
