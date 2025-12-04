@@ -1,5 +1,6 @@
 import React from "react";
 import { Outlet, Link, useNavigate } from "react-router-dom";
+import NotificationBell from "../../src/components/nav/NotificationBell";
 
 interface MenuItem {
   label: string;
@@ -9,6 +10,7 @@ interface MenuItem {
 
 const menu: MenuItem[] = [
   { label: "Dashboard", path: "/dashboard", roles: ["admin", "staff", "lender", "referrer"] },
+  { label: "Notifications", path: "/notifications", roles: ["admin", "staff", "lender", "referrer"] },
   { label: "CRM", path: "/crm", roles: ["admin", "staff"] },
   { label: "Pipeline", path: "/pipeline", roles: ["admin", "staff"] },
 
@@ -74,6 +76,9 @@ const MainLayout: React.FC = () => {
 
       {/* Main */}
       <main className="flex-1 overflow-y-auto p-6">
+        <div className="flex justify-end mb-4">
+          <NotificationBell user={user} />
+        </div>
         <Outlet />
       </main>
     </div>

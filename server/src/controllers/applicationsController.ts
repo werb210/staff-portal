@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import applicationsRepo from "../db/repositories/applications.repo.js";
+import notificationsService from "../services/notifications.service.js";
 
 export default {
   list: async (_req: Request, res: Response) => {
@@ -15,6 +16,12 @@ export default {
 
   create: async (req: Request, res: Response) => {
     const created = await applicationsRepo.create(req.body);
+    await notificationsService.create({
+      userId: null,
+      type: "application_update",
+      message: `Application ${created?.id} created.`,
+      applicationId: created?.id,
+    });
     res.status(201).json(created);
   },
 
@@ -22,6 +29,12 @@ export default {
     const id = Number(req.params.id);
     const updated = await applicationsRepo.update(id, req.body);
     if (!updated) return res.status(404).json({ error: "Not found" });
+    await notificationsService.create({
+      userId: null,
+      type: "application_update",
+      message: `Application ${updated.id} updated.`,
+      applicationId: updated.id,
+    });
     res.json(updated);
-  }
+  },
 };

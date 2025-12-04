@@ -1,6 +1,7 @@
 import pipelineStageRepo from "../db/repositories/pipelineStage.repo";
 import pipelineRepo from "../db/repositories/pipeline.repo";
 import pipelineEventsRepo from "../db/repositories/pipelineEvents.repo";
+import notificationsService from "./notifications.service.js";
 
 const pipelineBoardService = {
   async getBoard() {
@@ -25,6 +26,13 @@ const pipelineBoardService = {
       fromStage,
       toStage,
       timestamp: new Date().toISOString(),
+    });
+
+    await notificationsService.create({
+      userId: null,
+      type: "application_update",
+      message: `Application ${applicationId} moved from ${fromStage} to ${toStage}`,
+      applicationId,
     });
 
     return updated;

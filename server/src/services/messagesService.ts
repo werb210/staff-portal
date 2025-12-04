@@ -1,5 +1,5 @@
 import messagesRepo from "../db/repositories/messages.repo.js";
-import { notificationsService } from "./notificationsService.js";
+import notificationsService from "./notifications.service.js";
 
 export const messagesService = {
   async send({
@@ -27,9 +27,9 @@ export const messagesService = {
     if (recipientId && !system) {
       await notificationsService.create({
         userId: recipientId,
-        title: "New Message",
+        type: "message",
         message: body.slice(0, 200),
-        category: "message",
+        applicationId,
       });
     }
 

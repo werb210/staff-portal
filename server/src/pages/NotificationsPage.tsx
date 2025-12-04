@@ -1,7 +1,7 @@
 import { useNotifications } from "../hooks/useNotifications";
 
 export default function NotificationsPage() {
-  const { list, markRead, remove } = useNotifications();
+  const { list, markRead } = useNotifications();
 
   if (list.isLoading) return <div>Loading notifications…</div>;
   if (list.isError) return <div>Error loading notifications</div>;
@@ -23,21 +23,19 @@ export default function NotificationsPage() {
             borderRadius: 6,
           }}
         >
-          <div style={{ fontWeight: "bold" }}>{n.title}</div>
+          <div style={{ fontWeight: "bold" }}>{n.type}</div>
           <div style={{ marginTop: 4 }}>{n.message}</div>
 
-          <div style={{ marginTop: 10 }}>
-            {!n.read && (
-              <button
-                onClick={() => markRead.mutate(n.id)}
-                style={{ marginRight: 10 }}
-              >
-                Mark Read
-              </button>
-            )}
-
-            <button onClick={() => remove.mutate(n.id)}>Delete</button>
-          </div>
+            <div style={{ marginTop: 10 }}>
+              {!n.read && (
+                <button
+                  onClick={() => markRead.mutate(n.id)}
+                  style={{ marginRight: 10 }}
+                >
+                  Mark Read
+                </button>
+              )}
+            </div>
         </div>
       ))}
     </div>

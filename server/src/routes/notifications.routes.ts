@@ -1,12 +1,11 @@
 import { Router } from "express";
-import { notificationsController } from "../controllers/notificationsController.js";
+import notificationsController from "../controllers/notificationsController.js";
 
 const router = Router();
 
-router.get("/:userId", notificationsController.list);
-router.get("/:userId/unread", notificationsController.unread);
-
-router.post("/read/:id", notificationsController.markRead);
-router.post("/read-all/:userId", notificationsController.markAll);
+router.get("/user/:userId", notificationsController.listForUser);
+router.get("/user/:userId/unread", notificationsController.listUnread);
+router.post("/", notificationsController.create);
+router.post("/:id/read", notificationsController.markRead);
 
 export default router;

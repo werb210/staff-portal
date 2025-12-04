@@ -1,55 +1,57 @@
-import { db } from "../db.js";
-import { notifications } from "../schema/notifications.js";
-import { and, eq } from "drizzle-orm";
+import db from "../db.js";
 
-export const notificationsRepo = {
-  async create(data: {
-    userId: string;
-    title: string;
-    message: string;
-    category: string;
-  }) {
-    const [row] = await db
-      .insert(notifications)
+export interface NotificationRecord {
+  id: string;
+  userId: string | null;
+  type: string;
+  message: string;
+  read: boolean;
+  createdAt: Date;
+}
+
+const notificationsRepo = {
+  async listForUser(userId: string): Promise<NotificationRecord[]> {
+    return db
+      .selectFrom("notifications")
+      .selectAll()
+      .where("userId", "=", userId)
+      .orderBy("createdAt", "desc")
+      .execute();
+  },
+
+  async listUnread(userId: string) {
+    return db
+      .selectFrom("notifications")
+      .selectAll()
+      .where("userId", "=", userId)
+      .where("read", "=", false)
+      .orderBy("createdAt", "desc")
+      .execute();
+  },
+
+  async create(data: Partial<NotificationRecord>) {
+    const row = await db
+      .insertInto("notifications")
       .values({
-        userId: data.userId,
-        title: data.title,
-        message: data.message,
-        category: data.category,
+        userId: data.userId ?? null,
+        type: data.type ?? "general",
+        message: data.message ?? "",
+        read: false,
       })
-      .returning();
-    return row;
-  },
+      .returningAll()
+      .executeTakeFirst();
 
-  async list(userId: string) {
-    return await db
-      .select()
-      .from(notifications)
-      .where(eq(notifications.userId, userId))
-      .orderBy(notifications.createdAt);
-  },
-
-  async unread(userId: string) {
-    return await db
-      .select()
-      .from(notifications)
-      .where(and(eq(notifications.userId, userId), eq(notifications.read, false)));
+    return row as NotificationRecord;
   },
 
   async markRead(id: string) {
-    const [row] = await db
-      .update(notifications)
+    return db
+      .updateTable("notifications")
       .set({ read: true })
-      .where(eq(notifications.id, id))
-      .returning();
-    return row;
-  },
-
-  async markAllRead(userId: string) {
-    await db
-      .update(notifications)
-      .set({ read: true })
-      .where(eq(notifications.userId, userId));
-    return true;
+      .where("id", "=", id)
+      .returningAll()
+      .executeTakeFirst();
   },
 };
+
+export default notificationsRepo;
