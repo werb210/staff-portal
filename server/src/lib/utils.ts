@@ -1,2 +1,2 @@
-export const cls = (...c: (string | false | undefined | null)[]) =>
-  c.filter(Boolean).join(" ");
+export const formatDate = (date: string | Date) =>
+  new Date(date).toLocaleDateString();
