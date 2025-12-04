@@ -1,52 +1,25 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
-import { api } from "@/lib/apiClient";
 
 interface AuthState {
-  user: any | null;
   token: string | null;
-  isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
+  user: any | null;
+  setAuth: (token: string, user: any) => void;
   logout: () => void;
-  init: () => Promise<void>;
 }
 
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set, get) => ({
-      user: null,
-      token: null,
-      isAuthenticated: false,
+export const useAuthStore = create<AuthState>((set) => ({
+  token: localStorage.getItem("token"),
+  user: JSON.parse(localStorage.getItem("user") || "null"),
 
-      async login(email, password) {
-        try {
-          const res = await api.post("/auth/login", { email, password });
-          set({
-            user: res.data.user,
-            token: res.data.token,
-            isAuthenticated: true
-          });
-          return true;
-        } catch {
-          return false;
-        }
-      },
+  setAuth: (token, user) => {
+    localStorage.setItem("token", token);
+    localStorage.setItem("user", JSON.stringify(user));
+    set({ token, user });
+  },
 
-      logout() {
-        set({ user: null, token: null, isAuthenticated: false });
-      },
-
-      async init() {
-        const token = get().token;
-        if (!token) return;
-        try {
-          const res = await api.get("/auth/me");
-          set({ user: res.data, isAuthenticated: true });
-        } catch {
-          set({ user: null, token: null, isAuthenticated: false });
-        }
-      }
-    }),
-    { name: "staff-auth" }
-  )
-);
+  logout: () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    set({ token: null, user: null });
+  }
+}));
