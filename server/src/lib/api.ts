@@ -1,15 +1,18 @@
-import axios from "axios";
-import { getAuthToken } from "../utils/authToken";
+// server/src/lib/api.ts
+import { http } from "@/lib/http";
 
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "/api",
-  withCredentials: true,
-});
+export function get<T = unknown>(url: string, params?: Record<string, unknown>) {
+  return http.get<T>(url, { params }).then((r) => r.data);
+}
 
-api.interceptors.request.use((config) => {
-  const token = getAuthToken();
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
-});
+export function post<T = unknown, B = unknown>(url: string, body?: B) {
+  return http.post<T>(url, body).then((r) => r.data);
+}
 
-export default api;
+export function put<T = unknown, B = unknown>(url: string, body?: B) {
+  return http.put<T>(url, body).then((r) => r.data);
+}
+
+export function del<T = unknown>(url: string) {
+  return http.delete<T>(url).then((r) => r.data);
+}
