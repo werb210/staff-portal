@@ -1,33 +1,39 @@
-// server/src/controllers/contactsController.ts
 import { Request, Response } from "express";
-import contactsRepo from "../db/repositories/contacts.repo.js";
+import contactsService from "../services/contacts.service.js";
 
-export default {
-  list: async (_req: Request, res: Response) => {
-    const data = await contactsRepo.findMany();
-    res.json({ success: true, data });
+const contactsController = {
+  async list(req: Request, res: Response) {
+    const results = await contactsService.list();
+    res.json({ ok: true, data: results });
   },
 
-  create: async (req: Request, res: Response) => {
-    const created = await contactsRepo.create(req.body || {});
-    res.json({ success: true, data: created });
+  async get(req: Request, res: Response) {
+    const item = await contactsService.get(req.params.id);
+    if (!item) {
+      res.status(404).json({ ok: false, error: "Not found" });
+      return;
+    }
+    res.json({ ok: true, data: item });
   },
 
-  getById: async (req: Request, res: Response) => {
-    const record = await contactsRepo.findById(req.params.id);
-    if (!record) return res.status(404).json({ error: "Not found" });
-    res.json({ success: true, data: record });
+  async create(req: Request, res: Response) {
+    const created = await contactsService.create(req.body);
+    res.json({ ok: true, data: created });
   },
 
-  update: async (req: Request, res: Response) => {
-    const updated = await contactsRepo.update(req.params.id, req.body || {});
-    if (!updated) return res.status(404).json({ error: "Not found" });
-    res.json({ success: true, data: updated });
+  async update(req: Request, res: Response) {
+    const updated = await contactsService.update(req.params.id, req.body);
+    if (!updated) {
+      res.status(404).json({ ok: false, error: "Not found" });
+      return;
+    }
+    res.json({ ok: true, data: updated });
   },
 
-  remove: async (req: Request, res: Response) => {
-    const deleted = await contactsRepo.delete(req.params.id);
-    if (!deleted) return res.status(404).json({ error: "Not found" });
-    res.json({ success: true, data: deleted });
+  async remove(req: Request, res: Response) {
+    const success = await contactsService.remove(req.params.id);
+    res.json({ ok: true, deleted: success });
   },
 };
+
+export default contactsController;
