@@ -1,35 +1,55 @@
+// server/src/controllers/messagesController.ts
 import { Request, Response } from "express";
-import asyncHandler from "../utils/asyncHandler.js";
-import { messagesRepo } from "../db/repositories/messages.repo.js";
-import { pushNotification } from "../realtime/socketServer.js";
+import { messagesService } from "../services/messagesService.js";
 
 export const messagesController = {
-  send: asyncHandler(async (req: Request, res: Response) => {
-    const { threadId, senderId, recipientId, body } = req.body;
+  // GET /api/messages/thread/:threadId
+  thread: async (req: Request, res: Response) => {
+    const { threadId } = req.params;
 
-    if (!threadId || !senderId || !recipientId || !body) {
-      return res.status(400).json({ error: "Missing fields" });
+    const data = await messagesService.thread(threadId);
+    return res.json({ success: true, data });
+  },
+
+  // POST /api/messages/send
+  send: async (req: Request, res: Response) => {
+    const { threadId, senderId, receiverId, body } = req.body;
+
+    if (!threadId || !senderId || !body) {
+      return res.status(400).json({
+        success: false,
+        error: "threadId, senderId, and body are required",
+      });
     }
 
-    const msg = await messagesRepo.send({ threadId, senderId, recipientId, body });
-
-    pushNotification(recipientId, {
-      event: "message",
-      data: msg,
+    const row = await messagesService.send({
+      threadId,
+      senderId,
+      receiverId: receiverId || null,
+      body,
     });
 
-    return res.status(201).json({ success: true, data: msg });
-  }),
+    return res.status(201).json({ success: true, data: row });
+  },
 
-  thread: asyncHandler(async (req: Request, res: Response) => {
-    const { id } = req.params;
-    const msgs = await messagesRepo.threadMessages(id);
-    res.json({ success: true, data: msgs });
-  }),
+  // POST /api/messages/receive
+  receive: async (req: Request, res: Response) => {
+    const { threadId, senderId, receiverId, body } = req.body;
 
-  inbox: asyncHandler(async (req: Request, res: Response) => {
-    const userId = req.params.userId;
-    const msgs = await messagesRepo.inboxFor(userId);
-    res.json({ success: true, data: msgs });
-  }),
+    if (!threadId || !senderId || !body) {
+      return res.status(400).json({
+        success: false,
+        error: "threadId, senderId, and body are required",
+      });
+    }
+
+    const row = await messagesService.receive({
+      threadId,
+      senderId,
+      receiverId: receiverId || null,
+      body,
+    });
+
+    return res.status(201).json({ success: true, data: row });
+  },
 };

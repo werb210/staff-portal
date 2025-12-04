@@ -9,6 +9,7 @@ import pipelineBoardRoutes from "./pipelineBoard.routes.js";
 import notificationsRoutes from "./notifications.routes.js";
 import auditRoutes from "./audit.routes.js";
 import timelineRoutes from "./timeline.routes.js";
+import messagesRoutes from "./messages.routes.js";
 
 const router = Router();
 
@@ -21,5 +22,6 @@ router.use("/pipeline-board", pipelineBoardRoutes);
 router.use("/notifications", notificationsRoutes);
 router.use("/audit", auditRoutes);
 router.use("/timeline", timelineRoutes);
+router.use("/messages", messagesRoutes);
 
 export default router;
