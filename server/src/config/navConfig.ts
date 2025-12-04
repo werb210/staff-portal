@@ -1,19 +1,10 @@
-export type NavItem = {
-  label: string;
-  path: string;
+export const navConfig = {
+  sections: [
+    { name: "Dashboard", path: "/dashboard" },
+    { name: "Contacts", path: "/contacts" },
+    { name: "Companies", path: "/companies" },
+    { name: "Deals", path: "/deals" },
+    { name: "Applications", path: "/applications" },
+    { name: "Pipeline", path: "/pipeline" },
+  ]
 };
-
-export const navItems: NavItem[] = [
-  { label: "Dashboard", path: "/dashboard" },
-  { label: "Contacts", path: "/contacts" },
-  { label: "Companies", path: "/companies" },
-  { label: "Deals", path: "/deals" },
-  { label: "Applications", path: "/applications" },
-  { label: "Pipeline", path: "/pipeline" },
-  { label: "Documents", path: "/documents" },
-  { label: "Lenders", path: "/lenders" },
-  { label: "Marketing", path: "/marketing" },
-  { label: "Referrals", path: "/referrals" },
-  { label: "Admin Users", path: "/admin/users" },
-  { label: "Audit Log", path: "/admin/audit" }
-];
