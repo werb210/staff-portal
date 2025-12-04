@@ -1,93 +1,55 @@
 import { create } from "zustand";
-import { getAuthToken, setAuthToken, clearAuthToken } from "../utils/authToken";
-import axios from "axios";
+import { login as apiLogin, fetchMe, logout as apiLogout } from "@/api/auth";
 
-export type Role = "admin" | "staff" | "marketing" | "lender" | "referrer";
-
-type User = {
+interface User {
   id: string;
   email: string;
-  name: string | null;
-  role: Role;
-};
+  role: string;
+  name?: string;
+}
 
-type AuthState = {
+interface AuthState {
   user: User | null;
   token: string | null;
   loading: boolean;
-  error: string | null;
 
-  login: (email: string, password: string) => Promise<boolean>;
-  logout: () => void;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
+  init: () => Promise<void>;
+}
 
-  restore: () => Promise<void>;
-};
-
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
-  token: getAuthToken(),
-  loading: false,
-  error: null,
+  token: localStorage.getItem("token"),
+  loading: true,
+
+  init: async () => {
+    const token = get().token;
+    if (!token) {
+      set({ loading: false });
+      return;
+    }
+
+    try {
+      const res = await fetchMe();
+      set({ user: res.user, loading: false });
+    } catch {
+      localStorage.removeItem("token");
+      set({ user: null, token: null, loading: false });
+    }
+  },
 
   login: async (email, password) => {
-    set({ loading: true, error: null });
+    const res = await apiLogin({ email, password });
+    localStorage.setItem("token", res.token);
+    set({ token: res.token, user: res.user });
+  },
 
+  logout: async () => {
     try {
-      const api = axios.create({
-        baseURL: import.meta.env.VITE_API_URL,
-      });
-
-      const res = await api.post("/api/auth/login", { email, password });
-
-      const token = res.data.token;
-      const user = res.data.user;
-
-      setAuthToken(token);
-
-      set({
-        token,
-        user,
-        loading: false,
-      });
-
-      return true;
-    } catch (err: any) {
-      set({
-        error: err?.message ?? "Login failed",
-        loading: false,
-      });
-      return false;
-    }
-  },
-
-  logout: () => {
-    clearAuthToken();
-    set({
-      token: null,
-      user: null,
-      error: null,
-    });
-  },
-
-  restore: async () => {
-    const token = getAuthToken();
-    if (!token) return;
-
-    try {
-      const api = axios.create({
-        baseURL: import.meta.env.VITE_API_URL,
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      const res = await api.get("/api/auth/me");
-
-      set({
-        token,
-        user: res.data.user,
-      });
-    } catch {
-      clearAuthToken();
-      set({ token: null, user: null });
-    }
-  },
+      await apiLogout();
+    } catch {}
+    localStorage.removeItem("token");
+    set({ user: null, token: null });
+  }
 }));
