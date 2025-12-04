@@ -1,33 +1,30 @@
 import companiesRepo from "../db/repositories/companies.repo.js";
-import { newId } from "../utils/id.js";
 
-export const companiesController = {
-  list: async (req, res) => {
-    const rows = await companiesRepo.findAll();
-    res.json({ success: true, data: rows });
+export default {
+  getAll: async (req, res) => {
+    const items = await companiesRepo.findAll();
+    res.json(items);
   },
 
-  get: async (req, res) => {
-    const record = await companiesRepo.findById(req.params.id);
-    res.json({ success: true, data: record });
+  getOne: async (req, res) => {
+    const item = await companiesRepo.findById(req.params.id);
+    if (!item) return res.status(404).json({ error: "Company not found" });
+    res.json(item);
   },
 
   create: async (req, res) => {
-    const created = await companiesRepo.create({
-      id: newId(),
-      ...req.body,
-    });
-    res.json({ success: true, data: created });
+    res.json(await companiesRepo.create(req.body));
   },
 
   update: async (req, res) => {
-    const updated = await companiesRepo.update(req.params.id, req.body);
-    res.json({ success: true, data: updated });
+    const item = await companiesRepo.update(req.params.id, req.body);
+    if (!item) return res.status(404).json({ error: "Company not found" });
+    res.json(item);
   },
 
-  remove: async (req, res) => {
-    const deleted = await companiesRepo.delete(req.params.id);
-    res.json({ success: true, data: deleted });
+  delete: async (req, res) => {
+    const item = await companiesRepo.delete(req.params.id);
+    if (!item) return res.status(404).json({ error: "Company not found" });
+    res.json(item);
   },
 };
-

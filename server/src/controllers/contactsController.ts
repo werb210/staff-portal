@@ -1,33 +1,32 @@
 import contactsRepo from "../db/repositories/contacts.repo.js";
-import { newId } from "../utils/id.js";
 
-export const contactsController = {
-  list: async (req, res) => {
-    const rows = await contactsRepo.findAll();
-    res.json({ success: true, data: rows });
+export default {
+  getAll: async (req, res) => {
+    const items = await contactsRepo.findAll();
+    res.json(items);
   },
 
-  get: async (req, res) => {
-    const record = await contactsRepo.findById(req.params.id);
-    res.json({ success: true, data: record });
+  getOne: async (req, res) => {
+    const id = req.params.id;
+    const item = await contactsRepo.findById(id);
+    if (!item) return res.status(404).json({ error: "Contact not found" });
+    res.json(item);
   },
 
   create: async (req, res) => {
-    const created = await contactsRepo.create({
-      id: newId(),
-      ...req.body,
-    });
-    res.json({ success: true, data: created });
+    const item = await contactsRepo.create(req.body);
+    res.json(item);
   },
 
   update: async (req, res) => {
-    const updated = await contactsRepo.update(req.params.id, req.body);
-    res.json({ success: true, data: updated });
+    const item = await contactsRepo.update(req.params.id, req.body);
+    if (!item) return res.status(404).json({ error: "Contact not found" });
+    res.json(item);
   },
 
-  remove: async (req, res) => {
-    const deleted = await contactsRepo.delete(req.params.id);
-    res.json({ success: true, data: deleted });
+  delete: async (req, res) => {
+    const item = await contactsRepo.delete(req.params.id);
+    if (!item) return res.status(404).json({ error: "Contact not found" });
+    res.json(item);
   },
 };
-
