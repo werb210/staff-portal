@@ -1,7 +1,8 @@
 // src/router.tsx
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Dashboard from "./pages/Dashboard";
-import ContactsPage from "./pages/ContactsPage";
+import Contacts from "./pages/Contacts";
+import ContactDetail from "./pages/ContactDetail";
 import LoginPage from "./pages/auth/LoginPage";
 import CompaniesPage from "./pages/CompaniesPage";
 import ProductsPage from "./pages/ProductsPage";
@@ -24,7 +25,8 @@ export default function AppRouter() {
         {token ? (
           <>
             <Route path="/" element={<Dashboard />} />
-            <Route path="/contacts" element={<ContactsPage />} />
+            <Route path="/contacts" element={<Contacts />} />
+            <Route path="/contacts/:id" element={<ContactDetail />} />
             <Route path="/companies" element={<CompaniesPage />} />
             <Route path="/products" element={<ProductsPage />} />
             <Route path="/tasks" element={<TasksPage />} />

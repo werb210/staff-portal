@@ -14,6 +14,7 @@ import AsyncBoundary from "./components/system/AsyncBoundary";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Contacts from "./pages/Contacts";
+import ContactDetail from "./pages/ContactDetail";
 import Companies from "./pages/Companies";
 import Deals from "./pages/Deals";
 import Pipeline from "./pages/Pipeline";
@@ -74,6 +75,14 @@ export default function App() {
                 element={
                   <RequireAuth>
                     <Contacts />
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="/contacts/:id"
+                element={
+                  <RequireAuth>
+                    <ContactDetail />
                   </RequireAuth>
                 }
               />

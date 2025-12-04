@@ -9,6 +9,26 @@ import lendersRepo from "../db/repositories/lenders.repo.js";
 const r = Router();
 
 r.get(
+  "/contacts",
+  asyncHandler(async (req: any, res: any) => {
+    const q = (req.query.q || "").toString().toLowerCase().trim();
+    const raw = await contactsRepo.findAll();
+    const contacts = (raw.rows ?? raw) as any[];
+
+    const withNames = contacts.map((c) => ({
+      ...c,
+      name: `${c.first_name ?? ""} ${c.last_name ?? ""}`.trim(),
+    }));
+
+    const match = (item: any) =>
+      !q || JSON.stringify(item).toLowerCase().includes(q);
+
+    const data = withNames.filter(match).slice(0, 50);
+    res.json({ success: true, data });
+  })
+);
+
+r.get(
   "/",
   asyncHandler(async (req: any, res: any) => {
     const q = (req.query.q || "").toString().toLowerCase().trim();

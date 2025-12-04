@@ -1,5 +1,5 @@
-import MainLayout from "../layouts/MainLayout";
-import ContactsTable from "../components/ContactsTable";
+import MainLayout from "../layout/MainLayout";
+import ContactsTable from "../components/contacts/ContactsTable";
 
 export default function Contacts() {
   return (
