@@ -1,7 +1,10 @@
-import { api } from "@/lib/apiClient";
-import { httpGet } from "@/lib/http";
-import { getToken } from "@/utils/token";
+import { get } from "./base";
+import { useAuthStore } from "@/state/authStore";
 
 export async function fetchCompanies() {
-  return httpGet(api.url("/api/companies"), getToken());
+  const token = useAuthStore.getState().token;
+  const data = await get("/api/companies", token);
+  if (Array.isArray(data)) return data;
+  if (data && Array.isArray(data.data)) return data.data;
+  return [];
 }
