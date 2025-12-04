@@ -1,10 +1,8 @@
-import PipelineBoard from "@/modules/pipeline/PipelineBoard";
-
 export default function PipelinePage() {
   return (
     <div>
       <h1>Pipeline</h1>
-      <PipelineBoard />
+      <p>Drag-and-drop pipeline UI will mount here.</p>
     </div>
   );
 }
