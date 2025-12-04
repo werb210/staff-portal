@@ -27,3 +27,7 @@ client.interceptors.request.use((config) => {
 export function api() {
   return client;
 }
+
+const defaultApiClient = api();
+
+export default defaultApiClient;

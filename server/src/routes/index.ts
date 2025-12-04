@@ -6,6 +6,7 @@ import tags from "./tags.routes.js";
 import users from "./users.routes.js";
 import deals from "./deals.routes.js";
 import tasks from "./tasks.routes.js";
+import search from "./search.js";
 
 const router = Router();
 
@@ -15,5 +16,6 @@ router.use("/tags", tags);
 router.use("/users", users);
 router.use("/deals", deals);
 router.use("/tasks", tasks);
+router.use("/search", search);
 
 export default router;

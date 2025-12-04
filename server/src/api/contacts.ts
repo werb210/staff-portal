@@ -1,28 +1,64 @@
-import axios from "axios";
-import { getAuthToken } from "../utils/authToken";
+import api from "./client";
 
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
-});
+const normalizeContact = (contact: any) => {
+  if (!contact) return contact;
 
-api.interceptors.request.use((config) => {
-  const token = getAuthToken();
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
-});
+  const firstName = contact.first_name ?? contact.firstName ?? "";
+  const lastName = contact.last_name ?? contact.lastName ?? "";
+  const name = contact.name ?? `${firstName} ${lastName}`.trim();
 
-export interface Contact {
-  id: string;
-  firstName: string | null;
-  lastName: string | null;
-  email: string | null;
-  phone: string | null;
-  companyId: string | null;
-  createdAt: string;
-}
+  return {
+    ...contact,
+    id: contact.id ?? contact.contact_id ?? contact._id ?? contact.contactId,
+    name,
+    firstName,
+    lastName,
+    email: contact.email ?? null,
+    phone: contact.phone ?? null,
+    companyId: contact.company_id ?? contact.companyId ?? null,
+    companyName: contact.companyName ?? contact.company_name ?? contact.company ?? null,
+  };
+};
 
-export async function fetchContacts(): Promise<Contact[]> {
-  const res = await api.get("/api/crm/contacts");
-  return res.data.data;
-}
+const normalizeList = (payload: any) => {
+  const list = payload?.data ?? payload ?? [];
+  return Array.isArray(list) ? list.map(normalizeContact) : [];
+};
 
+const toContactPayload = (payload: any) => {
+  const name = payload?.name ?? "";
+  const [first, ...rest] = name.split(" ");
+  const last = rest.join(" ").trim();
+
+  return {
+    first_name: payload?.first_name ?? payload?.firstName ?? first || null,
+    last_name: payload?.last_name ?? payload?.lastName ?? last || null,
+    email: payload?.email ?? null,
+    phone: payload?.phone ?? null,
+    company_id: payload?.company_id ?? payload?.companyId ?? null,
+  };
+};
+
+export const ContactsAPI = {
+  list: async () => {
+    const res = await api.get("/contacts");
+    return { ...res.data, data: normalizeList(res.data) };
+  },
+  search: async (query: string) => {
+    const res = await api.get(`/search/contacts?q=${encodeURIComponent(query)}`);
+    return { ...res.data, data: normalizeList(res.data) };
+  },
+  get: async (id: string) => {
+    const res = await api.get(`/contacts/${id}`);
+    return { ...res.data, data: normalizeContact(res.data?.data ?? res.data) };
+  },
+  create: async (payload: any) => {
+    const res = await api.post("/contacts", toContactPayload(payload));
+    return { ...res.data, data: normalizeContact(res.data?.data ?? res.data) };
+  },
+  update: async (id: string, payload: any) => {
+    const res = await api.put(`/contacts/${id}`, toContactPayload(payload));
+    return { ...res.data, data: normalizeContact(res.data?.data ?? res.data) };
+  },
+  delete: async (id: string) => api.delete(`/contacts/${id}`).then((r) => r.data),
+};
