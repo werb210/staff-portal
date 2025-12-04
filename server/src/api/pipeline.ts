@@ -1,7 +1,11 @@
-import { api } from "@/lib/apiClient";
+import { http } from "@/lib/api/http";
 
-export const pipelineHttp = {
-  list: () => api.get("/pipeline"),
-  move: (id: string, stage: string) =>
-    api.post(`/pipeline/${id}/move`, { stage })
+export const PipelineAPI = {
+  board: () => http.get("/pipeline-board"),
+  moveCard: (payload: {
+    cardId: string;
+    fromStageId: string;
+    toStageId: string;
+    position: number;
+  }) => http.post("/pipeline-board/move", payload),
 };
