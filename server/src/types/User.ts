@@ -1,6 +1,15 @@
+export type UserRole =
+  | "admin"
+  | "staff"
+  | "marketing"
+  | "lender"
+  | "referrer"
+  | "superadmin";
+
 export interface User {
   id: string;
   email: string;
-  name: string;
-  role: "admin" | "staff" | "lender" | "referrer";
+  role: UserRole;
+  firstName?: string | null;
+  lastName?: string | null;
 }
