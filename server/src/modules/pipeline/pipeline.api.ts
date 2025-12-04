@@ -1,33 +1,7 @@
-import apiClient from "@/lib/http";
+import { api } from "@/lib/apiClient";
 
-export interface PipelineApplication {
-  id: string;
-  applicant?: string;
-  company?: string;
-  role?: string;
-  location?: string;
-  stageId: string;
-  value?: number;
-  updatedAt?: string;
-  status?: string;
-}
-
-export interface PipelineStage {
-  id: string;
-  name: string;
-  applications: PipelineApplication[];
-}
-
-export interface PipelineResponse {
-  stages: PipelineStage[];
-}
-
-export interface MoveApplicationPayload {
-  stageId: string;
-  position?: number;
-}
-
-export const fetchPipeline = () => apiClient.get<PipelineResponse>("/api/applications/pipeline");
-
-export const moveApplication = (applicationId: string, payload: MoveApplicationPayload) =>
-  apiClient.post(`/api/applications/${applicationId}/move`, payload);
+export const pipelineApi = {
+  list: () => api.get("/pipeline"),
+  move: (id: string, stage: string) =>
+    api.post(`/pipeline/${id}/move`, { stage })
+};
