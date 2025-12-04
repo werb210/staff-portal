@@ -1,8 +1,10 @@
 export default function Marketing() {
   return (
-    <div className="bf-page">
-      <h1 className="bf-page-title">Marketing</h1>
-      <p>Placeholder for campaigns, sequences, and analytics.</p>
+    <div>
+      <h1 className="text-2xl font-semibold mb-4">Marketing</h1>
+      <p className="text-sm text-gray-700">
+        This page will surface campaigns, ad performance, and outbound sequences.
+      </p>
     </div>
   );
 }
