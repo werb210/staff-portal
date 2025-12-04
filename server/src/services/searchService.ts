@@ -14,13 +14,26 @@ const searchService = {
   async search(query: string) {
     if (!query || typeof query !== "string") return [];
 
-    const filter = { name: query };
+    if (query.startsWith("company:")) {
+      const companyId = query.split(":")[1];
+      const result = await contactsRepo.findByCompany(companyId);
+      const records = (result as any)?.rows ?? (result as any);
+      return Array.isArray(records) ? records : [];
+    }
 
-    const contacts = await contactsRepo.findMany(filter);
-    const companies = await companiesRepo.findMany(filter);
+    const filter = query.toLowerCase();
 
-    const mappedContacts = contacts.map((c) => normalize(c, "contact"));
-    const mappedCompanies = companies.map((c) => normalize(c, "company"));
+    const contactsResult = await contactsRepo.findAll();
+    const companiesResult = await companiesRepo.findAll();
+
+    const contacts = ((contactsResult as any)?.rows ?? contactsResult) as any[];
+    const companies = ((companiesResult as any)?.rows ?? companiesResult) as any[];
+
+    const match = (record: any) =>
+      JSON.stringify(record).toLowerCase().includes(filter);
+
+    const mappedContacts = contacts.filter(match).map((c) => normalize(c, "contact"));
+    const mappedCompanies = companies.filter(match).map((c) => normalize(c, "company"));
 
     return [...mappedContacts, ...mappedCompanies].filter(Boolean);
   },

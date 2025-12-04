@@ -1,31 +1,44 @@
-import axios from "axios";
-import { getAuthToken } from "../utils/authToken";
+import api from "./client";
 
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
-});
+const normalizeCompany = (company: any) => {
+  if (!company) return company;
 
-api.interceptors.request.use((config) => {
-  const token = getAuthToken();
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
-});
+  return {
+    ...company,
+    id: company.id ?? company.company_id ?? company.companyId ?? company._id,
+    name: company.name ?? "",
+    email: company.email ?? company.email_address ?? company.emailAddress ?? null,
+    phone: company.phone ?? company.phone_number ?? company.phoneNumber ?? null,
+    industry: company.industry ?? company.industry_type ?? company.sector ?? "",
+    website: company.website ?? company.url ?? null,
+  };
+};
 
-export interface Company {
-  id: string;
-  name: string;
-  phone: string | null;
-  email: string | null;
-  website: string | null;
-  createdAt: string;
-}
+const normalizeList = (payload: any) => {
+  const list = payload?.data ?? payload ?? [];
+  return Array.isArray(list) ? list.map(normalizeCompany) : [];
+};
 
-export async function fetchCompanies(): Promise<Company[]> {
-  const res = await api.get("/api/crm/companies");
-  return res.data.data;
-}
-
-export async function createCompany(data: Partial<Company>): Promise<Company> {
-  const res = await api.post("/api/crm/companies", data);
-  return res.data.data;
-}
+export const CompaniesAPI = {
+  list: async () => {
+    const res = await api.get("/companies");
+    return { ...res.data, data: normalizeList(res.data) };
+  },
+  search: async (q: string) => {
+    const res = await api.get(`/search/companies?q=${encodeURIComponent(q)}`);
+    return { ...res.data, data: normalizeList(res.data) };
+  },
+  get: async (id: string) => {
+    const res = await api.get(`/companies/${id}`);
+    return { ...res.data, data: normalizeCompany(res.data?.data ?? res.data) };
+  },
+  create: async (payload: any) => {
+    const res = await api.post("/companies", payload);
+    return { ...res.data, data: normalizeCompany(res.data?.data ?? res.data) };
+  },
+  update: async (id: string, payload: any) => {
+    const res = await api.put(`/companies/${id}`, payload);
+    return { ...res.data, data: normalizeCompany(res.data?.data ?? res.data) };
+  },
+  delete: async (id: string) => api.delete(`/companies/${id}`).then((r) => r.data),
+};

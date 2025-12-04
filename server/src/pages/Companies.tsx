@@ -1,5 +1,5 @@
-import MainLayout from "../layouts/MainLayout";
-import CompaniesTable from "../components/CompaniesTable";
+import MainLayout from "../layout/MainLayout";
+import CompaniesTable from "../components/companies/CompaniesTable";
 
 export default function Companies() {
   return (
