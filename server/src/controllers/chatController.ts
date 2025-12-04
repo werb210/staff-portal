@@ -1,38 +1,25 @@
 import { Request, Response } from "express";
-import chatService from "../services/chatService.js";
+import asyncHandler from "../utils/asyncHandler.js";
+import { chatService } from "../services/chat.service.js";
 
-const chatController = {
-  async createConversation(req: Request, res: Response) {
-    try {
-      const { clientId, staffUserId } = req.body;
-      const convo = await chatService.createConversation(clientId, staffUserId);
-      res.json(convo);
-    } catch (err: any) {
-      res.status(400).json({ ok: false, error: err.message });
+export const chatController = {
+  send: asyncHandler(async (req: Request, res: Response) => {
+    const { fromUserId, toUserId, body } = req.body;
+
+    if (!fromUserId || !toUserId || !body) {
+      return res.status(400).json({ error: "Missing required fields" });
     }
-  },
 
-  async fetchMessages(req: Request, res: Response) {
-    try {
-      const { conversationId } = req.params;
-      const msgs = await chatService.getMessages(conversationId);
-      res.json(msgs);
-    } catch (err: any) {
-      res.status(400).json({ ok: false, error: err.message });
-    }
-  },
+    const msg = await chatService.sendMessage({ fromUserId, toUserId, body });
 
-  async sendMessage(req: Request, res: Response) {
-    try {
-      const { conversationId } = req.params;
-      const { senderRole, text } = req.body;
+    res.status(201).json({ success: true, message: msg });
+  }),
 
-      const msg = await chatService.addMessage(conversationId, senderRole, text);
-      res.json(msg);
-    } catch (err: any) {
-      res.status(400).json({ ok: false, error: err.message });
-    }
-  },
+  thread: asyncHandler(async (req: Request, res: Response) => {
+    const { userA, userB } = req.params;
+
+    const messages = await chatService.getConversation(userA, userB);
+
+    res.status(200).json({ success: true, messages });
+  }),
 };
-
-export default chatController;
