@@ -1,35 +1,8 @@
-import { api } from "@/lib/http";
+import { api } from "@/lib/apiClient";
 
-export interface Contact {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email?: string;
-  phone?: string;
-  companyId?: string;
-  createdAt: string;
-}
-
-export async function listContacts() {
-  const res = await api.get<Contact[]>("/contacts");
-  return res.data;
-}
-
-export async function getContact(id: string) {
-  const res = await api.get<Contact>(`/contacts/${id}`);
-  return res.data;
-}
-
-export async function createContact(payload: Partial<Contact>) {
-  const res = await api.post<Contact>("/contacts", payload);
-  return res.data;
-}
-
-export async function updateContact(id: string, payload: Partial<Contact>) {
-  const res = await api.put<Contact>(`/contacts/${id}`, payload);
-  return res.data;
-}
-
-export async function deleteContact(id: string) {
-  await api.delete(`/contacts/${id}`);
-}
+export const contactsApi = {
+  list: () => api.get("/contacts"),
+  get: (id: string) => api.get(`/contacts/${id}`),
+  create: (data: any) => api.post("/contacts", data),
+  update: (id: string, data: any) => api.put(`/contacts/${id}`, data)
+};
