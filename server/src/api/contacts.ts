@@ -1,8 +1,5 @@
-import { api } from "@/lib/apiClient";
+import { http } from "@/lib/api/http";
 
-export const contactsApi = {
-  list: () => api.get("/contacts"),
-  get: (id: string) => api.get(`/contacts/${id}`),
-  create: (data: any) => api.post("/contacts", data),
-  update: (id: string, data: any) => api.put(`/contacts/${id}`, data)
+export const ContactsAPI = {
+  list: () => http.get("/contacts"),
 };
