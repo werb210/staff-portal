@@ -1,38 +1,21 @@
-// server/src/controllers/messagesController.ts
 import { Request, Response } from "express";
-import { messagesService } from "../services/messagesService.js";
+import messagesService from "../services/messages.service.js";
 
-export const messagesController = {
-  async send(req: Request, res: Response) {
-    const { applicationId, senderId, recipientId, body } = req.body;
-
-    if (!senderId || !body) {
-      return res.status(400).json({
-        success: false,
-        error: "senderId and body are required",
-      });
-    }
-
-    const msg = await messagesService.send({
-      applicationId: applicationId || null,
-      senderId,
-      recipientId: recipientId || null,
-      body,
-    });
-
-    return res.status(201).json({ success: true, data: msg });
+const messagesController = {
+  async listApplication(req: Request, res: Response) {
+    const rows = await messagesService.listForApplication(req.params.applicationId);
+    res.json({ ok: true, data: rows });
   },
 
-  async thread(req: Request, res: Response) {
-    const { applicationId } = req.params;
-
-    const data = await messagesService.thread(applicationId);
-    return res.json({ success: true, data });
+  async listContact(req: Request, res: Response) {
+    const rows = await messagesService.listForContact(req.params.contactId);
+    res.json({ ok: true, data: rows });
   },
 
-  async inbox(req: Request, res: Response) {
-    const { userId } = req.params;
-    const data = await messagesService.inbox(userId);
-    return res.json({ success: true, data });
+  async create(req: Request, res: Response) {
+    const created = await messagesService.create(req.body);
+    res.json({ ok: true, data: created });
   },
 };
+
+export default messagesController;

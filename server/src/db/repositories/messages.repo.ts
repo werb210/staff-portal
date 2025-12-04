@@ -1,42 +1,52 @@
-// server/src/db/repositories/messages.repo.ts
-import { db } from "../db.js";
-import { messages } from "../schema/messages.js";
-import { eq } from "drizzle-orm";
+import db from "../db.js";
 
-export const messagesRepo = {
-  async create(data: {
-    applicationId: string | null;
-    senderId: string;
-    recipientId: string | null;
-    body: string;
-    system: boolean;
-  }) {
-    const [row] = await db
-      .insert(messages)
+export interface MessageRecord {
+  id: string;
+  applicationId: string | null;
+  contactId: string | null;
+  userId: string | null;
+  direction: "inbound" | "outbound" | "internal";
+  channel: "email" | "sms" | "call" | "note";
+  body: string;
+  createdAt: Date;
+}
+
+const messagesRepo = {
+  async listForApplication(appId: string): Promise<MessageRecord[]> {
+    return db
+      .selectFrom("messages")
+      .selectAll()
+      .where("applicationId", "=", appId)
+      .orderBy("createdAt", "asc")
+      .execute();
+  },
+
+  async listForContact(contactId: string): Promise<MessageRecord[]> {
+    return db
+      .selectFrom("messages")
+      .selectAll()
+      .where("contactId", "=", contactId)
+      .orderBy("createdAt", "asc")
+      .execute();
+  },
+
+  async create(data: Partial<MessageRecord>): Promise<MessageRecord> {
+    const row = await db
+      .insertInto("messages")
       .values({
-        applicationId: data.applicationId,
-        senderId: data.senderId,
-        recipientId: data.recipientId,
-        body: data.body,
-        system: data.system,
+        applicationId: data.applicationId ?? null,
+        contactId: data.contactId ?? null,
+        userId: data.userId ?? null,
+        direction: data.direction ?? "internal",
+        channel: data.channel ?? "note",
+        body: data.body ?? "",
       })
-      .returning();
-    return row;
-  },
+      .returningAll()
+      .executeTakeFirst();
 
-  async thread(applicationId: string) {
-    return await db
-      .select()
-      .from(messages)
-      .where(eq(messages.applicationId, applicationId))
-      .orderBy(messages.createdAt);
-  },
-
-  async allForUser(userId: string) {
-    return await db
-      .select()
-      .from(messages)
-      .where(eq(messages.recipientId, userId))
-      .orderBy(messages.createdAt);
+    return row as MessageRecord;
   },
 };
+
+export { messagesRepo };
+export default messagesRepo;

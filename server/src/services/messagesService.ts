@@ -1,5 +1,4 @@
-// server/src/services/messagesService.ts
-import { messagesRepo } from "../db/repositories/messages.repo.js";
+import messagesRepo from "../db/repositories/messages.repo.js";
 import { notificationsService } from "./notificationsService.js";
 
 export const messagesService = {
@@ -18,13 +17,13 @@ export const messagesService = {
   }) {
     const msg = await messagesRepo.create({
       applicationId,
-      senderId,
-      recipientId,
+      contactId: recipientId,
+      userId: senderId,
+      direction: system ? "internal" : "outbound",
+      channel: "note",
       body,
-      system,
     });
 
-    // Notify recipient (if not system message)
     if (recipientId && !system) {
       await notificationsService.create({
         userId: recipientId,
@@ -38,10 +37,10 @@ export const messagesService = {
   },
 
   async thread(applicationId: string) {
-    return await messagesRepo.thread(applicationId);
+    return messagesRepo.listForApplication(applicationId);
   },
 
-  async inbox(userId: string) {
-    return await messagesRepo.allForUser(userId);
+  async inbox(contactId: string) {
+    return messagesRepo.listForContact(contactId);
   },
 };
