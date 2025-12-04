@@ -1,13 +1,14 @@
-// server/src/routes/contacts.routes.ts
-import { Router } from "express";
-import contactsController from "../controllers/contactsController.js";
+import { Router, Request, Response } from "express";
 
 const router = Router();
 
-router.get("/", contactsController.list);
-router.post("/", contactsController.create);
-router.get("/:id", contactsController.getById);
-router.put("/:id", contactsController.update);
-router.delete("/:id", contactsController.remove);
+// Temporary stub routes until real logic is added
+router.get("/", (_req: Request, res: Response) => {
+  res.json({ ok: true, route: "contacts", message: "stub" });
+});
+
+router.get("/:id", (req: Request, res: Response) => {
+  res.json({ ok: true, route: "contacts", id: req.params.id, message: "stub" });
+});
 
 export default router;
