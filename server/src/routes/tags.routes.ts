@@ -1,15 +1,11 @@
 import { Router } from "express";
-import tagsController from "../controllers/tagsController";
+import tagController from "../controllers/tagController.js";
 
 const router = Router();
 
-router.get("/", tagsController.list);
-router.post("/", tagsController.create);
-router.put("/:id", tagsController.update);
-router.delete("/:id", tagsController.remove);
-
-router.post("/attach", tagsController.attach);
-router.post("/detach", tagsController.detach);
-router.get("/app/:applicationId", tagsController.getForApp);
+router.get("/", tagController.list);
+router.post("/", tagController.create);
+router.put("/:id", tagController.update);
+router.delete("/:id", tagController.remove);
 
 export default router;
