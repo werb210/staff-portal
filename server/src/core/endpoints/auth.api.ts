@@ -1,16 +1,25 @@
-import apiClient from "@/lib/http";
+// server/src/core/endpoints/auth.api.ts
+import { http } from "@/lib/http";
+import type { User } from "@/types/User";
 
-export interface LoginPayload {
+export interface LoginRequestDTO {
   email: string;
   password: string;
 }
 
-export interface LoginResponse<TUser = unknown> {
+export interface LoginResponseDTO {
   token: string;
-  user: TUser;
+  user: User;
 }
 
-export const login = <TUser = unknown>(payload: LoginPayload) =>
-  apiClient.post<LoginResponse<TUser>>("/api/auth/login", payload);
+export const authApi = {
+  login: async (payload: LoginRequestDTO): Promise<LoginResponseDTO> => {
+    const { data } = await http.post<LoginResponseDTO>("/auth/login", payload);
+    return data;
+  },
 
-export const fetchCurrentUser = <TUser = unknown>() => apiClient.get<TUser>("/api/auth/me");
+  me: async (): Promise<User> => {
+    const { data } = await http.get<User>("/auth/me");
+    return data;
+  },
+};
