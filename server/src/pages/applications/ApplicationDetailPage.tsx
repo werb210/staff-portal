@@ -1,12 +1,16 @@
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 
 export default function ApplicationDetailPage() {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
 
+  // For now just show the ID; later we can call a /api/applications/:id endpoint
   return (
-    <>
-      <h1>Application: {id}</h1>
-      <p>Detail view coming soon.</p>
-    </>
+    <div className="bf-page">
+      <h1 className="bf-page-title">Application Detail</h1>
+      <p>Application ID: {id}</p>
+      <p>
+        <Link to="/applications">&larr; Back to Applications</Link>
+      </p>
+    </div>
   );
 }
