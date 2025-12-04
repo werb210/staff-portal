@@ -1,20 +1,12 @@
-import { drizzle } from "drizzle-orm/node-postgres";
-import pkg from "pg";
+// server/src/db/db.ts
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
 
-const { Pool } = pkg;
-
-if (!process.env.DATABASE_URL) {
-  console.warn("DATABASE_URL is missing — DB features disabled.");
-}
-
-/**
- * Shared Postgres connection pool + Drizzle client
- */
-export const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+const connection = postgres(process.env.DATABASE_URL!, {
+  ssl: "require",
   max: 10,
 });
 
-export const db = drizzle(pool);
+const db = drizzle(connection);
 
 export default db;
