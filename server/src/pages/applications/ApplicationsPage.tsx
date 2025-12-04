@@ -1,73 +1,47 @@
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { fetchApplications } from "@/lib/api/applications";
-
-type Application = {
-  id: string;
-  companyName?: string;
-  product?: string;
-  status?: string;
-};
+import { ApplicationsAPI } from "@/api/applications";
 
 export default function ApplicationsPage() {
-  const [rows, setRows] = useState<Application[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data, isLoading } = useQuery({
+    queryKey: ["applications"],
+    queryFn: () => ApplicationsAPI.list(),
+  });
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const data = await fetchApplications();
-        if (!cancelled) {
-          setRows(
-            (data as any[]).map((a) => ({
-              id: a.id ?? a.applicationId ?? String(Math.random()),
-              companyName: a.companyName ?? "",
-              product: a.product ?? a.productName ?? "",
-              status: a.status ?? ""
-            }))
-          );
-        }
-      } catch (err: any) {
-        if (!cancelled) setError(err?.message || "Failed to load applications");
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
+  if (isLoading) return <div>Loading applications...</div>;
 
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const apps = data ?? [];
 
   return (
-    <div className="bf-page">
-      <h1 className="bf-page-title">Applications</h1>
-      {loading && <div>Loading...</div>}
-      {error && <div className="bf-error">{error}</div>}
-      {!loading && !error && (
-        <table className="bf-table">
-          <thead>
-            <tr>
-              <th>Company</th>
-              <th>Product</th>
-              <th>Status</th>
+    <div>
+      <h1 className="text-2xl font-semibold mb-4">Applications</h1>
+      <table className="min-w-full border bg-white">
+        <thead>
+          <tr className="bg-gray-100 text-left text-sm">
+            <th className="px-3 py-2 border-b">ID</th>
+            <th className="px-3 py-2 border-b">Business</th>
+            <th className="px-3 py-2 border-b">Status</th>
+            <th className="px-3 py-2 border-b">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {apps.map((a: any) => (
+            <tr key={a.id} className="text-sm">
+              <td className="px-3 py-2 border-b">{a.id}</td>
+              <td className="px-3 py-2 border-b">{a.businessName}</td>
+              <td className="px-3 py-2 border-b">{a.status}</td>
+              <td className="px-3 py-2 border-b">
+                <Link
+                  to={`/applications/${a.id}`}
+                  className="text-blue-600 hover:underline"
+                >
+                  View
+                </Link>
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            {rows.map((a) => (
-              <tr key={a.id}>
-                <td>
-                  <Link to={`/applications/${a.id}`}>{a.companyName}</Link>
-                </td>
-                <td>{a.product}</td>
-                <td>{a.status}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
