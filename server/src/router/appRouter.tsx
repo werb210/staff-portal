@@ -1,7 +1,8 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
-import { Protected } from "@/router/guards";
-import MainLayout from "@/layout/MainLayout";
+import Layout from "@/layout/MainLayout";
+import { Protected } from "./guards";
 
+// Pages
 import LoginPage from "@/pages/auth/LoginPage";
 import Dashboard from "@/pages/dashboard/Dashboard";
 import ContactsPage from "@/pages/contacts/ContactsPage";
@@ -16,16 +17,18 @@ import Marketing from "@/pages/Marketing";
 import Referrals from "@/pages/Referrals";
 import AdminUsersPage from "@/pages/Admin/AdminUsersPage";
 import AuditLogPage from "@/pages/Admin/AuditLogPage";
-import Unauthorized from "@/pages/Unauthorized";
 
 export const appRouter = createBrowserRouter([
-  { path: "/login", element: <LoginPage /> },
+  {
+    path: "/login",
+    element: <LoginPage />
+  },
 
   {
     path: "/",
     element: (
       <Protected>
-        <MainLayout />
+        <Layout />
       </Protected>
     ),
     children: [
@@ -45,8 +48,6 @@ export const appRouter = createBrowserRouter([
       { path: "admin/audit", element: <AuditLogPage /> }
     ]
   },
-
-  { path: "/unauthorized", element: <Unauthorized /> },
 
   { path: "*", element: <Navigate to="/" replace /> }
 ]);
