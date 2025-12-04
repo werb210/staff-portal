@@ -1,41 +1,45 @@
-export function jsonHeaders(token?: string): Record<string, string> {
-  return {
-    "Content-Type": "application/json",
-    ...(token ? { Authorization: `Bearer ${token}` } : {})
-  };
+// server/src/lib/http.ts
+import axios, { AxiosError, AxiosInstance } from "axios";
+
+const API_BASE_URL =
+  (import.meta as any).env?.VITE_STAFF_API_BASE_URL ||
+  process.env.VITE_STAFF_API_BASE_URL ||
+  "/api";
+
+let authToken: string | null = null;
+
+export function setAuthToken(token: string | null) {
+  authToken = token;
 }
 
-export async function httpGet<T>(url: string, token?: string): Promise<T> {
-  const res = await fetch(url, { headers: jsonHeaders(token) });
-  if (!res.ok) throw new Error(await res.text());
-  return res.json();
-}
-
-export async function httpPost<T>(url: string, body: any, token?: string): Promise<T> {
-  const res = await fetch(url, {
-    method: "POST",
-    headers: jsonHeaders(token),
-    body: JSON.stringify(body)
+function createHttpClient(): AxiosInstance {
+  const instance = axios.create({
+    baseURL: API_BASE_URL,
+    withCredentials: true,
   });
-  if (!res.ok) throw new Error(await res.text());
-  return res.json();
+
+  instance.interceptors.request.use((config) => {
+    if (authToken) {
+      config.headers = config.headers ?? {};
+      config.headers.Authorization = `Bearer ${authToken}`;
+    }
+    return config;
+  });
+
+  instance.interceptors.response.use(
+    (response) => response,
+    (error: AxiosError) => {
+      if (error.response?.status === 401) {
+        // Optional: emit a global 401 event, clear auth store, etc.
+        // For now we just rethrow.
+      }
+      return Promise.reject(error);
+    }
+  );
+
+  return instance;
 }
 
-export async function httpPatch<T>(url: string, body: any, token?: string): Promise<T> {
-  const res = await fetch(url, {
-    method: "PATCH",
-    headers: jsonHeaders(token),
-    body: JSON.stringify(body)
-  });
-  if (!res.ok) throw new Error(await res.text());
-  return res.json();
-}
+export const http = createHttpClient();
 
-export async function httpDelete<T>(url: string, token?: string): Promise<T> {
-  const res = await fetch(url, {
-    method: "DELETE",
-    headers: jsonHeaders(token)
-  });
-  if (!res.ok) throw new Error(await res.text());
-  return res.json();
-}
+export type HttpError = AxiosError;
