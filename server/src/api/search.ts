@@ -1,6 +1,5 @@
-import { api } from "@/lib/http";
+import { api } from "@/lib/apiClient";
 
-export async function search(query: string) {
-  const res = await api.get("/search", { params: { q: query } });
-  return res.data;
-}
+export const searchApi = {
+  run: (query: string) => api.get(`/search?q=${encodeURIComponent(query)}`)
+};
