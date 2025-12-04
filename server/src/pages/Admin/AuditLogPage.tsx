@@ -1,15 +1,22 @@
-import AuditFilterBar from "../../components/audit/AuditFilterBar";
-import AuditTable from "../../components/audit/AuditTable";
+import { useEffect, useState } from "react";
+import { api } from "@/lib/apiClient";
 
 export default function AuditLogPage() {
+  const [logs, setLogs] = useState([]);
+
+  useEffect(() => {
+    api.get("/audit").then((res) => setLogs(res.data || []));
+  }, []);
+
   return (
-    <div style={{ padding: 24 }}>
-      <h1>Audit Logs</h1>
-      <p style={{ marginBottom: 16, color: "#555" }}>
-        Full system audit trail: logins, role changes, document actions, pipeline moves, and more.
-      </p>
-      <AuditFilterBar />
-      <AuditTable />
+    <div>
+      <h1>Audit Log</h1>
+      {logs.length === 0 && <p>No audit entries.</p>}
+      <ul>
+        {logs.map((l: any) => (
+          <li key={l.id}>{l.action}</li>
+        ))}
+      </ul>
     </div>
   );
 }
