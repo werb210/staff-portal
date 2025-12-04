@@ -1,61 +1,34 @@
-import { Request, Response } from "express";
-import contactsService from "../services/contactsService";
-import { auditService } from "../services/auditService.js";
+import asyncHandler from "../utils/asyncHandler.js";
+import contactsRepo from "../db/repositories/contacts.repo.js";
 
 const contactsController = {
-  list: async (_req: Request, res: Response) => {
-    const data = await contactsService.list();
-    res.json({ success: true, data });
-  },
+  list: asyncHandler(async (_req, res) => {
+    const items = await contactsRepo.findMany();
+    res.json({ success: true, data: items });
+  }),
 
-  get: async (req: Request, res: Response) => {
-    const record = await contactsService.get(req.params.id);
-    if (!record)
+  get: asyncHandler(async (req, res) => {
+    const item = await contactsRepo.findById(req.params.id);
+    if (!item) {
       return res.status(404).json({ success: false, error: "Not found" });
-    res.json({ success: true, data: record });
-  },
+    }
+    res.json({ success: true, data: item });
+  }),
 
-  create: async (req: Request, res: Response) => {
-    const created = await contactsService.create(req.body ?? {});
-    await auditService.log(
-      req.user?.id ?? "system",
-      "CREATE",
-      "contact",
-      String(created.id),
-      created
-    );
+  create: asyncHandler(async (req, res) => {
+    const created = await contactsRepo.create(req.body);
     res.status(201).json({ success: true, data: created });
-  },
+  }),
 
-  update: async (req: Request, res: Response) => {
-    const { id } = req.params;
-    const updated = await contactsService.update(id, req.body ?? {});
-    if (!updated)
-      return res.status(404).json({ success: false, error: "Not found" });
-    await auditService.log(
-      req.user?.id ?? "system",
-      "UPDATE",
-      "contact",
-      String(id),
-      updated
-    );
+  update: asyncHandler(async (req, res) => {
+    const updated = await contactsRepo.update(req.params.id, req.body);
     res.json({ success: true, data: updated });
-  },
+  }),
 
-  remove: async (req: Request, res: Response) => {
-    const { id } = req.params;
-    const removed = await contactsService.remove(id);
-    if (!removed)
-      return res.status(404).json({ success: false, error: "Not found" });
-    await auditService.log(req.user?.id ?? "system", "DELETE", "contact", String(id));
-    res.json({ success: true, data: removed });
-  },
-
-  search: async (req: Request, res: Response) => {
-    const q = (req.query.q as string) || "";
-    const results = await contactsService.search(q);
-    res.json({ success: true, data: results });
-  },
+  remove: asyncHandler(async (req, res) => {
+    const deleted = await contactsRepo.delete(req.params.id);
+    res.json({ success: true, data: deleted });
+  }),
 };
 
 export default contactsController;
