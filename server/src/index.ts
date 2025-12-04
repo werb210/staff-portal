@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import morgan from "morgan";
 import router from "./routes/index.js";
+import { initWebSocketServer } from "./realtime/wsServer.js";
 
 const app = express();
 
@@ -20,6 +21,9 @@ app.get("/", (_req, res) => {
 // Port for local dev
 const PORT = process.env.PORT ? Number(process.env.PORT) : 5000;
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Staff-portal API listening on port ${PORT}`);
 });
+
+// INIT WEBSOCKETS
+initWebSocketServer(server);

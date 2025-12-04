@@ -1,5 +1,6 @@
 import notificationsRepo from "../db/repositories/notifications.repo.js";
 import timelineRepo from "../db/repositories/timeline.repo.js";
+import { broadcastToAll, broadcastToUser } from "../realtime/wsServer.js";
 
 const notificationsService = {
   async listForUser(userId: string) {
@@ -16,6 +17,13 @@ const notificationsService = {
       type: payload.type ?? "general",
       message: payload.message ?? "",
     });
+
+    // broadcast to user
+    if (payload.userId) {
+      broadcastToUser(payload.userId, "notification", created);
+    } else {
+      broadcastToAll("notification", created);
+    }
 
     // also write timeline entry if tied to app
     if (payload.applicationId) {

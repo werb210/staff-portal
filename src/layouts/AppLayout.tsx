@@ -1,5 +1,7 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import NotificationBell from "../components/nav/NotificationBell";
+import { connectWebSocket, subscribe } from "../realtime/wsClient";
+import { notificationsApi } from "../api/notifications";
 
 interface AppLayoutProps {
   currentUser?: any;
@@ -8,6 +10,31 @@ interface AppLayoutProps {
 }
 
 export default function AppLayout({ currentUser, sidebar, children }: AppLayoutProps) {
+  const [, setNotifications] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!currentUser?.id) return;
+
+    (async () => {
+      try {
+        const res = await notificationsApi.list(currentUser.id);
+        setNotifications(res.data.data ?? []);
+      } catch (_) {}
+    })();
+
+    connectWebSocket(currentUser.id);
+
+    subscribe(async (msg) => {
+      if (msg.type === "notification") {
+        setNotifications((prev) => [msg.payload, ...prev]);
+      }
+
+      if (msg.type === "timeline_event") {
+        console.log("Timeline event received:", msg.payload);
+      }
+    });
+  }, [currentUser]);
+
   return (
     <div className="flex min-h-screen bg-gray-100">
       {sidebar}

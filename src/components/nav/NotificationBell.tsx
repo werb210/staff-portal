@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { notificationsApi } from "../../api/notifications";
+import { subscribe } from "../../realtime/wsClient";
 
 export default function NotificationBell({ user }) {
   const [count, setCount] = useState(0);
@@ -13,6 +14,13 @@ export default function NotificationBell({ user }) {
   useEffect(() => {
     fetchUnread();
     const interval = setInterval(fetchUnread, 5000);
+
+    subscribe((msg) => {
+      if (msg.type === "notification") {
+        setCount((c) => c + 1);
+      }
+    });
+
     return () => clearInterval(interval);
   }, [user]);
 
