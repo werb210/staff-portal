@@ -1,48 +1,47 @@
 // server/src/services/messagesService.ts
 import { messagesRepo } from "../db/repositories/messages.repo.js";
+import { notificationsService } from "./notificationsService.js";
 
 export const messagesService = {
   async send({
-    threadId,
+    applicationId,
     senderId,
-    receiverId,
+    recipientId,
     body,
+    system = false,
   }: {
-    threadId: string;
+    applicationId: string | null;
     senderId: string;
-    receiverId: string | null;
+    recipientId: string | null;
     body: string;
+    system?: boolean;
   }) {
-    return await messagesRepo.create({
-      threadId,
+    const msg = await messagesRepo.create({
+      applicationId,
       senderId,
-      receiverId,
-      direction: "outbound",
+      recipientId,
       body,
+      system,
     });
+
+    // Notify recipient (if not system message)
+    if (recipientId && !system) {
+      await notificationsService.create({
+        userId: recipientId,
+        title: "New Message",
+        message: body.slice(0, 200),
+        category: "message",
+      });
+    }
+
+    return msg;
   },
 
-  async receive({
-    threadId,
-    senderId,
-    receiverId,
-    body,
-  }: {
-    threadId: string;
-    senderId: string;
-    receiverId: string | null;
-    body: string;
-  }) {
-    return await messagesRepo.create({
-      threadId,
-      senderId,
-      receiverId,
-      direction: "inbound",
-      body,
-    });
+  async thread(applicationId: string) {
+    return await messagesRepo.thread(applicationId);
   },
 
-  async thread(threadId: string) {
-    return await messagesRepo.getThread(threadId);
+  async inbox(userId: string) {
+    return await messagesRepo.allForUser(userId);
   },
 };

@@ -5,34 +5,38 @@ import { eq } from "drizzle-orm";
 
 export const messagesRepo = {
   async create(data: {
-    threadId: string;
+    applicationId: string | null;
     senderId: string;
-    receiverId: string | null;
-    direction: "inbound" | "outbound";
+    recipientId: string | null;
     body: string;
+    system: boolean;
   }) {
-    const [row] = await db.insert(messages).values({
-      threadId: data.threadId,
-      senderId: data.senderId,
-      receiverId: data.receiverId,
-      direction: data.direction,
-      body: data.body,
-    }).returning();
+    const [row] = await db
+      .insert(messages)
+      .values({
+        applicationId: data.applicationId,
+        senderId: data.senderId,
+        recipientId: data.recipientId,
+        body: data.body,
+        system: data.system,
+      })
+      .returning();
     return row;
   },
 
-  async getThread(threadId: string) {
+  async thread(applicationId: string) {
     return await db
       .select()
       .from(messages)
-      .where(eq(messages.threadId, threadId))
+      .where(eq(messages.applicationId, applicationId))
       .orderBy(messages.createdAt);
   },
 
-  async getAllForContact(contactId: string) {
+  async allForUser(userId: string) {
     return await db
       .select()
       .from(messages)
-      .where(eq(messages.receiverId, contactId));
+      .where(eq(messages.recipientId, userId))
+      .orderBy(messages.createdAt);
   },
 };
