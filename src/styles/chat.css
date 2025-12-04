@@ -46,3 +46,27 @@
   padding: 8px 14px;
   cursor: pointer;
 }
+
+.chat-header {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px;
+  background: #f7f7f7;
+  border-bottom: 1px solid #ddd;
+  font-size: 14px;
+}
+
+.online {
+  color: green;
+}
+
+.offline {
+  color: gray;
+}
+
+.typing-indicator {
+  padding: 4px 8px;
+  font-size: 13px;
+  color: #888;
+  font-style: italic;
+}

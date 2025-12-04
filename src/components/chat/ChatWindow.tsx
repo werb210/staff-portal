@@ -1,11 +1,18 @@
 import { useEffect, useRef, useState } from "react";
 import { ChatAPI } from "../../api/chat";
-import { subscribe } from "../../realtime/wsClient";
+import {
+  sendTyping,
+  subscribe,
+  subscribePresence,
+  subscribeTyping,
+} from "../../realtime/wsClient";
 import "../../styles/chat.css";
 
 export function ChatWindow({ currentUserId, otherUserId }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
+  const [isOtherTyping, setIsOtherTyping] = useState(false);
+  const [otherPresence, setOtherPresence] = useState(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -20,6 +27,18 @@ export function ChatWindow({ currentUserId, otherUserId }) {
         ) {
           setMessages((prev) => [...prev, m]);
         }
+      }
+    });
+
+    subscribeTyping((msg) => {
+      if (msg.fromUserId === otherUserId) {
+        setIsOtherTyping(msg.isTyping);
+      }
+    });
+
+    subscribePresence((p) => {
+      if (p.userId === otherUserId) {
+        setOtherPresence(p);
       }
     });
   }, [currentUserId, otherUserId]);
@@ -40,6 +59,13 @@ export function ChatWindow({ currentUserId, otherUserId }) {
 
   return (
     <div className="chat-window">
+      <div className="chat-header">
+        <span>{otherUserId}</span>
+        <span className={otherPresence?.online ? "online" : "offline"}>
+          {otherPresence?.online ? "Online" : "Offline"}
+        </span>
+      </div>
+
       <div className="messages">
         {messages.map((m) => (
           <div
@@ -52,10 +78,17 @@ export function ChatWindow({ currentUserId, otherUserId }) {
         <div ref={bottomRef}></div>
       </div>
 
+      {isOtherTyping && <div className="typing-indicator">Typing...</div>}
+
       <div className="input-bar">
         <input
           value={input}
-          onChange={(e) => setInput(e.target.value)}
+          onChange={(e) => {
+            const value = e.target.value;
+            setInput(value);
+
+            sendTyping(otherUserId, value.length > 0);
+          }}
           placeholder="Type message…"
         />
         <button onClick={send}>Send</button>

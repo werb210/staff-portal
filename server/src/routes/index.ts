@@ -8,6 +8,7 @@ import pipelineRoutes from "./pipeline.routes.js";
 import messagesRoutes from "./messages.routes.js";
 import notificationsRoutes from "./notifications.routes.js";
 import chatRoutes from "./chat.routes.js";
+import presenceRoutes from "./presence.routes.js";
 
 const router = Router();
 
@@ -28,5 +29,6 @@ router.use("/pipeline", pipelineRoutes);
 router.use("/messages", messagesRoutes);
 router.use("/notifications", notificationsRoutes);
 router.use("/chat", chatRoutes);
+router.use("/presence", presenceRoutes);
 
 export default router;
