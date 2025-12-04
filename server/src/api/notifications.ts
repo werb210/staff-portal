@@ -1,17 +1,19 @@
-import axios from "axios";
-import { getAuthToken } from "../utils/authToken";
+import { api } from "@/lib/http";
 
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
-});
+export interface Notification {
+  id: string;
+  type: string;
+  message: string;
+  read: boolean;
+  createdAt: string;
+}
 
-api.interceptors.request.use((c) => {
-  const t = getAuthToken();
-  if (t) c.headers.Authorization = `Bearer ${t}`;
-  return c;
-});
+export async function listNotifications() {
+  const res = await api.get<Notification[]>("/notifications");
+  return res.data;
+}
 
-export const fetchNotifications = (userId: string) =>
-  api.get(`/api/notifications/user/${userId}`).then((r) => r.data.data);
-
-export const markNotificationRead = (id: string) => api.post(`/api/notifications/${id}/read`);
+export async function markRead(id: string) {
+  const res = await api.post(`/notifications/${id}/read`, {});
+  return res.data;
+}
