@@ -1,8 +1,21 @@
+import { useEffect, useState } from "react";
+import { fetchDeals } from "@/lib/api/deals";
+
 export default function DealsPage() {
+  const [list, setList] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetchDeals().then(setList).catch(console.error);
+  }, []);
+
   return (
-    <div>
+    <>
       <h1>Deals</h1>
-      <p>Deals pipeline and management goes here.</p>
-    </div>
+      <ul>
+        {list.map((d) => (
+          <li key={d.id}>{d.name ?? "Deal"} — {d.status}</li>
+        ))}
+      </ul>
+    </>
   );
 }
