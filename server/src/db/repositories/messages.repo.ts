@@ -1,52 +1,16 @@
 import db from "../db.js";
 
-export interface MessageRecord {
-  id: string;
-  applicationId: string | null;
-  contactId: string | null;
-  userId: string | null;
-  direction: "inbound" | "outbound" | "internal";
-  channel: "email" | "sms" | "call" | "note";
-  body: string;
-  createdAt: Date;
-}
-
 const messagesRepo = {
-  async listForApplication(appId: string): Promise<MessageRecord[]> {
-    return db
-      .selectFrom("messages")
-      .selectAll()
-      .where("applicationId", "=", appId)
-      .orderBy("createdAt", "asc")
-      .execute();
-  },
-
-  async listForContact(contactId: string): Promise<MessageRecord[]> {
-    return db
-      .selectFrom("messages")
-      .selectAll()
-      .where("contactId", "=", contactId)
-      .orderBy("createdAt", "asc")
-      .execute();
-  },
-
-  async create(data: Partial<MessageRecord>): Promise<MessageRecord> {
-    const row = await db
-      .insertInto("messages")
-      .values({
-        applicationId: data.applicationId ?? null,
-        contactId: data.contactId ?? null,
-        userId: data.userId ?? null,
-        direction: data.direction ?? "internal",
-        channel: data.channel ?? "note",
-        body: data.body ?? "",
-      })
-      .returningAll()
-      .executeTakeFirst();
-
-    return row as MessageRecord;
-  },
+  findAllByContact: (contactId: string) =>
+    db.query("SELECT * FROM messages WHERE contact_id=$1 ORDER BY created_at DESC", [
+      contactId,
+    ]),
+  create: (data: any) =>
+    db.query(
+      `INSERT INTO messages (contact_id, sender, body)
+       VALUES ($1,$2,$3) RETURNING *`,
+      [data.contact_id, data.sender, data.body]
+    ),
 };
 
-export { messagesRepo };
 export default messagesRepo;

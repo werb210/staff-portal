@@ -1,29 +1,13 @@
-import { db } from "../db.js";
+import db from "../db.js";
 
-export default {
-  findAll: async () => db.tags,
-
-  findById: async (id) => db.tags.find((t) => t.id === id) || null,
-
-  create: async (data) => {
-    db.tags.push(data);
-    return data;
-  },
-
-  update: async (id, data) => {
-    const idx = db.tags.findIndex((t) => t.id === id);
-    if (idx === -1) return null;
-
-    db.tags[idx] = { ...db.tags[idx], ...data };
-    return db.tags[idx];
-  },
-
-  delete: async (id) => {
-    const idx = db.tags.findIndex((t) => t.id === id);
-    if (idx === -1) return null;
-
-    const removed = db.tags[idx];
-    db.tags.splice(idx, 1);
-    return removed;
-  },
+const tagsRepo = {
+  findAll: () => db.query("SELECT * FROM tags ORDER BY id DESC"),
+  findById: (id: string) => db.query("SELECT * FROM tags WHERE id=$1", [id]),
+  create: (name: string) =>
+    db.query(`INSERT INTO tags (name) VALUES ($1) RETURNING *`, [name]),
+  update: (id: string, name: string) =>
+    db.query(`UPDATE tags SET name=$1 WHERE id=$2 RETURNING *`, [name, id]),
+  delete: (id: string) => db.query("DELETE FROM tags WHERE id=$1 RETURNING id", [id]),
 };
+
+export default tagsRepo;

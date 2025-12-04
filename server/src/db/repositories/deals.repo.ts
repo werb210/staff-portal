@@ -1,30 +1,21 @@
-import { db } from "../db.js";
+import db from "../db.js";
 
-export default {
-  findAll: async () => db.deals,
-
-  findById: async (id) =>
-    db.deals.find((d) => d.id === id) || null,
-
-  create: async (data) => {
-    db.deals.push(data);
-    return data;
-  },
-
-  update: async (id, data) => {
-    const idx = db.deals.findIndex((d) => d.id === id);
-    if (idx === -1) return null;
-
-    db.deals[idx] = { ...db.deals[idx], ...data };
-    return db.deals[idx];
-  },
-
-  delete: async (id) => {
-    const idx = db.deals.findIndex((d) => d.id === id);
-    if (idx === -1) return null;
-
-    const removed = db.deals[idx];
-    db.deals.splice(idx, 1);
-    return removed;
-  },
+const dealsRepo = {
+  findAll: () => db.query("SELECT * FROM deals ORDER BY id DESC"),
+  findById: (id: string) => db.query("SELECT * FROM deals WHERE id=$1", [id]),
+  create: (data: any) =>
+    db.query(
+      `INSERT INTO deals (contact_id, company_id, stage, value)
+       VALUES ($1,$2,$3,$4) RETURNING *`,
+      [data.contact_id, data.company_id, data.stage, data.value]
+    ),
+  update: (id: string, data: any) =>
+    db.query(
+      `UPDATE deals SET contact_id=$1, company_id=$2, stage=$3, value=$4
+       WHERE id=$5 RETURNING *`,
+      [data.contact_id, data.company_id, data.stage, data.value, id]
+    ),
+  delete: (id: string) => db.query("DELETE FROM deals WHERE id=$1 RETURNING id", [id]),
 };
+
+export default dealsRepo;

@@ -1,41 +1,18 @@
 import db from "../db.js";
 
-export interface TimelineRecord {
-  id: string;
-  applicationId: string;
-  type: string;
-  description: string;
-  createdAt: Date;
-}
-
 const timelineRepo = {
-  async listForApplication(appId: string): Promise<TimelineRecord[]> {
-    return db
-      .selectFrom("timeline")
-      .selectAll()
-      .where("applicationId", "=", appId)
-      .orderBy("createdAt", "asc")
-      .execute();
-  },
-
-  async forEntity(_entity: string, entityId: string): Promise<TimelineRecord[]> {
-    return this.listForApplication(entityId);
-  },
-
-  async create(data: Partial<TimelineRecord>): Promise<TimelineRecord> {
-    const row = await db
-      .insertInto("timeline")
-      .values({
-        applicationId: data.applicationId!,
-        type: data.type ?? "event",
-        description: data.description ?? "",
-      })
-      .returningAll()
-      .executeTakeFirst();
-
-    return row as TimelineRecord;
-  },
+  findByContact: (contactId: string) =>
+    db.query(
+      "SELECT * FROM timeline WHERE contact_id=$1 ORDER BY created_at DESC",
+      [contactId]
+    ),
+  addEntry: (data: any) =>
+    db.query(
+      `INSERT INTO timeline (contact_id, type, message)
+       VALUES ($1,$2,$3)
+       RETURNING *`,
+      [data.contact_id, data.type, data.message]
+    ),
 };
 
-export { timelineRepo };
 export default timelineRepo;

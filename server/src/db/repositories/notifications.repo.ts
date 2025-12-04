@@ -1,57 +1,19 @@
 import db from "../db.js";
 
-export interface NotificationRecord {
-  id: string;
-  userId: string | null;
-  type: string;
-  message: string;
-  read: boolean;
-  createdAt: Date;
-}
-
 const notificationsRepo = {
-  async listForUser(userId: string): Promise<NotificationRecord[]> {
-    return db
-      .selectFrom("notifications")
-      .selectAll()
-      .where("userId", "=", userId)
-      .orderBy("createdAt", "desc")
-      .execute();
-  },
-
-  async listUnread(userId: string) {
-    return db
-      .selectFrom("notifications")
-      .selectAll()
-      .where("userId", "=", userId)
-      .where("read", "=", false)
-      .orderBy("createdAt", "desc")
-      .execute();
-  },
-
-  async create(data: Partial<NotificationRecord>) {
-    const row = await db
-      .insertInto("notifications")
-      .values({
-        userId: data.userId ?? null,
-        type: data.type ?? "general",
-        message: data.message ?? "",
-        read: false,
-      })
-      .returningAll()
-      .executeTakeFirst();
-
-    return row as NotificationRecord;
-  },
-
-  async markRead(id: string) {
-    return db
-      .updateTable("notifications")
-      .set({ read: true })
-      .where("id", "=", id)
-      .returningAll()
-      .executeTakeFirst();
-  },
+  findUnreadByUser: (userId: string) =>
+    db.query(
+      "SELECT * FROM notifications WHERE user_id=$1 AND read=false ORDER BY created_at DESC",
+      [userId]
+    ),
+  markRead: (id: string) =>
+    db.query("UPDATE notifications SET read=true WHERE id=$1 RETURNING *", [id]),
+  create: (data: any) =>
+    db.query(
+      `INSERT INTO notifications (user_id, message)
+       VALUES ($1,$2) RETURNING *`,
+      [data.user_id, data.message]
+    ),
 };
 
 export default notificationsRepo;
