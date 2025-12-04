@@ -1,13 +1,12 @@
-import { Router, Request, Response } from "express";
+import { Router } from "express";
+import companiesController from "../controllers/companiesController.js";
 
 const router = Router();
 
-router.get("/", (_req: Request, res: Response) => {
-  res.json({ ok: true, route: "companies", message: "stub" });
-});
-
-router.get("/:id", (req: Request, res: Response) => {
-  res.json({ ok: true, route: "companies", id: req.params.id, message: "stub" });
-});
+router.get("/", companiesController.list);
+router.get("/:id", companiesController.get);
+router.post("/", companiesController.create);
+router.put("/:id", companiesController.update);
+router.delete("/:id", companiesController.remove);
 
 export default router;

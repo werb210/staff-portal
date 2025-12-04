@@ -1,41 +1,69 @@
-import { eq } from "drizzle-orm";
-import { db } from "../db.js";
-import { companies } from "../schema/companies.js";
+import db from "../db.js";
 
-export type CompanyInsert = typeof companies.$inferInsert;
-export type Company = typeof companies.$inferSelect;
+export interface Company {
+  id: string;
+  name: string;
+  website: string | null;
+  phone: string | null;
+  email: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
-const normalizeId = (id: string | number) => Number(id);
-
-export const companiesRepo = {
-  async findMany(): Promise<Company[]> {
-    return db.select().from(companies);
+const companiesRepo = {
+  async findAll(): Promise<Company[]> {
+    return db.selectFrom("companies").selectAll().execute();
   },
 
   async findById(id: string): Promise<Company | null> {
-    const [record] = await db.select().from(companies).where(eq(companies.id, normalizeId(id)));
-    return record || null;
+    const rows = await db
+      .selectFrom("companies")
+      .selectAll()
+      .where("id", "=", id)
+      .execute();
+
+    return rows.length ? rows[0] : null;
   },
 
-  async create(data: CompanyInsert): Promise<Company | null> {
-    const [record] = await db.insert(companies).values(data).returning();
-    return record || null;
+  async create(data: Partial<Company>): Promise<Company> {
+    const row = await db
+      .insertInto("companies")
+      .values({
+        name: data.name ?? "",
+        website: data.website ?? null,
+        phone: data.phone ?? null,
+        email: data.email ?? null,
+      })
+      .returningAll()
+      .executeTakeFirst();
+
+    return row as Company;
   },
 
-  async update(id: string, data: Partial<CompanyInsert>): Promise<Company | null> {
-    const [record] = await db
-      .update(companies)
-      .set(data)
-      .where(eq(companies.id, normalizeId(id)))
-      .returning();
+  async update(id: string, data: Partial<Company>): Promise<Company | null> {
+    const updated = await db
+      .updateTable("companies")
+      .set({
+        name: data.name,
+        website: data.website,
+        phone: data.phone,
+        email: data.email,
+      })
+      .where("id", "=", id)
+      .returningAll()
+      .executeTakeFirst();
 
-    return record || null;
+    return updated ?? null;
   },
 
-  async delete(id: string): Promise<Company | null> {
-    const [record] = await db.delete(companies).where(eq(companies.id, normalizeId(id))).returning();
-    return record || null;
-  }
+  async delete(id: string): Promise<boolean> {
+    const result = await db
+      .deleteFrom("companies")
+      .where("id", "=", id)
+      .executeTakeFirst();
+
+    return Boolean(result.numDeletedRows);
+  },
 };
 
 export default companiesRepo;
