@@ -1,29 +1,41 @@
 import { useState } from "react";
+import { login } from "@/api/auth";
 import { useNavigate } from "react-router-dom";
-import { useAuthStore } from "@/state/authStore";
 
 export default function LoginPage() {
-  const { login } = useAuthStore();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [err, setErr] = useState("");
 
-  async function submit(e: React.FormEvent) {
+  async function onSubmit(e: any) {
     e.preventDefault();
-    const ok = await login(email, password);
-    if (!ok) return setError("Invalid login");
-    navigate("/");
+    try {
+      await login(email, password);
+      navigate("/");
+    } catch (e: any) {
+      setErr("Invalid credentials");
+    }
   }
 
   return (
-    <div className="login-wrapper">
-      <form className="login-form" onSubmit={submit}>
-        <h1>Boreal Staff Portal</h1>
-        <input placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} />
-        <input placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} type="password" />
-        {error && <div className="error">{error}</div>}
-        <button>Login</button>
+    <div style={{ maxWidth: 350, margin: "60px auto" }}>
+      <h2>Login</h2>
+      {err && <p style={{ color: "red" }}>{err}</p>}
+      <form onSubmit={onSubmit}>
+        <input
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        /><br/><br/>
+        <input
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        /><br/><br/>
+        <button type="submit">Login</button>
       </form>
     </div>
   );
