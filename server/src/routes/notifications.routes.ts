@@ -3,19 +3,10 @@ import { notificationsController } from "../controllers/notificationsController.
 
 const router = Router();
 
-// GET list for user
 router.get("/:userId", notificationsController.list);
+router.get("/:userId/unread", notificationsController.unread);
 
-// GET unread count
-router.get("/:userId/unread-count", notificationsController.unread);
-
-// POST create notification
-router.post("/", notificationsController.create);
-
-// POST mark read
-router.post("/read/:id", notificationsController.read);
-
-// POST notify all admins
-router.post("/notify-admins", notificationsController.notifyAdmins);
+router.post("/read/:id", notificationsController.markRead);
+router.post("/read-all/:userId", notificationsController.markAll);
 
 export default router;

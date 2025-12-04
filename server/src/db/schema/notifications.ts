@@ -5,7 +5,7 @@ export const notifications = pgTable("notifications", {
   userId: uuid("user_id").notNull(),
   title: text("title").notNull(),
   message: text("message").notNull(),
-  category: text("category"),
+  category: text("category").default("general"),
   read: boolean("read").default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });

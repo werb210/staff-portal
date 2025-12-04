@@ -1,13 +1,13 @@
 import { db } from "../db.js";
 import { notifications } from "../schema/notifications.js";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 export const notificationsRepo = {
   async create(data: {
     userId: string;
     title: string;
     message: string;
-    category: string | null;
+    category: string;
   }) {
     const [row] = await db
       .insert(notifications)
@@ -21,12 +21,19 @@ export const notificationsRepo = {
     return row;
   },
 
-  async allForUser(userId: string) {
+  async list(userId: string) {
     return await db
       .select()
       .from(notifications)
       .where(eq(notifications.userId, userId))
       .orderBy(notifications.createdAt);
+  },
+
+  async unread(userId: string) {
+    return await db
+      .select()
+      .from(notifications)
+      .where(and(eq(notifications.userId, userId), eq(notifications.read, false)));
   },
 
   async markRead(id: string) {
@@ -38,12 +45,11 @@ export const notificationsRepo = {
     return row;
   },
 
-  async unreadCount(userId: string) {
-    const rows = await db
-      .select()
-      .from(notifications)
+  async markAllRead(userId: string) {
+    await db
+      .update(notifications)
+      .set({ read: true })
       .where(eq(notifications.userId, userId));
-
-    return rows.filter((x) => !x.read).length;
+    return true;
   },
 };
