@@ -4,12 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node --loader ts-node/esm --experimental-specifier-resolution=node server/src/index.ts",
-    "build": "tsc",
-    "postbuild": "cd server && ln -sf contacts.repo.js dist/db/repositories/contacts.repo",
-    "start": "node server/dist/index.js",
-    "lint": "echo \"(lint disabled temporarily)\"",
-    "migrate": "ts-node server/src/db/migrate.ts"
+    "build": "tsc -p server/tsconfig.json",
+    "dev": "ts-node server/src/index.ts",
+    "drizzle:push": "drizzle-kit push",
+    "drizzle:generate": "drizzle-kit generate"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

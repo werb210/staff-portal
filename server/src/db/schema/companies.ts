@@ -1,11 +1,8 @@
-import { pgTable, serial, text, timestamp, json } from "drizzle-orm/pg-core";
+import { pgTable, varchar, text, timestamp, jsonb } from "drizzle-orm/pg-core";
 
 export const companies = pgTable("companies", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  industry: text("industry"),
-  website: text("website"),
-  details: json("details"),
+  id: varchar("id").primaryKey(),
+  name: varchar("name").notNull(),
+  details: jsonb("details"),
   createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow()
 });

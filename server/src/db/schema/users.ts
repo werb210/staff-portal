@@ -1,12 +1,9 @@
-import { pgTable, text, timestamp, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp } from "drizzle-orm/pg-core";
 
 export const users = pgTable("users", {
-  id: text("id").primaryKey(),
-  email: text("email").notNull().unique(),
-  name: text("name"),
-  passwordHash: text("password_hash").notNull(),
-  role: text("role").notNull(), // admin, staff, lender, referrer
-  active: boolean("active").default(true),
+  id: varchar("id").primaryKey(),
+  email: varchar("email").notNull().unique(),
+  passwordHash: varchar("password_hash").notNull(),
+  role: varchar("role").default("staff"),
   createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow()
 });
