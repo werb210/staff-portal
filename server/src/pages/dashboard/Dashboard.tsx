@@ -1,15 +1,21 @@
-import React from "react";
+import { useEffect, useState } from "react";
+import { getDashboardStats, DashboardStats } from "@/api/dashboard";
 
-const Dashboard: React.FC = () => {
+export default function Dashboard() {
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+
+  useEffect(() => {
+    getDashboardStats().then(setStats).catch(() => {});
+  }, []);
+
+  if (!stats) return <div>Loading dashboard…</div>;
+
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-semibold">Dashboard</h1>
-      <p className="text-gray-700">
-        This is the main staff dashboard. Add KPI cards, recent activity, and
-        quick links here.
-      </p>
+    <div className="dashboard-grid">
+      <div className="card">Total Companies: {stats.totalCompanies}</div>
+      <div className="card">Total Contacts: {stats.totalContacts}</div>
+      <div className="card">Total Deals: {stats.totalDeals}</div>
+      <div className="card">Total Applications: {stats.totalApplications}</div>
     </div>
   );
-};
-
-export default Dashboard;
+}
