@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import pipelineBoardService from "../services/pipelineBoardService";
 import { auditService } from "../services/auditService.js";
+import timelineService from "../services/timelineService.js";
 
 const pipelineBoardController = {
   getBoard: async (_req: Request, res: Response) => {
@@ -23,6 +24,13 @@ const pipelineBoardController = {
       fromStageId: fromStage,
       toStageId: toStage,
     });
+    await timelineService.record(
+      req.user?.id ?? "system",
+      "pipeline_card",
+      String(applicationId),
+      "moved",
+      `Card moved from stage ${fromStage} → ${toStage}`,
+    );
     res.json({ success: true, data: updated });
   },
 };

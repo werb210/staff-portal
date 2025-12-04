@@ -16,4 +16,23 @@ export default {
       description,
     });
   },
+
+  async record(
+    userId: string,
+    entityType: string,
+    entityId: string,
+    action: string,
+    description?: string,
+  ) {
+    if (!userId) throw new Error("userId is required");
+    if (!entityType) throw new Error("entityType is required");
+    if (!entityId) throw new Error("entityId is required");
+    if (!action) throw new Error("action is required");
+
+    return timelineRepo.createEvent({
+      contact_id: userId,
+      event_type: `${entityType}:${action}`,
+      description: description ?? `Resource ${entityId}`,
+    });
+  },
 };
