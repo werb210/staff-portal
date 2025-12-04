@@ -1,11 +1,8 @@
-import MainLayout from "../layouts/MainLayout";
-
 export default function Lenders() {
   return (
-    <MainLayout>
-      <div style={{ padding: 20 }}>
-        <h1>Lenders</h1>
-      </div>
-    </MainLayout>
+    <div>
+      <h1>Lenders</h1>
+      <p>Lender list and product manager.</p>
+    </div>
   );
 }
