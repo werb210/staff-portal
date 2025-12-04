@@ -1,55 +1,52 @@
 import { create } from "zustand";
-import { login as apiLogin, fetchMe, logout as apiLogout } from "@/api/auth";
-
-interface User {
-  id: string;
-  email: string;
-  role: string;
-  name?: string;
-}
+import { persist } from "zustand/middleware";
+import { api } from "@/lib/apiClient";
 
 interface AuthState {
-  user: User | null;
+  user: any | null;
   token: string | null;
-  loading: boolean;
-
-  login: (email: string, password: string) => Promise<void>;
-  logout: () => Promise<void>;
+  isAuthenticated: boolean;
+  login: (email: string, password: string) => Promise<boolean>;
+  logout: () => void;
   init: () => Promise<void>;
 }
 
-export const useAuthStore = create<AuthState>((set, get) => ({
-  user: null,
-  token: localStorage.getItem("token"),
-  loading: true,
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set, get) => ({
+      user: null,
+      token: null,
+      isAuthenticated: false,
 
-  init: async () => {
-    const token = get().token;
-    if (!token) {
-      set({ loading: false });
-      return;
-    }
+      async login(email, password) {
+        try {
+          const res = await api.post("/auth/login", { email, password });
+          set({
+            user: res.data.user,
+            token: res.data.token,
+            isAuthenticated: true
+          });
+          return true;
+        } catch {
+          return false;
+        }
+      },
 
-    try {
-      const res = await fetchMe();
-      set({ user: res.user, loading: false });
-    } catch {
-      localStorage.removeItem("token");
-      set({ user: null, token: null, loading: false });
-    }
-  },
+      logout() {
+        set({ user: null, token: null, isAuthenticated: false });
+      },
 
-  login: async (email, password) => {
-    const res = await apiLogin({ email, password });
-    localStorage.setItem("token", res.token);
-    set({ token: res.token, user: res.user });
-  },
-
-  logout: async () => {
-    try {
-      await apiLogout();
-    } catch {}
-    localStorage.removeItem("token");
-    set({ user: null, token: null });
-  }
-}));
+      async init() {
+        const token = get().token;
+        if (!token) return;
+        try {
+          const res = await api.get("/auth/me");
+          set({ user: res.data, isAuthenticated: true });
+        } catch {
+          set({ user: null, token: null, isAuthenticated: false });
+        }
+      }
+    }),
+    { name: "staff-auth" }
+  )
+);
