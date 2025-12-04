@@ -1,99 +1,30 @@
 // server/src/db/repositories/contacts.repo.ts
 import db from "../db.js";
-import { auditLogs } from "../../schema/audit.js";
-import { and, eq } from "drizzle-orm";
+import { contacts } from "../schema/contacts.js";
+import { eq } from "drizzle-orm";
 
-const safeDetails = (value: any): Record<string, unknown> => {
-  return value && typeof value === "object" ? value : {};
-};
-
-const buildWhere = (filter: Record<string, unknown> = {}) => {
-  const conditions = Object.entries(filter)
-    .filter(([, v]) => v !== undefined)
-    .map(([key, v]) => eq((auditLogs as any)[key], v as any));
-  if (conditions.length === 0) return undefined;
-  return conditions.length === 1 ? conditions[0] : and(...conditions);
-};
-
-const mapRecord = (record: any) => {
-  if (!record) return null;
-  return {
-    id: record.id,
-    ...safeDetails(record.details),
-    createdAt: record.createdAt,
-  };
-};
-
-export const contactsRepo = {
-  async create(data: Record<string, unknown>) {
-    const [created] = await db
-      .insert(auditLogs)
-      .values({
-        eventType: "contact",
-        details: safeDetails(data),
-      })
-      .returning();
-    return mapRecord(created);
+export default {
+  async create(data: Record<string, any>) {
+    const [row] = await db.insert(contacts).values(data).returning();
+    return row;
   },
 
-  async update(id: string, data: Record<string, unknown>) {
-    const [existing] = await db
-      .select()
-      .from(auditLogs)
-      .where(eq(auditLogs.id, id));
-
-    if (!existing || existing.eventType !== "contact") return null;
-
-    const merged = {
-      ...safeDetails(existing.details),
-      ...safeDetails(data),
-    };
-
-    const [updated] = await db
-      .update(auditLogs)
-      .set({ details: merged })
-      .where(eq(auditLogs.id, id))
-      .returning();
-
-    return mapRecord(updated);
+  async update(id: string, data: Record<string, any>) {
+    const [row] = await db.update(contacts).set(data).where(eq(contacts.id, id)).returning();
+    return row || null;
   },
 
   async delete(id: string) {
-    const [deleted] = await db
-      .delete(auditLogs)
-      .where(eq(auditLogs.id, id))
-      .returning();
-
-    return mapRecord(deleted);
+    const [row] = await db.delete(contacts).where(eq(contacts.id, id)).returning();
+    return row || null;
   },
 
   async findById(id: string) {
-    const [record] = await db
-      .select()
-      .from(auditLogs)
-      .where(eq(auditLogs.id, id));
-
-    if (!record || record.eventType !== "contact") return null;
-
-    return mapRecord(record);
+    const [row] = await db.select().from(contacts).where(eq(contacts.id, id));
+    return row || null;
   },
 
-  async findMany(filter: Record<string, unknown> = {}) {
-    const where = buildWhere({
-      ...filter,
-      eventType: "contact",
-    });
-
-    const query = db.select().from(auditLogs);
-    if (where) query.where(where);
-
-    const results = await query;
-
-    return results
-      .filter((r) => r.eventType === "contact")
-      .map(mapRecord)
-      .filter(Boolean);
+  async findMany() {
+    return db.select().from(contacts);
   },
 };
-
-export default contactsRepo;
