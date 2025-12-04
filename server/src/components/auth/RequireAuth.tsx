@@ -1,17 +1,12 @@
-import { useEffect } from "react";
+import { Navigate, useLocation } from "react-router-dom";
 import { useAuthStore } from "@/state/authStore";
-import { Navigate } from "react-router-dom";
 
 export default function RequireAuth({ children }: { children: JSX.Element }) {
-  const { user, token, loading, init } = useAuthStore();
+  const { isAuthenticated } = useAuthStore();
+  const location = useLocation();
 
-  useEffect(() => {
-    init();
-  }, []);
-
-  if (loading) return null;
-
-  if (!token || !user) return <Navigate to="/login" replace />;
-
+  if (!isAuthenticated) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
   return children;
 }
