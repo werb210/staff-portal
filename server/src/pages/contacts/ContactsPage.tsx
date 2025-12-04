@@ -1,74 +1,37 @@
-import { useEffect, useState } from "react";
-import { fetchContacts } from "@/lib/api/contacts";
-
-type Contact = {
-  id: string;
-  name?: string;
-  email?: string;
-  phone?: string;
-  companyName?: string;
-};
+import { useQuery } from "@tanstack/react-query";
+import { ContactsAPI } from "@/api/contacts";
 
 export default function ContactsPage() {
-  const [rows, setRows] = useState<Contact[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data, isLoading } = useQuery({
+    queryKey: ["contacts"],
+    queryFn: () => ContactsAPI.list(),
+  });
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const data = await fetchContacts();
-        if (!cancelled) {
-          setRows(
-            (data as any[]).map((c) => ({
-              id: c.id ?? c.contactId ?? String(Math.random()),
-              name: c.name ?? c.fullName ?? "",
-              email: c.email ?? "",
-              phone: c.phone ?? c.mobile ?? "",
-              companyName: c.companyName ?? c.company ?? ""
-            }))
-          );
-        }
-      } catch (err: any) {
-        if (!cancelled) setError(err?.message || "Failed to load contacts");
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
+  if (isLoading) return <div>Loading contacts...</div>;
 
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const contacts = data ?? [];
 
   return (
-    <div className="bf-page">
-      <h1 className="bf-page-title">Contacts</h1>
-      {loading && <div>Loading...</div>}
-      {error && <div className="bf-error">{error}</div>}
-      {!loading && !error && (
-        <table className="bf-table">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Company</th>
-              <th>Email</th>
-              <th>Phone</th>
+    <div>
+      <h1 className="text-2xl font-semibold mb-4">Contacts</h1>
+      <table className="min-w-full border bg-white">
+        <thead>
+          <tr className="bg-gray-100 text-left text-sm">
+            <th className="px-3 py-2 border-b">Name</th>
+            <th className="px-3 py-2 border-b">Email</th>
+            <th className="px-3 py-2 border-b">Company</th>
+          </tr>
+        </thead>
+        <tbody>
+          {contacts.map((c: any) => (
+            <tr key={c.id} className="text-sm">
+              <td className="px-3 py-2 border-b">{c.name}</td>
+              <td className="px-3 py-2 border-b">{c.email}</td>
+              <td className="px-3 py-2 border-b">{c.companyName}</td>
             </tr>
-          </thead>
-          <tbody>
-            {rows.map((c) => (
-              <tr key={c.id}>
-                <td>{c.name}</td>
-                <td>{c.companyName}</td>
-                <td>{c.email}</td>
-                <td>{c.phone}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
