@@ -1,10 +1,12 @@
+// server/src/hooks/useAuthInit.ts
 import { useEffect } from "react";
 import { useAuthStore } from "@/state/authStore";
+import { setAuthToken } from "@/lib/http";
 
 export function useAuthInit() {
-  const fetchMe = useAuthStore((s) => s.fetchMe);
+  const token = useAuthStore((s) => s.token);
 
   useEffect(() => {
-    fetchMe();
-  }, []);
+    setAuthToken(token ?? null);
+  }, [token]);
 }
