@@ -1,11 +1,16 @@
-import { pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { pgTable, varchar, timestamp, uuid } from "drizzle-orm/pg-core";
 
 export const contacts = pgTable("contacts", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  first_name: text("first_name").notNull(),
-  last_name: text("last_name").notNull(),
-  email: text("email"),
-  phone: text("phone"),
-  company_id: uuid("company_id"),
-  created_at: timestamp("created_at").defaultNow(),
+  id: uuid("id").primaryKey().defaultRandom(),
+
+  firstName: varchar("first_name", { length: 100 }).notNull(),
+  lastName: varchar("last_name", { length: 100 }).notNull(),
+  email: varchar("email", { length: 200 }).notNull(),
+  phone: varchar("phone", { length: 50 }),
+  role: varchar("role", { length: 50 }),
+
+  companyId: uuid("company_id"),
+
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
