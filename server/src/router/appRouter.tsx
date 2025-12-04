@@ -16,6 +16,7 @@ import Marketing from "@/pages/Marketing";
 import Referrals from "@/pages/Referrals";
 import AdminUsersPage from "@/pages/Admin/AdminUsersPage";
 import AuditLogPage from "@/pages/Admin/AuditLogPage";
+import Unauthorized from "@/pages/Unauthorized";
 
 export const appRouter = createBrowserRouter([
   { path: "/login", element: <LoginPage /> },
@@ -29,6 +30,7 @@ export const appRouter = createBrowserRouter([
     ),
     children: [
       { index: true, element: <Dashboard /> },
+      { path: "dashboard", element: <Dashboard /> },
       { path: "contacts", element: <ContactsPage /> },
       { path: "companies", element: <CompaniesPage /> },
       { path: "deals", element: <DealsPage /> },
@@ -43,6 +45,8 @@ export const appRouter = createBrowserRouter([
       { path: "admin/audit", element: <AuditLogPage /> }
     ]
   },
+
+  { path: "/unauthorized", element: <Unauthorized /> },
 
   { path: "*", element: <Navigate to="/" replace /> }
 ]);
