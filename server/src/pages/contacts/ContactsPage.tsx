@@ -1,8 +1,21 @@
+import { useEffect, useState } from "react";
+import { fetchContacts } from "@/lib/api/contacts";
+
 export default function ContactsPage() {
+  const [list, setList] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetchContacts().then(setList).catch(console.error);
+  }, []);
+
   return (
-    <div>
+    <>
       <h1>Contacts</h1>
-      <p>Contacts module will load here.</p>
-    </div>
+      <ul>
+        {list.map((c) => (
+          <li key={c.id}>{c.firstName} {c.lastName}</li>
+        ))}
+      </ul>
+    </>
   );
 }
