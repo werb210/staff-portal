@@ -4,11 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "vite build",
     "dev": "vite",
-    "preview": "vite preview",
-    "drizzle:push": "drizzle-kit push",
-    "drizzle:generate": "drizzle-kit generate"
+    "build": "tsc -p server/tsconfig.json && vite build",
+    "preview": "vite preview"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -26,7 +24,6 @@
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
-    "drizzle-orm": "^0.44.7",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.2",
     "pg": "^8.16.3",
@@ -43,22 +40,13 @@
     "zustand": "^4.5.5"
   },
   "devDependencies": {
-    "@types/bcryptjs": "^2.4.6",
-    "@types/body-parser": "^1.19.6",
-    "@types/cookie-parser": "^1.4.10",
-    "@types/cors": "^2.8.19",
-    "@types/express": "^5.0.6",
-    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^24.10.1",
     "@types/react": "^18.3.11",
-    "@types/react-beautiful-dnd": "^13.1.8",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.3",
     "autoprefixer": "^10.4.20",
     "postcss": "^8.4.47",
-    "shadcn-ui": "^0.7.0",
     "tailwindcss": "^3.4.13",
-    "ts-node": "^10.9.2",
     "typescript": "^5.9.3",
     "vite": "^5.4.8"
   }
