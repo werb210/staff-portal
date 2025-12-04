@@ -1,16 +1,8 @@
-export interface DocumentVersion {
-  id: string;
-  version: number;
-  createdAt: string;
-  downloadUrl: string;
-}
-
 export interface DocumentRecord {
   id: string;
+  applicationId?: string;
   name: string;
-  category: string;
-  previewUrl?: string;
-  downloadUrl?: string;
-  s3Key?: string | null;
-  versions?: DocumentVersion[];
+  type: string;
+  url: string;
+  uploadedAt: string;
 }
