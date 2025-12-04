@@ -1,26 +1,13 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { QueryClientProvider } from "@tanstack/react-query";
-import { queryClient } from "./lib/queryClient";
-import AppRouter from "./router";
-import "./index.css";
-import GlobalLoader from "./components/GlobalLoader";
-import ErrorToast from "./components/ErrorToast";
-import NotificationStreamProvider from "./context/NotificationStreamProvider";
-import MessageStreamProvider from "./context/MessageStreamProvider";
+import { RouterProvider } from "react-router-dom";
+import { appRouter } from "@/router/appRouter";
+import { useAuthStore } from "@/state/authStore";
 
-const rootElement = document.getElementById("root") as HTMLElement;
+useAuthStore.getState().init();
 
-ReactDOM.createRoot(rootElement).render(
+ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <NotificationStreamProvider>
-        <MessageStreamProvider>
-          <AppRouter />
-          <GlobalLoader />
-          <ErrorToast />
-        </MessageStreamProvider>
-      </NotificationStreamProvider>
-    </QueryClientProvider>
+    <RouterProvider router={appRouter} />
   </React.StrictMode>
 );
