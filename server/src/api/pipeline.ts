@@ -1,28 +1,18 @@
-import axios from "axios";
-import { getAuthToken } from "../utils/authToken";
+import { api } from "@/lib/http";
 
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
-});
-
-api.interceptors.request.use((config) => {
-  const t = getAuthToken();
-  if (t) config.headers.Authorization = `Bearer ${t}`;
-  return config;
-});
-
-export interface PipelineApp {
+export interface PipelineCard {
   id: string;
-  businessName: string;
+  companyName: string;
+  status: string;
   stage: string;
-  createdAt: string;
 }
 
-export async function fetchPipeline(): Promise<PipelineApp[]> {
-  const res = await api.get("/api/pipeline");
-  return res.data.data;
+export async function getPipeline() {
+  const res = await api.get<PipelineCard[]>("/pipeline");
+  return res.data;
 }
 
-export async function updateStage(id: string, stage: string): Promise<void> {
-  await api.put(`/api/pipeline/${id}/stage`, { stage });
+export async function moveCard(id: string, newStage: string) {
+  const res = await api.post(`/pipeline/${id}/move`, { newStage });
+  return res.data;
 }
