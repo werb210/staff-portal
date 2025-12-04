@@ -1,22 +1,41 @@
-import { desc, eq } from "drizzle-orm";
-import { db } from "../db.js";
-import { timeline } from "../schema/timeline.js";
+import db from "../db.js";
 
-export type TimelineRecord = typeof timeline.$inferSelect;
-export type CreateTimelineEvent = typeof timeline.$inferInsert;
+export interface TimelineRecord {
+  id: string;
+  applicationId: string;
+  type: string;
+  description: string;
+  createdAt: Date;
+}
 
 const timelineRepo = {
-  async getByContactId(contactId: string): Promise<TimelineRecord[]> {
+  async listForApplication(appId: string): Promise<TimelineRecord[]> {
     return db
-      .select()
-      .from(timeline)
-      .where(eq(timeline.contact_id, contactId))
-      .orderBy(desc(timeline.created_at));
+      .selectFrom("timeline")
+      .selectAll()
+      .where("applicationId", "=", appId)
+      .orderBy("createdAt", "asc")
+      .execute();
   },
 
-  async createEvent(data: CreateTimelineEvent) {
-    const [row] = await db.insert(timeline).values(data).returning();
-    return row;
+  async forEntity(_entity: string, entityId: string): Promise<TimelineRecord[]> {
+    return this.listForApplication(entityId);
+  },
+
+  async create(data: Partial<TimelineRecord>): Promise<TimelineRecord> {
+    const row = await db
+      .insertInto("timeline")
+      .values({
+        applicationId: data.applicationId!,
+        type: data.type ?? "event",
+        description: data.description ?? "",
+      })
+      .returningAll()
+      .executeTakeFirst();
+
+    return row as TimelineRecord;
   },
 };
+
+export { timelineRepo };
 export default timelineRepo;

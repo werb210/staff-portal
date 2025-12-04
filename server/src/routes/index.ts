@@ -5,6 +5,7 @@ import productsRoutes from "./products.routes.js";
 import companiesRoutes from "./companies.routes.js";
 import authRoutes from "./auth.routes.js";
 import pipelineRoutes from "./pipeline.routes.js";
+import messagesRoutes from "./messages.routes.js";
 
 const router = Router();
 
@@ -22,5 +23,6 @@ router.use("/products", productsRoutes);
 router.use("/companies", companiesRoutes);
 router.use("/auth", authRoutes);
 router.use("/pipeline", pipelineRoutes);
+router.use("/messages", messagesRoutes);
 
 export default router;
