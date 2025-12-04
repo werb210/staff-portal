@@ -1,27 +1,10 @@
 import { Router } from "express";
-
-import authRoutes from "./auth.routes.js";
 import contactsRoutes from "./contacts.routes.js";
-import companiesRoutes from "./companies.routes.js";
-import productsRoutes from "./products.routes.js";
-import tagsRoutes from "./tags.routes.js";
-import pipelineBoardRoutes from "./pipelineBoard.routes.js";
-import notificationsRoutes from "./notifications.routes.js";
-import auditRoutes from "./audit.routes.js";
-import timelineRoutes from "./timeline.routes.js";
-import messagesRoutes from "./messages.routes.js";
 
 const router = Router();
 
-router.use("/auth", authRoutes);
+// Core contacts API
 router.use("/contacts", contactsRoutes);
-router.use("/companies", companiesRoutes);
-router.use("/products", productsRoutes);
-router.use("/tags", tagsRoutes);
-router.use("/pipeline-board", pipelineBoardRoutes);
-router.use("/notifications", notificationsRoutes);
-router.use("/audit", auditRoutes);
-router.use("/timeline", timelineRoutes);
-router.use("/messages", messagesRoutes);
 
+// Export for server/src/index.ts
 export default router;
