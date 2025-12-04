@@ -1,78 +1,51 @@
-// server/src/pages/auth/LoginPage.tsx
-import { FormEvent, useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import { useLogin } from "@/hooks/useLogin";
-import { useAuthStore } from "@/state/authStore";
+import React, { useState } from "react";
+import axios from "axios";
 
 export default function LoginPage() {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const from = (location.state as any)?.from?.pathname || "/";
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const { mutateAsync, isPending, error } = useLogin();
-  const loading = useAuthStore((s) => s.loading);
+  const [error, setError] = useState("");
 
-  async function handleSubmit(e: FormEvent) {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      await mutateAsync({ email, password });
-      navigate(from, { replace: true });
-    } catch (err) {
-      // error is surfaced below
-    }
-  }
+    setError("");
 
-  const disabled = isPending || loading;
+    try {
+      const res = await axios.post(
+        "http://localhost:5000/api/auth/login",
+        { email, password },
+        { withCredentials: true }
+      );
+
+      console.log("Login OK:", res.data);
+      window.location.href = "/dashboard";
+    } catch (err: any) {
+      setError("Invalid login");
+    }
+  };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-100">
-      <div className="w-full max-w-md bg-white shadow-md rounded-lg p-8">
-        <h1 className="text-2xl font-semibold mb-6 text-center">
-          Staff Portal Login
-        </h1>
+    <div style={{ padding: 40 }}>
+      <h1>Login</h1>
+      <form onSubmit={submit}>
+        <input
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        /><br /><br />
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">Email</label>
-            <input
-              type="email"
-              className="w-full border rounded px-3 py-2 text-sm"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              autoComplete="email"
-              required
-            />
-          </div>
+        <input
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        /><br /><br />
 
-          <div>
-            <label className="block text-sm font-medium mb-1">Password</label>
-            <input
-              type="password"
-              className="w-full border rounded px-3 py-2 text-sm"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="current-password"
-              required
-            />
-          </div>
+        <button type="submit">Login</button>
 
-          {error && (
-            <p className="text-sm text-red-600">
-              {(error as any)?.message || "Login failed"}
-            </p>
-          )}
-
-          <button
-            type="submit"
-            className="w-full py-2 rounded bg-slate-900 text-white text-sm font-medium disabled:opacity-60"
-            disabled={disabled}
-          >
-            {disabled ? "Signing in..." : "Sign In"}
-          </button>
-        </form>
-      </div>
+        {error && <p style={{ color: "red" }}>{error}</p>}
+      </form>
     </div>
   );
 }
