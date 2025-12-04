@@ -1,10 +1,23 @@
-import { http } from "@/lib/api/http";
+// server/src/api/auth.ts
+import { http } from "@/lib/http";
+import type { User } from "@/types/User";
 
-export const AuthAPI = {
-  login: (email: string, password: string) =>
-    http.post("/auth/login", { email, password }),
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
 
-  me: () => http.get("/auth/me"),
+export interface LoginResponse {
+  token: string;
+  user: User;
+}
 
-  logout: () => http.post("/auth/logout"),
-};
+export async function login(req: LoginRequest): Promise<LoginResponse> {
+  const { data } = await http.post<LoginResponse>("/auth/login", req);
+  return data;
+}
+
+export async function getCurrentUser(): Promise<User> {
+  const { data } = await http.get<User>("/auth/me");
+  return data;
+}
