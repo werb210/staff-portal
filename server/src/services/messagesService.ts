@@ -1,26 +1,48 @@
+// server/src/services/messagesService.ts
 import { messagesRepo } from "../db/repositories/messages.repo.js";
 
-function assertStr(x: any, label: string): string {
-  if (!x || typeof x !== "string") throw new Error(`${label} is required`);
-  return x;
-}
+export const messagesService = {
+  async send({
+    threadId,
+    senderId,
+    receiverId,
+    body,
+  }: {
+    threadId: string;
+    senderId: string;
+    receiverId: string | null;
+    body: string;
+  }) {
+    return await messagesRepo.create({
+      threadId,
+      senderId,
+      receiverId,
+      direction: "outbound",
+      body,
+    });
+  },
 
-export default {
-  async send(raw: any) {
-    const payload = {
-      threadId: assertStr(raw.threadId, "threadId"),
-      senderId: assertStr(raw.senderId, "senderId"),
-      recipientId: assertStr(raw.recipientId, "recipientId"),
-      body: assertStr(raw.body, "body"),
-    };
-    return messagesRepo.send(payload);
+  async receive({
+    threadId,
+    senderId,
+    receiverId,
+    body,
+  }: {
+    threadId: string;
+    senderId: string;
+    receiverId: string | null;
+    body: string;
+  }) {
+    return await messagesRepo.create({
+      threadId,
+      senderId,
+      receiverId,
+      direction: "inbound",
+      body,
+    });
   },
 
   async thread(threadId: string) {
-    return messagesRepo.threadMessages(assertStr(threadId, "threadId"));
-  },
-
-  async inbox(userId: string) {
-    return messagesRepo.inboxFor(assertStr(userId, "userId"));
+    return await messagesRepo.getThread(threadId);
   },
 };
