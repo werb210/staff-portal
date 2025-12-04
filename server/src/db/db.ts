@@ -7,6 +7,6 @@ const connection = postgres(process.env.DATABASE_URL!, {
   max: 10,
 });
 
-const db = drizzle(connection);
+export const db = drizzle(connection);
 
 export default db;
