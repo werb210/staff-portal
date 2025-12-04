@@ -4,13 +4,13 @@ import { messagesController } from "../controllers/messagesController.js";
 
 const router = Router();
 
-// Fetch entire thread
-router.get("/thread/:threadId", messagesController.thread);
+// Send message
+router.post("/", messagesController.send);
 
-// Send outbound message
-router.post("/send", messagesController.send);
+// Application thread
+router.get("/thread/:applicationId", messagesController.thread);
 
-// Receive inbound message (webhook or internal)
-router.post("/receive", messagesController.receive);
+// User inbox
+router.get("/inbox/:userId", messagesController.inbox);
 
 export default router;

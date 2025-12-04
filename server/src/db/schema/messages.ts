@@ -1,11 +1,12 @@
-import { pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+// server/src/db/schema/messages.ts
+import { pgTable, uuid, text, boolean, timestamp } from "drizzle-orm/pg-core";
 
 export const messages = pgTable("messages", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  threadId: text("thread_id").notNull(),
-  senderId: text("sender_id").notNull(),
-  receiverId: text("receiver_id"),
-  direction: text("direction").notNull(),
+  id: uuid("id").defaultRandom().primaryKey(),
+  applicationId: uuid("application_id"),
+  senderId: uuid("sender_id").notNull(),
+  recipientId: uuid("recipient_id"),
   body: text("body").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  system: boolean("system").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
 });
