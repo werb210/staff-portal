@@ -1,8 +1,8 @@
-export interface DocumentRecord {
-  id: string;
-  applicationId?: string;
-  name: string;
-  type: string;
-  url: string;
-  uploadedAt: string;
+export default function Dashboard() {
+  return (
+    <div>
+      <h1>Dashboard</h1>
+      <p>Welcome to the Boreal Staff Portal.</p>
+    </div>
+  );
 }
