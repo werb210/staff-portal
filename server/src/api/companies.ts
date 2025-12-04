@@ -1,7 +1,5 @@
-import { api } from "@/lib/apiClient";
+import { http } from "@/lib/api/http";
 
-export const companiesApi = {
-  list: () => api.get("/companies"),
-  get: (id: string) => api.get(`/companies/${id}`),
-  create: (data: any) => api.post("/companies", data)
+export const CompaniesAPI = {
+  list: () => http.get("/companies"),
 };
