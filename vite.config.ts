@@ -1,15 +1,16 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
+// Vite runs on port 5173 by default.
+// We force host: true so Codespaces exposes it publicly.
 export default defineConfig({
-  root: "server/src",
-  publicDir: "../public",
+  plugins: [react()],
   server: {
-    port: 5173,
     host: true,
+    port: 5173,
   },
-  build: {
-    outDir: "../../dist",
-    emptyOutDir: true,
+  preview: {
+    host: true,
+    port: 5173,
   },
 });
