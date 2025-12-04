@@ -1,20 +1,50 @@
+import { Request, Response, Router } from "express";
 import bcrypt from "bcryptjs";
 import usersRepo from "../db/repositories/users.repo.js";
-import { signToken } from "../utils/jwt.js";
 
-export const authController = {
-  login: async (req, res) => {
-    const { email, password } = req.body;
+const router = Router();
 
-    const user = (await usersRepo.findAll()).find((u) => u.email === email);
-    if (!user) return res.status(401).json({ error: "Invalid credentials" });
+// SIMPLE DEV TOKEN GENERATOR (NO JWT YET)
+const buildToken = (userId: string) => `dev-token-${userId}`;
 
-    const ok = await bcrypt.compare(password, user.passwordHash);
-    if (!ok) return res.status(401).json({ error: "Invalid credentials" });
+// POST /api/auth/login
+router.post("/login", async (req: Request, res: Response) => {
+  try {
+    const { email, password } = req.body ?? {};
+    if (!email || !password) {
+      return res
+        .status(400)
+        .json({ success: false, error: "Missing email or password" });
+    }
 
-    const token = signToken({ id: user.id, role: user.role });
+    const result = await usersRepo.findByEmail(email);
+    const user = (result.rows ?? result)[0];
 
-    res.json({ success: true, token, user });
-  },
-};
+    if (!user || !user.password_hash) {
+      return res.status(401).json({ success: false, error: "Invalid credentials" });
+    }
 
+    const ok = await bcrypt.compare(password, user.password_hash);
+    if (!ok) {
+      return res.status(401).json({ success: false, error: "Invalid credentials" });
+    }
+
+    const token = buildToken(user.id);
+    res.json({
+      success: true,
+      data: {
+        token,
+        user: {
+          id: user.id,
+          email: user.email,
+          role: user.role,
+        },
+      },
+    });
+  } catch (err: any) {
+    console.error("authController.login error:", err);
+    res.status(500).json({ success: false, error: "Failed to login" });
+  }
+});
+
+export default router;

@@ -1,21 +1,35 @@
-import { Request, Response } from "express";
-import messagesService from "../services/messages.service.js";
+import { Request, Response, Router } from "express";
+import messagesRepo from "../db/repositories/messages.repo.js";
 
-const messagesController = {
-  async listApplication(req: Request, res: Response) {
-    const rows = await messagesService.listForApplication(req.params.applicationId);
-    res.json({ ok: true, data: rows });
-  },
+const router = Router();
 
-  async listContact(req: Request, res: Response) {
-    const rows = await messagesService.listForContact(req.params.contactId);
-    res.json({ ok: true, data: rows });
-  },
+// GET /api/contacts/:contactId/messages
+router.get("/contact/:contactId", async (req: Request, res: Response) => {
+  try {
+    const result = await messagesRepo.findAllByContact(req.params.contactId);
+    res.json({ success: true, data: result.rows ?? result });
+  } catch (err: any) {
+    console.error("messagesController.list error:", err);
+    res.status(500).json({ success: false, error: "Failed to list messages" });
+  }
+});
 
-  async create(req: Request, res: Response) {
-    const created = await messagesService.create(req.body);
-    res.json({ ok: true, data: created });
-  },
-};
+// POST /api/contacts/:contactId/messages
+router.post("/contact/:contactId", async (req: Request, res: Response) => {
+  try {
+    const body = req.body ?? {};
+    const payload = {
+      contact_id: req.params.contactId,
+      sender: body.sender ?? "staff",
+      body: body.body ?? "",
+    };
+    const result = await messagesRepo.create(payload);
+    const record = (result.rows ?? result)[0];
+    res.status(201).json({ success: true, data: record });
+  } catch (err: any) {
+    console.error("messagesController.create error:", err);
+    res.status(500).json({ success: false, error: "Failed to create message" });
+  }
+});
 
-export default messagesController;
+export default router;
