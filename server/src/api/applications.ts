@@ -1,6 +1,6 @@
-import { api } from "@/lib/apiClient";
+import { http } from "@/lib/api/http";
 
-export const applicationsApi = {
-  list: () => api.get("/applications"),
-  get: (id: string) => api.get(`/applications/${id}`)
+export const ApplicationsAPI = {
+  list: () => http.get("/applications"),
+  getById: (id: string) => http.get(`/applications/${id}`),
 };
