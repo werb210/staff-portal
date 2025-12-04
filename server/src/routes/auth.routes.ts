@@ -1,13 +1,9 @@
-import { Router, Request, Response } from "express";
+import { Router } from "express";
+import { authController } from "../controllers/authController.js";
 
 const router = Router();
 
-router.post("/login", (req: Request, res: Response) => {
-  res.json({ ok: true, route: "auth/login", message: "stub" });
-});
-
-router.post("/logout", (_req: Request, res: Response) => {
-  res.json({ ok: true, route: "auth/logout", message: "stub" });
-});
+router.post("/login", authController.login);
 
 export default router;
+

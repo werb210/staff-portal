@@ -1,39 +1,33 @@
-import { Request, Response } from "express";
-import companiesService from "../services/companies.service.js";
+import companiesRepo from "../db/repositories/companies.repo.js";
+import { newId } from "../utils/id.js";
 
-const companiesController = {
-  async list(req: Request, res: Response) {
-    const rows = await companiesService.list();
-    res.json({ ok: true, data: rows });
+export const companiesController = {
+  list: async (req, res) => {
+    const rows = await companiesRepo.findAll();
+    res.json({ success: true, data: rows });
   },
 
-  async get(req: Request, res: Response) {
-    const row = await companiesService.get(req.params.id);
-    if (!row) {
-      res.status(404).json({ ok: false, error: "Not found" });
-      return;
-    }
-    res.json({ ok: true, data: row });
+  get: async (req, res) => {
+    const record = await companiesRepo.findById(req.params.id);
+    res.json({ success: true, data: record });
   },
 
-  async create(req: Request, res: Response) {
-    const created = await companiesService.create(req.body);
-    res.json({ ok: true, data: created });
+  create: async (req, res) => {
+    const created = await companiesRepo.create({
+      id: newId(),
+      ...req.body,
+    });
+    res.json({ success: true, data: created });
   },
 
-  async update(req: Request, res: Response) {
-    const updated = await companiesService.update(req.params.id, req.body);
-    if (!updated) {
-      res.status(404).json({ ok: false, error: "Not found" });
-      return;
-    }
-    res.json({ ok: true, data: updated });
+  update: async (req, res) => {
+    const updated = await companiesRepo.update(req.params.id, req.body);
+    res.json({ success: true, data: updated });
   },
 
-  async remove(req: Request, res: Response) {
-    const deleted = await companiesService.remove(req.params.id);
-    res.json({ ok: true, deleted });
+  remove: async (req, res) => {
+    const deleted = await companiesRepo.delete(req.params.id);
+    res.json({ success: true, data: deleted });
   },
 };
 
-export default companiesController;

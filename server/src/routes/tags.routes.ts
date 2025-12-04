@@ -1,13 +1,13 @@
-import { Router, Request, Response } from "express";
+import { Router } from "express";
+import { tagsController } from "../controllers/tagsController.js";
+import { auth } from "../middleware/auth.js";
 
 const router = Router();
 
-router.get("/", (_req: Request, res: Response) => {
-  res.json({ ok: true, route: "tags", message: "stub" });
-});
-
-router.get("/:id", (req: Request, res: Response) => {
-  res.json({ ok: true, route: "tags", id: req.params.id, message: "stub" });
-});
+router.get("/", auth, tagsController.list);
+router.post("/", auth, tagsController.create);
+router.put("/:id", auth, tagsController.update);
+router.delete("/:id", auth, tagsController.remove);
 
 export default router;
+

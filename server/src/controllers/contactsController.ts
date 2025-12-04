@@ -1,39 +1,33 @@
-import { Request, Response } from "express";
-import contactsService from "../services/contacts.service.js";
+import contactsRepo from "../db/repositories/contacts.repo.js";
+import { newId } from "../utils/id.js";
 
-const contactsController = {
-  async list(req: Request, res: Response) {
-    const results = await contactsService.list();
-    res.json({ ok: true, data: results });
+export const contactsController = {
+  list: async (req, res) => {
+    const rows = await contactsRepo.findAll();
+    res.json({ success: true, data: rows });
   },
 
-  async get(req: Request, res: Response) {
-    const item = await contactsService.get(req.params.id);
-    if (!item) {
-      res.status(404).json({ ok: false, error: "Not found" });
-      return;
-    }
-    res.json({ ok: true, data: item });
+  get: async (req, res) => {
+    const record = await contactsRepo.findById(req.params.id);
+    res.json({ success: true, data: record });
   },
 
-  async create(req: Request, res: Response) {
-    const created = await contactsService.create(req.body);
-    res.json({ ok: true, data: created });
+  create: async (req, res) => {
+    const created = await contactsRepo.create({
+      id: newId(),
+      ...req.body,
+    });
+    res.json({ success: true, data: created });
   },
 
-  async update(req: Request, res: Response) {
-    const updated = await contactsService.update(req.params.id, req.body);
-    if (!updated) {
-      res.status(404).json({ ok: false, error: "Not found" });
-      return;
-    }
-    res.json({ ok: true, data: updated });
+  update: async (req, res) => {
+    const updated = await contactsRepo.update(req.params.id, req.body);
+    res.json({ success: true, data: updated });
   },
 
-  async remove(req: Request, res: Response) {
-    const success = await contactsService.remove(req.params.id);
-    res.json({ ok: true, deleted: success });
+  remove: async (req, res) => {
+    const deleted = await contactsRepo.delete(req.params.id);
+    res.json({ success: true, data: deleted });
   },
 };
 
-export default contactsController;

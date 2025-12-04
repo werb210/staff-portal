@@ -1,10 +1,9 @@
-import { createApp } from "./app.js";
+import { app } from "./app.js";
 import { ENV } from "./config/env.js";
-import { log } from "./config/logger.js";
 
-const app = createApp();
+const PORT = ENV.PORT || 5000;
 
-app.listen(ENV.PORT, () => {
-  log.info(`Staff Portal Backend listening on port ${ENV.PORT}`);
+app.listen(PORT, () => {
+  console.log(`Staff Portal API running on port ${PORT}`);
 });
 
