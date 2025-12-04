@@ -1,29 +1,30 @@
+import { Request, Response, Router } from "express";
 import usersRepo from "../db/repositories/users.repo.js";
 
-export default {
-  getAll: async (req, res) => {
-    res.json(await usersRepo.findAll());
-  },
+const router = Router();
 
-  getOne: async (req, res) => {
-    const item = await usersRepo.findById(req.params.id);
-    if (!item) return res.status(404).json({ error: "User not found" });
-    res.json(item);
-  },
+// GET /api/users
+router.get("/", async (_req: Request, res: Response) => {
+  try {
+    const result = await usersRepo.findAll();
+    res.json({ success: true, data: result.rows ?? result });
+  } catch (err: any) {
+    console.error("usersController.list error:", err);
+    res.status(500).json({ success: false, error: "Failed to list users" });
+  }
+});
 
-  create: async (req, res) => {
-    res.json(await usersRepo.create(req.body));
-  },
+// GET /api/users/:id
+router.get("/:id", async (req: Request, res: Response) => {
+  try {
+    const result = await usersRepo.findById(req.params.id);
+    const record = (result.rows ?? result)[0];
+    if (!record) return res.status(404).json({ success: false, error: "Not found" });
+    res.json({ success: true, data: record });
+  } catch (err: any) {
+    console.error("usersController.get error:", err);
+    res.status(500).json({ success: false, error: "Failed to fetch user" });
+  }
+});
 
-  update: async (req, res) => {
-    const item = await usersRepo.update(req.params.id, req.body);
-    if (!item) return res.status(404).json({ error: "User not found" });
-    res.json(item);
-  },
-
-  delete: async (req, res) => {
-    const item = await usersRepo.delete(req.params.id);
-    if (!item) return res.status(404).json({ error: "User not found" });
-    res.json(item);
-  },
-};
+export default router;
