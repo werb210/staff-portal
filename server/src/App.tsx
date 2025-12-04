@@ -3,5 +3,5 @@ export default function App() {
     <div style={{ padding: 40 }}>
       <h1>Staff Portal Running</h1>
     </div>
-  )
+  );
 }
