@@ -1,37 +1,40 @@
+// server/src/state/authStore.ts
 import { create } from "zustand";
-import { AuthAPI } from "@/api/auth";
+import { persist } from "zustand/middleware";
+import type { User } from "@/types/User";
+import { setAuthToken } from "@/lib/http";
 
-interface AuthState {
-  user: any | null;
+type AuthState = {
+  user: User | null;
   token: string | null;
   loading: boolean;
+  setAuth: (payload: { user: User; token: string }) => void;
+  clearAuth: () => void;
+  setLoading: (value: boolean) => void;
+};
 
-  login: (email: string, password: string) => Promise<void>;
-  fetchMe: () => Promise<void>;
-  logout: () => Promise<void>;
-}
-
-export const useAuthStore = create<AuthState>((set) => ({
-  user: null,
-  token: null,
-  loading: true,
-
-  login: async (email, password) => {
-    const res = await AuthAPI.login(email, password);
-    set({ token: res.token, user: res.user });
-  },
-
-  fetchMe: async () => {
-    try {
-      const res = await AuthAPI.me();
-      set({ user: res.user });
-    } finally {
-      set({ loading: false });
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set, get) => ({
+      user: null,
+      token: null,
+      loading: false,
+      setAuth: ({ user, token }) => {
+        set({ user, token });
+        setAuthToken(token);
+      },
+      clearAuth: () => {
+        set({ user: null, token: null });
+        setAuthToken(null);
+      },
+      setLoading: (value: boolean) => set({ loading: value }),
+    }),
+    {
+      name: "staff-portal-auth",
+      onRehydrateStorage: () => (state) => {
+        const token = state?.token ?? null;
+        setAuthToken(token);
+      },
     }
-  },
-
-  logout: async () => {
-    await AuthAPI.logout();
-    set({ user: null, token: null });
-  },
-}));
+  )
+);
