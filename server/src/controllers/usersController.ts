@@ -1,35 +1,29 @@
-import { Request, Response } from "express";
-import asyncHandler from "../utils/asyncHandler.js";
-import { usersService } from "../services/usersService.js";
+import usersRepo from "../db/repositories/users.repo.js";
 
-export const usersController = {
-  list: asyncHandler(async (_req: Request, res: Response) => {
-    const data = await usersService.list();
-    res.json({ success: true, data });
-  }),
+export default {
+  getAll: async (req, res) => {
+    res.json(await usersRepo.findAll());
+  },
 
-  get: asyncHandler(async (req: Request, res: Response) => {
-    const user = await usersService.get(req.params.id);
-    if (!user) return res.status(404).json({ success: false, error: "User not found" });
-    res.json({ success: true, data: user });
-  }),
+  getOne: async (req, res) => {
+    const item = await usersRepo.findById(req.params.id);
+    if (!item) return res.status(404).json({ error: "User not found" });
+    res.json(item);
+  },
 
-  create: asyncHandler(async (req: Request, res: Response) => {
-    const created = await usersService.create(req.body);
-    res.status(201).json({ success: true, data: created });
-  }),
+  create: async (req, res) => {
+    res.json(await usersRepo.create(req.body));
+  },
 
-  update: asyncHandler(async (req: Request, res: Response) => {
-    const updated = await usersService.update(req.params.id, req.body);
-    if (!updated) return res.status(404).json({ success: false, error: "User not found" });
-    res.json({ success: true, data: updated });
-  }),
+  update: async (req, res) => {
+    const item = await usersRepo.update(req.params.id, req.body);
+    if (!item) return res.status(404).json({ error: "User not found" });
+    res.json(item);
+  },
 
-  remove: asyncHandler(async (req: Request, res: Response) => {
-    const deleted = await usersService.remove(req.params.id);
-    if (!deleted) return res.status(404).json({ success: false, error: "User not found" });
-    res.json({ success: true, data: deleted });
-  })
+  delete: async (req, res) => {
+    const item = await usersRepo.delete(req.params.id);
+    if (!item) return res.status(404).json({ error: "User not found" });
+    res.json(item);
+  },
 };
-
-export default usersController;

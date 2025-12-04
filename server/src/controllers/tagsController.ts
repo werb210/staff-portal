@@ -1,30 +1,29 @@
-import { newId } from "../utils/id.js";
 import tagsRepo from "../db/repositories/tags.repo.js";
 
-export const tagsController = {
-  list: async (req, res) => {
-    const rows = await tagsRepo.findAll();
-    res.json({ success: true, data: rows });
+export default {
+  getAll: async (req, res) => {
+    res.json(await tagsRepo.findAll());
+  },
+
+  getOne: async (req, res) => {
+    const item = await tagsRepo.findById(req.params.id);
+    if (!item) return res.status(404).json({ error: "Tag not found" });
+    res.json(item);
   },
 
   create: async (req, res) => {
-    const { name, color } = req.body;
-    const created = await tagsRepo.create({
-      id: newId(),
-      name,
-      color,
-    });
-    res.json({ success: true, data: created });
+    res.json(await tagsRepo.create(req.body));
   },
 
   update: async (req, res) => {
-    const updated = await tagsRepo.update(req.params.id, req.body);
-    res.json({ success: true, data: updated });
+    const item = await tagsRepo.update(req.params.id, req.body);
+    if (!item) return res.status(404).json({ error: "Tag not found" });
+    res.json(item);
   },
 
-  remove: async (req, res) => {
-    const deleted = await tagsRepo.delete(req.params.id);
-    res.json({ success: true, data: deleted });
+  delete: async (req, res) => {
+    const item = await tagsRepo.delete(req.params.id);
+    if (!item) return res.status(404).json({ error: "Tag not found" });
+    res.json(item);
   },
 };
-
