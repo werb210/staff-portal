@@ -1,30 +1,23 @@
-import { db } from "../db.js";
+import db from "../db.js";
 
-export default {
-  findAll: async () => db.users,
-
-  findById: async (id) =>
-    db.users.find((u) => u.id === id) || null,
-
-  create: async (data) => {
-    db.users.push(data);
-    return data;
-  },
-
-  update: async (id, data) => {
-    const idx = db.users.findIndex((u) => u.id === id);
-    if (idx === -1) return null;
-
-    db.users[idx] = { ...db.users[idx], ...data };
-    return db.users[idx];
-  },
-
-  delete: async (id) => {
-    const idx = db.users.findIndex((u) => u.id === id);
-    if (idx === -1) return null;
-
-    const removed = db.users[idx];
-    db.users.splice(idx, 1);
-    return removed;
-  },
+const usersRepo = {
+  findAll: () => db.query("SELECT id, email, role FROM users ORDER BY id DESC"),
+  findById: (id: string) => db.query("SELECT * FROM users WHERE id=$1", [id]),
+  findByEmail: (email: string) =>
+    db.query("SELECT * FROM users WHERE email=$1 LIMIT 1", [email]),
+  create: (data: any) =>
+    db.query(
+      `INSERT INTO users (email, password_hash, role)
+       VALUES ($1,$2,$3) RETURNING id, email, role`,
+      [data.email, data.password_hash, data.role]
+    ),
+  update: (id: string, data: any) =>
+    db.query(
+      `UPDATE users SET email=$1, role=$2 WHERE id=$3
+       RETURNING id, email, role`,
+      [data.email, data.role, id]
+    ),
+  delete: (id: string) => db.query("DELETE FROM users WHERE id=$1 RETURNING id", [id]),
 };
+
+export default usersRepo;
