@@ -1,11 +1,13 @@
-import { Router } from "express";
-import tagController from "../controllers/tagController.js";
+import { Router, Request, Response } from "express";
 
 const router = Router();
 
-router.get("/", tagController.list);
-router.post("/", tagController.create);
-router.put("/:id", tagController.update);
-router.delete("/:id", tagController.remove);
+router.get("/", (_req: Request, res: Response) => {
+  res.json({ ok: true, route: "tags", message: "stub" });
+});
+
+router.get("/:id", (req: Request, res: Response) => {
+  res.json({ ok: true, route: "tags", id: req.params.id, message: "stub" });
+});
 
 export default router;
