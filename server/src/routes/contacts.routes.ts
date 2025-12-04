@@ -1,13 +1,12 @@
 import { Router } from "express";
 import contactsController from "../controllers/contactsController.js";
-import { auth } from "../middleware/auth.js";
 
 const router = Router();
 
-router.get("/", auth, contactsController.getAll);
-router.get("/:id", auth, contactsController.getOne);
-router.post("/", auth, contactsController.create);
-router.put("/:id", auth, contactsController.update);
-router.delete("/:id", auth, contactsController.delete);
+router.get("/", contactsController.getAll);
+router.get("/:id", contactsController.getOne);
+router.post("/", contactsController.create);
+router.put("/:id", contactsController.update);
+router.delete("/:id", contactsController.delete);
 
 export default router;
