@@ -1,21 +1,30 @@
-// server/src/api/auth.ts
-import { apiRequest } from "../lib/http";
+import { api } from "@/lib/http";
 
-export async function login(email: string, password: string) {
-  const data = await apiRequest("/auth/login", {
-    method: "POST",
-    body: JSON.stringify({ email, password }),
-  });
-
-  localStorage.setItem("bf_token", data.token);
-  return data.user;
+export interface LoginPayload {
+  email: string;
+  password: string;
 }
 
-export function logout() {
-  localStorage.removeItem("bf_token");
-  window.location.href = "/login";
+export interface LoginResponse {
+  token: string;
+  user: {
+    id: string;
+    email: string;
+    role: string;
+    name?: string;
+  };
 }
 
-export function getToken() {
-  return localStorage.getItem("bf_token");
+export async function login(payload: LoginPayload) {
+  const res = await api.post<LoginResponse>("/auth/login", payload);
+  return res.data;
+}
+
+export async function fetchMe() {
+  const res = await api.get<LoginResponse>("/auth/me");
+  return res.data;
+}
+
+export async function logout() {
+  await api.post("/auth/logout");
 }
