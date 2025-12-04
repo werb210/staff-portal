@@ -1,43 +1,37 @@
 import { create } from "zustand";
-import { User } from "@/types/User";
-import { loginRequest } from "@/lib/api/auth";
-import { clearAuth, loadAuth, saveAuth } from "@/utils/storage";
+import { AuthAPI } from "@/api/auth";
 
 interface AuthState {
-  user: User | null;
+  user: any | null;
   token: string | null;
   loading: boolean;
-  isHydrated: boolean;
-  login: (args: { email: string; password: string }) => Promise<void>;
-  logout: () => void;
-  hydrate: () => void;
+
+  login: (email: string, password: string) => Promise<void>;
+  fetchMe: () => Promise<void>;
+  logout: () => Promise<void>;
 }
 
-export const useAuthStore = create<AuthState>((set, get) => ({
+export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   token: null,
-  loading: false,
-  isHydrated: false,
+  loading: true,
 
-  hydrate: () => {
-    const { token, user } = loadAuth();
-    set({ token, user, isHydrated: true });
+  login: async (email, password) => {
+    const res = await AuthAPI.login(email, password);
+    set({ token: res.token, user: res.user });
   },
 
-  login: async ({ email, password }) => {
-    set({ loading: true });
+  fetchMe: async () => {
     try {
-      const { token, user } = await loginRequest(email, password);
-      saveAuth(token, user);
-      set({ token, user, loading: false, isHydrated: true });
-    } catch (err) {
+      const res = await AuthAPI.me();
+      set({ user: res.user });
+    } finally {
       set({ loading: false });
-      throw err;
     }
   },
 
-  logout: () => {
-    clearAuth();
-    set({ token: null, user: null });
-  }
+  logout: async () => {
+    await AuthAPI.logout();
+    set({ user: null, token: null });
+  },
 }));
