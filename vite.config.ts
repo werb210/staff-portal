@@ -8,6 +8,11 @@ export default defineConfig({
     host: true,
     port: 5173
   },
+  test: {
+    globals: true,
+    environment: "jsdom",
+    setupFiles: "./src/test/setup.ts"
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src")

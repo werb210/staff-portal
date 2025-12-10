@@ -198,6 +198,248 @@ a {
   color: #111827;
 }
 
+.pipeline-page .ui-card {
+  margin-top: 12px;
+}
+
+.pipeline-filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.pipeline-filters__dates {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(120px, 1fr));
+  gap: 8px;
+}
+
+.pipeline-filters__reset {
+  align-self: flex-end;
+  height: 42px;
+}
+
+.pipeline-page {
+  overflow-x: auto;
+}
+
+.pipeline-columns {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  padding: 8px 0;
+}
+
+.pipeline-column {
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  width: 320px;
+  min-width: 320px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.pipeline-column__header {
+  padding: 14px;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.pipeline-column__title {
+  font-weight: 700;
+}
+
+.pipeline-column__subtitle {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.pipeline-column__pill {
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+.pipeline-column__body {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 200px;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.pipeline-column__body--over {
+  background: #e0f2fe;
+  border: 1px dashed #0284c7;
+}
+
+.pipeline-column__body--blocked {
+  background: #fef2f2;
+  border: 1px dashed #f87171;
+}
+
+.pipeline-column__empty {
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.pipeline-column__spacer {
+  height: 12px;
+}
+
+.pipeline-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  cursor: grab;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.pipeline-card--dragging {
+  opacity: 0.9;
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.14);
+}
+
+.pipeline-card--disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.pipeline-card__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.pipeline-card__title {
+  font-weight: 700;
+}
+
+.pipeline-card__subtitle {
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.pipeline-card__amount {
+  font-weight: 700;
+  color: #1d4ed8;
+}
+
+.pipeline-card__meta {
+  display: flex;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.pipeline-card__pill {
+  background: #eef2ff;
+  color: #4338ca;
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+.pipeline-card__pill--muted {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.pipeline-card__progress {
+  font-size: 13px;
+  color: #111827;
+}
+
+.pipeline-card__indicators {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: 8px 0;
+}
+
+.pipeline-card__indicator {
+  background: #f3f4f6;
+  color: #6b7280;
+  padding: 4px 6px;
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+.pipeline-card__indicator--active {
+  background: #ecfdf3;
+  color: #15803d;
+}
+
+.pipeline-card__indicator--muted {
+  background: #f9fafb;
+}
+
+.pipeline-card__footer {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.pipeline-card--skeleton {
+  cursor: default;
+  pointer-events: none;
+}
+
+.skeleton-line {
+  height: 12px;
+  background: linear-gradient(90deg, #e5e7eb 0%, #f3f4f6 50%, #e5e7eb 100%);
+  border-radius: 8px;
+  margin-bottom: 10px;
+  animation: shimmer 1.2s infinite ease-in-out;
+}
+
+.skeleton-line--short {
+  width: 60%;
+}
+
+.skeleton-pill-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.skeleton-pill {
+  width: 60px;
+  height: 16px;
+  border-radius: 999px;
+  background: #e5e7eb;
+  animation: shimmer 1.2s infinite ease-in-out;
+}
+
+@keyframes shimmer {
+  0% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.6;
+  }
+}
+
+.pipeline-empty {
+  padding: 16px;
+  background: #fff;
+  border: 1px dashed #e5e7eb;
+  border-radius: 12px;
+  text-align: center;
+  color: #6b7280;
+}
+
 .ui-table {
   width: 100%;
   border-collapse: collapse;
