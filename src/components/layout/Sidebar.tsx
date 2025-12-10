@@ -1,0 +1,58 @@
+import { NavLink } from "react-router-dom";
+import { useSilo } from "@/hooks/useSilo";
+
+const baseNavigation = [
+  { label: "Dashboard", path: "/" },
+  { label: "Applications", path: "/applications" },
+  { label: "CRM", path: "/crm" },
+  { label: "Communications", path: "/communications" },
+  { label: "Calendar & Tasks", path: "/calendar" },
+  { label: "Marketing", path: "/marketing" },
+  { label: "Lenders", path: "/lenders" },
+  { label: "Settings", path: "/settings" }
+];
+
+const siloNavigation = {
+  BF: baseNavigation,
+  BI: [
+    { label: "Dashboard", path: "/" },
+    { label: "CRM", path: "/crm" },
+    { label: "Communications", path: "/communications" },
+    { label: "Calendar & Tasks", path: "/calendar" },
+    { label: "Settings", path: "/settings" }
+  ],
+  SLF: [
+    { label: "Dashboard", path: "/" },
+    { label: "Applications", path: "/applications" },
+    { label: "CRM", path: "/crm" },
+    { label: "Communications", path: "/communications" },
+    { label: "Calendar & Tasks", path: "/calendar" },
+    { label: "Settings", path: "/settings" }
+  ]
+};
+
+const Sidebar = () => {
+  const { silo } = useSilo();
+  const navigation = siloNavigation[silo];
+
+  return (
+    <aside className="sidebar">
+      <div className="sidebar__header">{silo} Portal</div>
+      <nav className="sidebar__nav">
+        {navigation.map((item) => (
+          <NavLink
+            key={item.path}
+            to={item.path}
+            className={({ isActive }) =>
+              `sidebar__link ${isActive ? "sidebar__link--active" : ""}`
+            }
+          >
+            {item.label}
+          </NavLink>
+        ))}
+      </nav>
+    </aside>
+  );
+};
+
+export default Sidebar;

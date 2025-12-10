@@ -1,0 +1,269 @@
+:root {
+  color-scheme: light;
+  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background-color: #f7f8fb;
+  color: #111827;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.app-shell {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  min-height: 100vh;
+}
+
+.app-shell__content {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.app-shell__main {
+  flex: 1;
+  padding: 24px;
+  background: linear-gradient(180deg, #f7f8fb 0%, #eef2f7 100%);
+}
+
+.sidebar {
+  background-color: #0f172a;
+  color: #e2e8f0;
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sidebar__header {
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  font-size: 18px;
+}
+
+.sidebar__nav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sidebar__link {
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: inherit;
+  transition: background-color 0.2s ease;
+}
+
+.sidebar__link:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.sidebar__link--active {
+  background-color: #1d4ed8;
+  color: #fff;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  border-bottom: 1px solid #e5e7eb;
+  background-color: #ffffff;
+}
+
+.topbar__title {
+  margin: 0;
+  font-size: 20px;
+}
+
+.topbar__subtitle {
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.topbar__left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.topbar__right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.topbar__user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.topbar__user-name {
+  font-weight: 600;
+}
+
+.topbar__user-role {
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.ui-button {
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: none;
+  background-color: #1d4ed8;
+  color: #fff;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ui-button:hover {
+  background-color: #1e40af;
+}
+
+.ui-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ui-button--secondary {
+  background-color: #0f172a;
+  color: #e2e8f0;
+}
+
+.ui-button--ghost {
+  background-color: transparent;
+  border: 1px solid #cbd5e1;
+  color: #0f172a;
+}
+
+.ui-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.ui-field__label {
+  font-weight: 600;
+  color: #111827;
+}
+
+.ui-input,
+.ui-select {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  font-size: 14px;
+}
+
+.ui-field__error {
+  color: #b91c1c;
+  font-size: 13px;
+}
+
+.ui-card {
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+  padding: 20px;
+}
+
+.ui-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.ui-card__title {
+  font-weight: 700;
+}
+
+.ui-card__body {
+  color: #111827;
+}
+
+.ui-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.ui-table th,
+.ui-table td {
+  text-align: left;
+  padding: 12px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.auth-page {
+  max-width: 420px;
+  margin: 80px auto;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.auth-form__error {
+  color: #b91c1c;
+  margin-bottom: 12px;
+}
+
+.app-loading {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.spinner {
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  border: 2px solid #d1d5db;
+  border-top-color: #1d4ed8;
+  animation: spin 0.8s linear infinite;
+}
+
+.route-guard {
+  display: flex;
+  justify-content: center;
+  padding: 48px;
+}
+
+.error-fallback {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
