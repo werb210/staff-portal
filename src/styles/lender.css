@@ -1,0 +1,238 @@
+.lender-shell {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  min-height: 100vh;
+  background: #f9fafb;
+  color: #0f172a;
+}
+
+.lender-sidebar {
+  background: #f1f5f9;
+  border-right: 1px solid #e2e8f0;
+  padding: 24px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.lender-sidebar__brand {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.lender-sidebar__logo {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #0ea5e9, #818cf8);
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+  color: #0b1220;
+}
+
+.lender-sidebar__title {
+  font-weight: 700;
+}
+
+.lender-sidebar__subtitle {
+  color: #475569;
+  font-size: 13px;
+}
+
+.lender-sidebar__nav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.lender-nav-link {
+  padding: 10px 12px;
+  border-radius: 10px;
+  color: #0f172a;
+  font-weight: 600;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.lender-nav-link:hover {
+  background: #e2e8f0;
+}
+
+.lender-nav-link--active {
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
+.lender-shell__content {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.lender-topbar {
+  padding: 16px 24px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.lender-topbar__title {
+  font-size: 20px;
+  margin: 0;
+}
+
+.lender-topbar__subtitle {
+  color: #475569;
+  font-size: 14px;
+}
+
+.lender-topbar__user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.lender-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #cbd5e1;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+}
+
+.lender-topbar__user-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.lender-topbar__user-name {
+  font-weight: 700;
+}
+
+.lender-topbar__user-role {
+  color: #475569;
+  font-size: 13px;
+}
+
+.lender-shell__main {
+  padding: 20px 24px;
+  flex: 1;
+  background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
+}
+
+.lender-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.lender-section {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  padding: 16px;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.04);
+}
+
+.lender-section__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.lender-section__title {
+  font-weight: 700;
+}
+
+.lender-cta-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.lender-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.lender-table th,
+.lender-table td {
+  padding: 10px 8px;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: left;
+}
+
+.lender-table th {
+  color: #475569;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.lender-pill {
+  display: inline-flex;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  color: #0f172a;
+  font-size: 12px;
+}
+
+.lender-pill--success {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.lender-pill--muted {
+  background: #f8fafc;
+  color: #475569;
+}
+
+.lender-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.lender-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
+.lender-drawer {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+}
+
+.lender-doc-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lender-doc-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.lender-doc-custom {
+  display: flex;
+  gap: 8px;
+}
