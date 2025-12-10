@@ -1,0 +1,44 @@
+import type { ReactNode } from "react";
+import classNames from "classnames";
+
+export type DrawerTabId = "application" | "banking" | "financial" | "documents" | "notes" | "credit" | "lenders";
+
+export type DrawerTab = {
+  id: DrawerTabId;
+  label: string;
+  badge?: ReactNode;
+};
+
+export const TABS: DrawerTab[] = [
+  { id: "application", label: "Application Data" },
+  { id: "banking", label: "Banking Analysis" },
+  { id: "financial", label: "Financial Data" },
+  { id: "documents", label: "Documents" },
+  { id: "notes", label: "Notes" },
+  { id: "credit", label: "Credit Summary" },
+  { id: "lenders", label: "Lenders" }
+];
+
+type DrawerTabsProps = {
+  tabs: DrawerTab[];
+  selectedTab: DrawerTabId;
+  onSelect: (tab: DrawerTabId) => void;
+};
+
+const DrawerTabs = ({ tabs, selectedTab, onSelect }: DrawerTabsProps) => (
+  <div className="application-drawer__tabs">
+    {tabs.map((tab) => (
+      <button
+        key={tab.id}
+        className={classNames("application-drawer__tab", { active: selectedTab === tab.id })}
+        onClick={() => onSelect(tab.id)}
+        type="button"
+      >
+        <span>{tab.label}</span>
+        {tab.badge ? <span className="application-drawer__tab-badge">{tab.badge}</span> : null}
+      </button>
+    ))}
+  </div>
+);
+
+export default DrawerTabs;
