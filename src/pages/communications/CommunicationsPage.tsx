@@ -1,30 +1,64 @@
+import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Card from "@/components/ui/Card";
-import Table from "@/components/ui/Table";
 import AppLoading from "@/components/layout/AppLoading";
+import ConversationList from "./ConversationList";
+import ConversationViewer from "./ConversationViewer";
+import { useCommunicationsStore } from "@/state/communications.store";
 import { fetchCommunicationThreads } from "@/api/communications";
 
 const CommunicationsPage = () => {
-  const { data, isLoading } = useQuery({ queryKey: ["communications", "threads"], queryFn: fetchCommunicationThreads });
+  const {
+    loadConversations,
+    conversations,
+    selectedConversationId,
+    selectConversation,
+    filteredConversations,
+    filters,
+    setFilters,
+    sendReply,
+    acknowledgeIssue
+  } = useCommunicationsStore();
+  const selectedConversation = conversations.find((conv) => conv.id === selectedConversationId);
+
+  const { isLoading } = useQuery({
+    queryKey: ["communications", "threads"],
+    queryFn: fetchCommunicationThreads,
+    onSuccess: () => loadConversations()
+  });
+
+  useEffect(() => {
+    if (!conversations.length && !isLoading) {
+      void loadConversations();
+    }
+  }, [conversations.length, isLoading, loadConversations]);
 
   return (
     <div className="page">
-      <Card title="Communications">
+      <Card title="Communications Control Room">
         {isLoading && <AppLoading />}
         {!isLoading && (
-          <Table headers={["Subject", "Updated"]}>
-            {data?.map((thread) => (
-              <tr key={thread.id}>
-                <td>{thread.subject}</td>
-                <td>{new Date(thread.updatedAt).toLocaleString()}</td>
-              </tr>
-            ))}
-            {!data?.length && (
-              <tr>
-                <td colSpan={2}>No communications yet.</td>
-              </tr>
-            )}
-          </Table>
+          <div className="grid grid-cols-10 gap-4 h-[70vh]">
+            <div className="col-span-3 border-r pr-3">
+              <ConversationList
+                conversations={filteredConversations()}
+                selectedConversationId={selectedConversationId}
+                filters={filters}
+                onFiltersChange={setFilters}
+                onSelectConversation={selectConversation}
+              />
+            </div>
+            <div className="col-span-7">
+              <ConversationViewer
+                conversation={selectedConversation}
+                onSend={async (body, channel) => {
+                  if (!selectedConversationId) return;
+                  await sendReply(selectedConversationId, body, channel);
+                }}
+                onAcknowledgeIssue={async (id) => acknowledgeIssue(id)}
+              />
+            </div>
+          </div>
         )}
       </Card>
     </div>
