@@ -1,0 +1,36 @@
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import AppLayout from "@/components/layout/AppLayout";
+import PrivateRoute from "./PrivateRoute";
+import LoginPage from "@/pages/login/LoginPage";
+import DashboardPage from "@/pages/dashboard/DashboardPage";
+import ApplicationsPage from "@/pages/applications/ApplicationsPage";
+import CRMPage from "@/pages/crm/CRMPage";
+import CommunicationsPage from "@/pages/communications/CommunicationsPage";
+import CalendarPage from "@/pages/calendar/CalendarPage";
+import MarketingPage from "@/pages/marketing/MarketingPage";
+import LendersPage from "@/pages/lenders/LendersPage";
+import SettingsPage from "@/pages/settings/SettingsPage";
+import { fullStaffRoles } from "@/utils/roles";
+
+const AppRouter = () => (
+  <BrowserRouter>
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route element={<PrivateRoute allowedRoles={fullStaffRoles} />}>
+        <Route element={<AppLayout />}>
+          <Route index element={<DashboardPage />} />
+          <Route path="applications" element={<ApplicationsPage />} />
+          <Route path="crm" element={<CRMPage />} />
+          <Route path="communications" element={<CommunicationsPage />} />
+          <Route path="calendar" element={<CalendarPage />} />
+          <Route path="marketing" element={<MarketingPage />} />
+          <Route path="lenders" element={<LendersPage />} />
+          <Route path="settings" element={<SettingsPage />} />
+        </Route>
+      </Route>
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  </BrowserRouter>
+);
+
+export default AppRouter;
