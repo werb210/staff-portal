@@ -1,0 +1,261 @@
+import { useCrmStore } from "@/state/crm.store";
+
+export type Contact = {
+  id: string;
+  name: string;
+  phone: string;
+  email: string;
+  silo: "BF" | "BI" | "SLF";
+  owner: string;
+  tags: string[];
+  hasActiveApplication: boolean;
+  companyIds: string[];
+  applicationIds: string[];
+};
+
+export type Company = {
+  id: string;
+  name: string;
+  silo: "BF" | "BI" | "SLF";
+  industry: string;
+  owner: string;
+  tags: string[];
+  contactIds: string[];
+};
+
+export type TimelineEventType =
+  | "call"
+  | "sms"
+  | "email"
+  | "note"
+  | "document"
+  | "status"
+  | "ai"
+  | "lender"
+  | "system";
+
+export type TimelineEvent = {
+  id: string;
+  entityId: string;
+  entityType: "contact" | "company";
+  type: TimelineEventType;
+  occurredAt: string;
+  direction?: "inbound" | "outbound";
+  summary: string;
+  details?: string;
+};
+
+const contacts: Contact[] = [
+  {
+    id: "c1",
+    name: "Jane Doe",
+    phone: "+1-555-111-2222",
+    email: "jane@example.com",
+    silo: "BF",
+    owner: "Alex",
+    tags: ["VIP"],
+    hasActiveApplication: true,
+    companyIds: ["co1"],
+    applicationIds: ["app-1001"]
+  },
+  {
+    id: "c2",
+    name: "John Smith",
+    phone: "+1-555-333-4444",
+    email: "john@smith.com",
+    silo: "SLF",
+    owner: "Taylor",
+    tags: ["Follow-up"],
+    hasActiveApplication: false,
+    companyIds: ["co2"],
+    applicationIds: []
+  },
+  {
+    id: "c3",
+    name: "Bella Investor",
+    phone: "+1-555-777-8888",
+    email: "bella@invest.com",
+    silo: "BI",
+    owner: "Alex",
+    tags: ["Repeat"],
+    hasActiveApplication: true,
+    companyIds: [],
+    applicationIds: ["app-2002"]
+  }
+];
+
+const companies: Company[] = [
+  {
+    id: "co1",
+    name: "Boreal Finance",
+    silo: "BF",
+    industry: "Finance",
+    owner: "Alex",
+    tags: ["Key"],
+    contactIds: ["c1"]
+  },
+  {
+    id: "co2",
+    name: "Sunrise Lending",
+    silo: "SLF",
+    industry: "Lending",
+    owner: "Taylor",
+    tags: ["Partner"],
+    contactIds: ["c2"]
+  }
+];
+
+const timelineEvents: TimelineEvent[] = [
+  {
+    id: "t1",
+    entityId: "c1",
+    entityType: "contact",
+    type: "call",
+    direction: "outbound",
+    occurredAt: new Date().toISOString(),
+    summary: "Outbound call to Jane",
+    details: "Discussed application status."
+  },
+  {
+    id: "t2",
+    entityId: "c1",
+    entityType: "contact",
+    type: "sms",
+    direction: "inbound",
+    occurredAt: new Date().toISOString(),
+    summary: "SMS from Jane",
+    details: "Thanks for the call!"
+  },
+  {
+    id: "t3",
+    entityId: "c1",
+    entityType: "contact",
+    type: "email",
+    direction: "outbound",
+    occurredAt: new Date().toISOString(),
+    summary: "Sent approval docs",
+    details: "Attached approval documents"
+  },
+  {
+    id: "t4",
+    entityId: "c1",
+    entityType: "contact",
+    type: "note",
+    occurredAt: new Date().toISOString(),
+    summary: "Internal note",
+    details: "Schedule follow-up"
+  },
+  {
+    id: "t5",
+    entityId: "c1",
+    entityType: "contact",
+    type: "document",
+    occurredAt: new Date().toISOString(),
+    summary: "Document uploaded",
+    details: "ID verification"
+  },
+  {
+    id: "t6",
+    entityId: "c1",
+    entityType: "contact",
+    type: "status",
+    occurredAt: new Date().toISOString(),
+    summary: "Status changed",
+    details: "Moved to underwriting"
+  },
+  {
+    id: "t7",
+    entityId: "c1",
+    entityType: "contact",
+    type: "ai",
+    occurredAt: new Date().toISOString(),
+    summary: "AI recommendation",
+    details: "Suggested product switch"
+  },
+  {
+    id: "t8",
+    entityId: "c1",
+    entityType: "contact",
+    type: "lender",
+    occurredAt: new Date().toISOString(),
+    summary: "Lender update",
+    details: "Awaiting documents"
+  },
+  {
+    id: "t9",
+    entityId: "c1",
+    entityType: "contact",
+    type: "system",
+    occurredAt: new Date().toISOString(),
+    summary: "System action",
+    details: "Auto-reminder sent"
+  }
+];
+
+const delay = async <T,>(value: T) => new Promise<T>((resolve) => setTimeout(() => resolve(value), 10));
+
+export const fetchContacts = async () => {
+  const { silo, filters } = useCrmStore.getState();
+  const filtered = contacts.filter((contact) => contact.silo === silo);
+
+  const searchNormalized = filters.search.toLowerCase();
+  const searched = searchNormalized
+    ? filtered.filter(
+        (contact) =>
+          contact.name.toLowerCase().includes(searchNormalized) ||
+          contact.email.toLowerCase().includes(searchNormalized) ||
+          contact.phone.includes(filters.search)
+      )
+    : filtered;
+
+  const ownerFiltered = filters.owner
+    ? searched.filter((contact) => contact.owner === filters.owner)
+    : searched;
+
+  const withApplications = filters.hasActiveApplication
+    ? ownerFiltered.filter((contact) => contact.hasActiveApplication)
+    : ownerFiltered;
+
+  return delay(withApplications);
+};
+
+export const fetchCompanies = async () => {
+  const { silo } = useCrmStore.getState();
+  return delay(companies.filter((company) => company.silo === silo));
+};
+
+export const fetchTimeline = async (
+  entityType: "contact" | "company",
+  entityId: string
+) => {
+  return delay(
+    timelineEvents
+      .filter((event) => event.entityType === entityType && event.entityId === entityId)
+      .sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime())
+  );
+};
+
+export const createNote = async (entityId: string, summary: string) => {
+  const note: TimelineEvent = {
+    id: `note-${Date.now()}`,
+    entityId,
+    entityType: "contact",
+    type: "note",
+    occurredAt: new Date().toISOString(),
+    summary
+  };
+  timelineEvents.push(note);
+  return delay(note);
+};
+
+export const fetchApplications = async (contactId: string) =>
+  delay([
+    { id: "app-1001", stage: "Underwriting", contactId },
+    { id: "app-2002", stage: "Submitted", contactId }
+  ]);
+
+export const fetchContactCompanies = async (contact: Contact) =>
+  delay(companies.filter((company) => contact.companyIds.includes(company.id)));
+
+export const fetchCompanyContacts = async (company: Company) =>
+  delay(contacts.filter((contact) => company.contactIds.includes(contact.id)));
