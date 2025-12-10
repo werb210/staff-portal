@@ -11,11 +11,13 @@ import MarketingPage from "@/pages/marketing/MarketingPage";
 import LendersPage from "@/pages/lenders/LendersPage";
 import SettingsPage from "@/pages/settings/SettingsPage";
 import { fullStaffRoles } from "@/utils/roles";
+import LenderRoutes from "./lenderRoutes";
 
 const AppRouter = () => (
   <BrowserRouter>
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/lender/*" element={<LenderRoutes />} />
       <Route element={<PrivateRoute allowedRoles={fullStaffRoles} />}>
         <Route element={<AppLayout />}>
           <Route index element={<DashboardPage />} />
