@@ -7,34 +7,32 @@ on:
 
 jobs:
   build:
-    name: Build
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Setup Node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 18
 
-      - name: Install deps
-        run: npm ci
+      - name: Install dependencies
+        run: npm install
 
-      - name: Build Vite app
+      - name: Build project
         run: npm run build
 
-      - name: Upload artifact
+      - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
           name: build
           path: dist
 
   deploy:
-    name: Deploy to Azure Web App
-    needs: build
     runs-on: ubuntu-latest
+    needs: build
 
     steps:
       - name: Download build artifact
@@ -54,12 +52,9 @@ jobs:
               "subscriptionId": "${{ secrets.AZURE_APPSERVICE_SUBSCRIPTIONID }}",
               "tenantId": "${{ secrets.AZURE_APPSERVICE_TENANTID }}"
             }
-          environment: azurecloud
-          enable-AzPSSession: false
-          allow-no-subscriptions: false
 
-      - name: Deploy to Azure Web App (Zip Deploy)
+      - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
         with:
           app-name: staff-portal
-          package: ./dist
+          package: dist
