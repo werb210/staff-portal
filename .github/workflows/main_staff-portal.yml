@@ -5,6 +5,10 @@ on:
     branches:
       - main
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -42,13 +46,16 @@ jobs:
           name: staff-portal-dist
           path: dist
 
-      - name: Azure Login (service principal)
+      - name: Azure Login (OIDC)
         uses: azure/login@v1
         with:
-          client-id: ${{ secrets.AZURE_APPSERVICE_CLIENTID }}
-          tenant-id: ${{ secrets.AZURE_APPSERVICE_TENANTID }}
-          client-secret: ${{ secrets.AZURE_APPSERVICE_CLIENTSECRET }}
-          subscription-id: ${{ secrets.AZURE_APPSERVICE_SUBSCRIPTIONID }}
+          creds: |
+            {
+              "clientId": "${{ secrets.AZURE_APPSERVICE_CLIENTID }}",
+              "tenantId": "${{ secrets.AZURE_APPSERVICE_TENANTID }}",
+              "clientSecret": "${{ secrets.AZURE_APPSERVICE_CLIENTSECRET }}",
+              "subscriptionId": "${{ secrets.AZURE_APPSERVICE_SUBSCRIPTIONID }}"
+            }
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
