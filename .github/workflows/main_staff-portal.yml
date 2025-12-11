@@ -11,23 +11,23 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - name: Set up Node
+        uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version: '20'
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
-      - name: Build project
+      - name: Build Vite project
         run: npm run build
 
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v4
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
         with:
-          name: build
+          name: staff-portal-dist
           path: dist
 
   deploy:
@@ -35,26 +35,22 @@ jobs:
     needs: build
 
     steps:
-      - name: Download build artifact
-        uses: actions/download-artifact@v4
+      - name: Download artifact
+        uses: actions/download-artifact@v3
         with:
-          name: build
+          name: staff-portal-dist
           path: dist
 
       - name: Azure Login (service principal)
-        uses: azure/login@v2
+        uses: azure/login@v1
         with:
-          auth-type: SERVICE_PRINCIPAL
-          creds: |
-            {
-              "clientId": "${{ secrets.AZURE_APPSERVICE_CLIENTID }}",
-              "clientSecret": "${{ secrets.AZURE_APPSERVICE_CLIENTSECRET }}",
-              "subscriptionId": "${{ secrets.AZURE_APPSERVICE_SUBSCRIPTIONID }}",
-              "tenantId": "${{ secrets.AZURE_APPSERVICE_TENANTID }}"
-            }
+          client-id: ${{ secrets.AZURE_APPSERVICE_CLIENTID }}
+          tenant-id: ${{ secrets.AZURE_APPSERVICE_TENANTID }}
+          client-secret: ${{ secrets.AZURE_APPSERVICE_CLIENTSECRET }}
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
         with:
-          app-name: staff-portal
-          package: dist
+          app-name: ${{ secrets.AZURE_APPSERVICE_APPNAME }}
+          slot-name: Production
+          package: ./dist
