@@ -12,6 +12,7 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -22,16 +23,21 @@ jobs:
           node-version: 20
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
-      - name: Build project
+      - name: Build Vite project
         run: npm run build
+
+      - name: Create release zip (root-level dist contents)
+        run: |
+          cd dist
+          zip -r ../release.zip .
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: staff-portal-dist
-          path: dist
+          name: staff-portal-release
+          path: release.zip
 
   deploy:
     runs-on: ubuntu-latest
@@ -41,9 +47,10 @@ jobs:
       - name: Download artifact
         uses: actions/download-artifact@v4
         with:
-          name: staff-portal-dist
+          name: staff-portal-release
+          path: .
 
-      - name: Azure Login (OIDC)
+      - name: Azure Login (client secret auth)
         uses: azure/login@v1
         with:
           creds: |
@@ -58,4 +65,4 @@ jobs:
         uses: azure/webapps-deploy@v2
         with:
           app-name: ${{ secrets.AZURE_APPSERVICE_APPNAME }}
-          package: .
+          package: release.zip
