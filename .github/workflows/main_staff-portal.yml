@@ -7,57 +7,59 @@ on:
 
 jobs:
   build:
+    name: Build
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v3
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v3
         with:
           node-version: 20
 
-      - name: Install dependencies
+      - name: Install deps
         run: npm ci
 
-      - name: Build project
+      - name: Build Vite app
         run: npm run build
 
-      - name: Upload build artifact
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: staff-portal-dist
+          name: build
           path: dist
 
   deploy:
-    runs-on: ubuntu-latest
+    name: Deploy to Azure Web App
     needs: build
+    runs-on: ubuntu-latest
+
     steps:
       - name: Download build artifact
         uses: actions/download-artifact@v4
         with:
-          name: staff-portal-dist
-          path: .
+          name: build
+          path: dist
 
-      ############################################################
-      #  FIXED: LOGIN USING SERVICE PRINCIPAL WITH PROPER JSON   #
-      ############################################################
       - name: Azure Login (service principal)
         uses: azure/login@v2
         with:
           auth-type: SERVICE_PRINCIPAL
-          creds: >
-            {"clientId":"${{ secrets.AZURE_APPSERVICE_CLIENTID }}","clientSecret":"${{ secrets.AZURE_APPSERVICE_CLIENTSECRET }}","subscriptionId":"${{ secrets.AZURE_APPSERVICE_SUBSCRIPTIONID }}","tenantId":"${{ secrets.AZURE_APPSERVICE_TENANTID }}"}
+          creds: |
+            {
+              "clientId": "${{ secrets.AZURE_APPSERVICE_CLIENTID }}",
+              "clientSecret": "${{ secrets.AZURE_APPSERVICE_CLIENTSECRET }}",
+              "subscriptionId": "${{ secrets.AZURE_APPSERVICE_SUBSCRIPTIONID }}",
+              "tenantId": "${{ secrets.AZURE_APPSERVICE_TENANTID }}"
+            }
+          environment: azurecloud
           enable-AzPSSession: false
           allow-no-subscriptions: false
-          environment: azurecloud
 
-      ############################################################
-      #           DEPLOY USING THE AZURE PUBLISH PROFILE         #
-      ############################################################
       - name: Deploy to Azure Web App (Zip Deploy)
         uses: azure/webapps-deploy@v2
         with:
-          app-name: 'staff-portal'
-          publish-profile: ${{ secrets.AZURE_APPSERVICE_PUBLISH_PROFILE_STAFF_PORTAL }}
-          package: .
+          app-name: staff-portal
+          package: ./dist
