@@ -1,64 +1,47 @@
-name: Build and deploy Staff Portal (Vite) to Azure App Service
+name: Deploy Staff Portal
 
 on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Node
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: '20'
 
-      - name: Install dependencies
+      - name: Install Dependencies
         run: npm ci
 
-      - name: Build project
+      - name: Build
         run: npm run build
 
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: staff-portal-release
-          path: dist
-
-  deploy:
-    runs-on: ubuntu-latest
-    needs: build
-    permissions:
-      id-token: write
-      contents: read
-
-    steps:
-      - name: Download build artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: staff-portal-release
-          path: release
-
-      - name: Azure Login (OIDC)
+      # ================================
+      # FIXED AZURE LOGIN BLOCK
+      # Includes tenantId + subscriptionId
+      # ================================
+      - name: Azure Login
         uses: azure/login@v1
         with:
-          auth-type: IDENTITY
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          enable-AzPSSession: false
-          environment: azurecloud
-          allow-no-subscriptions: false
-          audience: api://AzureADTokenExchange
+          client-id: ${{ secrets.AZURE_APPSERVICE_CLIENTID }}
+          tenant-id: ${{ secrets.AZURE_APPSERVICE_TENANTID }}
+          subscription-id: ${{ secrets.AZURE_APPSERVICE_SUBSCRIPTIONID }}
 
-      - name: Deploy ZIP to Azure Web App
+      # ================================
+      # Deploy to Azure App Service
+      # ================================
+      - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
-          app-name: ${{ secrets.AZURE_APP_NAME }}
-          package: release
-
-      - name: Logout of Azure
-        run: az logout
+          app-name: ${{ secrets.AZURE_APPSERVICE_WEBAPPNAME }}
+          resource-group-name: ${{ secrets.AZURE_APPSERVICE_RESOURCEGROUP }}
+          package: './dist'
