@@ -28,14 +28,14 @@ jobs:
       - name: Build
         run: npm run build
 
+      # OIDC LOGIN — NOTHING ELSE
       - name: Azure Login (OIDC)
         uses: azure/login@v1
         with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          auth-type: OIDC
           subscription-id: ${{ secrets.AZURE_APPSERVICE_SUBSCRIPTIONID }}
-          auth-type: SERVICE_PRINCIPAL
 
+      # DEPLOY — app-name IS REQUIRED
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
