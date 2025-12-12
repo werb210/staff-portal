@@ -17,6 +17,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: npm
 
       - name: Install dependencies
         run: npm ci
@@ -24,9 +25,14 @@ jobs:
       - name: Build
         run: npm run build
 
+      # 🚨 IMPORTANT:
+      # - NO azure/login
+      # - NO service principal
+      # - Publish profile ONLY
+
       - name: Deploy to Azure App Service (Publish Profile)
         uses: azure/webapps-deploy@v3
         with:
-          app-name: ${{ secrets.AZURE_APPSERVICE_APPNAME }}
+          app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
           publish-profile: ${{ secrets.AZURE_APPSERVICE_PUBLISH_PROFILE_STAFF_PORTAL }}
           package: .
