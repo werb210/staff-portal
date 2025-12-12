@@ -6,6 +6,11 @@ on:
       - main
   workflow_dispatch:
 
+# REQUIRED — fixes your current error
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -25,10 +30,7 @@ jobs:
       - name: Build
         run: npm run build
 
-      # ================================
-      # FIXED AZURE LOGIN BLOCK
-      # Includes tenantId + subscriptionId
-      # ================================
+      # Azure Login using your registered app + OIDC
       - name: Azure Login
         uses: azure/login@v1
         with:
@@ -36,9 +38,7 @@ jobs:
           tenant-id: ${{ secrets.AZURE_APPSERVICE_TENANTID }}
           subscription-id: ${{ secrets.AZURE_APPSERVICE_SUBSCRIPTIONID }}
 
-      # ================================
       # Deploy to Azure App Service
-      # ================================
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
