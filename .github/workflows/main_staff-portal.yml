@@ -4,12 +4,10 @@ on:
   push:
     branches:
       - main
-  workflow_dispatch:
 
-# REQUIRED — fixes your current error
 permissions:
-  id-token: write
   contents: read
+  id-token: write
 
 jobs:
   build-and-deploy:
@@ -22,26 +20,24 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: 20
 
-      - name: Install Dependencies
+      - name: Install dependencies
         run: npm ci
 
       - name: Build
         run: npm run build
 
-      # Azure Login using your registered app + OIDC
-      - name: Azure Login
+      - name: Azure Login (OIDC)
         uses: azure/login@v1
         with:
-          client-id: ${{ secrets.AZURE_APPSERVICE_CLIENTID }}
-          tenant-id: ${{ secrets.AZURE_APPSERVICE_TENANTID }}
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_APPSERVICE_SUBSCRIPTIONID }}
+          auth-type: SERVICE_PRINCIPAL
 
-      # Deploy to Azure App Service
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
-          app-name: ${{ secrets.AZURE_APPSERVICE_WEBAPPNAME }}
-          resource-group-name: ${{ secrets.AZURE_APPSERVICE_RESOURCEGROUP }}
-          package: './dist'
+          app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
+          package: ./dist
