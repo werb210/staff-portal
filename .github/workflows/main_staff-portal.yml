@@ -4,10 +4,15 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 permissions:
   contents: read
   id-token: write
+
+concurrency:
+  group: staff-portal-production
+  cancel-in-progress: true
 
 jobs:
   build-and-deploy:
@@ -20,7 +25,8 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: "20"
+          cache: npm
 
       - name: Install dependencies
         run: npm ci
@@ -28,16 +34,18 @@ jobs:
       - name: Build
         run: npm run build
 
-      # OIDC LOGIN — NOTHING ELSE
+      # Login to Azure using OIDC (NO auth-type)
       - name: Azure Login (OIDC)
-        uses: azure/login@v1
+        uses: azure/login@v2
         with:
-          auth-type: OIDC
-          subscription-id: ${{ secrets.AZURE_APPSERVICE_SUBSCRIPTIONID }}
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      # DEPLOY — app-name IS REQUIRED
+      # Deploy built static site (Vite typically outputs /dist)
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
-          app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
-          package: ./dist
+          app-name: ${{ secrets.AZURE_APPSERVICE_APPNAME }}
+          slot-name: Production
+          package: dist
