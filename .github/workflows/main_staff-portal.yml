@@ -16,8 +16,8 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: npm
+          node-version: "20"
+          cache: "npm"
 
       - name: Install dependencies
         run: npm ci
@@ -25,29 +25,18 @@ jobs:
       - name: Build
         run: npm run build
 
-      # Sanity check: fail fast if build output isn't where we expect
-      - name: Verify dist output
-        run: |
-          if [ ! -d "dist" ]; then
-            echo "ERROR: dist/ folder not found after build."
-            echo "Listing repo root:"
-            ls -la
-            exit 1
-          fi
-          echo "dist/ exists. Listing dist/:"
-          ls -la dist
-
-      # Important: deploy a zip whose ROOT is the contents of dist/
-      # This avoids ending up with wwwroot/dist/* and an empty wwwroot/
-      - name: Create deploy package (zip dist contents)
+      # IMPORTANT:
+      # We zip the *contents* of dist so they land in /home/site/wwwroot/
+      # (not /home/site/wwwroot/dist/)
+      - name: Package dist for App Service
         run: |
           cd dist
           zip -r ../deploy.zip .
           cd ..
-          ls -la deploy.zip
 
       - name: Deploy to Azure App Service (Publish Profile)
         uses: azure/webapps-deploy@v3
         with:
+          app-name: "Staff-Portal"
           publish-profile: ${{ secrets.AZURE_APPSERVICE_PUBLISH_PROFILE_STAFF_PORTAL }}
           package: deploy.zip
