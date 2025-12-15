@@ -1,10 +1,11 @@
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useLocation, useNavigate, type Location } from "react-router-dom";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Card from "@/components/ui/Card";
 import { useAuth } from "@/hooks/useAuth";
 import type { ApiError } from "@/api/client";
+import { API_BASE_URL, ENV } from "@/utils/env";
 
 const LoginPage = () => {
   const { login } = useAuth();
@@ -14,6 +15,7 @@ const LoginPage = () => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [healthStatus, setHealthStatus] = useState("Checking...");
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -32,6 +34,32 @@ const LoginPage = () => {
       setIsSubmitting(false);
     }
   };
+
+  useEffect(() => {
+    if (ENV === "development") return;
+
+    let isMounted = true;
+    const healthUrl = `${API_BASE_URL.replace(/\/+$/, "")}/public/health`;
+
+    const checkHealth = async () => {
+      try {
+        const response = await fetch(healthUrl);
+        if (!isMounted) return;
+        setHealthStatus(response.ok ? "Reachable" : `Error (${response.status})`);
+      } catch (healthError) {
+        if (!isMounted) return;
+        // eslint-disable-next-line no-console
+        console.error("Health check failed", healthError);
+        setHealthStatus("Unreachable");
+      }
+    };
+
+    checkHealth();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [API_BASE_URL, ENV]);
 
   return (
     <div className="auth-page">
@@ -59,6 +87,14 @@ const LoginPage = () => {
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting ? "Signing in..." : "Login"}
           </Button>
+          {ENV !== "development" && (
+            <p
+              className="auth-form__debug"
+              style={{ marginTop: "0.75rem", fontSize: "0.875rem", color: "#6b7280" }}
+            >
+              API: {API_BASE_URL} — Health: {healthStatus}
+            </p>
+          )}
         </form>
       </Card>
     </div>

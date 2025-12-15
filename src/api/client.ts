@@ -27,7 +27,13 @@ let getTokens: TokenProvider = () => null;
 let updateTokens: TokenUpdater = () => undefined;
 let triggerLogout: LogoutHandler = () => undefined;
 
-const toAbsoluteUrl = (path: string) => `${API_BASE_URL}${path.startsWith("/api") ? path : `/api${path}`}`;
+const toAbsoluteUrl = (path: string) => {
+  const normalizedBase = API_BASE_URL.replace(/\/+$/, "");
+  const cleanedPath = path.startsWith("/api") ? path.replace(/^\/api/, "") : path;
+  const normalizedPath = cleanedPath.startsWith("/") ? cleanedPath : `/${cleanedPath}`;
+
+  return `${normalizedBase}${normalizedPath}`;
+};
 
 export const configureApiClient = (options: {
   tokenProvider: TokenProvider;

@@ -24,7 +24,13 @@ let onTokensUpdated: TokenUpdater = () => undefined;
 let onUnauthorized: LogoutHandler = () => undefined;
 let refreshInFlight: Promise<LenderAuthTokens | null> | null = null;
 
-const toAbsoluteUrl = (path: string) => `${API_BASE_URL}${path.startsWith("/api") ? path : `/api${path}`}`;
+const toAbsoluteUrl = (path: string) => {
+  const normalizedBase = API_BASE_URL.replace(/\/+$/, "");
+  const cleanedPath = path.startsWith("/api") ? path.replace(/^\/api/, "") : path;
+  const normalizedPath = cleanedPath.startsWith("/") ? cleanedPath : `/${cleanedPath}`;
+
+  return `${normalizedBase}${normalizedPath}`;
+};
 
 const buildHeaders = (headers: HeadersInit = {}, includeAuth: boolean, body?: BodyInit): HeadersInit => {
   const constructed = new Headers(headers);
