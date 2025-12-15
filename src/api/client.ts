@@ -2,8 +2,7 @@ import { API_BASE_URL } from "@/utils/env";
 import type { UserRole } from "@/utils/roles";
 
 export type AuthTokens = {
-  accessToken: string;
-  refreshToken: string;
+  token: string;
 };
 
 export type ApiError = {
@@ -20,41 +19,15 @@ type TokenProvider = () => AuthTokens | null;
 type TokenUpdater = (tokens: AuthTokens | null) => void;
 type LogoutHandler = () => void;
 
+type RequestOptions = RequestInit & {
+  skipAuth?: boolean;
+};
+
 let getTokens: TokenProvider = () => null;
 let updateTokens: TokenUpdater = () => undefined;
 let triggerLogout: LogoutHandler = () => undefined;
-let refreshInFlight: Promise<AuthTokens | null> | null = null;
 
-const handleRefresh = async (): Promise<AuthTokens | null> => {
-  const tokens = getTokens();
-  if (!tokens?.refreshToken) return null;
-
-  if (!refreshInFlight) {
-    refreshInFlight = fetch(`${API_BASE_URL}/auth/refresh`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ refreshToken: tokens.refreshToken })
-    })
-      .then(async (response) => {
-        if (!response.ok) return null;
-        const body = (await response.json()) as { accessToken: string; refreshToken?: string };
-        const nextTokens: AuthTokens = {
-          accessToken: body.accessToken,
-          refreshToken: body.refreshToken ?? tokens.refreshToken
-        };
-        updateTokens(nextTokens);
-        return nextTokens;
-      })
-      .catch(() => null)
-      .finally(() => {
-        refreshInFlight = null;
-      });
-  }
-
-  return refreshInFlight;
-};
+const toAbsoluteUrl = (path: string) => `${API_BASE_URL}${path.startsWith("/api") ? path : `/api${path}`}`;
 
 export const configureApiClient = (options: {
   tokenProvider: TokenProvider;
@@ -66,17 +39,13 @@ export const configureApiClient = (options: {
   triggerLogout = options.onUnauthorized;
 };
 
-type RequestOptions = RequestInit & {
-  skipAuth?: boolean;
-};
-
 const buildHeaders = (headers: HeadersInit = {}, includeAuth: boolean): HeadersInit => {
   const constructed = new Headers(headers);
   if (!constructed.has("Content-Type")) {
     constructed.set("Content-Type", "application/json");
   }
   if (includeAuth) {
-    const token = getTokens()?.accessToken;
+    const token = getTokens()?.token;
     if (token) {
       constructed.set("Authorization", `Bearer ${token}`);
     }
@@ -87,9 +56,13 @@ const buildHeaders = (headers: HeadersInit = {}, includeAuth: boolean): HeadersI
 const toApiError = async (response: Response): Promise<ApiError> => {
   let details: unknown;
   try {
-    details = await response.json();
+    details = await response.clone().json();
   } catch (error) {
-    details = undefined;
+    try {
+      details = await response.clone().text();
+    } catch (fallbackError) {
+      details = (fallbackError as Error)?.message;
+    }
   }
 
   return {
@@ -101,7 +74,8 @@ const toApiError = async (response: Response): Promise<ApiError> => {
 
 const executeRequest = async <T>(path: string, options: RequestOptions = {}): Promise<T> => {
   const includeAuth = !options.skipAuth;
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const url = toAbsoluteUrl(path);
+  const response = await fetch(url, {
     ...options,
     headers: buildHeaders(options.headers, includeAuth)
   });
@@ -113,17 +87,6 @@ const executeRequest = async <T>(path: string, options: RequestOptions = {}): Pr
   }
 
   if (response.status === 401 && includeAuth) {
-    const refreshed = await handleRefresh();
-    if (refreshed?.accessToken) {
-      const retryResponse = await fetch(`${API_BASE_URL}${path}`, {
-        ...options,
-        headers: buildHeaders(options.headers, true)
-      });
-      if (retryResponse.ok) {
-        const retryData = (await retryResponse.json()) as ApiResponse<T> | T;
-        return (retryData as ApiResponse<T>).data ?? (retryData as T);
-      }
-    }
     triggerLogout();
   }
 
@@ -131,8 +94,7 @@ const executeRequest = async <T>(path: string, options: RequestOptions = {}): Pr
 };
 
 export const apiClient = {
-  get: <T>(path: string, options?: RequestOptions) =>
-    executeRequest<T>(path, { ...options, method: "GET" }),
+  get: <T>(path: string, options?: RequestOptions) => executeRequest<T>(path, { ...options, method: "GET" }),
   post: <T>(path: string, body?: unknown, options?: RequestOptions) =>
     executeRequest<T>(path, {
       ...options,
@@ -151,8 +113,7 @@ export const apiClient = {
       method: "PATCH",
       body: body ? JSON.stringify(body) : undefined
     }),
-  delete: <T>(path: string, options?: RequestOptions) =>
-    executeRequest<T>(path, { ...options, method: "DELETE" })
+  delete: <T>(path: string, options?: RequestOptions) => executeRequest<T>(path, { ...options, method: "DELETE" })
 };
 
 export type UserProfile = {

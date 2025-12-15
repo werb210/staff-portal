@@ -1,7 +1,9 @@
 import { API_BASE_URL } from "@/utils/env";
-import type { AuthTokens } from "@/api/client";
 
-export type LenderAuthTokens = AuthTokens;
+export type LenderAuthTokens = {
+  refreshToken: string;
+  accessToken: string;
+};
 
 export type LenderApiError = {
   status: number;
@@ -22,6 +24,8 @@ let onTokensUpdated: TokenUpdater = () => undefined;
 let onUnauthorized: LogoutHandler = () => undefined;
 let refreshInFlight: Promise<LenderAuthTokens | null> | null = null;
 
+const toAbsoluteUrl = (path: string) => `${API_BASE_URL}${path.startsWith("/api") ? path : `/api${path}`}`;
+
 const buildHeaders = (headers: HeadersInit = {}, includeAuth: boolean, body?: BodyInit): HeadersInit => {
   const constructed = new Headers(headers);
   if (!constructed.has("Content-Type") && !(body instanceof FormData)) {
@@ -39,9 +43,13 @@ const buildHeaders = (headers: HeadersInit = {}, includeAuth: boolean, body?: Bo
 const toApiError = async (response: Response): Promise<LenderApiError> => {
   let details: unknown;
   try {
-    details = await response.json();
+    details = await response.clone().json();
   } catch (error) {
-    details = undefined;
+    try {
+      details = await response.clone().text();
+    } catch (fallbackError) {
+      details = (fallbackError as Error)?.message;
+    }
   }
   return { status: response.status, message: response.statusText || "Request failed", details };
 };
@@ -51,7 +59,7 @@ const handleRefresh = async (): Promise<LenderAuthTokens | null> => {
   if (!tokens?.refreshToken) return null;
 
   if (!refreshInFlight) {
-    refreshInFlight = fetch(`${API_BASE_URL}/lender/auth/refresh`, {
+    refreshInFlight = fetch(toAbsoluteUrl(`/lender/auth/refresh`), {
       method: "POST",
       headers: buildHeaders({}, false),
       body: JSON.stringify({ refreshToken: tokens.refreshToken })
@@ -87,7 +95,7 @@ export const configureLenderApiClient = (options: {
 
 const executeRequest = async <T>(path: string, options: RequestOptions = {}): Promise<T> => {
   const includeAuth = !options.skipAuth;
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const response = await fetch(toAbsoluteUrl(path), {
     ...options,
     headers: buildHeaders(options.headers, includeAuth, options.body ?? undefined)
   });
@@ -101,7 +109,7 @@ const executeRequest = async <T>(path: string, options: RequestOptions = {}): Pr
   if (response.status === 401 && includeAuth) {
     const refreshed = await handleRefresh();
     if (refreshed?.accessToken) {
-      const retry = await fetch(`${API_BASE_URL}${path}`, {
+      const retry = await fetch(toAbsoluteUrl(path), {
         ...options,
         headers: buildHeaders(options.headers, true, options.body ?? undefined)
       });

@@ -14,7 +14,7 @@ const createTestQueryClient = () =>
 
 const defaultAuth: AuthContextValue = {
   user: { id: "1", name: "Test User", email: "test@example.com", role: "ADMIN" },
-  tokens: { accessToken: "token", refreshToken: "refresh" },
+  tokens: { token: "token" },
   isAuthenticated: true,
   isLoading: false,
   login: async () => undefined,

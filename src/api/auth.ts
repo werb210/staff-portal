@@ -1,5 +1,5 @@
 import { apiClient } from "./client";
-import type { AuthTokens, UserProfile } from "./client";
+import type { UserProfile } from "./client";
 
 export type LoginPayload = {
   email: string;
@@ -7,15 +7,11 @@ export type LoginPayload = {
 };
 
 export type LoginResponse = {
-  accessToken: string;
-  refreshToken: string;
+  token: string;
   user: UserProfile;
 };
 
 export const login = (payload: LoginPayload) =>
-  apiClient.post<LoginResponse>("/auth/login", payload, { skipAuth: true });
+  apiClient.post<LoginResponse>("/api/auth/login", payload, { skipAuth: true });
 
-export const fetchCurrentUser = () => apiClient.get<UserProfile>("/auth/me");
-
-export const refreshSession = (refreshToken: string) =>
-  apiClient.post<AuthTokens>("/auth/refresh", { refreshToken }, { skipAuth: true });
+export const fetchCurrentUser = () => apiClient.get<UserProfile>("/api/auth/me");
