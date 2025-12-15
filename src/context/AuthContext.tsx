@@ -13,24 +13,34 @@ export type AuthContextValue = {
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
-const STORAGE_KEY = "staff-portal.auth";
+const TOKEN_STORAGE_KEY = "auth_token";
+const USER_STORAGE_KEY = "staff-portal.user";
 
 const readStoredAuth = (): { tokens: AuthTokens | null; user: UserProfile | null } => {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { tokens: null, user: null };
-    return JSON.parse(raw) as { tokens: AuthTokens | null; user: UserProfile | null };
+    const rawToken = localStorage.getItem(TOKEN_STORAGE_KEY);
+    const rawUser = localStorage.getItem(USER_STORAGE_KEY);
+    const parsedUser = rawUser ? (JSON.parse(rawUser) as UserProfile) : null;
+
+    if (!rawToken) return { tokens: null, user: parsedUser };
+    return { tokens: { token: rawToken }, user: parsedUser };
   } catch (error) {
     return { tokens: null, user: null };
   }
 };
 
 const persistAuth = (tokens: AuthTokens | null, user: UserProfile | null) => {
-  if (!tokens) {
-    localStorage.removeItem(STORAGE_KEY);
+  if (!tokens?.token) {
+    localStorage.removeItem(TOKEN_STORAGE_KEY);
+    localStorage.removeItem(USER_STORAGE_KEY);
     return;
   }
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({ tokens, user }));
+  localStorage.setItem(TOKEN_STORAGE_KEY, tokens.token);
+  if (user) {
+    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+  } else {
+    localStorage.removeItem(USER_STORAGE_KEY);
+  }
 };
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -77,16 +87,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const login = useCallback(async (payload: LoginPayload) => {
     const response = await loginRequest(payload);
-    setTokens({ accessToken: response.accessToken, refreshToken: response.refreshToken });
+    const nextTokens: AuthTokens = { token: response.token };
+    setTokens(nextTokens);
     setUser(response.user);
-    persistAuth({ accessToken: response.accessToken, refreshToken: response.refreshToken }, response.user);
+    persistAuth(nextTokens, response.user);
   }, []);
 
   const value = useMemo(
     () => ({
       user,
       tokens,
-      isAuthenticated: !!tokens?.accessToken && canAccessStaffPortal(user?.role),
+      isAuthenticated: !!tokens?.token && canAccessStaffPortal(user?.role),
       isLoading,
       login,
       logout

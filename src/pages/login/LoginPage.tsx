@@ -4,6 +4,7 @@ import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Card from "@/components/ui/Card";
 import { useAuth } from "@/hooks/useAuth";
+import type { ApiError } from "@/api/client";
 
 const LoginPage = () => {
   const { login } = useAuth();
@@ -23,7 +24,10 @@ const LoginPage = () => {
       const redirectTo = (location.state as { from?: Location })?.from?.pathname || "/";
       navigate(redirectTo, { replace: true });
     } catch (err) {
-      setError("Invalid credentials or unable to reach server.");
+      const apiError = err as ApiError;
+      // eslint-disable-next-line no-console
+      console.error("Login failed", apiError?.status, apiError?.details ?? apiError);
+      setError("Unable to sign in. Please verify your credentials and try again.");
     } finally {
       setIsSubmitting(false);
     }
