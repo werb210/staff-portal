@@ -50,7 +50,7 @@ const LoginPage = () => {
         if (!isMounted) return;
         // eslint-disable-next-line no-console
         console.error("Health check failed", healthError);
-        setHealthStatus("Unreachable");
+        setHealthStatus("API unreachable");
       }
     };
 
@@ -93,6 +93,7 @@ const LoginPage = () => {
               style={{ marginTop: "0.75rem", fontSize: "0.875rem", color: "#6b7280" }}
             >
               API: {API_BASE_URL} — Health: {healthStatus}
+              {healthStatus === "API unreachable" && " (login still available)"}
             </p>
           )}
         </form>
