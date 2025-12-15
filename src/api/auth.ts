@@ -12,6 +12,6 @@ export type LoginResponse = {
 };
 
 export const login = (payload: LoginPayload) =>
-  apiClient.post<LoginResponse>("/api/auth/login", payload, { skipAuth: true });
+  apiClient.post<LoginResponse>("/auth/login", payload, { skipAuth: true });
 
-export const fetchCurrentUser = () => apiClient.get<UserProfile>("/api/auth/me");
+export const fetchCurrentUser = () => apiClient.get<UserProfile>("/auth/me");
