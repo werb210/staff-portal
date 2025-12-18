@@ -1,4 +1,4 @@
-import { Navigate, Outlet, useLocation } from "react-router-dom";
+import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { canAccessStaffPortal, type UserRole } from "@/utils/roles";
 import Card from "@/components/ui/Card";
@@ -10,7 +10,6 @@ interface PrivateRouteProps {
 
 const PrivateRoute = ({ allowedRoles }: PrivateRouteProps) => {
   const { isAuthenticated, user, isLoading } = useAuth();
-  const location = useLocation();
 
   if (isLoading) {
     return (
@@ -21,7 +20,7 @@ const PrivateRoute = ({ allowedRoles }: PrivateRouteProps) => {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    return <Navigate to="/login" replace />;
   }
 
   if (allowedRoles && user && !allowedRoles.includes(user.role)) {
