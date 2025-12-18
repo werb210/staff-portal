@@ -8,7 +8,7 @@ import type { ApiError } from "@/api/client";
 import { API_BASE_URL, ENV } from "@/utils/env";
 
 const LoginPage = () => {
-  const { login } = useAuth();
+  const { login, user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [email, setEmail] = useState("");
@@ -23,8 +23,6 @@ const LoginPage = () => {
     setIsSubmitting(true);
     try {
       await login({ email, password });
-      const redirectTo = (location.state as { from?: Location })?.from?.pathname || "/";
-      navigate(redirectTo, { replace: true });
     } catch (err) {
       const apiError = err as ApiError;
       // eslint-disable-next-line no-console
@@ -34,6 +32,16 @@ const LoginPage = () => {
       setIsSubmitting(false);
     }
   };
+
+  useEffect(() => {
+    if (!isAuthenticated || !user) return;
+
+    const redirectTo = user.requiresOtp
+      ? "/otp"
+      : (location.state as { from?: Location })?.from?.pathname || "/";
+
+    navigate(redirectTo, { replace: true });
+  }, [isAuthenticated, user, navigate, location.state]);
 
   useEffect(() => {
     if (ENV === "development") return;

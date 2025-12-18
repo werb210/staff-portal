@@ -47,23 +47,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [tokens, setTokens] = useState<AuthTokens | null>(() => readStoredAuth().tokens);
   const [user, setUser] = useState<UserProfile | null>(() => readStoredAuth().user);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(
+    () => !!readStoredAuth().tokens?.token && canAccessStaffPortal(readStoredAuth().user?.role)
+  );
+
+  const setAuthState = useCallback((nextTokens: AuthTokens | null, nextUser: UserProfile | null) => {
+    setTokens(nextTokens);
+    setUser(nextUser);
+    persistAuth(nextTokens, nextUser);
+    setIsAuthenticated(!!nextTokens?.token && canAccessStaffPortal(nextUser?.role));
+  }, []);
 
   const logout = useCallback(() => {
-    setTokens(null);
-    setUser(null);
-    persistAuth(null, null);
+    setAuthState(null, null);
   }, []);
 
   useEffect(() => {
     configureApiClient({
       tokenProvider: () => tokens,
       onTokensUpdated: (nextTokens) => {
-        setTokens(nextTokens);
-        persistAuth(nextTokens, user);
+        setAuthState(nextTokens, user);
       },
       onUnauthorized: logout
     });
-  }, [tokens, user, logout]);
+  }, [tokens, user, logout, setAuthState]);
 
   const hydrateUser = useCallback(async () => {
     if (!tokens || user) {
@@ -72,14 +79,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
     try {
       const profile = await fetchCurrentUser();
-      setUser(profile);
-      persistAuth(tokens, profile);
+      setAuthState(tokens, profile);
     } catch (error) {
       logout();
     } finally {
       setIsLoading(false);
     }
-  }, [tokens, user, logout]);
+  }, [tokens, user, logout, setAuthState]);
 
   useEffect(() => {
     hydrateUser();
@@ -88,21 +94,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const login = useCallback(async (payload: LoginPayload) => {
     const response = await loginRequest(payload);
     const nextTokens: AuthTokens = { token: response.token };
-    setTokens(nextTokens);
-    setUser(response.user);
-    persistAuth(nextTokens, response.user);
-  }, []);
+    setAuthState(nextTokens, response.user);
+    setIsLoading(false);
+  }, [setAuthState]);
 
   const value = useMemo(
     () => ({
       user,
       tokens,
-      isAuthenticated: !!tokens?.token && canAccessStaffPortal(user?.role),
+      isAuthenticated,
       isLoading,
       login,
       logout
     }),
-    [isLoading, login, logout, tokens, user]
+    [isAuthenticated, isLoading, login, logout, tokens, user]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
