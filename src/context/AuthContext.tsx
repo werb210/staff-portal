@@ -3,99 +3,96 @@ import {
   useCallback,
   useEffect,
   useMemo,
-  useState,
-  type ReactNode
+  useState
 } from "react";
-import { login as loginRequest, type LoginPayload } from "@/api/auth";
-import { configureApiClient, type AuthTokens } from "@/api/client";
+import { login as loginRequest } from "@/api/auth";
+import { configureApiClient } from "@/api/client";
 import { canAccessStaffPortal, type UserRole } from "@/utils/roles";
 
 export type StaffUser = {
   id: string;
-  name?: string;
   email: string;
   role: UserRole;
+  name?: string;
+  requiresOtp?: boolean;
 };
 
 export type AuthContextValue = {
   user: StaffUser | null;
-  tokens: AuthTokens | null;
+  token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (payload: LoginPayload) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
   logout: () => void;
 };
 
 const TOKEN_KEY = "auth_token";
-const USER_KEY = "staff-portal.user";
-
-const readStoredAuth = (): { tokens: AuthTokens | null; user: StaffUser | null } => {
-  try {
-    const storedToken = localStorage.getItem(TOKEN_KEY);
-    const storedUser = localStorage.getItem(USER_KEY);
-
-    return {
-      tokens: storedToken ? { token: storedToken } : null,
-      user: storedUser ? (JSON.parse(storedUser) as StaffUser) : null
-    };
-  } catch (error) {
-    return { tokens: null, user: null };
-  }
-};
+const USER_KEY = "staff_portal_user";
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const storedAuth = readStoredAuth();
-  const [tokens, setTokens] = useState<AuthTokens | null>(storedAuth.tokens);
-  const [user, setUser] = useState<StaffUser | null>(storedAuth.user);
-  const [isAuthenticated, setIsAuthenticated] = useState(
-    !!storedAuth.tokens?.token && canAccessStaffPortal(storedAuth.user?.role)
-  );
-  const [isLoading, setIsLoading] = useState(false);
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [token, setToken] = useState<string | null>(null);
+  const [user, setUser] = useState<StaffUser | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const persistAuth = useCallback((nextTokens: AuthTokens | null, nextUser: StaffUser | null) => {
-    if (!nextTokens || !nextTokens.token) {
-      localStorage.removeItem(TOKEN_KEY);
-      localStorage.removeItem(USER_KEY);
+  const persistAuth = useCallback((nextToken: string | null, nextUser: StaffUser | null) => {
+    if (nextToken && nextUser) {
+      localStorage.setItem(TOKEN_KEY, nextToken);
+      localStorage.setItem(USER_KEY, JSON.stringify(nextUser));
       return;
     }
 
-    localStorage.setItem(TOKEN_KEY, nextTokens.token);
-    localStorage.setItem(USER_KEY, JSON.stringify(nextUser));
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
   }, []);
 
   const setAuthState = useCallback(
-    (nextTokens: AuthTokens | null, nextUser: StaffUser | null) => {
-      setTokens(nextTokens);
+    (nextToken: string | null, nextUser: StaffUser | null) => {
+      setToken(nextToken);
       setUser(nextUser);
-      setIsAuthenticated(!!nextTokens?.token && canAccessStaffPortal(nextUser?.role));
-      persistAuth(nextTokens, nextUser);
+      persistAuth(nextToken, nextUser);
     },
     [persistAuth]
   );
 
+  const logout = useCallback(() => {
+    setAuthState(null, null);
+    window.location.href = "/login";
+  }, [setAuthState]);
+
   useEffect(() => {
-    configureApiClient({
-      tokenProvider: () => tokens,
-      onTokensUpdated: (nextTokens) => {
-        setAuthState(nextTokens, user);
-      },
-      onUnauthorized: () => {
+    const storedToken = localStorage.getItem(TOKEN_KEY);
+    const storedUser = localStorage.getItem(USER_KEY);
+
+    if (storedToken && storedUser) {
+      try {
+        setAuthState(storedToken, JSON.parse(storedUser) as StaffUser);
+      } catch (error) {
         setAuthState(null, null);
       }
+    }
+
+    setIsLoading(false);
+  }, [setAuthState]);
+
+  useEffect(() => {
+    configureApiClient({
+      tokenProvider: () => (token ? { token } : null),
+      onTokensUpdated: (nextTokens) => {
+        const nextToken = nextTokens?.token ?? null;
+        setAuthState(nextToken, nextToken ? user : null);
+      },
+      onUnauthorized: logout
     });
-  }, [setAuthState, tokens, user]);
+  }, [logout, setAuthState, token, user]);
 
   const login = useCallback(
-    async (payload: LoginPayload) => {
+    async (email: string, password: string) => {
       setIsLoading(true);
       try {
-        const response = await loginRequest(payload);
-        const nextTokens: AuthTokens = { token: response.token };
-        const nextUser = response.user as StaffUser;
-
-        setAuthState(nextTokens, nextUser);
+        const response = await loginRequest({ email, password });
+        setAuthState(response.token, response.user as StaffUser);
       } finally {
         setIsLoading(false);
       }
@@ -103,20 +100,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [setAuthState]
   );
 
-  const logout = useCallback(() => {
-    setAuthState(null, null);
-  }, [setAuthState]);
-
-  const value = useMemo(
+  const value = useMemo<AuthContextValue>(
     () => ({
       user,
-      tokens,
-      isAuthenticated,
+      token,
+      isAuthenticated: !!token && !!user && canAccessStaffPortal(user.role),
       isLoading,
       login,
       logout
     }),
-    [isAuthenticated, isLoading, login, logout, tokens, user]
+    [isLoading, login, logout, token, user]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

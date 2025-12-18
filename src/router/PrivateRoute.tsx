@@ -5,9 +5,10 @@ import Card from "@/components/ui/Card";
 
 interface PrivateRouteProps {
   allowedRoles?: string[];
+  children?: JSX.Element;
 }
 
-export default function PrivateRoute({ allowedRoles }: PrivateRouteProps) {
+export default function PrivateRoute({ allowedRoles, children }: PrivateRouteProps) {
   const { isAuthenticated, user, isLoading } = useAuth();
 
   if (isLoading) {
@@ -34,5 +35,5 @@ export default function PrivateRoute({ allowedRoles }: PrivateRouteProps) {
     );
   }
 
-  return <Outlet />;
+  return children ?? <Outlet />;
 }
