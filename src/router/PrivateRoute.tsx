@@ -19,7 +19,7 @@ const PrivateRoute = ({ allowedRoles }: PrivateRouteProps) => {
     );
   }
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated && !isLoading) {
     return <Navigate to="/login" replace />;
   }
 
