@@ -1,7 +1,6 @@
 import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { canAccessStaffPortal } from "@/utils/roles";
-import AppLoading from "@/components/layout/AppLoading";
 import Card from "@/components/ui/Card";
 
 interface PrivateRouteProps {
@@ -12,7 +11,7 @@ export default function PrivateRoute({ allowedRoles }: PrivateRouteProps) {
   const { isAuthenticated, user, isLoading } = useAuth();
 
   if (isLoading) {
-    return <AppLoading />;
+    return null;
   }
 
   if (!isAuthenticated || !user) {
