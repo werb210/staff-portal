@@ -1,29 +1,81 @@
-import { useEffect } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 
 export default function LoginPage() {
-  const { isAuthenticated, user, isLoading, login } = useAuth();
+  const { isAuthenticated, isLoading, login } = useAuth();
   const navigate = useNavigate();
 
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [healthError, setHealthError] = useState<string | null>(null);
+
   useEffect(() => {
-    if (!isLoading && isAuthenticated && user) {
-      if (user.requiresOtp) {
-        navigate("/otp", { replace: true });
-        return;
+    const checkHealth = async () => {
+      try {
+        const response = await fetch("/api/health");
+        if (!response.ok) {
+          throw new Error("Health check failed");
+        }
+      } catch (err) {
+        setHealthError("API unreachable");
       }
+    };
 
-      navigate("/dashboard", { replace: true });
+    checkHealth();
+  }, []);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/", { replace: true });
     }
-  }, [isAuthenticated, isLoading, user, navigate]);
+  }, [isAuthenticated, navigate]);
 
-  const handleSubmit = async (email: string, password: string) => {
-    await login(email, password);
+  const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError(null);
+
+    try {
+      await login({ email, password });
+      navigate("/", { replace: true });
+    } catch (err) {
+      setError("Invalid credentials");
+    }
   };
 
   return (
     <div className="login-page">
-      {/* existing login form remains unchanged */}
+      <form onSubmit={onSubmit}>
+        <label>
+          Email
+          <input
+            aria-label="Email"
+            type="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            placeholder="Email"
+          />
+        </label>
+
+        <label>
+          Password
+          <input
+            aria-label="Password"
+            type="password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            placeholder="Password"
+          />
+        </label>
+
+        {error && <div>{error}</div>}
+        {healthError && <div>{healthError}</div>}
+
+        <button type="submit" disabled={isLoading}>
+          Login
+        </button>
+      </form>
     </div>
   );
 }
