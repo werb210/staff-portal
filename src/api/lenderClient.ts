@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "@/utils/env";
+import { getApiBaseUrl } from "@/utils/env";
 
 export type LenderAuthTokens = {
   refreshToken: string;
@@ -25,7 +25,7 @@ let onUnauthorized: LogoutHandler = () => undefined;
 let refreshInFlight: Promise<LenderAuthTokens | null> | null = null;
 
 const toAbsoluteUrl = (path: string) => {
-  const normalizedBase = API_BASE_URL.replace(/\/+$/, "");
+  const normalizedBase = getApiBaseUrl().replace(/\/+$/, "");
   const cleanedPath = path.startsWith("/api") ? path.replace(/^\/api/, "") : path;
   const normalizedPath = cleanedPath.startsWith("/") ? cleanedPath : `/${cleanedPath}`;
 
