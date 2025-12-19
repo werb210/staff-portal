@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const api = axios.create({
+export const apiClient = axios.create({
   baseURL: "https://server.boreal.financial/api",
   withCredentials: true,
   headers: {
@@ -8,8 +8,8 @@ const api = axios.create({
   },
 });
 
-// Attach bearer token to EVERY request
-api.interceptors.request.use((config) => {
+// Attach bearer token to every request
+apiClient.interceptors.request.use((config) => {
   const token =
     localStorage.getItem("access_token") ||
     localStorage.getItem("auth_token");
@@ -22,4 +22,4 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-export default api;
+export default apiClient;
