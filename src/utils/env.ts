@@ -1,14 +1,13 @@
-export function getApiBaseUrl(): string {
-  const url =
-    (window as any).__VITE_API_BASE_URL__ ||
-    (import.meta as any)?.env?.VITE_API_BASE_URL ||
-    (import.meta as any)?.env?.VITE_STAFF_API_URL;
+type RuntimeEnv = {
+  API_BASE_URL: string;
+};
 
-  if (!url) {
-    throw new Error(
-      "VITE_API_BASE_URL is not defined. Staff Portal cannot connect to Staff Server."
-    );
-  }
+const env = (window as any).__ENV__ as RuntimeEnv | undefined;
 
-  return url.replace(/\/$/, "");
+if (!env?.API_BASE_URL) {
+  throw new Error("API_BASE_URL missing (window.__ENV__)");
 }
+
+export const API_BASE_URL = env.API_BASE_URL.replace(/\/+$/, "");
+
+export const getApiBaseUrl = () => API_BASE_URL;

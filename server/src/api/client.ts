@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { useSiloStore, Silo } from '../state/siloStore';
+import { getSiloApiBase } from '../utils/env';
 
 const client = axios.create({
   withCredentials: true,
@@ -8,13 +9,7 @@ const client = axios.create({
 client.interceptors.request.use((config) => {
   const silo = useSiloStore.getState().currentSilo;
 
-  const baseMap: Record<Silo, string | undefined> = {
-    BF: import.meta.env.VITE_API_BF,
-    BI: import.meta.env.VITE_API_BI,
-    SLF: import.meta.env.VITE_API_SLF,
-  };
-
-  const base = silo ? baseMap[silo] : baseMap.BF;
+  const base = getSiloApiBase(silo);
 
   if (!base) throw new Error("Silo not set. Cannot call API.");
 

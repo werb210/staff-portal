@@ -1,9 +1,4 @@
-const DEFAULT_BASE = "http://localhost:5000";
-
-export const API_BASE_URL =
-  (typeof import.meta !== "undefined" &&
-    (import.meta as any).env?.VITE_API_BASE_URL) ||
-  DEFAULT_BASE;
+import { API_BASE_URL } from "../../utils/env";
 
 async function handleResponse(res: Response) {
   if (!res.ok) {

@@ -2,6 +2,7 @@
 import { create } from 'zustand';
 import { api } from '../api/client';
 import { PipelineApp } from './pipelineStore';
+import { WS_URL } from '../utils/env';
 
 interface State {
   application: PipelineApp | null;
@@ -47,7 +48,7 @@ export const useApplicationStore = create<State>((set, get) => ({
     });
 
     // Subscribe to WS updates
-    const ws = new WebSocket(import.meta.env.VITE_WS_URL);
+    const ws = new WebSocket(WS_URL);
     ws.onmessage = (msg) => {
       try {
         const data = JSON.parse(msg.data);
