@@ -1,19 +1,19 @@
-/* =========================================================
+/* ============================================================
    FILE: src/utils/api.ts
-   PURPOSE: Single source of truth for API routing
-   ========================================================= */
+   PURPOSE: Centralized API utilities + health check export
+   ============================================================ */
 
-const BASE_URL =
+const API_BASE_URL =
   (window as any).__ENV__?.VITE_API_BASE_URL ||
-  import.meta.env.VITE_API_BASE_URL;
+  (window as any).__ENV__?.API_BASE_URL ||
+  import.meta.env.VITE_API_BASE_URL ||
+  import.meta.env.VITE_STAFF_SERVER_URL;
 
-if (!BASE_URL) {
-  throw new Error("VITE_API_BASE_URL is not defined");
-}
+const baseHasApiPrefix = API_BASE_URL?.replace(/\/+$/, "").endsWith("/api") ?? false;
 
 function normalizePath(path: string) {
   if (!path.startsWith("/")) path = `/${path}`;
-  if (!path.startsWith("/api/")) path = `/api${path}`;
+  if (!baseHasApiPrefix && !path.startsWith("/api/")) return `/api${path}`;
   return path;
 }
 
@@ -21,7 +21,8 @@ export async function apiFetch<T = any>(
   path: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const url = `${BASE_URL}${normalizePath(path)}`;
+  const baseUrl = API_BASE_URL ?? "";
+  const url = `${baseUrl}${normalizePath(path)}`;
 
   const res = await fetch(url, {
     credentials: "include",
@@ -38,4 +39,17 @@ export async function apiFetch<T = any>(
   }
 
   return res.json();
+}
+
+/* ============================================================
+   REQUIRED LEGACY EXPORT — DO NOT REMOVE
+   Used by src/App.tsx
+   ============================================================ */
+export async function checkStaffServerHealth(): Promise<boolean> {
+  try {
+    await apiFetch("/_int/health");
+    return true;
+  } catch {
+    return false;
+  }
 }
