@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { useCommunicationsStore } from '../state/communicationsStore';
 import ThreadList from '../components/communications/ThreadList';
+import { WS_URL } from '../utils/env';
 
 export default function CommunicationsPage() {
   const { load, setFilter, filter } = useCommunicationsStore();
@@ -8,7 +9,7 @@ export default function CommunicationsPage() {
   useEffect(() => {
     load();
 
-    const ws = new WebSocket(import.meta.env.VITE_WS_URL);
+    const ws = new WebSocket(WS_URL);
     ws.onmessage = (msg) => {
       try {
         const data = JSON.parse(msg.data);

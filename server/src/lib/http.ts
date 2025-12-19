@@ -1,10 +1,6 @@
 // server/src/lib/http.ts
 import axios, { AxiosError, AxiosInstance } from "axios";
-
-const API_BASE_URL =
-  (import.meta as any).env?.VITE_STAFF_API_BASE_URL ||
-  process.env.VITE_STAFF_API_BASE_URL ||
-  "/api";
+import { API_BASE_URL } from "../utils/env";
 
 let authToken: string | null = null;
 
