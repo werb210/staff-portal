@@ -8,12 +8,16 @@ export type StaffUser = {
   requiresOtp?: boolean;
 };
 
+export type AuthTokens = {
+  token: string;
+};
+
 export type AuthContextValue = {
   user: StaffUser | null;
-  token: string | null;
+  tokens: AuthTokens | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: () => Promise<void>;
+  login: (credentials: { email: string; password: string }) => Promise<void>;
   logout: () => void;
 };
 
@@ -26,7 +30,7 @@ const defaultUser: StaffUser = {
 
 const defaultValue: AuthContextValue = {
   user: defaultUser,
-  token: null,
+  tokens: { token: "demo-token" },
   isAuthenticated: true,
   isLoading: false,
   login: async () => {},
