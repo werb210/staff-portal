@@ -1,3 +1,23 @@
+/****************************************************************************************
+ * BLOCK 2 — Staff-Portal (FRONTEND)
+ *
+ * REPO: werb210/staff-portal
+ * FILE: src/api/client.ts
+ * ACTION: REPLACE ENTIRE FILE
+ *
+ * CONTRACT (DO NOT VIOLATE):
+ * - BASE URL MUST NOT INCLUDE /api
+ * - SERVER ROUTES ALREADY START WITH /api
+ * - THIS CLIENT MUST:
+ *     • auto-prefix /api when needed
+ *     • NEVER double-prefix /api
+ *     • ALWAYS attach Authorization header if token exists
+ *
+ * EXPECTED BEHAVIOR:
+ * - /api/health        → 200 OK (no auth)
+ * - /api/applications → 401 if no token (CORRECT)
+ ****************************************************************************************/
+
 import axios, { AxiosRequestConfig } from "axios";
 
 const API_ORIGIN = "https://server.boreal.financial";
@@ -10,40 +30,37 @@ export const apiClient = axios.create({
   },
 });
 
-function normalizeUrl(url: string): string {
-  // If someone passes full URL, leave it alone
+// Normalize URLs to avoid /api duplication
+function normalizePath(url: string): string {
+  // Absolute URL — leave untouched
   if (/^https?:\/\//i.test(url)) return url;
 
-  // Ensure leading slash for consistent handling
-  const u = url.startsWith("/") ? url : `/${url}`;
+  const path = url.startsWith("/") ? url : `/${url}`;
 
-  // Allow internal routes if you use them
-  if (u.startsWith("/_int/")) return u;
-
-  // If already /api/... keep it
-  if (u === "/api" || u.startsWith("/api/")) return u;
-
-  // Anything else gets /api prefixed
-  return `/api${u}`;
-}
-
-apiClient.interceptors.request.use((config: AxiosRequestConfig) => {
-  // Normalize path to avoid /health -> /api/health, /applications -> /api/applications, etc.
-  if (typeof config.url === "string") {
-    config.url = normalizeUrl(config.url);
+  // Already internal or already /api
+  if (path.startsWith("/_int") || path.startsWith("/api")) {
+    return path;
   }
 
-  // Attach token if present and header not already set
+  // Default: prefix with /api
+  return `/api${path}`;
+}
+
+// Attach token + normalize path
+apiClient.interceptors.request.use((config: AxiosRequestConfig) => {
+  if (config.url) {
+    config.url = normalizePath(config.url);
+  }
+
   const token =
     localStorage.getItem("access_token") ||
     localStorage.getItem("auth_token") ||
     localStorage.getItem("token");
 
   if (token) {
-    config.headers = (config.headers ?? {}) as any;
-    const headersAny = config.headers as any;
-    if (!headersAny.Authorization && !headersAny.authorization) {
-      headersAny.Authorization = `Bearer ${token}`;
+    config.headers = config.headers ?? {};
+    if (!("Authorization" in config.headers)) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
   }
 
