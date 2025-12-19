@@ -1,36 +1,35 @@
-const runtimeEnv =
-  typeof window !== "undefined" && (window as any).__ENV__
-    ? (window as any).__ENV__
-    : {};
+/* =========================================================
+   FILE: src/utils/api.ts
+   PURPOSE: Single source of truth for API routing
+   ========================================================= */
 
-const API_BASE =
-  runtimeEnv.VITE_API_BASE_URL ||
-  runtimeEnv.VITE_STAFF_API_URL ||
-  "";
+const BASE_URL =
+  (window as any).__ENV__?.VITE_API_BASE_URL ||
+  import.meta.env.VITE_API_BASE_URL;
 
-if (!API_BASE) {
-  console.error("API BASE URL MISSING — Staff Portal cannot reach Staff Server");
+if (!BASE_URL) {
+  throw new Error("VITE_API_BASE_URL is not defined");
 }
 
-function normalize(path: string) {
-  if (!path.startsWith("/")) path = "/" + path;
-  if (!path.startsWith("/api/")) path = "/api" + path;
+function normalizePath(path: string) {
+  if (!path.startsWith("/")) path = `/${path}`;
+  if (!path.startsWith("/api/")) path = `/api${path}`;
   return path;
 }
 
-export async function apiFetch<T>(
+export async function apiFetch<T = any>(
   path: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const url = `${API_BASE}${normalize(path)}`;
+  const url = `${BASE_URL}${normalizePath(path)}`;
 
   const res = await fetch(url, {
     credentials: "include",
     headers: {
       "Content-Type": "application/json",
-      ...(options.headers || {})
+      ...(options.headers || {}),
     },
-    ...options
+    ...options,
   });
 
   if (!res.ok) {
@@ -39,8 +38,4 @@ export async function apiFetch<T>(
   }
 
   return res.json();
-}
-
-export async function checkStaffServerHealth() {
-  return apiFetch<unknown>("/health");
 }
