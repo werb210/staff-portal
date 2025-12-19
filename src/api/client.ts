@@ -1,7 +1,6 @@
 import axios from "axios";
 
 export const apiClient = axios.create({
-  // IMPORTANT: NO /api HERE. Routes on server already start with /api
   baseURL: "https://server.boreal.financial",
   withCredentials: true,
   headers: {
@@ -9,7 +8,9 @@ export const apiClient = axios.create({
   },
 });
 
-// Attach bearer token to every request if present
+/**
+ * Attach Bearer token to EVERY request if present
+ */
 apiClient.interceptors.request.use((config) => {
   const token =
     localStorage.getItem("access_token") ||
