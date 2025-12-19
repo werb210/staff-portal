@@ -3,7 +3,19 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import { MemoryRouter } from "react-router-dom";
 import LoginPage from "./LoginPage";
-import AuthContext, { type AuthContextValue } from "@/context/AuthContext";
+
+let loginMock = vi.fn();
+
+vi.mock("@/hooks/useAuth", () => ({
+  useAuth: () => ({
+    user: null,
+    tokens: null,
+    isAuthenticated: false,
+    isLoading: false,
+    login: loginMock,
+    logout: vi.fn()
+  })
+}));
 
 const navigateMock = vi.fn();
 
@@ -28,20 +40,11 @@ describe("LoginPage", () => {
   });
 
   const renderLogin = (login = vi.fn()) => {
-    const authValue: AuthContextValue = {
-      user: null,
-      tokens: null,
-      isAuthenticated: false,
-      isLoading: false,
-      login,
-      logout: vi.fn()
-    };
+    loginMock = login;
 
     return render(
       <MemoryRouter>
-        <AuthContext.Provider value={authValue}>
-          <LoginPage />
-        </AuthContext.Provider>
+        <LoginPage />
       </MemoryRouter>
     );
   };

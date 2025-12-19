@@ -2,24 +2,24 @@ import { describe, expect, test, beforeEach, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import SettingsPage from "./SettingsPage";
-import AuthContext, { type AuthContextValue } from "@/context/AuthContext";
 import { useSettingsStore } from "@/state/settings.store";
 
-const renderWithAuth = (role: "ADMIN" | "STAFF" = "ADMIN") => {
-  const authValue: AuthContextValue = {
-    user: { id: "user-1", name: "Test User", email: "test@example.com", role },
+let mockRole: "ADMIN" | "STAFF" = "ADMIN";
+
+vi.mock("@/hooks/useAuth", () => ({
+  useAuth: () => ({
+    user: { id: "user-1", name: "Test User", email: "test@example.com", role: mockRole },
     tokens: null,
     isAuthenticated: true,
     isLoading: false,
     login: vi.fn(),
     logout: vi.fn()
-  };
+  })
+}));
 
-  return render(
-    <AuthContext.Provider value={authValue}>
-      <SettingsPage />
-    </AuthContext.Provider>
-  );
+const renderWithAuth = (role: "ADMIN" | "STAFF" = "ADMIN") => {
+  mockRole = role;
+  return render(<SettingsPage />);
 };
 
 beforeEach(() => {

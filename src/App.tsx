@@ -5,7 +5,7 @@ import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import AppLayout from "@/components/layout/AppLayout";
 import AppErrorBoundary from "@/components/layout/AppErrorBoundary";
 import AppLoading from "@/components/layout/AppLoading";
-import { AuthProvider } from "@/context/AuthContext";
+import { AuthProvider } from "@/auth/AuthContext";
 import { SiloProvider } from "@/context/SiloContext";
 import { checkStaffServerHealth } from "./utils/api";
 import PrivateRoute from "./router/PrivateRoute";
