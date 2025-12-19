@@ -9,19 +9,26 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [apiWarning, setApiWarning] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     checkStaffServerHealth().then((healthy) => {
       if (!healthy) {
-        setApiWarning("API unreachable. You can still log in.");
+        setApiWarning("API unreachable. Please try again later.");
       }
     });
   }, []);
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
-    await login({ email, password });
-    navigate("/", { replace: true });
+    setError(null);
+
+    try {
+      await login(email, password);
+      navigate("/", { replace: true });
+    } catch (err) {
+      setError("Invalid credentials");
+    }
   };
 
   return (
@@ -31,6 +38,12 @@ export default function LoginPage() {
       {apiWarning && (
         <div role="alert" className="text-sm text-amber-700">
           {apiWarning}
+        </div>
+      )}
+
+      {error && (
+        <div role="alert" className="text-sm text-red-700">
+          {error}
         </div>
       )}
 

@@ -1,8 +1,7 @@
-import { useEffect, useState } from "react";
-import apiClient from "@/api/client";
+import { useCallback, useMemo } from "react";
 import { useAuth as useAuthContext } from "@/auth/AuthContext";
 
-type StaffUser = {
+export type StaffUser = {
   id?: string;
   email?: string;
   role?: string;
@@ -19,48 +18,29 @@ export type AuthValue = {
   tokens: AuthTokens | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (credentials: { email: string; password: string }) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
   logout: () => void;
 };
 
 export const useAuth = (): AuthValue => {
-  const { authenticated, loading, login, logout } = useAuthContext();
-  const [user, setUser] = useState<StaffUser | null>(null);
+  const { user, loading, login, logout } = useAuthContext();
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      if (!authenticated) {
-        setUser(null);
-        return;
-      }
+  const handleLogin: AuthValue["login"] = useCallback(
+    async (email, password) => {
+      await login(email, password);
+    },
+    [login]
+  );
 
-      try {
-        const res = await apiClient.get("/auth/me");
-        setUser(res.data ?? null);
-      } catch {
-        setUser(null);
-      }
-    };
-
-    fetchUser();
-  }, [authenticated]);
-
-  const handleLogin: AuthValue["login"] = async ({ email, password }) => {
-    await login(email, password);
-    try {
-      const res = await apiClient.get("/auth/me");
-      setUser(res.data ?? null);
-    } catch {
-      setUser(null);
-    }
-  };
-
-  return {
-    user,
-    tokens: null,
-    isAuthenticated: authenticated,
-    isLoading: loading,
-    login: handleLogin,
-    logout
-  };
+  return useMemo(
+    () => ({
+      user,
+      tokens: null,
+      isAuthenticated: !!user,
+      isLoading: loading,
+      login: handleLogin,
+      logout,
+    }),
+    [user, loading, handleLogin, logout]
+  );
 };
