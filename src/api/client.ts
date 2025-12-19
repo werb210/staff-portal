@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "@/utils/env";
+import { getApiBaseUrl } from "@/utils/env";
 import type { UserRole } from "@/utils/roles";
 
 export type AuthTokens = {
@@ -28,7 +28,7 @@ let updateTokens: TokenUpdater = () => undefined;
 let triggerLogout: LogoutHandler = () => undefined;
 
 const toAbsoluteUrl = (path: string) => {
-  const normalizedBase = API_BASE_URL.replace(/\/+$/, "");
+  const normalizedBase = getApiBaseUrl().replace(/\/+$/, "");
   const cleanedPath = path.startsWith("/api") ? path.replace(/^\/api/, "") : path;
   const normalizedPath = cleanedPath.startsWith("/") ? cleanedPath : `/${cleanedPath}`;
 

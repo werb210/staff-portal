@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
@@ -7,7 +7,7 @@ import AppErrorBoundary from "@/components/layout/AppErrorBoundary";
 import AppLoading from "@/components/layout/AppLoading";
 import { AuthProvider } from "@/context/AuthContext";
 import { SiloProvider } from "@/context/SiloContext";
-import { checkStaffServerHealth } from "@/utils/api";
+import { checkStaffServerHealth } from "./utils/api";
 import PrivateRoute from "./router/PrivateRoute";
 import DashboardPage from "./pages/dashboard/DashboardPage";
 import LoginPage from "./pages/login/LoginPage";
@@ -31,51 +31,16 @@ const queryClient = new QueryClient({
 });
 
 const App = () => {
-  const [healthStatus, setHealthStatus] = useState<"pending" | "ok" | "error">("pending");
-  const [healthError, setHealthError] = useState<string | null>(null);
-
   useEffect(() => {
-    const verifyConnection = async () => {
-      try {
-        await checkStaffServerHealth();
-        // eslint-disable-next-line no-console
-        console.log("Staff Server connected");
-        setHealthStatus("ok");
-      } catch (error) {
-        // eslint-disable-next-line no-console
-        console.error("Failed to connect to Staff Server", error);
-        setHealthError("Staff Server unreachable");
-        setHealthStatus("error");
-      }
-    };
-
-    void verifyConnection();
+    checkStaffServerHealth()
+      .then(() => {
+        console.log("✅ Staff Server reachable");
+      })
+      .catch((err) => {
+        console.error("❌ Staff Server unreachable", err);
+        alert("Staff Server is unreachable. Check API configuration.");
+      });
   }, []);
-
-  if (healthStatus === "error") {
-    return (
-      <div
-        style={{
-          minHeight: "100vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          flexDirection: "column",
-          backgroundColor: "#0b1120",
-          color: "#ffffff",
-          textAlign: "center",
-          padding: "2rem"
-        }}
-      >
-        <h1 style={{ fontSize: "2rem", fontWeight: 700, marginBottom: "0.5rem" }}>BACKEND NOT CONNECTED</h1>
-        <p style={{ fontSize: "1.25rem" }}>{healthError}</p>
-      </div>
-    );
-  }
-
-  if (healthStatus === "pending") {
-    return <AppLoading />;
-  }
 
   return (
     <QueryClientProvider client={queryClient}>
