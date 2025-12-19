@@ -49,7 +49,7 @@ describe("LoginPage", () => {
     );
   };
 
-  test("allows login even when health check fails", async () => {
+  test("submits credentials and navigates on success", async () => {
     const loginMock = vi.fn().mockResolvedValue(undefined);
     renderLogin(loginMock);
 
@@ -57,11 +57,20 @@ describe("LoginPage", () => {
     fireEvent.change(screen.getByLabelText(/Password/i), { target: { value: "password123" } });
     fireEvent.click(screen.getByRole("button", { name: /Login/i }));
 
-    await waitFor(() => expect(loginMock).toHaveBeenCalledWith({
-      email: "demo@example.com",
-      password: "password123"
-    }));
+    await waitFor(() => expect(loginMock).toHaveBeenCalledWith("demo@example.com", "password123"));
     expect(navigateMock).toHaveBeenCalledWith("/", { replace: true });
-    await waitFor(() => expect(screen.getByText(/API unreachable/i)).toBeInTheDocument());
+  });
+
+  test("shows an error when login fails", async () => {
+    const loginMock = vi.fn().mockRejectedValue(new Error("invalid"));
+    renderLogin(loginMock);
+
+    fireEvent.change(screen.getByLabelText(/Email/i), { target: { value: "demo@example.com" } });
+    fireEvent.change(screen.getByLabelText(/Password/i), { target: { value: "wrong" } });
+    fireEvent.click(screen.getByRole("button", { name: /Login/i }));
+
+    await waitFor(() => expect(loginMock).toHaveBeenCalled());
+    expect(navigateMock).not.toHaveBeenCalled();
+    await waitFor(() => expect(screen.getByText(/Invalid credentials/i)).toBeInTheDocument());
   });
 });
