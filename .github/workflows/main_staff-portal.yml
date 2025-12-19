@@ -1,19 +1,24 @@
-name: Deploy Staff Portal
+name: Build and Deploy Staff Portal
 
 on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
+    # 🔑 VITE VARIABLES MUST EXIST AT BUILD TIME
+    env:
+      VITE_API_BASE_URL: https://api.staff.boreal.financial
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20"
@@ -22,19 +27,18 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build
+      - name: Build Staff Portal
         run: npm run build
 
       # IMPORTANT:
-      # We zip the *contents* of dist so they land in /home/site/wwwroot/
-      # (not /home/site/wwwroot/dist/)
+      # Zip the *contents* of dist so Azure serves from /home/site/wwwroot
       - name: Package dist for App Service
         run: |
           cd dist
           zip -r ../deploy.zip .
           cd ..
 
-      - name: Deploy to Azure App Service (Publish Profile)
+      - name: Deploy to Azure App Service
         uses: azure/webapps-deploy@v3
         with:
           app-name: "Staff-Portal"
