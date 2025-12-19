@@ -1,12 +1,9 @@
 import axios from "axios";
-import { API_BASE_URL } from "./env";
+import { RUNTIME_ENV } from "@/config/runtime";
 
 export const api = axios.create({
-  baseURL: API_BASE_URL,
-  withCredentials: false,
-  headers: {
-    "Content-Type": "application/json",
-  },
+  baseURL: RUNTIME_ENV.API_BASE_URL,
+  withCredentials: true,
 });
 
 export async function checkStaffServerHealth() {
