@@ -1,11 +1,20 @@
-import { Navigate } from "react-router-dom";
+import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 
-export default function PrivateRoute({ children }: { children: JSX.Element }) {
+type PrivateRouteProps = {
+  allowedRoles?: string[];
+  children?: JSX.Element;
+};
+
+export default function PrivateRoute({ allowedRoles, children }: PrivateRouteProps) {
   const { user, loading } = useAuth();
 
   if (loading) return null;
   if (!user) return <Navigate to="/login" replace />;
 
-  return children;
+  if (allowedRoles && !allowedRoles.includes(user.role)) {
+    return <div>Access Restricted</div>;
+  }
+
+  return children ?? <Outlet />;
 }

@@ -8,7 +8,7 @@ type User = {
   role: string;
 };
 
-type AuthContextType = {
+export type AuthContextType = {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
@@ -28,12 +28,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
 
-    apiFetch("/api/auth/me")
-      .then((res) => res.json())
+    apiFetch<User>("/api/auth/me")
       .then((data) => setUser(data))
       .catch(() => {
         localStorage.removeItem("accessToken");
-        localStorage.removeItem("refreshToken");
         setUser(null);
       })
       .finally(() => setLoading(false));
@@ -46,7 +44,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = () => {
     localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
     setUser(null);
     window.location.href = "/login";
   };
@@ -63,3 +60,5 @@ export const useAuth = () => {
   if (!ctx) throw new Error("useAuth must be used inside AuthProvider");
   return ctx;
 };
+
+export { AuthContext };
