@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { apiFetch } from "@/services/api";
-import { login as loginService } from "@/services/auth";
+import { login as loginService, LoginSuccess } from "@/services/auth";
 
 type User = {
   id: string;
@@ -11,7 +11,7 @@ type User = {
 export type AuthContextType = {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<LoginSuccess>;
   logout: () => void;
 };
 
@@ -21,31 +21,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const logout = useCallback(() => {
+    localStorage.removeItem("accessToken");
+    setUser(null);
+    setLoading(false);
+    window.location.href = "/login";
+  }, []);
+
   useEffect(() => {
     const token = localStorage.getItem("accessToken");
     if (!token) {
-      setLoading(false);
+      logout();
       return;
     }
 
     apiFetch<User>("/api/auth/me")
       .then((data) => setUser(data))
       .catch(() => {
-        localStorage.removeItem("accessToken");
-        setUser(null);
+        logout();
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [logout]);
 
   const login = async (email: string, password: string) => {
-    const userData = await loginService(email, password);
-    setUser(userData);
-  };
+    const { user: userData, accessToken } = await loginService(email, password);
+    if (!accessToken) {
+      throw new Error("Missing access token");
+    }
 
-  const logout = () => {
-    localStorage.removeItem("accessToken");
-    setUser(null);
-    window.location.href = "/login";
+    localStorage.setItem("accessToken", accessToken);
+    setUser(userData);
+
+    return { user: userData, accessToken };
   };
 
   return (

@@ -1,22 +1,35 @@
-import axios from "axios";
+import axios, { type AxiosRequestConfig } from "axios";
+
+type AuthenticatedRequestConfig = AxiosRequestConfig & {
+  skipAuth?: boolean;
+};
 
 const API_BASE =
   import.meta.env.VITE_API_BASE_URL || "https://server.boreal.financial";
 
 const apiClient = axios.create({
   baseURL: API_BASE,
-  withCredentials: true,
   headers: {
     "Content-Type": "application/json",
   },
 });
 
-apiClient.interceptors.request.use((config) => {
+apiClient.interceptors.request.use((config: AuthenticatedRequestConfig) => {
+  if (config.skipAuth) return config;
+
   const token = localStorage.getItem("accessToken");
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+  if (!token) {
+    throw new Error("Missing access token");
   }
-  return config;
+
+  const headers = config.headers ?? {};
+  return {
+    ...config,
+    headers: {
+      ...headers,
+      Authorization: `Bearer ${token}`,
+    },
+  } as AuthenticatedRequestConfig;
 });
 
 export default apiClient;

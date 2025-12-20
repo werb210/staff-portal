@@ -25,7 +25,12 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      await login(email, password);
+      const { accessToken } = await login(email, password);
+      if (!accessToken) {
+        throw new Error("Missing access token");
+      }
+
+      localStorage.setItem("accessToken", accessToken);
       try {
         await apiFetch("/api/auth/me");
       } catch {

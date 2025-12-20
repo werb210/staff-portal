@@ -1,6 +1,17 @@
 import { buildApiUrl } from "./api";
 
-export async function login(email: string, password: string) {
+export type AuthenticatedUser = {
+  id: string;
+  email: string;
+  role: string;
+};
+
+export type LoginSuccess = {
+  accessToken: string;
+  user: AuthenticatedUser;
+};
+
+export async function login(email: string, password: string): Promise<LoginSuccess> {
   const res = await fetch(buildApiUrl("/auth/login"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -13,7 +24,8 @@ export async function login(email: string, password: string) {
 
   const data = await res.json();
 
-  localStorage.setItem("accessToken", data.accessToken);
-
-  return data.user;
+  return {
+    accessToken: data.accessToken,
+    user: data.user
+  };
 }
