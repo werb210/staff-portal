@@ -68,7 +68,8 @@ const handleRefresh = async (): Promise<LenderAuthTokens | null> => {
     refreshInFlight = fetch(toAbsoluteUrl(`/lender/auth/refresh`), {
       method: "POST",
       headers: buildHeaders({}, false),
-      body: JSON.stringify({ refreshToken: tokens.refreshToken })
+      body: JSON.stringify({ refreshToken: tokens.refreshToken }),
+      credentials: "omit"
     })
       .then(async (response) => {
         if (!response.ok) return null;
@@ -103,7 +104,8 @@ const executeRequest = async <T>(path: string, options: RequestOptions = {}): Pr
   const includeAuth = !options.skipAuth;
   const response = await fetch(toAbsoluteUrl(path), {
     ...options,
-    headers: buildHeaders(options.headers, includeAuth, options.body ?? undefined)
+    headers: buildHeaders(options.headers, includeAuth, options.body ?? undefined),
+    credentials: "omit"
   });
 
   if (response.ok) {
@@ -117,7 +119,8 @@ const executeRequest = async <T>(path: string, options: RequestOptions = {}): Pr
     if (refreshed?.accessToken) {
       const retry = await fetch(toAbsoluteUrl(path), {
         ...options,
-        headers: buildHeaders(options.headers, true, options.body ?? undefined)
+        headers: buildHeaders(options.headers, true, options.body ?? undefined),
+        credentials: "omit"
       });
       if (retry.ok) {
         const retryData = (await retry.json()) as { data?: T } | T;

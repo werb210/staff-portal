@@ -10,6 +10,7 @@ const apiClient = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
+  withCredentials: false,
 });
 
 apiClient.interceptors.request.use((config: AuthenticatedRequestConfig) => {

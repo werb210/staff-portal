@@ -1,9 +1,4 @@
-const API_BASE =
-  (window as any).__ENV__?.VITE_API_BASE_URL ||
-  (window as any).__ENV__?.API_BASE_URL ||
-  import.meta.env.VITE_API_BASE_URL ||
-  import.meta.env.VITE_STAFF_SERVER_URL ||
-  "https://server.boreal.financial";
+const API_BASE = "https://server.boreal.financial";
 
 function baseHasApiPrefix(base: string) {
   return base.replace(/\/+$/, "").endsWith("/api");
@@ -60,6 +55,7 @@ export async function apiFetch<T = any>(path: string, options: ApiOptions = {}):
   const response = await fetch(buildApiUrl(path), {
     ...options,
     headers,
+    credentials: "omit",
   });
 
   if (response.status === 401 && requiresAuth) {
