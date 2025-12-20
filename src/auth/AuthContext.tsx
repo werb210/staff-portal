@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
-import { apiFetch } from "@/services/api";
+import { apiFetch, setUnauthorizedHandler } from "@/services/api";
 import { login as loginService, LoginSuccess } from "@/services/auth";
 
 type User = {
@@ -21,17 +21,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const logout = useCallback(() => {
+  const redirectToLogin = useCallback(() => {
+    if (window.location.pathname !== "/login") {
+      if (import.meta.env.MODE === "test") {
+        window.history.replaceState({}, "", "/login");
+        window.dispatchEvent(new PopStateEvent("popstate"));
+        return;
+      }
+      window.location.href = "/login";
+    }
+  }, []);
+
+  const clearAuthState = useCallback(() => {
     localStorage.removeItem("accessToken");
     setUser(null);
-    setLoading(false);
-    window.location.href = "/login";
   }, []);
+
+  const logout = useCallback(() => {
+    clearAuthState();
+    setLoading(false);
+    redirectToLogin();
+  }, [clearAuthState, redirectToLogin]);
+
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      clearAuthState();
+      setLoading(false);
+      redirectToLogin();
+    });
+
+    return () => setUnauthorizedHandler(null);
+  }, [clearAuthState, redirectToLogin]);
 
   useEffect(() => {
     const token = localStorage.getItem("accessToken");
     if (!token) {
-      logout();
+      clearAuthState();
+      setLoading(false);
+      redirectToLogin();
       return;
     }
 
@@ -51,6 +78,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     localStorage.setItem("accessToken", accessToken);
     setUser(userData);
+
+    setUnauthorizedHandler(() => {
+      clearAuthState();
+      setLoading(false);
+      redirectToLogin();
+    });
 
     return { user: userData, accessToken };
   };

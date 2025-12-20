@@ -20,15 +20,42 @@ function buildApiUrl(path: string) {
   return `${baseUrl}${normalizePath(path, baseUrl)}`;
 }
 
-export async function apiFetch<T = any>(path: string, options: RequestInit = {}): Promise<T> {
+type ApiOptions = RequestInit & { skipAuth?: boolean };
+
+let unauthorizedHandler: (() => void) | null = null;
+let redirectingToLogin = false;
+
+const redirectToLogin = () => {
+  if (window.location.pathname !== "/login" && !redirectingToLogin) {
+    redirectingToLogin = true;
+    window.location.assign("/login");
+  }
+};
+
+const handleUnauthorized = () => {
+  localStorage.removeItem("accessToken");
+  unauthorizedHandler?.();
+  redirectToLogin();
+};
+
+export const setUnauthorizedHandler = (handler: (() => void) | null) => {
+  unauthorizedHandler = handler;
+};
+
+export async function apiFetch<T = any>(path: string, options: ApiOptions = {}): Promise<T> {
   const token = localStorage.getItem("accessToken");
   const headers = new Headers(options.headers || undefined);
+  const requiresAuth = !options.skipAuth;
 
   if (!headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
 
-  if (token) {
+  if (requiresAuth) {
+    if (!token) {
+      handleUnauthorized();
+      throw new Error("Missing access token");
+    }
     headers.set("Authorization", `Bearer ${token}`);
   }
 
@@ -37,9 +64,8 @@ export async function apiFetch<T = any>(path: string, options: RequestInit = {})
     headers,
   });
 
-  if (response.status === 401) {
-    localStorage.removeItem("accessToken");
-    window.location.assign("/login");
+  if (response.status === 401 && requiresAuth) {
+    handleUnauthorized();
     throw new Error("Unauthorized");
   }
 

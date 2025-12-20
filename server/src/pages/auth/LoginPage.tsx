@@ -13,9 +13,12 @@ export default function LoginPage() {
     try {
       const res = await axios.post(
         "http://localhost:5000/api/auth/login",
-        { email, password },
-        { withCredentials: true }
+        { email, password }
       );
+
+      if (res.data?.accessToken) {
+        localStorage.setItem("accessToken", res.data.accessToken);
+      }
 
       console.log("Login OK:", res.data);
       window.location.href = "/dashboard";

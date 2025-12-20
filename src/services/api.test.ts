@@ -37,6 +37,17 @@ describe("apiFetch", () => {
     expect(headers.get("Content-Type")).toBe("application/json");
   });
 
+  it("throws before sending a request when the token is missing", async () => {
+    const fetchMock = createFetchMock({ ok: true });
+    // @ts-expect-error test override
+    global.fetch = fetchMock;
+
+    const { apiFetch } = await importApiModule();
+
+    await expect(apiFetch("/applications")).rejects.toThrow("Missing access token");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it("clears the token and redirects on 401 responses", async () => {
     localStorage.setItem("accessToken", "expired");
     const assignMock = vi.fn();
@@ -58,6 +69,21 @@ describe("apiFetch", () => {
     expect(assignMock).toHaveBeenCalledWith("/login");
   });
 
+  it("allows unauthenticated requests when skipAuth is true", async () => {
+    const fetchMock = createFetchMock({ ok: true });
+    // @ts-expect-error test override
+    global.fetch = fetchMock;
+
+    const { apiFetch } = await importApiModule();
+
+    await apiFetch("/_int/health", { skipAuth: true });
+
+    expect(fetchMock).toHaveBeenCalled();
+    const [, init] = fetchMock.mock.calls[0];
+    const headers = new Headers(init?.headers as HeadersInit);
+    expect(headers.get("Authorization")).toBeNull();
+  });
+
   it("prefixes /api and uses the configured base URL", async () => {
     // @ts-expect-error configure test env
     (window as any).__ENV__ = { VITE_API_BASE_URL: "https://server.boreal.financial" };
@@ -67,7 +93,7 @@ describe("apiFetch", () => {
 
     const { apiFetch } = await importApiModule();
 
-    await apiFetch("/example");
+    await apiFetch("/example", { skipAuth: true });
 
     const [url] = fetchMock.mock.calls[0];
     expect(url).toBe("https://server.boreal.financial/api/example");
@@ -81,7 +107,7 @@ describe("apiFetch", () => {
 
     const { apiFetch } = await importApiModule();
 
-    const data = await apiFetch("/data");
+    const data = await apiFetch("/data", { skipAuth: true });
     expect(data).toEqual(payload);
   });
 });

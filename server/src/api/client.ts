@@ -2,9 +2,7 @@ import axios from 'axios';
 import { useSiloStore, Silo } from '../state/siloStore';
 import { getSiloApiBase } from '../utils/env';
 
-const client = axios.create({
-  withCredentials: true,
-});
+const client = axios.create();
 
 client.interceptors.request.use((config) => {
   const silo = useSiloStore.getState().currentSilo;
