@@ -3,7 +3,7 @@ const API_BASE =
   (window as any).__ENV__?.API_BASE_URL ||
   import.meta.env.VITE_API_BASE_URL ||
   import.meta.env.VITE_STAFF_SERVER_URL ||
-  "";
+  "https://server.boreal.financial";
 
 function baseHasApiPrefix(base: string) {
   return base.replace(/\/+$/, "").endsWith("/api");
@@ -23,16 +23,14 @@ function buildApiUrl(path: string) {
 type ApiOptions = RequestInit & { skipAuth?: boolean };
 
 let unauthorizedHandler: (() => void) | null = null;
-let redirectingToLogin = false;
 
-const redirectToLogin = () => {
-  if (window.location.pathname !== "/login" && !redirectingToLogin) {
-    redirectingToLogin = true;
+export const redirectToLogin = () => {
+  if (window.location.pathname !== "/login") {
     window.location.assign("/login");
   }
 };
 
-const handleUnauthorized = () => {
+export const handleUnauthorized = () => {
   localStorage.removeItem("accessToken");
   unauthorizedHandler?.();
   redirectToLogin();
