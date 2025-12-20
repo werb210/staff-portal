@@ -1,4 +1,4 @@
-import { buildApiUrl } from "./api";
+import { apiClient } from "@/api/client";
 
 export type AuthenticatedUser = {
   id: string;
@@ -12,20 +12,13 @@ export type LoginSuccess = {
 };
 
 export async function login(email: string, password: string): Promise<LoginSuccess> {
-  const res = await fetch(buildApiUrl("/auth/login"), {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password })
-  });
+  const { data } = await apiClient.post<LoginSuccess>(
+    "/auth/login",
+    { email, password },
+    {
+      skipAuth: true,
+    }
+  );
 
-  if (!res.ok) {
-    throw new Error("Login failed");
-  }
-
-  const data = await res.json();
-
-  return {
-    accessToken: data.accessToken,
-    user: data.user
-  };
+  return data;
 }
