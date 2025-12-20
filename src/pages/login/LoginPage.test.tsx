@@ -60,7 +60,7 @@ describe("LoginPage", () => {
     fireEvent.click(screen.getByRole("button", { name: /Login/i }));
 
     await waitFor(() => expect(loginMock).toHaveBeenCalledWith("demo@example.com", "password123"));
-    expect(navigateMock).toHaveBeenCalledWith("/", { replace: true });
+    expect(navigateMock).toHaveBeenCalledWith("/applications", { replace: true });
   });
 
   test("shows an error when login fails", async () => {

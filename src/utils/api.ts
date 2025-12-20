@@ -11,7 +11,7 @@ export { API_BASE, apiFetch } from "@/services/api";
    ============================================================ */
 export async function checkStaffServerHealth(): Promise<boolean> {
   try {
-    await apiFetch("/_int/health");
+    await apiFetch("/_int/health", { skipAuth: true });
     return true;
   } catch {
     return false;

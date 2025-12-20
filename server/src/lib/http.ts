@@ -11,7 +11,6 @@ export function setAuthToken(token: string | null) {
 function createHttpClient(): AxiosInstance {
   const instance = axios.create({
     baseURL: API_BASE_URL,
-    withCredentials: true,
   });
 
   instance.interceptors.request.use((config) => {

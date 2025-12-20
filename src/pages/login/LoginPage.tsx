@@ -1,11 +1,10 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { apiFetch } from "@/services/api";
 import { checkStaffServerHealth } from "@/utils/api";
 
 export default function LoginPage() {
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -20,24 +19,19 @@ export default function LoginPage() {
     });
   }, []);
 
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/applications", { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
+
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     setError(null);
 
     try {
-      const { accessToken } = await login(email, password);
-      if (!accessToken) {
-        throw new Error("Missing access token");
-      }
-
-      localStorage.setItem("accessToken", accessToken);
-      try {
-        await apiFetch("/api/auth/me");
-      } catch {
-        // Ignore profile fetch errors on login so navigation is not blocked
-      }
-
-      navigate("/", { replace: true });
+      await login(email, password);
+      navigate("/applications", { replace: true });
     } catch (err) {
       setError("Invalid credentials");
     }
