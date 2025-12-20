@@ -33,6 +33,7 @@ apiClient.interceptors.request.use((config: AuthenticatedRequestConfig) => {
   return {
     ...config,
     url,
+    withCredentials: false,
     headers: {
       ...headers,
       Authorization: `Bearer ${token}`,
