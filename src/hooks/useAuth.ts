@@ -24,7 +24,7 @@ export type AuthValue = {
 };
 
 export const useAuth = (): AuthValue => {
-  const { user, loading, login, logout } = useAuthContext();
+  const { user, token, loading, login, logout } = useAuthContext();
 
   const handleLogin: AuthValue["login"] = useCallback(
     async (email, password) => {
@@ -36,12 +36,12 @@ export const useAuth = (): AuthValue => {
   return useMemo(
     () => ({
       user,
-      tokens: null,
-      isAuthenticated: !!user,
+      tokens: token ? { token } : null,
+      isAuthenticated: !!token,
       isLoading: loading,
       login: handleLogin,
       logout,
     }),
-    [user, loading, handleLogin, logout]
+    [user, token, loading, handleLogin, logout]
   );
 };

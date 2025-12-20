@@ -9,6 +9,7 @@ let loginMock = vi.fn();
 vi.mock("@/hooks/useAuth", () => ({
   useAuth: () => ({
     user: null,
+    token: null,
     tokens: null,
     isAuthenticated: false,
     isLoading: false,
