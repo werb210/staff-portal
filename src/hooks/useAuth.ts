@@ -1,5 +1,6 @@
 import { useCallback, useMemo } from "react";
 import { useAuth as useAuthContext } from "@/auth/AuthContext";
+import type { LoginSuccess } from "@/services/auth";
 
 export type StaffUser = {
   id?: string;
@@ -18,7 +19,7 @@ export type AuthValue = {
   tokens: AuthTokens | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<LoginSuccess>;
   logout: () => void;
 };
 
@@ -27,7 +28,7 @@ export const useAuth = (): AuthValue => {
 
   const handleLogin: AuthValue["login"] = useCallback(
     async (email, password) => {
-      await login(email, password);
+      return login(email, password);
     },
     [login]
   );

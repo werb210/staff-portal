@@ -50,7 +50,9 @@ describe("LoginPage", () => {
   };
 
   test("submits credentials and navigates on success", async () => {
-    const loginMock = vi.fn().mockResolvedValue(undefined);
+    const loginMock = vi
+      .fn()
+      .mockResolvedValue({ accessToken: "token-123", user: { email: "demo@example.com" } });
     renderLogin(loginMock);
 
     fireEvent.change(screen.getByLabelText(/Email/i), { target: { value: "demo@example.com" } });
