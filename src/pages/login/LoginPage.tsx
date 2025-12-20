@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { apiFetch } from "@/services/api";
 import { checkStaffServerHealth } from "@/utils/api";
 
 export default function LoginPage() {
@@ -25,7 +26,8 @@ export default function LoginPage() {
 
     try {
       await login(email, password);
-      navigate("/", { replace: true });
+      await apiFetch("/api/auth/me");
+      navigate("/dashboard");
     } catch (err) {
       setError("Invalid credentials");
     }

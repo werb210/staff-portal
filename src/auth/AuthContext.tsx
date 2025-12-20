@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { apiClient } from "@/api/client";
+import { apiFetch } from "@/services/api";
+import { login as loginService } from "@/services/auth";
 
 type User = {
   id: string;
@@ -21,35 +22,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem("auth_token");
+    const token = localStorage.getItem("accessToken");
     if (!token) {
       setLoading(false);
       return;
     }
 
-    apiClient
-      .get("/api/auth/me")
-      .then((res) => setUser(res.data))
+    apiFetch("/api/auth/me")
+      .then((res) => res.json())
+      .then((data) => setUser(data))
       .catch(() => {
-        localStorage.removeItem("auth_token");
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
         setUser(null);
       })
       .finally(() => setLoading(false));
   }, []);
 
   const login = async (email: string, password: string) => {
-    const res = await apiClient.post("/api/auth/login", { email, password });
-
-    if (!res.data?.token || !res.data?.user) {
-      throw new Error("Invalid login");
-    }
-
-    localStorage.setItem("auth_token", res.data.token);
-    setUser(res.data.user);
+    const userData = await loginService(email, password);
+    setUser(userData);
   };
 
   const logout = () => {
-    localStorage.removeItem("auth_token");
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
     setUser(null);
     window.location.href = "/login";
   };
