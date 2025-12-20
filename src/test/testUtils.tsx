@@ -1,7 +1,7 @@
 import { render } from "@testing-library/react";
 import type { ReactElement, ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { AuthProvider } from "@/auth/AuthContext";
+import { AuthContext, type AuthContextType, AuthProvider } from "@/auth/AuthContext";
 import SiloContext, { type Silo } from "@/context/SiloContext";
 import LenderAuthContext, { type LenderAuthContextValue } from "@/lender/auth/LenderAuthContext";
 
@@ -25,20 +25,39 @@ const defaultLenderAuth: LenderAuthContextValue = {
   logout: () => undefined
 };
 
+type StaffRenderOptions = { silo?: Silo; auth?: Partial<AuthContextType> };
+
 export const renderWithProviders = (
   ui: ReactElement,
-  options?: { silo?: Silo }
+  options?: StaffRenderOptions
 ) => {
   const queryClient = createTestQueryClient();
   const silo = options?.silo ?? "BF";
+  const authValue: AuthContextType | null = options?.auth
+    ? {
+        user: null,
+        loading: false,
+        login: async () => undefined,
+        logout: () => undefined,
+        ...options.auth,
+      }
+    : null;
 
   const wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <SiloContext.Provider value={{ silo, setSilo: () => undefined }}>
-          {children}
-        </SiloContext.Provider>
-      </AuthProvider>
+      {authValue ? (
+        <AuthContext.Provider value={authValue}>
+          <SiloContext.Provider value={{ silo, setSilo: () => undefined }}>
+            {children}
+          </SiloContext.Provider>
+        </AuthContext.Provider>
+      ) : (
+        <AuthProvider>
+          <SiloContext.Provider value={{ silo, setSilo: () => undefined }}>
+            {children}
+          </SiloContext.Provider>
+        </AuthProvider>
+      )}
     </QueryClientProvider>
   );
 

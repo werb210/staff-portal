@@ -26,8 +26,13 @@ export default function LoginPage() {
 
     try {
       await login(email, password);
-      await apiFetch("/api/auth/me");
-      navigate("/dashboard");
+      try {
+        await apiFetch("/api/auth/me");
+      } catch {
+        // Ignore profile fetch errors on login so navigation is not blocked
+      }
+
+      navigate("/", { replace: true });
     } catch (err) {
       setError("Invalid credentials");
     }
