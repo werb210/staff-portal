@@ -29,25 +29,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [token, setToken] = useState<string | null>(() => getStoredAccessToken());
 
   useEffect(() => {
+    let mounted = true;
     const storedToken = getStoredAccessToken();
-    if (!storedToken) {
-      setReady(true);
-      return;
+
+    if (storedToken) {
+      setToken(storedToken);
+      apiClient.defaults.headers.common.Authorization = `Bearer ${storedToken}`;
     }
 
-    setToken(storedToken);
-    apiClient.defaults.headers.common.Authorization = `Bearer ${storedToken}`;
-
     apiClient
-      .get("/auth/me")
-      .then((res) => setUser(res.data))
-      .catch(() => {
-        clearStoredAccessToken();
-        setToken(null);
-        setUser(null);
-        delete apiClient.defaults.headers.common.Authorization;
+      .get("/api/auth/me")
+      .then((res) => {
+        if (mounted) setUser(res.data ?? null);
       })
-      .finally(() => setReady(true));
+      .catch(() => {
+        if (mounted) setUser(null);
+      })
+      .finally(() => {
+        if (mounted) setReady(true);
+      });
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const login = async (email: string, password: string) => {
