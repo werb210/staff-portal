@@ -20,12 +20,21 @@ import MarketingToDoList from "./ToDo/MarketingToDoList";
 
 const MarketingDashboard = () => {
   const { dateRange } = useMarketingStore();
-  const { data: attribution, isLoading: loadingAttribution } = useQuery({
+  const { data: attribution, isLoading: loadingAttribution, error: attributionError } = useQuery({
     queryKey: ["attribution", dateRange],
-    queryFn: () => fetchAttributionDashboard(dateRange)
+    queryFn: () => fetchAttributionDashboard(dateRange),
+    onError: (err) => console.error("Failed to load attribution", err)
   });
-  const { data: ads } = useQuery({ queryKey: ["ads-dashboard"], queryFn: fetchAds });
-  const { data: assets } = useQuery({ queryKey: ["assets"], queryFn: fetchAssets });
+  const { data: ads, error: adsError, isLoading: loadingAds } = useQuery({
+    queryKey: ["ads-dashboard"],
+    queryFn: fetchAds,
+    onError: (err) => console.error("Failed to load ads", err)
+  });
+  const { data: assets, error: assetsError } = useQuery({
+    queryKey: ["assets"],
+    queryFn: fetchAssets,
+    onError: (err) => console.error("Failed to load assets", err)
+  });
 
   return (
     <div className="grid gap-4">
@@ -39,9 +48,11 @@ const MarketingDashboard = () => {
           </ul>
         </Card>
         <Card title="Performance Snapshot">
-          {ads ? (
+          {adsError && <p className="text-red-700">Unable to load ads performance.</p>}
+          {loadingAds && <AppLoading />}
+          {!loadingAds && !adsError && (
             <Table headers={["Platform", "Spend", "Impr.", "Clicks", "Conv.", "CPQA"]}>
-              {ads.map((ad) => (
+              {ads?.map((ad) => (
                 <tr key={ad.id}>
                   <td>{ad.platform}</td>
                   <td>${ad.spend.toLocaleString()}</td>
@@ -56,12 +67,11 @@ const MarketingDashboard = () => {
                 </tr>
               ))}
             </Table>
-          ) : (
-            <AppLoading />
           )}
         </Card>
       </div>
 
+      {attributionError && <p className="text-red-700">Unable to load attribution analytics.</p>}
       <CampaignAnalytics />
       <CampaignList />
       <AdsList />
@@ -80,6 +90,7 @@ const MarketingDashboard = () => {
       <AttributionDashboard data={attribution} loading={loadingAttribution} />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {assetsError && <p className="text-red-700">Unable to load brand assets.</p>}
         <BrandLibrary assets={assets} />
         <MarketingToDoList />
       </div>

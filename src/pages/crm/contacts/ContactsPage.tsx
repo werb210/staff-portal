@@ -18,7 +18,15 @@ const ContactsPage = () => {
   const { silo, setSilo, filters, setFilters, resetFilters } = useCrmStore();
   const [selected, setSelected] = useState<Contact | null>(null);
   const [showForm, setShowForm] = useState(false);
-  const { data: contacts = [] } = useQuery({ queryKey: ["contacts", silo, filters], queryFn: fetchContacts });
+  const {
+    data: contacts = [],
+    isLoading,
+    error
+  } = useQuery({
+    queryKey: ["contacts", silo, filters],
+    queryFn: fetchContacts,
+    onError: (err) => console.error("Failed to load contacts", err)
+  });
 
   const filtered = useMemo(() => contacts, [contacts]);
 
@@ -67,16 +75,25 @@ const ContactsPage = () => {
             Reset
           </Button>
         </div>
-        <Table headers={["Name", "Email", "Phone", "Silo", "Owner", "Active", "Actions"]}>
-          {filtered.map((contact) => (
-            <ContactRow
-              key={contact.id}
-              contact={contact}
-              onSelect={setSelected}
-              onCall={() => setSelected(contact)}
-            />
-          ))}
-        </Table>
+        {error && <p className="text-red-700">Unable to load contacts.</p>}
+        {!error && (
+          <Table headers={["Name", "Email", "Phone", "Silo", "Owner", "Active", "Actions"]}>
+            {isLoading && (
+              <tr>
+                <td colSpan={7}>Loading contacts…</td>
+              </tr>
+            )}
+            {!isLoading &&
+              filtered.map((contact) => (
+                <ContactRow
+                  key={contact.id}
+                  contact={contact}
+                  onSelect={setSelected}
+                  onCall={() => setSelected(contact)}
+                />
+              ))}
+          </Table>
+        )}
       </Card>
       {showForm && (
         <Card title="New Contact" actions={<Button onClick={() => setShowForm(false)}>Close</Button>}>

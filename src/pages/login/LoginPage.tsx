@@ -21,7 +21,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate("/applications", { replace: true });
+      navigate("/dashboard", { replace: true });
     }
   }, [isAuthenticated, navigate]);
 
@@ -31,7 +31,7 @@ export default function LoginPage() {
 
     try {
       await login(email, password);
-      navigate("/applications", { replace: true });
+      navigate("/dashboard", { replace: true });
     } catch (err: any) {
       if (err?.response?.status === 401) {
         setError("Invalid credentials");

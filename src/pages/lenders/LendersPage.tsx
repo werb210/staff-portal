@@ -5,13 +5,18 @@ import { fetchLenders } from "@/api/lenders";
 import AppLoading from "@/components/layout/AppLoading";
 
 const LendersPage = () => {
-  const { data, isLoading } = useQuery({ queryKey: ["lenders"], queryFn: fetchLenders });
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["lenders"],
+    queryFn: fetchLenders,
+    onError: (err) => console.error("Failed to load lenders", err)
+  });
 
   return (
     <div className="page">
       <Card title="Lenders">
         {isLoading && <AppLoading />}
-        {!isLoading && (
+        {error && <p className="text-red-700">Unable to load lenders.</p>}
+        {!isLoading && !error && (
           <Table headers={["Name", "Region"]}>
             {data?.map((lender) => (
               <tr key={lender.id}>
