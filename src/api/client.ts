@@ -1,4 +1,5 @@
 import axios, { type AxiosRequestConfig } from "axios";
+import { buildApiUrl, redirectToLogin } from "@/services/api";
 import { clearStoredAccessToken, getStoredAccessToken } from "@/services/token";
 
 export const API_BASE = import.meta.env.VITE_API_BASE;
@@ -16,27 +17,45 @@ if (token) {
 }
 
 apiClient.interceptors.request.use((config: AuthenticatedRequestConfig) => {
-  if (config.skipAuth) return config;
+  const configWithUrl = {
+    ...config,
+    url: buildApiUrl(config.url ?? "")
+  } as AuthenticatedRequestConfig;
+
+  if (config.skipAuth) return configWithUrl;
 
   const storedToken = getStoredAccessToken();
-  if (storedToken) {
-    const headers = config.headers ?? {};
-    return {
-      ...config,
-      headers: { ...headers, Authorization: `Bearer ${storedToken}` }
-    } as AuthenticatedRequestConfig;
+  if (!storedToken) {
+    redirectToLogin();
+    return Promise.reject(new Error("Missing access token"));
   }
 
-  return config;
+  const headers = config.headers ?? {};
+  return {
+    ...configWithUrl,
+    headers: { ...headers, Authorization: `Bearer ${storedToken}` }
+  } as AuthenticatedRequestConfig;
 });
 
 apiClient.interceptors.response.use(
-  r => r,
+  response => {
+    if (response.status === 401) {
+      clearStoredAccessToken();
+      delete apiClient.defaults.headers.common.Authorization;
+      redirectToLogin();
+      return Promise.reject(new Error("Unauthorized"));
+    }
+
+    return response;
+  },
   err => {
     if (err.response?.status === 401) {
       clearStoredAccessToken();
       delete apiClient.defaults.headers.common.Authorization;
+      redirectToLogin();
     }
     return Promise.reject(err);
   }
 );
+
+export default apiClient;

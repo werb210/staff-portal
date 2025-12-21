@@ -18,17 +18,22 @@ const AppRouter = () => (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/lender/*" element={<LenderRoutes />} />
-      <Route element={<PrivateRoute allowedRoles={fullStaffRoles} />}>
-        <Route element={<AppLayout />}>
-          <Route index element={<DashboardPage />} />
-          <Route path="applications" element={<ApplicationsPage />} />
-          <Route path="crm" element={<CRMPage />} />
-          <Route path="communications" element={<CommunicationsPage />} />
-          <Route path="calendar" element={<CalendarPage />} />
-          <Route path="marketing" element={<MarketingPage />} />
-          <Route path="lenders" element={<LendersPage />} />
-          <Route path="settings" element={<SettingsPage />} />
-        </Route>
+      <Route
+        path="/"
+        element={
+          <PrivateRoute allowedRoles={fullStaffRoles}>
+            <AppLayout />
+          </PrivateRoute>
+        }
+      >
+        <Route index element={<DashboardPage />} />
+        <Route path="applications" element={<ApplicationsPage />} />
+        <Route path="crm/*" element={<CRMPage />} />
+        <Route path="communications" element={<CommunicationsPage />} />
+        <Route path="calendar" element={<CalendarPage />} />
+        <Route path="marketing" element={<MarketingPage />} />
+        <Route path="lenders" element={<LendersPage />} />
+        <Route path="settings" element={<SettingsPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

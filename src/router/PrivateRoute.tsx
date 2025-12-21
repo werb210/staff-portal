@@ -1,6 +1,5 @@
 import { Navigate, Outlet } from "react-router-dom";
-import { useAuth } from "../auth/AuthContext";
-import AppLoading from "@/components/layout/AppLoading";
+import { useAuth } from "@/auth/AuthContext";
 
 type PrivateRouteProps = {
   allowedRoles?: string[];
@@ -8,10 +7,10 @@ type PrivateRouteProps = {
 };
 
 export default function PrivateRoute({ allowedRoles, children }: PrivateRouteProps) {
-  const { user, loading } = useAuth();
+  const { user, status } = useAuth();
 
-  if (loading) return <AppLoading />;
-  if (!user) return <Navigate to="/login" replace />;
+  if (status === "loading") return null;
+  if (status === "unauthenticated" || !user) return <Navigate to="/login" replace />;
 
   if (allowedRoles && !allowedRoles.includes(user.role)) {
     return <div>Access Restricted</div>;
