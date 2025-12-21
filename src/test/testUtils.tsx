@@ -36,8 +36,9 @@ export const renderWithProviders = (
   const authValue: AuthContextType | null = options?.auth
     ? {
         user: null,
-        loading: false,
-        login: async () => undefined,
+        token: null,
+        status: "authenticated",
+        login: async () => ({ user: null as never, accessToken: "" }),
         logout: () => undefined,
         ...options.auth,
       }
