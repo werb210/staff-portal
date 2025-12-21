@@ -34,6 +34,14 @@ const SLFPipelineColumn = ({ stage, onCardClick, activeCard }: SLFPipelineColumn
     staleTime: 30_000
   });
 
+  const applications = Array.isArray(data)
+    ? data
+    : Array.isArray(data?.data)
+      ? data.data
+      : Array.isArray(data?.data?.items)
+        ? data.data.items
+        : [];
+
   return (
     <div className="pipeline-column" ref={setNodeRef} data-stage={stage.id}>
       <div className="pipeline-column__header">
@@ -52,8 +60,8 @@ const SLFPipelineColumn = ({ stage, onCardClick, activeCard }: SLFPipelineColumn
             <LoadingSkeleton />
           </>
         )}
-        {!isLoading && !data?.length && <EmptyState label={stage.label} />}
-        {data?.map((card) => (
+        {!isLoading && !applications.length && <EmptyState label={stage.label} />}
+        {applications.map((card) => (
           <SLFPipelineCard key={card.id} card={card} stageId={stage.id} onClick={onCardClick} />
         ))}
         {activeCard && <div className="pipeline-column__spacer" />}

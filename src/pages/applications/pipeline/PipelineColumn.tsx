@@ -39,6 +39,14 @@ const PipelineColumn = ({ stage, filters, onCardClick, activeCard, draggingFromS
     staleTime: 30_000
   });
 
+  const applications = Array.isArray(data)
+    ? data
+    : Array.isArray(data?.data)
+      ? data.data
+      : Array.isArray(data?.data?.items)
+        ? data.data.items
+        : [];
+
   const canReceive = activeCard ? canMoveCardToStage(activeCard, draggingFromStage ?? null, stage.id) : true;
 
   return (
@@ -62,8 +70,8 @@ const PipelineColumn = ({ stage, filters, onCardClick, activeCard, draggingFromS
             <LoadingSkeleton />
           </>
         )}
-        {!isLoading && !data?.length && <EmptyState label={stage.label} />}
-        {data?.map((card) => (
+        {!isLoading && !applications.length && <EmptyState label={stage.label} />}
+        {applications.map((card) => (
           <PipelineCard key={card.id} card={card} stageId={stage.id} onClick={onCardClick} />
         ))}
         {activeCard && <div className="pipeline-column__spacer" />}
