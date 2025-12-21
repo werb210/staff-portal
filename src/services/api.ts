@@ -1,4 +1,5 @@
 const API_BASE = "https://server.boreal.financial";
+const ACCESS_TOKEN_KEY = "accessToken";
 
 function baseHasApiPrefix(base: string) {
   return base.replace(/\/+$/, "").endsWith("/api");
@@ -25,8 +26,19 @@ export const redirectToLogin = () => {
   }
 };
 
+export const getStoredAccessToken = () => localStorage.getItem(ACCESS_TOKEN_KEY);
+
+export const persistAccessToken = (token: string | null) => {
+  if (token) {
+    localStorage.setItem(ACCESS_TOKEN_KEY, token);
+    return;
+  }
+
+  localStorage.removeItem(ACCESS_TOKEN_KEY);
+};
+
 export const handleUnauthorized = () => {
-  localStorage.removeItem("accessToken");
+  persistAccessToken(null);
   unauthorizedHandler?.();
   redirectToLogin();
 };
@@ -36,7 +48,7 @@ export const setUnauthorizedHandler = (handler: (() => void) | null) => {
 };
 
 export async function apiFetch<T = any>(path: string, options: ApiOptions = {}): Promise<T> {
-  const token = localStorage.getItem("accessToken");
+  const token = getStoredAccessToken();
   const headers = new Headers(options.headers || undefined);
   const requiresAuth = !options.skipAuth;
 

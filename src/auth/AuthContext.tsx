@@ -1,5 +1,11 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
-import { apiFetch, setUnauthorizedHandler } from "@/services/api";
+import apiClient from "@/api/client";
+import {
+  apiFetch,
+  getStoredAccessToken,
+  persistAccessToken,
+  setUnauthorizedHandler
+} from "@/services/api";
 import { login as loginService, LoginSuccess } from "@/services/auth";
 
 type User = {
@@ -20,8 +26,16 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(() => localStorage.getItem("accessToken"));
+  const [token, setToken] = useState<string | null>(() => getStoredAccessToken());
   const [loading, setLoading] = useState(true);
+
+  const applyAuthHeader = useCallback((nextToken: string | null) => {
+    if (nextToken) {
+      apiClient.defaults.headers.common.Authorization = `Bearer ${nextToken}`;
+    } else {
+      delete apiClient.defaults.headers.common.Authorization;
+    }
+  }, []);
 
   const redirectToLogin = useCallback(() => {
     if (window.location.pathname !== "/login") {
@@ -35,10 +49,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const clearAuthState = useCallback(() => {
-    localStorage.removeItem("accessToken");
+    persistAccessToken(null);
     setToken(null);
     setUser(null);
-  }, []);
+    applyAuthHeader(null);
+  }, [applyAuthHeader]);
 
   const logout = useCallback(() => {
     clearAuthState();
@@ -55,6 +70,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return () => setUnauthorizedHandler(null);
   }, [clearAuthState, redirectToLogin]);
+
+  useEffect(() => {
+    applyAuthHeader(token);
+  }, [applyAuthHeader, token]);
 
   useEffect(() => {
     if (!token) {
@@ -78,7 +97,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       throw new Error("Missing access token");
     }
 
-    localStorage.setItem("accessToken", accessToken);
+    persistAccessToken(accessToken);
+    applyAuthHeader(accessToken);
     setToken(accessToken);
     setUser(userData);
 

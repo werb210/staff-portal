@@ -1,5 +1,10 @@
 import axios, { AxiosError, type AxiosRequestConfig } from "axios";
-import { API_BASE, buildApiUrl, handleUnauthorized } from "@/services/api";
+import {
+  API_BASE,
+  buildApiUrl,
+  getStoredAccessToken,
+  handleUnauthorized
+} from "@/services/api";
 
 type AuthenticatedRequestConfig = AxiosRequestConfig & {
   skipAuth?: boolean;
@@ -13,6 +18,11 @@ const apiClient = axios.create({
   withCredentials: false,
 });
 
+const persistedToken = getStoredAccessToken();
+if (persistedToken) {
+  apiClient.defaults.headers.common.Authorization = `Bearer ${persistedToken}`;
+}
+
 apiClient.interceptors.request.use((config: AuthenticatedRequestConfig) => {
   const url = config.url?.startsWith("http")
     ? config.url
@@ -22,7 +32,7 @@ apiClient.interceptors.request.use((config: AuthenticatedRequestConfig) => {
     return { ...config, url } as AuthenticatedRequestConfig;
   }
 
-  const token = localStorage.getItem("accessToken");
+  const token = getStoredAccessToken();
   if (!token) {
     handleUnauthorized();
     throw new Error("Missing access token");
@@ -45,6 +55,7 @@ apiClient.interceptors.response.use(
   (response) => {
     const requestConfig = response.config as AuthenticatedRequestConfig | undefined;
     if (response.status === 401 && !requestConfig?.skipAuth) {
+      delete apiClient.defaults.headers.common.Authorization;
       handleUnauthorized();
       return Promise.reject(
         new AxiosError("Unauthorized", undefined, response.config, response.request, response)
@@ -58,6 +69,7 @@ apiClient.interceptors.response.use(
     const requestConfig = error.config as AuthenticatedRequestConfig | undefined;
 
     if (responseStatus === 401 && !requestConfig?.skipAuth) {
+      delete apiClient.defaults.headers.common.Authorization;
       handleUnauthorized();
     }
 
