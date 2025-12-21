@@ -21,10 +21,11 @@ const CommunicationsPage = () => {
   } = useCommunicationsStore();
   const selectedConversation = conversations.find((conv) => conv.id === selectedConversationId);
 
-  const { isLoading } = useQuery({
+  const { isLoading, error } = useQuery({
     queryKey: ["communications", "threads"],
     queryFn: fetchCommunicationThreads,
-    onSuccess: () => loadConversations()
+    onSuccess: () => loadConversations(),
+    onError: (err) => console.error("Failed to load communications", err)
   });
 
   useEffect(() => {
@@ -37,7 +38,8 @@ const CommunicationsPage = () => {
     <div className="page">
       <Card title="Communications Control Room">
         {isLoading && <AppLoading />}
-        {!isLoading && (
+        {error && <p className="text-red-700">Unable to load conversations.</p>}
+        {!isLoading && !error && (
           <div className="grid grid-cols-10 gap-4 h-[70vh]">
             <div className="col-span-3 border-r pr-3">
               <ConversationList

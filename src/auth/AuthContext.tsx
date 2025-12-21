@@ -20,9 +20,10 @@ export type AuthContextType = {
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+  const storedToken = getStoredAccessToken();
   const [user, setUser] = useState<any | null>(null);
-  const [token, setToken] = useState<string | null>(() => getStoredAccessToken());
-  const [status, setStatus] = useState<AuthStatus>("loading");
+  const [token, setToken] = useState<string | null>(() => storedToken);
+  const [status, setStatus] = useState<AuthStatus>(storedToken ? "loading" : "unauthenticated");
 
   useEffect(() => {
     if (!token) {
@@ -40,6 +41,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setUser(data);
         setStatus("authenticated");
       } catch (error) {
+        console.error("Auth bootstrap failed", error);
         clearStoredAccessToken();
         setToken(null);
         setUser(null);

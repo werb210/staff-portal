@@ -17,7 +17,15 @@ const CompaniesPage = () => {
   const [selected, setSelected] = useState<Company | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [search, setSearch] = useState("");
-  const { data: companies = [] } = useQuery({ queryKey: ["companies", silo], queryFn: fetchCompanies });
+  const {
+    data: companies = [],
+    isLoading,
+    error
+  } = useQuery({
+    queryKey: ["companies", silo],
+    queryFn: fetchCompanies,
+    onError: (err) => console.error("Failed to load companies", err)
+  });
 
   const filtered = companies.filter(
     (company) =>
@@ -43,11 +51,20 @@ const CompaniesPage = () => {
         <div className="flex gap-2 mb-2 items-center">
           <Input placeholder="Search" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
-        <Table headers={["Name", "Industry", "Silo", "Owner", "Tags", "Actions"]}>
-          {filtered.map((company) => (
-            <CompanyRow key={company.id} company={company} onSelect={setSelected} />
-          ))}
-        </Table>
+        {error && <p className="text-red-700">Unable to load companies.</p>}
+        {!error && (
+          <Table headers={["Name", "Industry", "Silo", "Owner", "Tags", "Actions"]}>
+            {isLoading && (
+              <tr>
+                <td colSpan={6}>Loading companies…</td>
+              </tr>
+            )}
+            {!isLoading &&
+              filtered.map((company) => (
+                <CompanyRow key={company.id} company={company} onSelect={setSelected} />
+              ))}
+          </Table>
+        )}
       </Card>
       {showForm && (
         <Card title="New Company" actions={<Button onClick={() => setShowForm(false)}>Close</Button>}>

@@ -25,7 +25,15 @@ const filterTasks = (tasks: TaskItem[], filters: ReturnType<typeof useTasksStore
 const TaskPane = () => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const { data: tasks = [] } = useQuery({ queryKey: ["tasks"], queryFn: fetchTasks });
+  const {
+    data: tasks = [],
+    isLoading,
+    error
+  } = useQuery({
+    queryKey: ["tasks"],
+    queryFn: fetchTasks,
+    onError: (err) => console.error("Failed to load tasks", err)
+  });
   const { filters, setFilters, selectedTask, setSelectedTask, toggleCompletion } = useTasksStore();
   const [showEditor, setShowEditor] = useState(false);
   const tasksToDisplay = useMemo(() => filterTasks(tasks, filters, user?.id), [filters, tasks, user?.id]);
@@ -84,41 +92,57 @@ const TaskPane = () => {
         <section>
           <h4>My Tasks</h4>
           <ul>
-            {tasksToDisplay
-              .filter((task) => task.assignedToUserId === user?.id)
-              .map((task) => (
-                <TaskListItem key={task.id} task={task} onSelect={setSelectedTask} onToggleComplete={handleToggleComplete} />
-              ))}
+            {isLoading && <li>Loading tasks…</li>}
+            {error && <li className="text-red-700">Unable to load tasks.</li>}
+            {!isLoading &&
+              !error &&
+              tasksToDisplay
+                .filter((task) => task.assignedToUserId === user?.id)
+                .map((task) => (
+                  <TaskListItem key={task.id} task={task} onSelect={setSelectedTask} onToggleComplete={handleToggleComplete} />
+                ))}
           </ul>
         </section>
         <section>
           <h4>Assigned Tasks</h4>
           <ul>
-            {tasksToDisplay
-              .filter((task) => task.assignedToUserId && task.assignedToUserId !== user?.id)
-              .map((task) => (
-                <TaskListItem key={task.id} task={task} onSelect={setSelectedTask} onToggleComplete={handleToggleComplete} />
-              ))}
+            {isLoading && <li>Loading tasks…</li>}
+            {error && <li className="text-red-700">Unable to load tasks.</li>}
+            {!isLoading &&
+              !error &&
+              tasksToDisplay
+                .filter((task) => task.assignedToUserId && task.assignedToUserId !== user?.id)
+                .map((task) => (
+                  <TaskListItem key={task.id} task={task} onSelect={setSelectedTask} onToggleComplete={handleToggleComplete} />
+                ))}
           </ul>
         </section>
         <section>
           <h4>Due Today</h4>
           <ul>
-            {tasksToDisplay
-              .filter((task) => task.dueDate && new Date(task.dueDate).toDateString() === new Date().toDateString())
-              .map((task) => (
-                <TaskListItem key={task.id} task={task} onSelect={setSelectedTask} onToggleComplete={handleToggleComplete} />
-              ))}
+            {isLoading && <li>Loading tasks…</li>}
+            {error && <li className="text-red-700">Unable to load tasks.</li>}
+            {!isLoading &&
+              !error &&
+              tasksToDisplay
+                .filter((task) => task.dueDate && new Date(task.dueDate).toDateString() === new Date().toDateString())
+                .map((task) => (
+                  <TaskListItem key={task.id} task={task} onSelect={setSelectedTask} onToggleComplete={handleToggleComplete} />
+                ))}
           </ul>
         </section>
         <section>
           <h4>Overdue</h4>
           <ul>
-            {tasksToDisplay
-              .filter((task) => task.dueDate && new Date(task.dueDate) < new Date())
-              .map((task) => (
-                <TaskListItem key={task.id} task={task} onSelect={setSelectedTask} onToggleComplete={handleToggleComplete} />
-              ))}
+            {isLoading && <li>Loading tasks…</li>}
+            {error && <li className="text-red-700">Unable to load tasks.</li>}
+            {!isLoading &&
+              !error &&
+              tasksToDisplay
+                .filter((task) => task.dueDate && new Date(task.dueDate) < new Date())
+                .map((task) => (
+                  <TaskListItem key={task.id} task={task} onSelect={setSelectedTask} onToggleComplete={handleToggleComplete} />
+                ))}
           </ul>
         </section>
       </div>

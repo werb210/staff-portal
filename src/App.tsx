@@ -11,6 +11,7 @@ import CalendarPage from "./pages/calendar/CalendarPage";
 import MarketingPage from "./pages/marketing/MarketingPage";
 import LendersPage from "./pages/lenders/LendersPage";
 import SettingsPage from "./pages/settings/SettingsPage";
+import TaskPane from "./pages/tasks/TaskPane";
 
 export default function App() {
   return (
@@ -26,10 +27,13 @@ export default function App() {
             }
           >
             <Route path="/" element={<DashboardPage />} />
+            <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/applications" element={<ApplicationsPage />} />
             <Route path="/crm" element={<CRMPage />} />
             <Route path="/communications" element={<CommunicationsPage />} />
+            <Route path="/comms" element={<CommunicationsPage />} />
             <Route path="/calendar" element={<CalendarPage />} />
+            <Route path="/tasks" element={<TaskPane />} />
             <Route path="/marketing" element={<MarketingPage />} />
             <Route path="/lenders" element={<LendersPage />} />
             <Route path="/settings" element={<SettingsPage />} />
