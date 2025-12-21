@@ -1,4 +1,5 @@
 import { apiClient } from "./client";
+import { normalizeArray } from "@/utils/normalize";
 
 export type Lender = {
   id: string;
@@ -14,7 +15,10 @@ export type LenderMatch = {
   requiredDocsStatus?: string;
 };
 
-export const fetchLenders = () => apiClient.get<Lender[]>("/lenders");
+export const fetchLenders = async () => {
+  const res = await apiClient.get("/api/lenders");
+  return normalizeArray<Lender>(res.data);
+};
 
 export const fetchLenderMatches = (applicationId: string) =>
   apiClient.get<LenderMatch[]>(`/applications/${applicationId}/lenders`);
