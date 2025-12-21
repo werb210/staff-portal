@@ -23,8 +23,9 @@ import LenderRoutes from "./router/lenderRoutes";
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 60_000,
-      refetchOnWindowFocus: false,
+      staleTime: 0,
+      refetchOnWindowFocus: true,
+      refetchOnMount: "always",
       retry: 1
     }
   }
