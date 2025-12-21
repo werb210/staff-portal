@@ -7,6 +7,6 @@ test('login and reach dashboard', async ({ page }) => {
   await page.fill('input[type="password"]', '1Sucker1!');
   await page.click('button[type="submit"]');
 
-  await expect(page).toHaveURL(/dashboard/);
+  await page.waitForURL('**/dashboard');
   await expect(page.locator('text=Dashboard')).toBeVisible();
 });
