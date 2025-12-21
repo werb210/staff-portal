@@ -32,8 +32,12 @@ export default function LoginPage() {
     try {
       await login(email, password);
       navigate("/applications", { replace: true });
-    } catch (err) {
-      setError("Invalid credentials");
+    } catch (err: any) {
+      if (err?.response?.status === 401) {
+        setError("Invalid credentials");
+      } else {
+        setError("Authentication failed");
+      }
     }
   };
 
