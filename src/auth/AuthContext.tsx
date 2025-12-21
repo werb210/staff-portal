@@ -1,12 +1,11 @@
-import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
-import apiClient from "@/api/client";
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { apiClient } from "@/api/client";
 import {
-  apiFetch,
+  clearStoredAccessToken,
   getStoredAccessToken,
-  persistAccessToken,
-  setUnauthorizedHandler
-} from "@/services/api";
-import { login as loginService, LoginSuccess } from "@/services/auth";
+  setStoredAccessToken
+} from "@/services/token";
+import type { LoginSuccess } from "@/services/auth";
 
 type User = {
   id: string;
@@ -25,95 +24,55 @@ export type AuthContextType = {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [ready, setReady] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(() => getStoredAccessToken());
-  const [loading, setLoading] = useState(true);
-
-  const applyAuthHeader = useCallback((nextToken: string | null) => {
-    if (nextToken) {
-      apiClient.defaults.headers.common.Authorization = `Bearer ${nextToken}`;
-    } else {
-      delete apiClient.defaults.headers.common.Authorization;
-    }
-  }, []);
-
-  const redirectToLogin = useCallback(() => {
-    if (window.location.pathname !== "/login") {
-      if (import.meta.env.MODE === "test") {
-        window.history.replaceState({}, "", "/login");
-        window.dispatchEvent(new PopStateEvent("popstate"));
-        return;
-      }
-      window.location.href = "/login";
-    }
-  }, []);
-
-  const clearAuthState = useCallback(() => {
-    persistAccessToken(null);
-    setToken(null);
-    setUser(null);
-    applyAuthHeader(null);
-  }, [applyAuthHeader]);
-
-  const logout = useCallback(() => {
-    clearAuthState();
-    setLoading(false);
-    redirectToLogin();
-  }, [clearAuthState, redirectToLogin]);
 
   useEffect(() => {
-    setUnauthorizedHandler(() => {
-      clearAuthState();
-      setLoading(false);
-      redirectToLogin();
-    });
-
-    return () => setUnauthorizedHandler(null);
-  }, [clearAuthState, redirectToLogin]);
-
-  useEffect(() => {
-    applyAuthHeader(token);
-  }, [applyAuthHeader, token]);
-
-  useEffect(() => {
-    if (!token) {
-      clearAuthState();
-      setLoading(false);
-      redirectToLogin();
+    const storedToken = getStoredAccessToken();
+    if (!storedToken) {
+      setReady(true);
       return;
     }
 
-    apiFetch<User>("/api/auth/me")
-      .then((data) => setUser(data))
+    setToken(storedToken);
+    apiClient.defaults.headers.common.Authorization = `Bearer ${storedToken}`;
+
+    apiClient
+      .get("/auth/me")
+      .then((res) => setUser(res.data))
       .catch(() => {
-        logout();
+        clearStoredAccessToken();
+        setToken(null);
+        setUser(null);
+        delete apiClient.defaults.headers.common.Authorization;
       })
-      .finally(() => setLoading(false));
-  }, [token, clearAuthState, redirectToLogin, logout]);
+      .finally(() => setReady(true));
+  }, []);
 
   const login = async (email: string, password: string) => {
-    const { user: userData, accessToken } = await loginService(email, password);
-    if (!accessToken) {
-      throw new Error("Missing access token");
-    }
+    const res = await apiClient.post<LoginSuccess>("/auth/login", { email, password });
 
-    persistAccessToken(accessToken);
-    applyAuthHeader(accessToken);
-    setToken(accessToken);
-    setUser(userData);
+    setStoredAccessToken(res.data.accessToken);
+    setToken(res.data.accessToken);
+    apiClient.defaults.headers.common.Authorization = `Bearer ${res.data.accessToken}`;
 
-    setUnauthorizedHandler(() => {
-      clearAuthState();
-      setLoading(false);
-      redirectToLogin();
-    });
+    const me = await apiClient.get<User>("/auth/me");
+    setUser(me.data);
 
-    return { user: userData, accessToken };
+    return { user: me.data, accessToken: res.data.accessToken };
+  };
+
+  const logout = () => {
+    clearStoredAccessToken();
+    setToken(null);
+    setUser(null);
+    delete apiClient.defaults.headers.common.Authorization;
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, logout }}>
-      {children}
+    <AuthContext.Provider value={{ user, token, loading: !ready, login, logout }}>
+      {ready && children}
     </AuthContext.Provider>
   );
 };
