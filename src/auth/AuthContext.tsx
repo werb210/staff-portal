@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { apiClient } from "@/api/client";
+import AppLoading from "@/components/layout/AppLoading";
 import {
   clearStoredAccessToken,
   getStoredAccessToken,
@@ -24,7 +25,7 @@ export type AuthContextType = {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [ready, setReady] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(() => getStoredAccessToken());
 
@@ -37,17 +38,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       apiClient.defaults.headers.common.Authorization = `Bearer ${storedToken}`;
     }
 
-    apiClient
-      .get("/api/auth/me")
-      .then((res) => {
+    const loadUser = async () => {
+      try {
+        const res = await apiClient.get<User>("/auth/me");
         if (mounted) setUser(res.data ?? null);
-      })
-      .catch(() => {
-        if (mounted) setUser(null);
-      })
-      .finally(() => {
-        if (mounted) setReady(true);
-      });
+      } catch {
+        if (mounted) {
+          setUser(null);
+          clearStoredAccessToken();
+          setToken(null);
+          delete apiClient.defaults.headers.common.Authorization;
+        }
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+
+    loadUser();
 
     return () => {
       mounted = false;
@@ -75,8 +82,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading: !ready, login, logout }}>
-      {ready && children}
+    <AuthContext.Provider value={{ user, token, loading, login, logout }}>
+      {loading ? <AppLoading /> : children}
     </AuthContext.Provider>
   );
 };
