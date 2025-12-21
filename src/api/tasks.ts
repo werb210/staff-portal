@@ -19,8 +19,8 @@ export type TaskItem = {
 };
 
 export const fetchTasks = async () => {
-  const res = await apiClient.get<TaskItem[] | { items: TaskItem[] }>("/api/tasks");
-  return normalizeArray(res.data) as TaskItem[];
+  const res = await apiClient.get("/api/tasks");
+  return normalizeArray<TaskItem>(res.data);
 };
 
 export const createTask = (task: Partial<TaskItem>) => apiClient.post<TaskItem>("/api/tasks", task);

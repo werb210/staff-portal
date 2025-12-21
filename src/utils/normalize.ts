@@ -1,5 +1,5 @@
-export function normalizeArray(input: any): any[] {
+export function normalizeArray<T>(input: any): T[] {
   if (Array.isArray(input)) return input;
-  if (Array.isArray(input?.items)) return input.items;
+  if (input && Array.isArray(input.items)) return input.items;
   return [];
 }
