@@ -1,4 +1,5 @@
 import { apiClient } from "./client";
+import { normalizeArray } from "@/utils/normalize";
 
 export type TaskStatus = "todo" | "in-progress" | "done";
 export type TaskPriority = "low" | "medium" | "high";
@@ -17,7 +18,10 @@ export type TaskItem = {
   relatedContactId?: string;
 };
 
-export const fetchTasks = () => apiClient.get<TaskItem[]>("/api/tasks");
+export const fetchTasks = async () => {
+  const res = await apiClient.get<TaskItem[] | { items: TaskItem[] }>("/api/tasks");
+  return normalizeArray(res.data) as TaskItem[];
+};
 
 export const createTask = (task: Partial<TaskItem>) => apiClient.post<TaskItem>("/api/tasks", task);
 
