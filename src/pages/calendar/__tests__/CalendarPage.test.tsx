@@ -1,6 +1,7 @@
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { renderWithProviders } from "@/test/testUtils";
+import { actAsync } from "@/test/testUtils";
+import { renderWithProviders } from "@/test/renderHelpers";
 import { useTasksStore } from "@/state/tasks.store";
 
 const now = new Date();
@@ -66,27 +67,41 @@ describe("CalendarPage", () => {
   });
 
   it("renders day/week/month views", async () => {
-    renderWithProviders(<CalendarPage />);
+    await actAsync(() => {
+      renderWithProviders(<CalendarPage />);
+    });
     await screen.findByRole("button", { name: /Month/ });
 
-    fireEvent.click(screen.getByRole("button", { name: /Day/ }));
+    await actAsync(() => {
+      fireEvent.click(screen.getByRole("button", { name: /Day/ }));
+    });
     await waitFor(() => expect(document.querySelector(".calendar-view--day")).not.toBeNull());
 
-    fireEvent.click(screen.getByRole("button", { name: /Week/ }));
+    await actAsync(() => {
+      fireEvent.click(screen.getByRole("button", { name: /Week/ }));
+    });
     await waitFor(() => expect(document.querySelector(".calendar-view--week")).not.toBeNull());
 
-    fireEvent.click(screen.getByRole("button", { name: /Month/ }));
+    await actAsync(() => {
+      fireEvent.click(screen.getByRole("button", { name: /Month/ }));
+    });
     await waitFor(() => expect(document.querySelector(".calendar-view--month")).not.toBeNull());
   });
 
   it("shows O365 events with attendees", async () => {
-    renderWithProviders(<CalendarPage />);
+    await actAsync(() => {
+      renderWithProviders(<CalendarPage />);
+    });
     await waitFor(() => expect(mockedCalendar.fetchO365Events).toHaveBeenCalled());
   });
 
   it("allows creating local events", async () => {
-    renderWithProviders(<CalendarPage />);
-    fireEvent.click(screen.getByRole("button", { name: /Add Event/ }));
+    await actAsync(() => {
+      renderWithProviders(<CalendarPage />);
+    });
+    await actAsync(() => {
+      fireEvent.click(screen.getByRole("button", { name: /Add Event/ }));
+    });
     const form = screen.getByTestId("event-form");
     fireEvent.change(within(form).getByPlaceholderText(/Title/), { target: { value: "Check-in" } });
     const dateInputs = within(form)
@@ -94,19 +109,25 @@ describe("CalendarPage", () => {
       .filter((input) => (input as HTMLInputElement).type === "datetime-local") as HTMLInputElement[];
     fireEvent.change(dateInputs[0], { target: { value: "2024-01-02T09:00" } });
     fireEvent.change(dateInputs[1], { target: { value: "2024-01-02T10:00" } });
-    fireEvent.click(screen.getByText(/Save Event/));
+    await actAsync(() => {
+      fireEvent.click(screen.getByText(/Save Event/));
+    });
 
     await waitFor(() => expect(mockedCalendar.createLocalEvent).toHaveBeenCalled());
   });
 
   it("renders task pane with filters and completion", async () => {
-    renderWithProviders(<CalendarPage />);
+    await actAsync(() => {
+      renderWithProviders(<CalendarPage />);
+    });
     expect(await screen.findByText(/My Task/)).toBeInTheDocument();
     expect(screen.getByText(/Assigned Task/)).toBeInTheDocument();
   });
 
   it("supports linking tasks to contacts and applications", async () => {
-    renderWithProviders(<CalendarPage />);
+    await actAsync(() => {
+      renderWithProviders(<CalendarPage />);
+    });
     await waitFor(() => expect(screen.queryAllByTestId("task-contact").length).toBeGreaterThan(0));
     expect(screen.queryAllByTestId("task-application").length).toBeGreaterThan(0);
   });

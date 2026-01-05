@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import { MemoryRouter } from "react-router-dom";
 import LoginPage from "./LoginPage";
+import { actAsync } from "@/test/testUtils";
 
 let loginMock = vi.fn();
 
@@ -40,25 +41,31 @@ describe("LoginPage", () => {
     navigateMock.mockReset();
   });
 
-  const renderLogin = (login = vi.fn()) => {
+  const renderLogin = async (login = vi.fn()) => {
     loginMock = login;
 
-    return render(
-      <MemoryRouter>
-        <LoginPage />
-      </MemoryRouter>
-    );
+    let renderResult: ReturnType<typeof render> | undefined;
+    await actAsync(() => {
+      renderResult = render(
+        <MemoryRouter>
+          <LoginPage />
+        </MemoryRouter>
+      );
+    });
+    return renderResult;
   };
 
   test("submits credentials and navigates on success", async () => {
     const loginMock = vi
       .fn()
       .mockResolvedValue({ accessToken: "token-123", user: { email: "demo@example.com" } });
-    renderLogin(loginMock);
+    await renderLogin(loginMock);
 
     fireEvent.change(screen.getByLabelText(/Email/i), { target: { value: "demo@example.com" } });
     fireEvent.change(screen.getByLabelText(/Password/i), { target: { value: "password123" } });
-    fireEvent.click(screen.getByRole("button", { name: /Login/i }));
+    await actAsync(() => {
+      fireEvent.click(screen.getByRole("button", { name: /Login/i }));
+    });
 
     await waitFor(() => expect(loginMock).toHaveBeenCalledWith("demo@example.com", "password123"));
     expect(navigateMock).toHaveBeenCalledWith("/applications", { replace: true });
@@ -66,11 +73,13 @@ describe("LoginPage", () => {
 
   test("shows an error when login fails", async () => {
     const loginMock = vi.fn().mockRejectedValue({ response: { status: 401 } });
-    renderLogin(loginMock);
+    await renderLogin(loginMock);
 
     fireEvent.change(screen.getByLabelText(/Email/i), { target: { value: "demo@example.com" } });
     fireEvent.change(screen.getByLabelText(/Password/i), { target: { value: "wrong" } });
-    fireEvent.click(screen.getByRole("button", { name: /Login/i }));
+    await actAsync(() => {
+      fireEvent.click(screen.getByRole("button", { name: /Login/i }));
+    });
 
     await waitFor(() => expect(loginMock).toHaveBeenCalled());
     expect(navigateMock).not.toHaveBeenCalled();

@@ -8,7 +8,8 @@ import VoiceDialer from "@/components/dialer/VoiceDialer";
 import IncomingCallToast from "@/components/dialer/IncomingCallToast";
 import SMSComposer from "@/components/sms/SMSComposer";
 import EmailViewer from "@/components/email/EmailViewer";
-import { renderWithProviders } from "@/test/testUtils";
+import { actAsync } from "@/test/testUtils";
+import { renderWithProviders } from "@/test/renderHelpers";
 import { useCrmStore } from "@/state/crm.store";
 import type { Contact } from "@/api/crm";
 
@@ -34,7 +35,9 @@ afterEach(() => {
 
 describe("CRM Contacts", () => {
   it("renders contact list with search and filters", async () => {
-    renderWithProviders(<ContactsPage />);
+    await actAsync(() => {
+      renderWithProviders(<ContactsPage />);
+    });
     expect(await screen.findByText("Jane Doe")).toBeInTheDocument();
 
     const searchInput = screen.getByPlaceholderText("Search");
@@ -47,7 +50,9 @@ describe("CRM Contacts", () => {
   });
 
   it("opens and closes contact drawer", async () => {
-    renderWithProviders(<ContactsPage />);
+    await actAsync(() => {
+      renderWithProviders(<ContactsPage />);
+    });
     const detailsButton = await screen.findByText("Details");
     await userEvent.click(detailsButton);
     expect(await screen.findByTestId("contact-drawer")).toBeInTheDocument();
@@ -58,7 +63,9 @@ describe("CRM Contacts", () => {
   });
 
   it("mounts the calling interface", async () => {
-    renderWithProviders(<ContactsPage />);
+    await actAsync(() => {
+      renderWithProviders(<ContactsPage />);
+    });
     const detailsButton = await screen.findByText("Details");
     await userEvent.click(detailsButton);
     const drawer = await screen.findByTestId("contact-drawer");
@@ -68,17 +75,24 @@ describe("CRM Contacts", () => {
   });
 
   it("filters by silo", async () => {
-    const { rerender } = renderWithProviders(<ContactsPage />);
+    let renderResult: ReturnType<typeof renderWithProviders> | undefined;
+    await actAsync(() => {
+      renderResult = renderWithProviders(<ContactsPage />);
+    });
     expect(await screen.findByText("Jane Doe")).toBeInTheDocument();
     useCrmStore.getState().setSilo("SLF");
-    rerender(<ContactsPage />);
+    await actAsync(() => {
+      renderResult?.rerender(<ContactsPage />);
+    });
     await waitFor(() => expect(screen.queryByText("Jane Doe")).not.toBeInTheDocument());
   });
 });
 
 describe("CRM Companies", () => {
   it("renders companies list and drawer", async () => {
-    renderWithProviders(<CompaniesPage />);
+    await actAsync(() => {
+      renderWithProviders(<CompaniesPage />);
+    });
     expect(await screen.findByText("Boreal Finance")).toBeInTheDocument();
     const detailsButton = await screen.findByText("Details");
     await userEvent.click(detailsButton);
@@ -87,25 +101,31 @@ describe("CRM Companies", () => {
 });
 
 describe("Communications", () => {
-  it("shows incoming call toast", () => {
-    render(
-      <IncomingCallToast
-        from="+1-555-999-0000"
-        onAccept={() => undefined}
-        onDismiss={() => undefined}
-        onViewRecord={() => undefined}
-      />
-    );
+  it("shows incoming call toast", async () => {
+    await actAsync(() => {
+      render(
+        <IncomingCallToast
+          from="+1-555-999-0000"
+          onAccept={() => undefined}
+          onDismiss={() => undefined}
+          onViewRecord={() => undefined}
+        />
+      );
+    });
     expect(screen.getByTestId("incoming-call-toast")).toBeInTheDocument();
   });
 
   it("renders SMS thread and composer", async () => {
-    renderWithProviders(<SMSComposer visible contact={janeContact} onClose={() => undefined} />);
+    await actAsync(() => {
+      renderWithProviders(<SMSComposer visible contact={janeContact} onClose={() => undefined} />);
+    });
     expect(await screen.findByTestId("sms-thread")).toBeInTheDocument();
   });
 
   it("renders email viewer", async () => {
-    renderWithProviders(<EmailViewer visible contactId="c1" onClose={() => undefined} />);
+    await actAsync(() => {
+      renderWithProviders(<EmailViewer visible contactId="c1" onClose={() => undefined} />);
+    });
     expect(await screen.findByTestId("email-viewer")).toBeInTheDocument();
     expect(await screen.findByTestId("email-body")).toBeInTheDocument();
   });
@@ -113,7 +133,9 @@ describe("Communications", () => {
 
 describe("Timeline", () => {
   it("merges all event types", async () => {
-    renderWithProviders(<TimelineFeed entityId="c1" entityType="contact" />);
+    await actAsync(() => {
+      renderWithProviders(<TimelineFeed entityId="c1" entityType="contact" />);
+    });
     const items = await screen.findAllByTestId(/timeline-/);
     expect(items.length).toBeGreaterThan(0);
     const types = [
@@ -135,7 +157,9 @@ describe("Timeline", () => {
 
 describe("Standalone Dialer", () => {
   it("requests token and shows status", async () => {
-    renderWithProviders(<VoiceDialer visible contact={janeContact} onClose={() => undefined} />);
+    await actAsync(() => {
+      renderWithProviders(<VoiceDialer visible contact={janeContact} onClose={() => undefined} />);
+    });
     expect(await screen.findByTestId("voice-dialer")).toBeInTheDocument();
     await waitFor(() => expect(screen.getByText(/Twilio token/)).toBeInTheDocument());
   });

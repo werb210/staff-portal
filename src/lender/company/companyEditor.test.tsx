@@ -2,7 +2,8 @@ import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import CompanyEditor from "./CompanyEditor";
 import { fetchLenderCompany, updateLenderCompany, uploadLenderLogo } from "@/api/lender/company";
-import { renderWithLenderProviders } from "@/test/testUtils";
+import { actAsync } from "@/test/testUtils";
+import { renderWithLenderProviders } from "@/test/renderHelpers";
 
 vi.mock("@/api/lender/company", () => ({
   fetchLenderCompany: vi.fn(),
@@ -30,7 +31,9 @@ describe("Company editor", () => {
     });
     const user = userEvent.setup();
 
-    renderWithLenderProviders(<CompanyEditor />);
+    await actAsync(() => {
+      renderWithLenderProviders(<CompanyEditor />);
+    });
 
     await waitFor(() => expect(screen.getByLabelText(/Company name/i)).toBeInTheDocument());
     await user.clear(screen.getByLabelText(/Support phone/i));
@@ -60,7 +63,9 @@ describe("Company editor", () => {
     (uploadLenderLogo as unknown as vi.Mock).mockResolvedValue({ url: "https://blob/logo.png" });
     const file = new File(["logo"], "logo.png", { type: "image/png" });
 
-    renderWithLenderProviders(<CompanyEditor />);
+    await actAsync(() => {
+      renderWithLenderProviders(<CompanyEditor />);
+    });
     await waitFor(() => expect(screen.getByLabelText(/Logo/i)).toBeInTheDocument());
     const input = screen.getByLabelText(/Logo/i) as HTMLInputElement;
     await userEvent.upload(input, file);

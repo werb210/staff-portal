@@ -10,7 +10,8 @@ import {
   updateRequiredDocuments
 } from "@/api/lender/products";
 import { fetchDocumentCategories } from "@/api/lender/documents";
-import { renderWithLenderProviders } from "@/test/testUtils";
+import { actAsync } from "@/test/testUtils";
+import { renderWithLenderProviders } from "@/test/renderHelpers";
 
 vi.mock("@/api/lender/products", () => ({
   createLenderProduct: vi.fn(),
@@ -37,7 +38,9 @@ describe("Products page", () => {
     (updateRequiredDocuments as unknown as vi.Mock).mockResolvedValue({});
     (uploadLenderApplicationForm as unknown as vi.Mock).mockResolvedValue({ url: "https://files/form.pdf" });
 
-    renderWithLenderProviders(<ProductsPage />);
+    await actAsync(() => {
+      renderWithLenderProviders(<ProductsPage />);
+    });
     const user = userEvent.setup();
 
     await user.click(screen.getByRole("button", { name: /add product/i }));
@@ -59,7 +62,9 @@ describe("Products page", () => {
     ]);
     (fetchDocumentCategories as unknown as vi.Mock).mockResolvedValue([]);
 
-    renderWithLenderProviders(<ProductsPage />);
+    await actAsync(() => {
+      renderWithLenderProviders(<ProductsPage />);
+    });
     const row = await screen.findByText("Term Loan");
     const actions = row.closest("tr")!;
 

@@ -2,7 +2,8 @@ import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient } from "@tanstack/react-query";
 import PipelinePage from "./PipelinePage";
-import { renderWithProviders } from "@/test/testUtils";
+import { actAsync } from "@/test/testUtils";
+import { renderWithProviders } from "@/test/renderHelpers";
 import { pipelineApi } from "./pipeline.api";
 import { createPipelineDragEndHandler } from "./pipeline.store";
 import { PIPELINE_STAGE_LABELS, canMoveCardToStage, type PipelineApplication, type PipelineDragEndEvent } from "./pipeline.types";
@@ -44,7 +45,9 @@ describe("Pipeline foundation", () => {
   });
 
   it("renders all BF pipeline columns", async () => {
-    renderWithProviders(<PipelinePage />);
+    await actAsync(() => {
+      renderWithProviders(<PipelinePage />);
+    });
 
     Object.values(PIPELINE_STAGE_LABELS).forEach((label) => {
       const headers = screen.getAllByText(label, { selector: ".pipeline-column__title" });
@@ -54,13 +57,17 @@ describe("Pipeline foundation", () => {
     await waitFor(() => expect(pipelineApi.fetchColumn).toHaveBeenCalled());
   });
 
-  it("blocks pipeline for non-BF silos", () => {
-    renderWithProviders(<PipelinePage />, { silo: "BI" });
+  it("blocks pipeline for non-BF silos", async () => {
+    await actAsync(() => {
+      renderWithProviders(<PipelinePage />, { silo: "BI" });
+    });
     expect(screen.getByText(/Pipeline is not available/)).toBeInTheDocument();
   });
 
   it("applies search filter when updated", async () => {
-    renderWithProviders(<PipelinePage />);
+    await actAsync(() => {
+      renderWithProviders(<PipelinePage />);
+    });
     const searchInput = screen.getByLabelText(/Search/i);
     await userEvent.type(searchInput, "Acme");
 

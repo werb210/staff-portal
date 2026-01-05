@@ -6,6 +6,7 @@ import CommunicationsPage from "./CommunicationsPage";
 import ConversationViewer from "./ConversationViewer";
 import MessageComposer from "./MessageComposer";
 import { useCommunicationsStore } from "@/state/communications.store";
+import { actAsync } from "@/test/testUtils";
 import {
   getApplicationTimelineEntries,
   getCrmTimelineEntries,
@@ -106,15 +107,18 @@ describe("Communications workflows", () => {
   it("auto-scrolls conversation viewer on new messages", async () => {
     await useCommunicationsStore.getState().loadConversations();
     const conversation = useCommunicationsStore.getState().conversations[0];
-    const { rerender } = render(
-      wrapper(
-        <ConversationViewer
-          conversation={conversation}
-          onSend={async () => {}}
-          onAcknowledgeIssue={() => undefined}
-        />
-      )
-    );
+    let renderResult: ReturnType<typeof render> | undefined;
+    await actAsync(() => {
+      renderResult = render(
+        wrapper(
+          <ConversationViewer
+            conversation={conversation}
+            onSend={async () => {}}
+            onAcknowledgeIssue={() => undefined}
+          />
+        )
+      );
+    });
     const viewer = screen.getByTestId("conversation-viewer");
     (viewer as HTMLDivElement).scrollTop = 0;
 
@@ -122,15 +126,17 @@ describe("Communications workflows", () => {
       ...conversation,
       messages: [...conversation.messages, { ...conversation.messages[0], id: "new" }]
     };
-    rerender(
-      wrapper(
-        <ConversationViewer
-          conversation={updatedConversation}
-          onSend={async () => {}}
-          onAcknowledgeIssue={() => undefined}
-        />
-      )
-    );
+    await actAsync(() => {
+      renderResult?.rerender(
+        wrapper(
+          <ConversationViewer
+            conversation={updatedConversation}
+            onSend={async () => {}}
+            onAcknowledgeIssue={() => undefined}
+          />
+        )
+      );
+    });
 
     expect(viewer.scrollTop).toBe(viewer.scrollHeight);
   });
@@ -139,7 +145,9 @@ describe("Communications workflows", () => {
     await useCommunicationsStore.getState().loadConversations();
     const smsConversation = useCommunicationsStore.getState().conversations.find((conv) => conv.type === "sms");
     const handleSend = vi.fn();
-    render(wrapper(<MessageComposer conversation={smsConversation} onSend={handleSend} />));
+    await actAsync(() => {
+      render(wrapper(<MessageComposer conversation={smsConversation} onSend={handleSend} />));
+    });
     const selector = screen.getByLabelText("Send via") as HTMLSelectElement;
     expect(selector.value).toBe("sms");
     fireEvent.change(selector, { target: { value: "chat" } });
@@ -147,7 +155,9 @@ describe("Communications workflows", () => {
   });
 
   it("renders communications page with conversation list", async () => {
-    render(wrapper(<CommunicationsPage />));
+    await actAsync(() => {
+      render(wrapper(<CommunicationsPage />));
+    });
     await waitFor(() => expect(screen.getByTestId("conversation-list")).toBeInTheDocument());
     const conversationButtons = screen.getAllByRole("button", { name: /Silo:/ });
     expect(conversationButtons.length).toBeGreaterThan(0);
