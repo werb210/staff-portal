@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { apiClient } from "@/api/client";
-import { login as loginService, type LoginSuccess } from "@/services/auth";
+import { login as loginService, type AuthenticatedUser, type LoginSuccess } from "@/services/auth";
 import {
   clearStoredAccessToken,
   getStoredAccessToken,
@@ -10,7 +10,7 @@ import {
 export type AuthStatus = "loading" | "authenticated" | "unauthenticated";
 
 export type AuthContextType = {
-  user: any | null;
+  user: AuthenticatedUser | null;
   token: string | null;
   status: AuthStatus;
   login: (email: string, password: string) => Promise<LoginSuccess>;
@@ -21,7 +21,7 @@ export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const storedToken = getStoredAccessToken();
-  const [user, setUser] = useState<any | null>(null);
+  const [user, setUser] = useState<AuthenticatedUser | null>(null);
   const [token, setToken] = useState<string | null>(() => storedToken);
   const [status, setStatus] = useState<AuthStatus>(storedToken ? "loading" : "unauthenticated");
 
@@ -37,7 +37,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const fetchProfile = async () => {
       try {
-        const { data } = await apiClient.get("/auth/me");
+        const { data } = await apiClient.get<AuthenticatedUser>("/auth/me");
         setUser(data);
         setStatus("authenticated");
       } catch (error) {

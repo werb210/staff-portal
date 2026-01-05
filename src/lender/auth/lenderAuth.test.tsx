@@ -1,7 +1,8 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter } from "react-router-dom";
+import { RouterProvider, createMemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import type { MockedFunction } from "vitest";
 import LenderRoutes from "@/router/lenderRoutes";
 import { lenderLogin, sendLenderOtp, verifyLenderOtp } from "@/api/lender/auth";
 
@@ -14,11 +15,26 @@ vi.mock("@/api/lender/auth", () => ({
 
 const renderLenderRouter = () => {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const router = createMemoryRouter(
+    [
+      {
+        path: "*",
+        element: <LenderRoutes />
+      }
+    ],
+    {
+      initialEntries: ["/lender/login"],
+      future: {
+        v7_relativeSplatPath: true
+      }
+    }
+  );
   return render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={["/lender/login"]}>
-        <LenderRoutes />
-      </MemoryRouter>
+      <RouterProvider
+        router={router}
+        future={{ v7_startTransition: true }}
+      />
     </QueryClientProvider>
   );
 };
@@ -30,9 +46,9 @@ describe("Lender authentication flow", () => {
   });
 
   it("handles login and OTP verification with isolated storage", async () => {
-    (lenderLogin as unknown as vi.Mock).mockResolvedValue({ sessionId: "sess-1", requiresOtp: true });
-    (sendLenderOtp as unknown as vi.Mock).mockResolvedValue({ sent: true });
-    (verifyLenderOtp as unknown as vi.Mock).mockResolvedValue({
+    (lenderLogin as MockedFunction<typeof lenderLogin>).mockResolvedValue({ sessionId: "sess-1", requiresOtp: true });
+    (sendLenderOtp as MockedFunction<typeof sendLenderOtp>).mockResolvedValue({ sent: true });
+    (verifyLenderOtp as MockedFunction<typeof verifyLenderOtp>).mockResolvedValue({
       accessToken: "lender-access",
       refreshToken: "lender-refresh",
       user: { id: "l1", name: "Lender", email: "lender@example.com", role: "LENDER", companyName: "Acme Lending" }

@@ -25,7 +25,7 @@ const BulkSMSComposer = () => {
     <Card
       title="Bulk SMS"
       actions={
-        <Button disabled={sendMutation.isLoading || !form.body} onClick={() => sendMutation.mutate()}>
+        <Button disabled={sendMutation.isPending || !form.body} onClick={() => sendMutation.mutate()}>
           Send
         </Button>
       }

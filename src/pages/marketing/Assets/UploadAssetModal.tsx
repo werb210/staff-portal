@@ -59,7 +59,7 @@ const UploadAssetModal = ({ onClose }: Props) => {
             <input className="input" value={url} onChange={(e) => setUrl(e.target.value)} />
           </label>
           <div className="flex gap-2">
-            <Button disabled={uploadMutation.isLoading} onClick={() => uploadMutation.mutate()}>Upload</Button>
+            <Button disabled={uploadMutation.isPending} onClick={() => uploadMutation.mutate()}>Upload</Button>
             <Button variant="ghost" onClick={() => deleteMutation.mutate("asset-1")}>Delete sample</Button>
           </div>
         </div>

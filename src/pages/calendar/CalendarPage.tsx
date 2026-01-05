@@ -80,7 +80,7 @@ const CalendarPage = () => {
             <div className="booking-modal" role="dialog">
               <div className="booking-modal__header">
                 <h4>Book a Meeting</h4>
-                <Button variant="outline" onClick={() => setShowBooking(false)}>
+                <Button variant="secondary" onClick={() => setShowBooking(false)}>
                   Close
                 </Button>
               </div>
@@ -93,7 +93,7 @@ const CalendarPage = () => {
                       Open
                     </a>
                     <Button
-                      variant="outline"
+                      variant="secondary"
                       onClick={() => navigator.clipboard.writeText(link.link)}
                       data-testid={`copy-${link.userId}`}
                     >

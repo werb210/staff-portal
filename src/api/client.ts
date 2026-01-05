@@ -1,15 +1,16 @@
-import axios, { type AxiosRequestConfig } from "axios";
+import axios, { AxiosHeaders, type InternalAxiosRequestConfig } from "axios";
+import { RUNTIME_ENV } from "@/config/runtime";
 import { buildApiUrl, redirectToLogin } from "@/services/api";
 import { clearStoredAccessToken, getStoredAccessToken } from "@/services/token";
 
-export const API_BASE = import.meta.env.VITE_API_BASE;
+export const API_BASE = RUNTIME_ENV.API_BASE_URL;
 
 export const apiClient = axios.create({
   baseURL: API_BASE,
   headers: { "Content-Type": "application/json" }
 });
 
-type AuthenticatedRequestConfig = AxiosRequestConfig & { skipAuth?: boolean };
+type AuthenticatedRequestConfig = InternalAxiosRequestConfig & { skipAuth?: boolean };
 
 const token = getStoredAccessToken();
 if (token) {
@@ -17,12 +18,12 @@ if (token) {
 }
 
 apiClient.interceptors.request.use((config: AuthenticatedRequestConfig) => {
-  const configWithUrl = {
+  const configWithUrl: AuthenticatedRequestConfig = {
     ...config,
     url: buildApiUrl(config.url ?? "")
-  } as AuthenticatedRequestConfig;
+  };
 
-  if (config.skipAuth) return configWithUrl;
+  if (configWithUrl.skipAuth) return configWithUrl;
 
   const storedToken = getStoredAccessToken();
   if (!storedToken) {
@@ -30,11 +31,13 @@ apiClient.interceptors.request.use((config: AuthenticatedRequestConfig) => {
     return Promise.reject(new Error("Missing access token"));
   }
 
-  const headers = config.headers ?? {};
+  const headers = AxiosHeaders.from(configWithUrl.headers);
+  headers.set("Authorization", `Bearer ${storedToken}`);
+
   return {
     ...configWithUrl,
-    headers: { ...headers, Authorization: `Bearer ${storedToken}` }
-  } as AuthenticatedRequestConfig;
+    headers
+  };
 });
 
 apiClient.interceptors.response.use(

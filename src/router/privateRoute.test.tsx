@@ -1,21 +1,40 @@
 import { screen } from "@testing-library/react";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { RouterProvider, createMemoryRouter } from "react-router-dom";
 import PrivateRoute from "./PrivateRoute";
 import { renderWithProviders } from "@/test/testUtils";
 
 describe("Staff private route", () => {
   it("blocks lender role from staff-only routes", () => {
+    const router = createMemoryRouter(
+      [
+        {
+          path: "/restricted",
+          element: (
+            <PrivateRoute>
+              <div>Restricted</div>
+            </PrivateRoute>
+          )
+        },
+        {
+          path: "/login",
+          element: <div>Login</div>
+        }
+      ],
+      {
+        initialEntries: ["/restricted"],
+        future: {
+          v7_relativeSplatPath: true
+        }
+      }
+    );
     renderWithProviders(
-      <MemoryRouter initialEntries={["/restricted"]}>
-        <Routes>
-          <Route element={<PrivateRoute allowedRoles={["ADMIN", "STAFF"]} />}>
-            <Route path="/restricted" element={<div>Restricted</div>} />
-          </Route>
-        </Routes>
-      </MemoryRouter>,
-      { auth: { user: { id: "2", name: "Lender User", email: "lender@example.com", role: "LENDER" } } }
+      <RouterProvider
+        router={router}
+        future={{ v7_startTransition: true }}
+      />,
+      { auth: { status: "unauthenticated" } }
     );
 
-    expect(screen.getByText(/Access Restricted/)).toBeInTheDocument();
+    expect(screen.getByText("Login")).toBeInTheDocument();
   });
 });

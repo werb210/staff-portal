@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import classNames from "classnames";
+import clsx from "clsx";
 
 export type DrawerTabId = "application" | "banking" | "financial" | "documents" | "notes" | "credit" | "lenders";
 
@@ -30,7 +30,7 @@ const DrawerTabs = ({ tabs, selectedTab, onSelect }: DrawerTabsProps) => (
     {tabs.map((tab) => (
       <button
         key={tab.id}
-        className={classNames("application-drawer__tab", { active: selectedTab === tab.id })}
+        className={clsx("application-drawer__tab", { active: selectedTab === tab.id })}
         onClick={() => onSelect(tab.id)}
         type="button"
       >

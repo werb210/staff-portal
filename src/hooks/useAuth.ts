@@ -1,11 +1,10 @@
 import { useCallback, useMemo } from "react";
 import { useAuth as useAuthContext } from "@/auth/AuthContext";
-import type { LoginSuccess } from "@/services/auth";
+import type { AuthenticatedUser, LoginSuccess } from "@/services/auth";
+import type { UserRole } from "@/utils/roles";
 
-export type StaffUser = {
-  id?: string;
-  email?: string;
-  role?: string;
+export type StaffUser = AuthenticatedUser & {
+  role?: UserRole;
   name?: string;
   requiresOtp?: boolean;
 };

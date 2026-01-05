@@ -93,7 +93,7 @@ const AdEditor = ({ ad, onClose }: Props) => {
             <span className="text-muted">Image URL</span>
             <input className="input" value={form.image} onChange={(e) => updateField("image", e.target.value)} />
           </label>
-          <Button disabled={saveMutation.isLoading} onClick={() => saveMutation.mutate()}>
+          <Button disabled={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
             Save
           </Button>
         </div>

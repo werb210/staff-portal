@@ -1,13 +1,23 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/api/client";
 
-const SLFTabDocuments = ({ applicationId }: { applicationId: string }) => {
-  const { data, isLoading } = useQuery({
-    queryKey: ["slf", "documents", applicationId],
-    queryFn: () => apiClient.get(`/api/slf/applications/${applicationId}/documents`)
-  });
+type SLFDocument = {
+  id: string;
+  type: string;
+  filename: string;
+  uploadedAt: string;
+  downloadUrl?: string;
+  url?: string;
+};
 
-  const { data: docs } = data ?? { data: [] } as { data: Array<any> };
+const SLFTabDocuments = ({ applicationId }: { applicationId: string }) => {
+  const { data: docs = [], isLoading } = useQuery<SLFDocument[]>({
+    queryKey: ["slf", "documents", applicationId],
+    queryFn: async () => {
+      const { data } = await apiClient.get<SLFDocument[]>(`/api/slf/applications/${applicationId}/documents`);
+      return data;
+    }
+  });
 
   const handleView = async (docId: string) => {
     const presign = await apiClient.get(`/api/slf/documents/${docId}/presign`);

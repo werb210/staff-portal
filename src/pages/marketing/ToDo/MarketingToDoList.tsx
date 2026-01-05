@@ -10,7 +10,6 @@ const MarketingToDoList = () => {
       title="Marketing To-Do"
       actions={
         <Button
-          size="sm"
           onClick={() => addTodo({ title: "Refresh retargeting audiences", assignedTo: "Casey" })}
         >
           Add task
@@ -24,7 +23,7 @@ const MarketingToDoList = () => {
               <div className={`font-semibold ${todo.completed ? "line-through text-muted" : ""}`}>{todo.title}</div>
               {todo.assignedTo && <div className="text-xs text-muted">Assigned to {todo.assignedTo}</div>}
             </div>
-            <Button size="sm" variant="ghost" onClick={() => toggleTodo(todo.id)}>
+            <Button variant="ghost" onClick={() => toggleTodo(todo.id)}>
               {todo.completed ? "Reopen" : "Complete"}
             </Button>
           </li>

@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import type { TaskItem, TaskStatus } from "@/api/tasks";
 
-type TaskFilters = {
+export type TaskFilters = {
   mine: boolean;
   createdByMe: boolean;
   overdue: boolean;

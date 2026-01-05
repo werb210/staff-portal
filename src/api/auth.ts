@@ -1,5 +1,5 @@
 import { apiClient } from "./client";
-import type { UserProfile } from "./client";
+import type { AuthenticatedUser } from "@/services/auth";
 
 export type LoginPayload = {
   email: string;
@@ -8,10 +8,10 @@ export type LoginPayload = {
 
 export type LoginResponse = {
   token: string;
-  user: UserProfile;
+  user: AuthenticatedUser;
 };
 
 export const login = (payload: LoginPayload) =>
   apiClient.post<LoginResponse>("/auth/login", payload, { skipAuth: true });
 
-export const fetchCurrentUser = () => apiClient.get<UserProfile>("/auth/me");
+export const fetchCurrentUser = () => apiClient.get<AuthenticatedUser>("/auth/me");

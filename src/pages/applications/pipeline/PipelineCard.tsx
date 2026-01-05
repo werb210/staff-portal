@@ -19,9 +19,10 @@ const PipelineCard = ({ card, stageId, onClick }: PipelineCardProps) => {
   const { user } = useAuth();
   const setDragging = usePipelineStore((state) => state.setDragging);
 
+  const canDrag = canAccessStaffPortal(user?.role) && !isTerminalStage(stageId);
   const draggable = useDraggable({
     id: card.id,
-    disabled: !canAccessStaffPortal(user?.role) || isTerminalStage(stageId),
+    disabled: !canDrag,
     data: { stageId, card }
   });
 
@@ -48,7 +49,7 @@ const PipelineCard = ({ card, stageId, onClick }: PipelineCardProps) => {
       onClick={handleClick}
       className={clsx("pipeline-card", {
         "pipeline-card--dragging": isDragging,
-        "pipeline-card--disabled": draggable.disabled
+        "pipeline-card--disabled": !canDrag
       })}
       aria-label={`${card.businessName} in ${PIPELINE_STAGE_LABELS[stageId]}`}
     >

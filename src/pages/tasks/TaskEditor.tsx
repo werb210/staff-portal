@@ -48,7 +48,7 @@ const TaskEditor = ({ onSave, onClose, defaultValues }: TaskEditorProps) => {
     <div className="task-editor">
       <div className="task-editor__header">
         <h4>{defaultValues ? "Edit Task" : "Add Task"}</h4>
-        <Button variant="outline" onClick={onClose}>
+        <Button variant="secondary" onClick={onClose}>
           Close
         </Button>
       </div>

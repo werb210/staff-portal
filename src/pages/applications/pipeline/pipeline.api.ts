@@ -19,7 +19,8 @@ const buildQueryParams = (stage: PipelineStageId, filters: PipelineFilters): str
 export const pipelineApi = {
   fetchColumn: async (stage: PipelineStageId, filters: PipelineFilters) => {
     const query = buildQueryParams(stage, filters);
-    return apiClient.get<PipelineApplication[]>(`/api/applications?${query}`);
+    const { data } = await apiClient.get<PipelineApplication[]>(`/api/applications?${query}`);
+    return data;
   },
   moveCard: async (applicationId: string, newStage: PipelineStageId) => {
     return apiClient.patch<PipelineApplication>(`/api/applications/${applicationId}/status`, { stage: newStage });
