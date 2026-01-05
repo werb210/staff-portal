@@ -28,19 +28,11 @@ type SLFPipelineColumnProps = {
 
 const SLFPipelineColumn = ({ stage, onCardClick, activeCard }: SLFPipelineColumnProps) => {
   const { setNodeRef, isOver } = useDroppable({ id: stage.id });
-  const { data, isLoading } = useQuery({
+  const { data = [], isLoading } = useQuery<SLFPipelineApplication[]>({
     queryKey: ["slf", "pipeline", stage.id],
     queryFn: () => slfPipelineApi.fetchColumn(stage.id),
     staleTime: 30_000
   });
-
-  const applications = Array.isArray(data)
-    ? data
-    : Array.isArray(data?.data)
-      ? data.data
-      : Array.isArray(data?.data?.items)
-        ? data.data.items
-        : [];
 
   return (
     <div className="pipeline-column" ref={setNodeRef} data-stage={stage.id}>
@@ -60,8 +52,8 @@ const SLFPipelineColumn = ({ stage, onCardClick, activeCard }: SLFPipelineColumn
             <LoadingSkeleton />
           </>
         )}
-        {!isLoading && !applications.length && <EmptyState label={stage.label} />}
-        {applications.map((card) => (
+        {!isLoading && !data.length && <EmptyState label={stage.label} />}
+        {data.map((card) => (
           <SLFPipelineCard key={card.id} card={card} stageId={stage.id} onClick={onCardClick} />
         ))}
         {activeCard && <div className="pipeline-column__spacer" />}

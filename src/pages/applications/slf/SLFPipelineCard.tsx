@@ -28,8 +28,6 @@ const SLFPipelineCard = ({ card, onClick, stageId }: SLFPipelineCardProps) => {
       ref={setNodeRef}
       style={dragStyle}
       className={clsx("pipeline-card", { "pipeline-card--dragging": isDragging })}
-      role="button"
-      tabIndex={0}
       onClick={() => onClick(card.id)}
       {...attributes}
       {...listeners}

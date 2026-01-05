@@ -1,8 +1,14 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/auth/AuthContext";
 import AppLoading from "@/components/layout/AppLoading";
+import type { UserRole } from "@/utils/roles";
 
-export default function PrivateRoute({ children }: { children: JSX.Element }) {
+type PrivateRouteProps = {
+  children: JSX.Element;
+  allowedRoles?: UserRole[];
+};
+
+export default function PrivateRoute({ children }: PrivateRouteProps) {
   const { status } = useAuth();
 
   if (status === "loading") return <AppLoading />;

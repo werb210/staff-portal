@@ -1,5 +1,6 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type { MockedFunction } from "vitest";
 import ProductsPage from "./ProductsPage";
 import {
   createLenderProduct,
@@ -31,11 +32,15 @@ describe("Products page", () => {
   });
 
   it("creates a product and updates required documents", async () => {
-    (fetchLenderProducts as unknown as vi.Mock).mockResolvedValue([]);
-    (fetchDocumentCategories as unknown as vi.Mock).mockResolvedValue(["Bank Statements", "Business License"]);
-    (createLenderProduct as unknown as vi.Mock).mockResolvedValue({ id: "p1", productName: "New Product", active: true });
-    (updateRequiredDocuments as unknown as vi.Mock).mockResolvedValue({});
-    (uploadLenderApplicationForm as unknown as vi.Mock).mockResolvedValue({ url: "https://files/form.pdf" });
+    (fetchLenderProducts as MockedFunction<typeof fetchLenderProducts>).mockResolvedValue([]);
+    (fetchDocumentCategories as MockedFunction<typeof fetchDocumentCategories>).mockResolvedValue(["Bank Statements", "Business License"]);
+    (createLenderProduct as MockedFunction<typeof createLenderProduct>).mockResolvedValue({ id: "p1", productName: "New Product", active: true });
+    (updateRequiredDocuments as MockedFunction<typeof updateRequiredDocuments>).mockResolvedValue({
+      id: "p1",
+      productName: "New Product",
+      active: true
+    });
+    (uploadLenderApplicationForm as MockedFunction<typeof uploadLenderApplicationForm>).mockResolvedValue({ url: "https://files/form.pdf" });
 
     renderWithLenderProviders(<ProductsPage />);
     const user = userEvent.setup();
@@ -54,10 +59,10 @@ describe("Products page", () => {
   });
 
   it("toggles and deletes products without leaking other lender ids", async () => {
-    (fetchLenderProducts as unknown as vi.Mock).mockResolvedValue([
+    (fetchLenderProducts as MockedFunction<typeof fetchLenderProducts>).mockResolvedValue([
       { id: "p2", productName: "Term Loan", category: "Term", active: true }
     ]);
-    (fetchDocumentCategories as unknown as vi.Mock).mockResolvedValue([]);
+    (fetchDocumentCategories as MockedFunction<typeof fetchDocumentCategories>).mockResolvedValue([]);
 
     renderWithLenderProviders(<ProductsPage />);
     const row = await screen.findByText("Term Loan");

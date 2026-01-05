@@ -2,9 +2,10 @@ import Card from "@/components/ui/Card";
 import Table from "@/components/ui/Table";
 import AppLoading from "@/components/layout/AppLoading";
 import { useQuery } from "@tanstack/react-query";
-import { fetchAttributionDashboard } from "@/api/marketing.attribution";
-import { fetchAds } from "@/api/marketing.ads";
-import { fetchAssets } from "@/api/marketing.assets";
+import { useEffect } from "react";
+import { fetchAttributionDashboard, type AttributionDashboard as AttributionDashboardData } from "@/api/marketing.attribution";
+import { fetchAds, type AdRecord } from "@/api/marketing.ads";
+import { fetchAssets, type BrandAsset } from "@/api/marketing.assets";
 import { useMarketingStore } from "@/state/marketing.store";
 import AdsList from "./AdsManager/AdsList";
 import ABTestingSuite from "./AdsManager/ABTestingSuite";
@@ -20,21 +21,36 @@ import MarketingToDoList from "./ToDo/MarketingToDoList";
 
 const MarketingDashboard = () => {
   const { dateRange } = useMarketingStore();
-  const { data: attribution, isLoading: loadingAttribution, error: attributionError } = useQuery({
+  const { data: attribution, isLoading: loadingAttribution, error: attributionError } = useQuery<AttributionDashboardData, Error>({
     queryKey: ["attribution", dateRange],
-    queryFn: () => fetchAttributionDashboard(dateRange),
-    onError: (err) => console.error("Failed to load attribution", err)
+    queryFn: () => fetchAttributionDashboard(dateRange)
   });
-  const { data: ads, error: adsError, isLoading: loadingAds } = useQuery({
+  const { data: ads, error: adsError, isLoading: loadingAds } = useQuery<AdRecord[], Error>({
     queryKey: ["ads-dashboard"],
-    queryFn: fetchAds,
-    onError: (err) => console.error("Failed to load ads", err)
+    queryFn: fetchAds
   });
-  const { data: assets, error: assetsError } = useQuery({
+  const { data: assets, error: assetsError } = useQuery<BrandAsset[], Error>({
     queryKey: ["assets"],
-    queryFn: fetchAssets,
-    onError: (err) => console.error("Failed to load assets", err)
+    queryFn: fetchAssets
   });
+
+  useEffect(() => {
+    if (attributionError) {
+      console.error("Failed to load attribution", attributionError);
+    }
+  }, [attributionError]);
+
+  useEffect(() => {
+    if (adsError) {
+      console.error("Failed to load ads", adsError);
+    }
+  }, [adsError]);
+
+  useEffect(() => {
+    if (assetsError) {
+      console.error("Failed to load assets", assetsError);
+    }
+  }, [assetsError]);
 
   return (
     <div className="grid gap-4">

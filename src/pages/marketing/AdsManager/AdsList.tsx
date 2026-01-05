@@ -46,7 +46,7 @@ const AdsList = () => {
                 </Button>
                 <Button
                   variant="ghost"
-                  disabled={toggleMutation.isLoading}
+                  disabled={toggleMutation.isPending}
                   onClick={() => toggleMutation.mutate(ad.id)}
                 >
                   {ad.status === "active" ? "Pause" : "Activate"}

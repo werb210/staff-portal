@@ -9,7 +9,7 @@ const SMSThread = ({ messages }: SMSThreadProps) => (
     {messages.map((message) => (
       <div key={message.id} className="sms-thread__message">
         <div className="text-sm text-gray-600">{message.direction}</div>
-        <div>{message.body}</div>
+        <div>{message.message}</div>
       </div>
     ))}
   </div>

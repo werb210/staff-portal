@@ -21,7 +21,7 @@ const BulkEmailComposer = () => {
   });
 
   return (
-    <Card title="Bulk Email" actions={<Button disabled={sendMutation.isLoading} onClick={() => sendMutation.mutate()}>Send</Button>}>
+    <Card title="Bulk Email" actions={<Button disabled={sendMutation.isPending} onClick={() => sendMutation.mutate()}>Send</Button>}>
       <div className="grid gap-3">
         <label className="grid gap-1">
           <span className="text-muted">Subject</span>

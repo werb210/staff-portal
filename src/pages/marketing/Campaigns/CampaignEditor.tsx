@@ -66,7 +66,7 @@ const CampaignEditor = ({ campaign, onClose }: Props) => {
               <option value="paused">Paused</option>
             </select>
           </label>
-          <Button disabled={saveMutation.isLoading} onClick={() => saveMutation.mutate()}>
+          <Button disabled={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
             Save
           </Button>
         </div>

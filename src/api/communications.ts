@@ -14,6 +14,8 @@ export type CommunicationMessage = {
   silo: string;
 };
 
+export type SmsMessage = CommunicationMessage;
+
 export type CommunicationConversation = {
   id: string;
   applicationId?: string;
@@ -356,12 +358,13 @@ export const fetchSmsThread = async (contactId: string) => {
 export const sendSms = async (contact: Contact, body: string, siloNumber: string) => {
   let conversation = conversations.find((conv) => conv.contactId === contact.id && conv.type === "sms");
   if (!conversation) {
+    const applicationId = contact.applicationIds[0];
     conversation = {
       id: `sms-${Date.now()}`,
       contactId: contact.id,
       contactName: contact.name,
-      applicationId: contact.applicationId,
-      applicationName: contact.applicationName,
+      applicationId,
+      applicationName: applicationId ? `Application ${applicationId}` : undefined,
       type: "sms",
       createdAt: now(),
       updatedAt: now(),

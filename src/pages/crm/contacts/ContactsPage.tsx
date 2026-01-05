@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Card from "@/components/ui/Card";
 import Table from "@/components/ui/Table";
@@ -22,11 +22,16 @@ const ContactsPage = () => {
     data: contacts = [],
     isLoading,
     error
-  } = useQuery({
+  } = useQuery<Contact[], Error>({
     queryKey: ["contacts", silo, filters],
-    queryFn: fetchContacts,
-    onError: (err) => console.error("Failed to load contacts", err)
+    queryFn: fetchContacts
   });
+
+  useEffect(() => {
+    if (error) {
+      console.error("Failed to load contacts", error);
+    }
+  }, [error]);
 
   const filtered = useMemo(() => contacts, [contacts]);
 

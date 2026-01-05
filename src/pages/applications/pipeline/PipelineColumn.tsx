@@ -33,19 +33,11 @@ type PipelineColumnProps = {
 
 const PipelineColumn = ({ stage, filters, onCardClick, activeCard, draggingFromStage }: PipelineColumnProps) => {
   const { setNodeRef, isOver } = useDroppable({ id: stage.id });
-  const { data, isLoading, isFetching } = useQuery({
+  const { data = [], isLoading, isFetching } = useQuery<PipelineApplication[]>({
     queryKey: pipelineQueryKeys.column(stage.id, filters),
     queryFn: () => pipelineApi.fetchColumn(stage.id, filters),
     staleTime: 30_000
   });
-
-  const applications = Array.isArray(data)
-    ? data
-    : Array.isArray(data?.data)
-      ? data.data
-      : Array.isArray(data?.data?.items)
-        ? data.data.items
-        : [];
 
   const canReceive = activeCard ? canMoveCardToStage(activeCard, draggingFromStage ?? null, stage.id) : true;
 
@@ -70,8 +62,8 @@ const PipelineColumn = ({ stage, filters, onCardClick, activeCard, draggingFromS
             <LoadingSkeleton />
           </>
         )}
-        {!isLoading && !applications.length && <EmptyState label={stage.label} />}
-        {applications.map((card) => (
+        {!isLoading && !data.length && <EmptyState label={stage.label} />}
+        {data.map((card) => (
           <PipelineCard key={card.id} card={card} stageId={stage.id} onClick={onCardClick} />
         ))}
         {activeCard && <div className="pipeline-column__spacer" />}

@@ -19,7 +19,7 @@ const RetargetingAudienceList = () => {
         <div className="grid gap-3">
           <div className="flex gap-2">
             {["rule-1", "rule-2", "rule-3", "rule-4", "rule-5", "rule-6"].map((id) => (
-              <Button key={id} size="sm" variant="ghost" onClick={() => mutation.mutate(id)}>
+              <Button key={id} variant="ghost" onClick={() => mutation.mutate(id)}>
                 Generate from {id}
               </Button>
             ))}

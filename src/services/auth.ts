@@ -1,9 +1,11 @@
 import { apiClient } from "@/api/client";
+import type { UserRole } from "@/utils/roles";
 
 export type AuthenticatedUser = {
   id: string;
   email: string;
-  role: string;
+  role: UserRole;
+  name?: string;
 };
 
 export type LoginSuccess = {

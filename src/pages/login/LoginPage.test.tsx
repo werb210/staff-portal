@@ -1,7 +1,6 @@
 import { describe, expect, test, beforeEach, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom";
-import { MemoryRouter } from "react-router-dom";
 import LoginPage from "./LoginPage";
 
 let loginMock = vi.fn();
@@ -35,8 +34,7 @@ describe("LoginPage", () => {
   beforeEach(() => {
     fetchMock.mockClear();
     fetchMock.mockRejectedValue(new Error("offline"));
-    // @ts-expect-error - allow test override
-    global.fetch = fetchMock;
+    globalThis.fetch = fetchMock as typeof fetch;
     navigateMock.mockReset();
   });
 
@@ -44,9 +42,7 @@ describe("LoginPage", () => {
     loginMock = login;
 
     return render(
-      <MemoryRouter>
-        <LoginPage />
-      </MemoryRouter>
+      <LoginPage />
     );
   };
 
@@ -61,7 +57,7 @@ describe("LoginPage", () => {
     fireEvent.click(screen.getByRole("button", { name: /Login/i }));
 
     await waitFor(() => expect(loginMock).toHaveBeenCalledWith("demo@example.com", "password123"));
-    expect(navigateMock).toHaveBeenCalledWith("/applications", { replace: true });
+    expect(navigateMock).toHaveBeenCalledWith("/dashboard", { replace: true });
   });
 
   test("shows an error when login fails", async () => {

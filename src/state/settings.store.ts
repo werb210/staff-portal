@@ -82,7 +82,25 @@ export type SettingsState = {
   reset: () => void;
 };
 
-const createInitialState = () => ({
+type SettingsSnapshot = Omit<
+  SettingsState,
+  | "updateProfile"
+  | "changePassword"
+  | "toggleTwoFactor"
+  | "updateMeetingLink"
+  | "setDefaultSilo"
+  | "updateSiloPermission"
+  | "refreshEmailSync"
+  | "uploadFavicon"
+  | "addUser"
+  | "updateUser"
+  | "resetUserPassword"
+  | "disableUser"
+  | "setStatusMessage"
+  | "reset"
+>;
+
+const createInitialState = (): SettingsSnapshot => ({
   profile: {
     firstName: "Alex",
     lastName: "Smith",

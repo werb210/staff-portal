@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Card from "@/components/ui/Card";
 import Input from "@/components/ui/Input";
@@ -6,11 +6,11 @@ import Button from "@/components/ui/Button";
 import type { TaskItem } from "@/api/tasks";
 import { createTask, fetchTasks, updateTask } from "@/api/tasks";
 import { useAuth } from "@/hooks/useAuth";
-import { useTasksStore } from "@/state/tasks.store";
+import { useTasksStore, type TaskFilters } from "@/state/tasks.store";
 import TaskListItem from "./TaskListItem";
 import TaskEditor from "./TaskEditor";
 
-const filterTasks = (tasks: TaskItem[], filters: ReturnType<typeof useTasksStore>["filters"], currentUserId?: string) => {
+const filterTasks = (tasks: TaskItem[], filters: TaskFilters, currentUserId?: string) => {
   return tasks.filter((task) => {
     const dueDate = task.dueDate ? new Date(task.dueDate) : undefined;
     const now = new Date();
@@ -29,14 +29,19 @@ const TaskPane = () => {
     data: tasks = [],
     isLoading,
     error
-  } = useQuery({
+  } = useQuery<TaskItem[], Error>({
     queryKey: ["tasks"],
-    queryFn: fetchTasks,
-    onError: (err) => console.error("Failed to load tasks", err)
+    queryFn: fetchTasks
   });
   const { filters, setFilters, selectedTask, setSelectedTask, toggleCompletion } = useTasksStore();
   const [showEditor, setShowEditor] = useState(false);
   const tasksToDisplay = useMemo(() => filterTasks(tasks, filters, user?.id), [filters, tasks, user?.id]);
+
+  useEffect(() => {
+    if (error) {
+      console.error("Failed to load tasks", error);
+    }
+  }, [error]);
 
   const createMutation = useMutation({
     mutationFn: createTask,

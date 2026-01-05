@@ -25,9 +25,9 @@ const BrandLibrary = ({ assets }: Props) => {
               <td className="capitalize">{asset.type}</td>
               <td>{asset.uploadedBy}</td>
               <td>
-                <Button variant="ghost" as="a" href={asset.url} download>
+                <a className="ui-button ui-button--ghost" href={asset.url} download>
                   Download
-                </Button>
+                </a>
               </td>
             </tr>
           ))}

@@ -1,5 +1,6 @@
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type { MockedFunction } from "vitest";
 import CompanyEditor from "./CompanyEditor";
 import { fetchLenderCompany, updateLenderCompany, uploadLenderLogo } from "@/api/lender/company";
 import { renderWithLenderProviders } from "@/test/testUtils";
@@ -16,13 +17,13 @@ describe("Company editor", () => {
   });
 
   it("loads and updates company profile with validation", async () => {
-    (fetchLenderCompany as unknown as vi.Mock).mockResolvedValue({
+    (fetchLenderCompany as MockedFunction<typeof fetchLenderCompany>).mockResolvedValue({
       id: "c1",
       companyName: "Summit Lending",
       supportEmail: "support@summit.com",
       supportPhone: "555-1111"
     });
-    (updateLenderCompany as unknown as vi.Mock).mockResolvedValue({
+    (updateLenderCompany as MockedFunction<typeof updateLenderCompany>).mockResolvedValue({
       id: "c1",
       companyName: "Summit Lending",
       supportEmail: "support@summit.com",
@@ -38,7 +39,7 @@ describe("Company editor", () => {
     await user.click(screen.getByRole("button", { name: /save/i }));
 
     await waitFor(() => {
-      const firstCall = (updateLenderCompany as unknown as vi.Mock).mock.calls[0]?.[0];
+      const firstCall = (updateLenderCompany as MockedFunction<typeof updateLenderCompany>).mock.calls[0]?.[0];
       expect(firstCall).toEqual(
         expect.objectContaining({
           id: "c1",
@@ -51,13 +52,13 @@ describe("Company editor", () => {
   });
 
   it("uploads a logo and surfaces the new url", async () => {
-    (fetchLenderCompany as unknown as vi.Mock).mockResolvedValue({
+    (fetchLenderCompany as MockedFunction<typeof fetchLenderCompany>).mockResolvedValue({
       id: "c1",
       companyName: "Summit Lending",
       supportEmail: "support@summit.com",
       supportPhone: "555-1111"
     });
-    (uploadLenderLogo as unknown as vi.Mock).mockResolvedValue({ url: "https://blob/logo.png" });
+    (uploadLenderLogo as MockedFunction<typeof uploadLenderLogo>).mockResolvedValue({ url: "https://blob/logo.png" });
     const file = new File(["logo"], "logo.png", { type: "image/png" });
 
     renderWithLenderProviders(<CompanyEditor />);

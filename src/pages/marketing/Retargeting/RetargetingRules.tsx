@@ -26,7 +26,7 @@ const RetargetingRules = () => {
           {(data || []).map((rule) => (
             <li key={rule.id} className="flex items-center justify-between">
               <div>{rule.description}</div>
-              <Button size="sm" variant={rule.enabled ? "primary" : "ghost"} onClick={() => toggleRule(rule)}>
+              <Button variant={rule.enabled ? "primary" : "ghost"} onClick={() => toggleRule(rule)}>
                 {rule.enabled ? "Enabled" : "Disabled"}
               </Button>
             </li>

@@ -5,11 +5,11 @@ import AppLoading from "@/components/layout/AppLoading";
 import ConversationList from "./ConversationList";
 import ConversationViewer from "./ConversationViewer";
 import { useCommunicationsStore } from "@/state/communications.store";
-import { fetchCommunicationThreads } from "@/api/communications";
+import { fetchCommunicationThreads, type CommunicationConversation } from "@/api/communications";
 
 const CommunicationsPage = () => {
   const {
-    loadConversations,
+    setConversations,
     conversations,
     selectedConversationId,
     selectConversation,
@@ -21,18 +21,22 @@ const CommunicationsPage = () => {
   } = useCommunicationsStore();
   const selectedConversation = conversations.find((conv) => conv.id === selectedConversationId);
 
-  const { isLoading, error } = useQuery({
+  const { data, isLoading, error } = useQuery<CommunicationConversation[], Error>({
     queryKey: ["communications", "threads"],
-    queryFn: fetchCommunicationThreads,
-    onSuccess: () => loadConversations(),
-    onError: (err) => console.error("Failed to load communications", err)
+    queryFn: fetchCommunicationThreads
   });
 
   useEffect(() => {
-    if (!conversations.length && !isLoading) {
-      void loadConversations();
+    if (data) {
+      setConversations(data);
     }
-  }, [conversations.length, isLoading, loadConversations]);
+  }, [data, setConversations]);
+
+  useEffect(() => {
+    if (error) {
+      console.error("Failed to load communications", error);
+    }
+  }, [error]);
 
   return (
     <div className="page">

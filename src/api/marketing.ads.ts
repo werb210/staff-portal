@@ -137,7 +137,7 @@ export const createAd = async (payload: Omit<AdRecord, "id" | "spend" | "impress
 export const toggleAdStatus = async (id: string): Promise<AdRecord> => {
   const ad = ads.find((item) => item.id === id);
   if (!ad) throw new Error("Ad not found");
-  const updated = { ...ad, status: ad.status === "active" ? "paused" : "active" };
+  const updated: AdRecord = { ...ad, status: ad.status === "active" ? "paused" : "active" };
   ads = ads.map((item) => (item.id === id ? updated : item));
   return withDelay(updated);
 };

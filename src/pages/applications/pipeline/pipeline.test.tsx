@@ -1,6 +1,7 @@
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient } from "@tanstack/react-query";
+import type { MockedFunction } from "vitest";
 import PipelinePage from "./PipelinePage";
 import { renderWithProviders } from "@/test/testUtils";
 import { pipelineApi } from "./pipeline.api";
@@ -40,7 +41,7 @@ const buildDragEvent = (toStage: string): PipelineDragEndEvent => ({
 describe("Pipeline foundation", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    (pipelineApi.fetchColumn as unknown as vi.Mock).mockResolvedValue([]);
+    (pipelineApi.fetchColumn as MockedFunction<typeof pipelineApi.fetchColumn>).mockResolvedValue([]);
   });
 
   it("renders all BF pipeline columns", async () => {

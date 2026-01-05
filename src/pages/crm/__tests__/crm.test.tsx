@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import ContactsPage from "../contacts/ContactsPage";
 import CompaniesPage from "../companies/CompaniesPage";
@@ -26,9 +26,11 @@ const janeContact: Contact = {
 };
 
 afterEach(() => {
-  useCrmStore.setState({
-    silo: "BF",
-    filters: { search: "", owner: null, hasActiveApplication: false }
+  act(() => {
+    useCrmStore.setState({
+      silo: "BF",
+      filters: { search: "", owner: null, hasActiveApplication: false }
+    });
   });
 });
 
@@ -70,7 +72,9 @@ describe("CRM Contacts", () => {
   it("filters by silo", async () => {
     const { rerender } = renderWithProviders(<ContactsPage />);
     expect(await screen.findByText("Jane Doe")).toBeInTheDocument();
-    useCrmStore.getState().setSilo("SLF");
+    act(() => {
+      useCrmStore.getState().setSilo("SLF");
+    });
     rerender(<ContactsPage />);
     await waitFor(() => expect(screen.queryByText("Jane Doe")).not.toBeInTheDocument());
   });

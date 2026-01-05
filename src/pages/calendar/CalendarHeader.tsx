@@ -24,29 +24,29 @@ const CalendarHeader = ({
 }: CalendarHeaderProps) => (
   <div className="calendar-header">
     <div className="calendar-header__nav">
-      <Button onClick={onPrev} variant="outline">
+      <Button onClick={onPrev} variant="secondary">
         Prev
       </Button>
-      <Button onClick={onToday} variant="outline">
+      <Button onClick={onToday} variant="secondary">
         Today
       </Button>
-      <Button onClick={onNext} variant="outline">
+      <Button onClick={onNext} variant="secondary">
         Next
       </Button>
     </div>
     <div className="calendar-header__toggles">
       {(["day", "week", "month"] as CalendarView[]).map((item) => (
-        <Button key={item} onClick={() => onViewChange(item)} variant={view === item ? "primary" : "outline"}>
+        <Button key={item} onClick={() => onViewChange(item)} variant={view === item ? "primary" : "secondary"}>
           {item.charAt(0).toUpperCase() + item.slice(1)}
         </Button>
       ))}
     </div>
     <div className="calendar-header__actions">
       <Button onClick={onAddTask}>Add Task</Button>
-      <Button onClick={onAddEvent} variant="outline">
+      <Button onClick={onAddEvent} variant="secondary">
         Add Event
       </Button>
-      <Button onClick={onBookMeeting} variant="outline">
+      <Button onClick={onBookMeeting} variant="secondary">
         Book a Meeting
       </Button>
     </div>

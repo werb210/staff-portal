@@ -1,4 +1,6 @@
-const API_BASE = "https://server.boreal.financial";
+import { RUNTIME_ENV } from "@/config/runtime";
+
+const API_BASE = RUNTIME_ENV.API_BASE_URL;
 const ACCESS_TOKEN_KEY = "accessToken";
 
 function baseHasApiPrefix(base: string) {

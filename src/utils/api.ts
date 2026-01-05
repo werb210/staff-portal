@@ -3,6 +3,8 @@
    PURPOSE: Centralized API utilities + health check export
    ============================================================ */
 
+import { apiFetch } from "@/services/api";
+
 export { API_BASE, apiFetch } from "@/services/api";
 
 /* ============================================================

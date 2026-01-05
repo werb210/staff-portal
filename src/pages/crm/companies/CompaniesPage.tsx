@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Card from "@/components/ui/Card";
 import Table from "@/components/ui/Table";
@@ -21,11 +21,16 @@ const CompaniesPage = () => {
     data: companies = [],
     isLoading,
     error
-  } = useQuery({
+  } = useQuery<Company[], Error>({
     queryKey: ["companies", silo],
-    queryFn: fetchCompanies,
-    onError: (err) => console.error("Failed to load companies", err)
+    queryFn: fetchCompanies
   });
+
+  useEffect(() => {
+    if (error) {
+      console.error("Failed to load companies", error);
+    }
+  }, [error]);
 
   const filtered = companies.filter(
     (company) =>
