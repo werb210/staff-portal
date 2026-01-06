@@ -1,17 +1,31 @@
 export type RuntimeEnv = {
-  API_BASE_URL: string;
+  apiBaseUrl: string;
 };
 
-type RuntimeOverrides = {
-  API_BASE_URL?: string;
-  VITE_API_URL?: string;
-};
+let cachedRuntimeEnv: RuntimeEnv | null = null;
+
+const readApiBaseUrl = () => import.meta.env.VITE_API_BASE_URL;
+
+export const getApiBaseUrlOptional = () => readApiBaseUrl();
 
 const resolveRuntimeEnv = (): RuntimeEnv => {
-  const overrides = (window as Window & { __ENV__?: RuntimeOverrides }).__ENV__;
-  const API_BASE_URL = overrides?.API_BASE_URL ?? overrides?.VITE_API_URL ?? "";
+  const apiBaseUrl = readApiBaseUrl();
 
-  return { API_BASE_URL };
+  if (!apiBaseUrl) {
+    throw new Error(
+      "Missing VITE_API_BASE_URL. Set VITE_API_BASE_URL to the staff portal API base URL before using the app."
+    );
+  }
+
+  return { apiBaseUrl };
 };
 
-export const RUNTIME_ENV: RuntimeEnv = resolveRuntimeEnv();
+export const getRuntimeEnv = (): RuntimeEnv => {
+  if (!cachedRuntimeEnv) {
+    cachedRuntimeEnv = resolveRuntimeEnv();
+  }
+
+  return cachedRuntimeEnv;
+};
+
+export const getApiBaseUrl = () => getRuntimeEnv().apiBaseUrl;

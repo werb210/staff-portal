@@ -1,5 +1,11 @@
-import axios, { AxiosError, AxiosHeaders, type AxiosRequestConfig, type GenericAbortSignal } from "axios";
-import { RUNTIME_ENV } from "@/config/runtime";
+import axios, {
+  AxiosError,
+  AxiosHeaders,
+  type AxiosInstance,
+  type AxiosRequestConfig,
+  type GenericAbortSignal
+} from "axios";
+import { getApiBaseUrlOptional } from "@/config/runtime";
 import { buildApiUrl } from "@/services/api";
 import { getStoredAccessToken } from "@/services/token";
 import { reportAuthFailure } from "@/auth/authEvents";
@@ -44,7 +50,15 @@ type TokenUpdater = (tokens: LenderAuthTokens | null) => void;
 
 type LogoutHandler = () => void;
 
-const axiosClient = axios.create();
+let axiosClient: AxiosInstance | null = null;
+
+const getAxiosClient = () => {
+  if (!axiosClient) {
+    axiosClient = axios.create();
+  }
+
+  return axiosClient;
+};
 
 let routeAbortController = new AbortController();
 
@@ -56,10 +70,10 @@ export const notifyRouteChange = () => {
 };
 
 const ensureApiBaseUrl = () => {
-  if (!RUNTIME_ENV.API_BASE_URL) {
+  if (!getApiBaseUrlOptional()) {
     throw new ApiError({
       status: 0,
-      message: "Missing API base URL. Please configure API_BASE_URL before using the staff portal.",
+      message: "Missing VITE_API_BASE_URL. Please configure VITE_API_BASE_URL before using the staff portal.",
       isConfigurationError: true
     });
   }
@@ -137,7 +151,7 @@ const executeRequest = async <T>(path: string, config: RequestOptions & { method
   const signal = combineSignals([config.signal, getRouteSignal()]);
 
   try {
-    const response = await axiosClient.request<T>({
+    const response = await getAxiosClient().request<T>({
       ...config,
       url: buildApiUrl(path),
       data: body instanceof FormData ? body : body ? JSON.stringify(body) : undefined,
