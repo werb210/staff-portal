@@ -1,4 +1,4 @@
-import { apiClient } from "./client";
+import { apiClient, type RequestOptions } from "./client";
 
 export type BankingSummary = {
   avgMonthlyRevenue?: number;
@@ -12,5 +12,5 @@ export type BankingSummary = {
   statementCoverage?: string[];
 };
 
-export const fetchBankingSummary = (applicationId: string) =>
-  apiClient.get<BankingSummary>(`/banking/${applicationId}/summary`);
+export const fetchBankingSummary = (applicationId: string, options?: RequestOptions) =>
+  apiClient.get<BankingSummary>(`/banking/${applicationId}/summary`, options);

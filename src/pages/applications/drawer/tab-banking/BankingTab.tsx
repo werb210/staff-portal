@@ -1,7 +1,8 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { fetchBankingSummary } from "@/api/banking";
+import { fetchBankingSummary, type BankingSummary } from "@/api/banking";
 import { useApplicationDrawerStore } from "@/state/applicationDrawer.store";
+import { getErrorMessage } from "@/utils/errors";
 
 const Metric = ({ label, value }: { label: string; value?: number }) => (
   <div className="drawer-metric">
@@ -12,18 +13,17 @@ const Metric = ({ label, value }: { label: string; value?: number }) => (
 
 const BankingTab = () => {
   const applicationId = useApplicationDrawerStore((state) => state.selectedApplicationId);
-  const { data, isLoading, isError } = useQuery({
+  const { data: summary, isLoading, error } = useQuery<BankingSummary>({
     queryKey: ["banking", applicationId, "summary"],
-    queryFn: () => fetchBankingSummary(applicationId ?? ""),
+    queryFn: ({ signal }) => fetchBankingSummary(applicationId ?? "", { signal }),
     enabled: Boolean(applicationId)
   });
 
-  const summary = data?.data;
   const trend = useMemo(() => summary?.revenueTrend ?? [], [summary]);
 
   if (!applicationId) return <div className="drawer-placeholder">Select an application to view banking analysis.</div>;
   if (isLoading) return <div className="drawer-placeholder">Loading banking analysis…</div>;
-  if (isError) return <div className="drawer-placeholder">Unable to load banking analysis.</div>;
+  if (error) return <div className="drawer-placeholder">{getErrorMessage(error, "Unable to load banking analysis.")}</div>;
 
   return (
     <div className="drawer-tab drawer-tab__banking">

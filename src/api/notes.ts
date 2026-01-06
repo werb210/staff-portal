@@ -1,4 +1,4 @@
-import { apiClient } from "./client";
+import { apiClient, type RequestOptions } from "./client";
 
 export type NoteMessage = {
   id: string;
@@ -7,8 +7,8 @@ export type NoteMessage = {
   createdAt: string;
 };
 
-export const fetchNotesThread = (applicationId: string) =>
-  apiClient.get<NoteMessage[]>(`/communications/chat/thread/${applicationId}`);
+export const fetchNotesThread = (applicationId: string, options?: RequestOptions) =>
+  apiClient.get<NoteMessage[]>(`/communications/chat/thread/${applicationId}`, options);
 
 export const sendNoteMessage = (applicationId: string, body: string) =>
   apiClient.post(`/communications/chat/send`, { applicationId, body, internalOnly: true });

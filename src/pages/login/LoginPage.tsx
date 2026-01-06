@@ -32,11 +32,12 @@ export default function LoginPage() {
     try {
       await login(email, password);
       navigate("/dashboard", { replace: true });
-    } catch (err: any) {
-      if (err?.response?.status === 401) {
+    } catch (err: unknown) {
+      const status = (err as { status?: number })?.status;
+      if (status === 401) {
         setError("Invalid credentials");
       } else {
-        setError("Authentication failed");
+        setError(err instanceof Error ? err.message : "Authentication failed");
       }
     }
   };

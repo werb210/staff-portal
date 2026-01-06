@@ -6,6 +6,7 @@ import ConversationList from "./ConversationList";
 import ConversationViewer from "./ConversationViewer";
 import { useCommunicationsStore } from "@/state/communications.store";
 import { fetchCommunicationThreads, type CommunicationConversation } from "@/api/communications";
+import { getErrorMessage } from "@/utils/errors";
 
 const CommunicationsPage = () => {
   const {
@@ -42,7 +43,7 @@ const CommunicationsPage = () => {
     <div className="page">
       <Card title="Communications Control Room">
         {isLoading && <AppLoading />}
-        {error && <p className="text-red-700">Unable to load conversations.</p>}
+        {error && <p className="text-red-700">{getErrorMessage(error, "Unable to load conversations.")}</p>}
         {!isLoading && !error && (
           <div className="grid grid-cols-10 gap-4 h-[70vh]">
             <div className="col-span-3 border-r pr-3">

@@ -9,9 +9,9 @@ import { normalizeArray } from "@/utils/normalize";
 export function useApplications(stage: string) {
   return useQuery({
     queryKey: ["applications", stage],
-    queryFn: async () => {
-      const res = await apiClient.get("/api/applications", { params: { stage } });
-      return normalizeArray(res.data);
+    queryFn: async ({ signal }) => {
+      const res = await apiClient.get("/api/applications", { params: { stage }, signal });
+      return normalizeArray(res);
     },
   });
 }

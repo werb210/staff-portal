@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import type { ReactNode } from "react";
-import { fetchApplicationDetails } from "@/api/applications";
+import { fetchApplicationDetails, type ApplicationDetails } from "@/api/applications";
 import { useApplicationDrawerStore } from "@/state/applicationDrawer.store";
+import { getErrorMessage } from "@/utils/errors";
 
 const Section = ({ title, children }: { title: string; children: ReactNode }) => (
   <div className="drawer-section">
@@ -26,17 +27,15 @@ const KeyValueList = ({ data }: { data?: Record<string, string | number | boolea
 
 const ApplicationTab = () => {
   const applicationId = useApplicationDrawerStore((state) => state.selectedApplicationId);
-  const { data, isLoading, isError } = useQuery({
+  const { data: details, isLoading, error } = useQuery<ApplicationDetails>({
     queryKey: ["applications", applicationId, "details"],
-    queryFn: () => fetchApplicationDetails(applicationId ?? ""),
+    queryFn: ({ signal }) => fetchApplicationDetails(applicationId ?? "", { signal }),
     enabled: Boolean(applicationId)
   });
 
   if (!applicationId) return <div className="drawer-placeholder">Select an application to view details.</div>;
   if (isLoading) return <div className="drawer-placeholder">Loading application data…</div>;
-  if (isError) return <div className="drawer-placeholder">Unable to load application data.</div>;
-
-  const details = data?.data;
+  if (error) return <div className="drawer-placeholder">{getErrorMessage(error, "Unable to load application data.")}</div>;
 
   return (
     <div className="drawer-tab drawer-tab__application">

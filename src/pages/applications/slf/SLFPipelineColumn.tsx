@@ -30,7 +30,7 @@ const SLFPipelineColumn = ({ stage, onCardClick, activeCard }: SLFPipelineColumn
   const { setNodeRef, isOver } = useDroppable({ id: stage.id });
   const { data = [], isLoading } = useQuery<SLFPipelineApplication[]>({
     queryKey: ["slf", "pipeline", stage.id],
-    queryFn: () => slfPipelineApi.fetchColumn(stage.id),
+    queryFn: ({ signal }) => slfPipelineApi.fetchColumn(stage.id, { signal }),
     staleTime: 30_000
   });
 

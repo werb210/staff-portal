@@ -61,7 +61,7 @@ describe("LoginPage", () => {
   });
 
   test("shows an error when login fails", async () => {
-    const loginMock = vi.fn().mockRejectedValue({ response: { status: 401 } });
+    const loginMock = vi.fn().mockRejectedValue({ status: 401 });
     renderLogin(loginMock);
 
     fireEvent.change(screen.getByLabelText(/Email/i), { target: { value: "demo@example.com" } });

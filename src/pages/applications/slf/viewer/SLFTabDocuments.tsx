@@ -13,15 +13,13 @@ type SLFDocument = {
 const SLFTabDocuments = ({ applicationId }: { applicationId: string }) => {
   const { data: docs = [], isLoading } = useQuery<SLFDocument[]>({
     queryKey: ["slf", "documents", applicationId],
-    queryFn: async () => {
-      const { data } = await apiClient.get<SLFDocument[]>(`/api/slf/applications/${applicationId}/documents`);
-      return data;
-    }
+    queryFn: ({ signal }) =>
+      apiClient.get<SLFDocument[]>(`/api/slf/applications/${applicationId}/documents`, { signal })
   });
 
   const handleView = async (docId: string) => {
-    const presign = await apiClient.get(`/api/slf/documents/${docId}/presign`);
-    const url = presign.data?.url;
+    const presign = await apiClient.get<{ url?: string }>(`/api/slf/documents/${docId}/presign`);
+    const url = presign.url;
     if (url) {
       window.open(url, "_blank");
     }

@@ -4,6 +4,7 @@ import Card from "@/components/ui/Card";
 import Table from "@/components/ui/Table";
 import { fetchLenders, type Lender } from "@/api/lenders";
 import AppLoading from "@/components/layout/AppLoading";
+import { getErrorMessage } from "@/utils/errors";
 
 const LendersPage = () => {
   const { data, isLoading, error } = useQuery<Lender[], Error>({
@@ -21,7 +22,7 @@ const LendersPage = () => {
     <div className="page">
       <Card title="Lenders">
         {isLoading && <AppLoading />}
-        {error && <p className="text-red-700">Unable to load lenders.</p>}
+        {error && <p className="text-red-700">{getErrorMessage(error, "Unable to load lenders.")}</p>}
         {!isLoading && !error && (
           <Table headers={["Name", "Region"]}>
             {data?.map((lender) => (

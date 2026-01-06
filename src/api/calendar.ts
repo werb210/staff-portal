@@ -26,8 +26,8 @@ export type O365Event = {
 };
 
 export const fetchLocalEvents = async () => {
-  const res = await apiClient.get("/api/calendar/events");
-  return normalizeArray<CalendarEvent>(res.data);
+  const res = await apiClient.get<CalendarEvent[]>("/api/calendar/events");
+  return normalizeArray<CalendarEvent>(res);
 };
 
 export const createLocalEvent = (event: Partial<CalendarEvent>) =>
@@ -39,6 +39,6 @@ export const updateLocalEvent = (id: string, event: Partial<CalendarEvent>) =>
 export const deleteLocalEvent = (id: string) => apiClient.delete<void>(`/api/calendar/events/${id}`);
 
 export const fetchO365Events = async (view: "week" | "month") => {
-  const res = await apiClient.get(`/api/o365/calendar/events?view=${view}`);
-  return normalizeArray<O365Event>(res.data);
+  const res = await apiClient.get<O365Event[]>(`/api/o365/calendar/events?view=${view}`);
+  return normalizeArray<O365Event>(res);
 };

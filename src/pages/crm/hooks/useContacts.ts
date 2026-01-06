@@ -8,9 +8,6 @@ import { apiClient } from "@/api/client";
 export function useContacts() {
   return useQuery({
     queryKey: ["contacts"],
-    queryFn: async () => {
-      const { data } = await apiClient.get("/crm/contacts");
-      return data;
-    },
+    queryFn: ({ signal }) => apiClient.get("/crm/contacts", { signal }),
   });
 }

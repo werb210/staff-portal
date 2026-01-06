@@ -1,4 +1,4 @@
-import { apiClient } from "./client";
+import { apiClient, type RequestOptions } from "./client";
 import { normalizeArray } from "@/utils/normalize";
 
 export type Lender = {
@@ -16,12 +16,12 @@ export type LenderMatch = {
 };
 
 export const fetchLenders = async () => {
-  const res = await apiClient.get("/api/lenders");
-  return normalizeArray<Lender>(res.data);
+  const res = await apiClient.get<Lender[]>("/api/lenders");
+  return normalizeArray<Lender>(res);
 };
 
-export const fetchLenderMatches = (applicationId: string) =>
-  apiClient.get<LenderMatch[]>(`/applications/${applicationId}/lenders`);
+export const fetchLenderMatches = (applicationId: string, options?: RequestOptions) =>
+  apiClient.get<LenderMatch[]>(`/applications/${applicationId}/lenders`, options);
 
 export const sendToLenders = (applicationId: string, lenderIds: string[]) =>
   apiClient.post(`/lenders/send-to-lender`, { applicationId, lenderIds });

@@ -1,4 +1,4 @@
-import { apiClient } from "./client";
+import { apiClient, type RequestOptions } from "./client";
 
 export type DocumentRecord = {
   id: string;
@@ -23,7 +23,8 @@ export type DocumentVersion = {
   status?: string;
 };
 
-export const fetchDocumentPresign = (documentId: string) => apiClient.get<DocumentPresignResponse>(`/documents/${documentId}/presign`);
+export const fetchDocumentPresign = (documentId: string, options?: RequestOptions) =>
+  apiClient.get<DocumentPresignResponse>(`/documents/${documentId}/presign`, options);
 
 export const acceptDocument = (documentId: string) => apiClient.patch(`/documents/${documentId}/accept`);
 
@@ -33,4 +34,5 @@ export const rejectDocument = (documentId: string, reason?: string) =>
 export const restoreDocumentVersion = (documentId: string, version: number) =>
   apiClient.post(`/documents/${documentId}/version/restore`, { version });
 
-export const fetchDocumentVersions = (documentId: string) => apiClient.get<DocumentVersion[]>(`/documents/${documentId}/versions`);
+export const fetchDocumentVersions = (documentId: string, options?: RequestOptions) =>
+  apiClient.get<DocumentVersion[]>(`/documents/${documentId}/versions`, options);

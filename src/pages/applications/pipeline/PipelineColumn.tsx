@@ -35,7 +35,7 @@ const PipelineColumn = ({ stage, filters, onCardClick, activeCard, draggingFromS
   const { setNodeRef, isOver } = useDroppable({ id: stage.id });
   const { data = [], isLoading, isFetching } = useQuery<PipelineApplication[]>({
     queryKey: pipelineQueryKeys.column(stage.id, filters),
-    queryFn: () => pipelineApi.fetchColumn(stage.id, filters),
+    queryFn: ({ signal }) => pipelineApi.fetchColumn(stage.id, filters, { signal }),
     staleTime: 30_000
   });
 

@@ -26,9 +26,21 @@ const ContactDetailsDrawer = ({ contact, onClose }: ContactDetailsDrawerProps) =
 
   useEffect(() => {
     if (!contact) return;
-    fetchContactCompanies(contact).then(setCompanies);
-    fetchApplications(contact.id).then(setApplications);
-    fetchTimeline("contact", contact.id).then(setTimeline);
+    let isActive = true;
+
+    fetchContactCompanies(contact).then((result) => {
+      if (isActive) setCompanies(result);
+    });
+    fetchApplications(contact.id).then((result) => {
+      if (isActive) setApplications(result);
+    });
+    fetchTimeline("contact", contact.id).then((result) => {
+      if (isActive) setTimeline(result);
+    });
+
+    return () => {
+      isActive = false;
+    };
   }, [contact]);
 
   if (!contact) return null;

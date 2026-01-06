@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import apiClient from "./client";
 import { buildApiUrl } from "@/services/api";
+import { registerAuthFailureHandler } from "@/auth/authEvents";
 
-let assignMock: ReturnType<typeof vi.fn>;
+let failureHandler: ReturnType<typeof vi.fn>;
 
 const adapter = vi.fn(async (config) => ({
   data: {},
@@ -14,13 +15,10 @@ const adapter = vi.fn(async (config) => ({
 
 describe("apiClient auth", () => {
   beforeEach(() => {
-    localStorage.clear();
+    sessionStorage.clear();
     adapter.mockClear();
-    assignMock = vi.fn();
-    // @ts-expect-error allow overriding for tests
-    delete window.location;
-    // @ts-expect-error allow overriding for tests
-    window.location = { assign: assignMock };
+    failureHandler = vi.fn();
+    registerAuthFailureHandler(failureHandler);
   });
 
   it("throws before sending a request when the token is missing", async () => {
@@ -29,11 +27,11 @@ describe("apiClient auth", () => {
     ).rejects.toThrow("Missing access token");
 
     expect(adapter).not.toHaveBeenCalled();
-    expect(assignMock).toHaveBeenCalledWith("/login");
+    expect(failureHandler).toHaveBeenCalledWith("missing-token");
   });
 
   it("attaches the bearer token to outbound requests", async () => {
-    localStorage.setItem("accessToken", "abc123");
+    sessionStorage.setItem("accessToken", "abc123");
 
     await apiClient.get("/example", { adapter } as any);
 
@@ -44,7 +42,7 @@ describe("apiClient auth", () => {
   });
 
   it("clears auth and redirects on 401 responses", async () => {
-    localStorage.setItem("accessToken", "expired-token");
+    sessionStorage.setItem("accessToken", "expired-token");
 
     const unauthorizedAdapter = vi.fn(async (config) => ({
       data: {},
@@ -58,7 +56,6 @@ describe("apiClient auth", () => {
       apiClient.get("/secure", { adapter: unauthorizedAdapter } as any)
     ).rejects.toBeDefined();
 
-    expect(assignMock).toHaveBeenCalledWith("/login");
-    expect(localStorage.getItem("accessToken")).toBeNull();
+    expect(failureHandler).toHaveBeenCalledWith("unauthorized");
   });
 });

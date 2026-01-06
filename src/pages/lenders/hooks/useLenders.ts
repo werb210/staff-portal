@@ -9,8 +9,8 @@ import { normalizeArray } from "@/utils/normalize";
 export function useLenders() {
   return useQuery({
     queryKey: ["lenders"],
-    queryFn: async () => {
-      const { data } = await apiClient.get("/lenders");
+    queryFn: async ({ signal }) => {
+      const data = await apiClient.get("/lenders", { signal });
       return normalizeArray(data);
     },
   });

@@ -1,4 +1,4 @@
-import { apiClient } from "./client";
+import { apiClient, type RequestOptions } from "./client";
 
 export type ApplicationSummary = {
   id: string;
@@ -28,7 +28,8 @@ export type ApplicationDocumentsResponse = {
 
 export const fetchApplications = () => apiClient.get<ApplicationSummary[]>("/applications");
 
-export const fetchApplicationDetails = (id: string) => apiClient.get<ApplicationDetails>(`/applications/${id}`);
+export const fetchApplicationDetails = (id: string, options?: RequestOptions) =>
+  apiClient.get<ApplicationDetails>(`/applications/${id}`, options);
 
-export const fetchApplicationDocuments = (id: string) =>
-  apiClient.get<ApplicationDocumentsResponse>(`/applications/${id}/documents`);
+export const fetchApplicationDocuments = (id: string, options?: RequestOptions) =>
+  apiClient.get<ApplicationDocumentsResponse>(`/applications/${id}/documents`, options);
