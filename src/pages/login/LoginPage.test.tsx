@@ -4,17 +4,15 @@ import "@testing-library/jest-dom";
 import LoginPage from "./LoginPage";
 
 let loginMock = vi.fn();
+const setStoredAccessTokenMock = vi.fn();
 
-vi.mock("@/hooks/useAuth", () => ({
-  useAuth: () => ({
-    user: null,
-    token: null,
-    tokens: null,
-    isAuthenticated: false,
-    isLoading: false,
-    login: loginMock,
-    logout: vi.fn()
-  })
+vi.mock("@/services/auth", () => ({
+  login: (...args: Parameters<typeof loginMock>) => loginMock(...args)
+}));
+
+vi.mock("@/services/token", () => ({
+  setStoredAccessToken: (...args: Parameters<typeof setStoredAccessTokenMock>) =>
+    setStoredAccessTokenMock(...args)
 }));
 
 const navigateMock = vi.fn();
@@ -29,12 +27,8 @@ vi.mock("react-router-dom", async () => {
 });
 
 describe("LoginPage", () => {
-  const fetchMock = vi.fn();
-
   beforeEach(() => {
-    fetchMock.mockClear();
-    fetchMock.mockRejectedValue(new Error("offline"));
-    globalThis.fetch = fetchMock as typeof fetch;
+    setStoredAccessTokenMock.mockReset();
     navigateMock.mockReset();
   });
 
@@ -57,6 +51,7 @@ describe("LoginPage", () => {
     fireEvent.click(screen.getByRole("button", { name: /Login/i }));
 
     await waitFor(() => expect(loginMock).toHaveBeenCalledWith("demo@example.com", "password123"));
+    expect(setStoredAccessTokenMock).toHaveBeenCalledWith("token-123");
     expect(navigateMock).toHaveBeenCalledWith("/dashboard", { replace: true });
   });
 

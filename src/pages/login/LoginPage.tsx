@@ -1,36 +1,21 @@
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
-import { checkStaffServerHealth } from "@/utils/api";
+import { login as loginService } from "@/services/auth";
+import { setStoredAccessToken } from "@/services/token";
 
 export default function LoginPage() {
-  const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [apiWarning, setApiWarning] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    checkStaffServerHealth().then((healthy) => {
-      if (!healthy) {
-        setApiWarning("API unreachable. Please try again later.");
-      }
-    });
-  }, []);
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      navigate("/dashboard", { replace: true });
-    }
-  }, [isAuthenticated, navigate]);
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     setError(null);
 
     try {
-      await login(email, password);
+      const result = await loginService(email, password);
+      setStoredAccessToken(result.accessToken);
       navigate("/dashboard", { replace: true });
     } catch (err: unknown) {
       const status = (err as { status?: number })?.status;
@@ -45,12 +30,6 @@ export default function LoginPage() {
   return (
     <div className="max-w-md mx-auto p-6 space-y-4">
       <h1 className="text-2xl font-bold">Staff Login</h1>
-
-      {apiWarning && (
-        <div role="alert" className="text-sm text-amber-700">
-          {apiWarning}
-        </div>
-      )}
 
       {error && (
         <div role="alert" className="text-sm text-red-700">

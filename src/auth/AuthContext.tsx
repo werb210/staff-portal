@@ -1,5 +1,4 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { apiClient } from "@/api/client";
 import { login as loginService, type AuthenticatedUser, type LoginSuccess } from "@/services/auth";
 import {
   clearStoredAccessToken,
@@ -25,31 +24,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const storedToken = getStoredAccessToken();
   const [user, setUser] = useState<AuthenticatedUser | null>(null);
   const [token, setToken] = useState<string | null>(() => storedToken);
-  const [status, setStatus] = useState<AuthStatus>(storedToken ? "loading" : "unauthenticated");
-
-  useEffect(() => {
-    if (!token) {
-      setUser(null);
-      setStatus("unauthenticated");
-      return;
-    }
-
-    const fetchProfile = async () => {
-      try {
-        const profile = await apiClient.get<AuthenticatedUser>("/auth/me");
-        setUser(profile);
-        setStatus("authenticated");
-      } catch (error) {
-        console.error("Auth bootstrap failed", error);
-        clearStoredAccessToken();
-        setToken(null);
-        setUser(null);
-        setStatus("unauthenticated");
-      }
-    };
-
-    fetchProfile();
-  }, [token]);
+  const [status, setStatus] = useState<AuthStatus>(storedToken ? "authenticated" : "unauthenticated");
 
   useEffect(() => {
     return registerAuthFailureHandler(() => {
