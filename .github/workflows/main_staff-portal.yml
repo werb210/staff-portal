@@ -36,17 +36,22 @@ jobs:
           VITE_CLIENT_APP_SHARED_TOKEN: ${{ secrets.VITE_CLIENT_APP_SHARED_TOKEN }}
         run: npm run build
 
-      - name: Zip build output
+      - name: Package deploy bundle (dist + server)
         run: |
+          set -euo pipefail
           test -d dist
-          cd dist
-          zip -r ../dist.zip .
-          cd ..
-          test -f dist.zip
+          test -f server.js
+          test -f package.json
+
+          rm -f deploy.zip
+          zip -r deploy.zip dist server.js package.json package-lock.json 2>/dev/null || \
+          zip -r deploy.zip dist server.js package.json
+
+          test -f deploy.zip
 
       - name: Deploy to Azure App Service (Zip Deploy)
         uses: azure/webapps-deploy@v3
         with:
           app-name: "Staff-Portal"
           publish-profile: ${{ secrets.AZURE_APPSERVICE_PUBLISH_PROFILE_STAFF_PORTAL }}
-          package: "dist.zip"
+          package: "deploy.zip"
