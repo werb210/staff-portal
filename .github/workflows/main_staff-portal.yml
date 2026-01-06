@@ -4,9 +4,10 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch: {}
 
 concurrency:
-  group: staff-portal-${{ github.ref }}
+  group: staff-portal-main
   cancel-in-progress: true
 
 jobs:
@@ -21,26 +22,31 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: npm
+          cache: "npm"
 
-      - name: Install deps
+      - name: Install dependencies
         run: npm ci
 
       - name: Build
-        run: npm run build
         env:
-          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
           VITE_ENV: ${{ secrets.VITE_ENV }}
+          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
+          VITE_STAFF_API_URL: ${{ secrets.VITE_STAFF_API_URL }}
+          VITE_CLIENT_API_KEY: ${{ secrets.VITE_CLIENT_API_KEY }}
+          VITE_CLIENT_APP_SHARED_TOKEN: ${{ secrets.VITE_CLIENT_APP_SHARED_TOKEN }}
+        run: npm run build
 
       - name: Zip build output
         run: |
+          test -d dist
           cd dist
-          zip -r ../deploy.zip .
+          zip -r ../dist.zip .
           cd ..
+          test -f dist.zip
 
-      - name: Deploy to Azure App Service
+      - name: Deploy to Azure App Service (Zip Deploy)
         uses: azure/webapps-deploy@v3
         with:
-          app-name: Staff-Portal
+          app-name: "Staff-Portal"
           publish-profile: ${{ secrets.AZURE_APPSERVICE_PUBLISH_PROFILE_STAFF_PORTAL }}
-          package: deploy.zip
+          package: "dist.zip"
