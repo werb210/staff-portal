@@ -5,6 +5,11 @@ on:
     branches:
       - main
 
+# IMPORTANT: DO NOT CANCEL DEPLOYS
+concurrency:
+  group: staff-portal-deploy
+  cancel-in-progress: false
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -16,23 +21,31 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: "20"
 
       - name: Install dependencies
         run: npm ci
 
       - name: Build
+        env:
+          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
+          VITE_ENV: ${{ secrets.VITE_ENV }}
         run: npm run build
 
-      - name: Verify build output
+      - name: Verify dist exists
         run: |
-          echo "Listing dist/"
-          ls -la dist
+          ls -la
+          test -d dist
 
-      - name: Deploy to Azure App Service (Publish Profile)
+      - name: Zip dist contents
+        run: |
+          cd dist
+          zip -r ../deploy.zip .
+          cd ..
+
+      - name: Deploy to Azure App Service
         uses: azure/webapps-deploy@v3
         with:
           app-name: staff-portal
           publish-profile: ${{ secrets.AZURE_APPSERVICE_PUBLISH_PROFILE_STAFF_PORTAL }}
-          package: dist
-          clean: true
+          package: deploy.zip
