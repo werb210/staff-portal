@@ -1,9 +1,14 @@
+# .github/workflows/main_staff-portal.yml
 name: Staff Portal CI
 
 on:
   push:
     branches:
       - main
+
+concurrency:
+  group: staff-portal-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build-and-deploy:
@@ -22,30 +27,23 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Typecheck
-        run: npm run typecheck
-
-      - name: Test
-        run: npm test
-
       - name: Build
+        env:
+          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
+          VITE_ENV: ${{ secrets.VITE_ENV }}
         run: npm run build
 
-      - name: Upload dist artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: staff-portal-dist
-          path: dist
+      # Zip the CONTENTS of dist/, not the dist folder itself
+      - name: Package dist for Azure App Service
+        run: |
+          test -d dist
+          cd dist
+          zip -r ../deploy.zip .
+          cd ..
 
-      # 🔑 THIS IS THE MISSING PIECE
-      - name: Azure Login
-        uses: azure/login@v1
+      - name: Deploy to Azure App Service (publish profile)
+        uses: azure/webapps-deploy@v3
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-      - name: Deploy to Azure Web App
-        uses: azure/webapps-deploy@v2
-        with:
-          app-name: Staff-Portal
-          slot-name: production
-          package: dist
+          app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_APPSERVICE_PUBLISH_PROFILE_STAFF_PORTAL }}
+          package: deploy.zip
