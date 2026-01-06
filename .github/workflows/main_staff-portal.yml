@@ -5,46 +5,35 @@ on:
     branches:
       - main
 
-# IMPORTANT: DO NOT CANCEL DEPLOYS
 concurrency:
-  group: staff-portal-deploy
-  cancel-in-progress: false
+  group: staff-portal-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: "20"
+          cache: "npm"
 
-      - name: Install dependencies
-        run: npm ci
+      - run: npm ci
 
-      - name: Build
+      - run: npm run build
         env:
           VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
           VITE_ENV: ${{ secrets.VITE_ENV }}
-        run: npm run build
 
-      - name: Verify dist exists
-        run: |
-          ls -la
-          test -d dist
-
-      - name: Zip dist contents
-        run: |
+      - run: |
           cd dist
           zip -r ../deploy.zip .
           cd ..
 
-      - name: Deploy to Azure App Service
-        uses: azure/webapps-deploy@v3
+      - uses: azure/webapps-deploy@v3
         with:
           app-name: staff-portal
           publish-profile: ${{ secrets.AZURE_APPSERVICE_PUBLISH_PROFILE_STAFF_PORTAL }}
