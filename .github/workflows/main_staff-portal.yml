@@ -25,10 +25,15 @@ jobs:
         run: npm run build
 
       - name: Verify build output
-        run: ls -la dist
+        run: |
+          if [ ! -d "dist" ]; then
+            echo "❌ dist folder not found"
+            exit 1
+          fi
 
-      - name: Deploy to Azure App Service (Publish Profile)
+      - name: Deploy to Azure App Service
         uses: azure/webapps-deploy@v3
         with:
+          app-name: staff-portal
           publish-profile: ${{ secrets.AZURE_APPSERVICE_PUBLISH_PROFILE_STAFF_PORTAL }}
           package: dist
