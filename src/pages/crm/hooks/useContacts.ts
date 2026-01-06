@@ -3,11 +3,14 @@
    ========================================================= */
 
 import { useQuery } from "@tanstack/react-query";
-import { apiFetch } from "../../../utils/api";
+import { apiClient } from "@/api/client";
 
 export function useContacts() {
   return useQuery({
     queryKey: ["contacts"],
-    queryFn: () => apiFetch("/crm/contacts"),
+    queryFn: async () => {
+      const { data } = await apiClient.get("/crm/contacts");
+      return data;
+    },
   });
 }

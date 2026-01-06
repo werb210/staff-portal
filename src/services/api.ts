@@ -1,7 +1,6 @@
 import { RUNTIME_ENV } from "@/config/runtime";
 
 const API_BASE = RUNTIME_ENV.API_BASE_URL;
-const ACCESS_TOKEN_KEY = "accessToken";
 
 function baseHasApiPrefix(base: string) {
   return base.replace(/\/+$/, "").endsWith("/api");
@@ -18,75 +17,10 @@ function buildApiUrl(path: string) {
   return `${baseUrl}${normalizePath(path, baseUrl)}`;
 }
 
-type ApiOptions = RequestInit & { skipAuth?: boolean };
-
-let unauthorizedHandler: (() => void) | null = null;
-
 export const redirectToLogin = () => {
   if (window.location.pathname !== "/login") {
     window.location.assign("/login");
   }
 };
-
-export const getStoredAccessToken = () => localStorage.getItem(ACCESS_TOKEN_KEY);
-
-export const persistAccessToken = (token: string | null) => {
-  if (token) {
-    localStorage.setItem(ACCESS_TOKEN_KEY, token);
-    return;
-  }
-
-  localStorage.removeItem(ACCESS_TOKEN_KEY);
-};
-
-export const handleUnauthorized = () => {
-  persistAccessToken(null);
-  unauthorizedHandler?.();
-  redirectToLogin();
-};
-
-export const setUnauthorizedHandler = (handler: (() => void) | null) => {
-  unauthorizedHandler = handler;
-};
-
-export async function apiFetch<T = any>(path: string, options: ApiOptions = {}): Promise<T> {
-  const token = getStoredAccessToken();
-  const headers = new Headers(options.headers || undefined);
-  const requiresAuth = !options.skipAuth;
-
-  if (!headers.has("Content-Type")) {
-    headers.set("Content-Type", "application/json");
-  }
-
-  if (requiresAuth) {
-    if (!token) {
-      handleUnauthorized();
-      throw new Error("Missing access token");
-    }
-    headers.set("Authorization", `Bearer ${token}`);
-  }
-
-  const response = await fetch(buildApiUrl(path), {
-    ...options,
-    headers,
-    credentials: "omit",
-  });
-
-  if (response.status === 401 && requiresAuth) {
-    handleUnauthorized();
-    throw new Error("Unauthorized");
-  }
-
-  if (!response.ok) {
-    const text = await response.text();
-    throw new Error(`API ${response.status}: ${text}`);
-  }
-
-  if (response.status === 204) {
-    return null as T;
-  }
-
-  return response.json();
-}
 
 export { API_BASE, buildApiUrl };

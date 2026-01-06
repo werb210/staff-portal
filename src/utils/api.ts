@@ -3,9 +3,10 @@
    PURPOSE: Centralized API utilities + health check export
    ============================================================ */
 
-import { apiFetch } from "@/services/api";
+import { apiClient } from "@/api/client";
+import { API_BASE } from "@/services/api";
 
-export { API_BASE, apiFetch } from "@/services/api";
+export { API_BASE };
 
 /* ============================================================
    REQUIRED LEGACY EXPORT — DO NOT REMOVE
@@ -13,7 +14,7 @@ export { API_BASE, apiFetch } from "@/services/api";
    ============================================================ */
 export async function checkStaffServerHealth(): Promise<boolean> {
   try {
-    await apiFetch("/_int/health", { skipAuth: true });
+    await apiClient.get("/_int/health", { skipAuth: true });
     return true;
   } catch {
     return false;
