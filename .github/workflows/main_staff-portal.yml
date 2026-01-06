@@ -28,14 +28,12 @@ jobs:
           VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
           VITE_ENV: ${{ secrets.VITE_ENV }}
 
-      - name: Zip build
-        run: |
+      - run: |
           cd dist
           zip -r ../deploy.zip .
           cd ..
 
-      - name: Deploy to Azure App Service
-        uses: azure/webapps-deploy@v3
+      - uses: azure/webapps-deploy@v3
         with:
           app-name: Staff-Portal
           publish-profile: ${{ secrets.AZURE_APPSERVICE_PUBLISH_PROFILE_STAFF_PORTAL }}
