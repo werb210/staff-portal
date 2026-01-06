@@ -33,10 +33,15 @@ jobs:
           VITE_ENV: ${{ secrets.VITE_ENV }}
         run: npm run build
 
-      # Zip the CONTENTS of dist/, not the dist folder itself
-      - name: Package dist for Azure App Service
+      # Verify dist exists and contains index.html
+      - name: Verify build output
         run: |
           test -d dist
+          test -f dist/index.html
+
+      # Package ONLY dist contents (Azure App Service requirement)
+      - name: Package dist for Azure App Service
+        run: |
           cd dist
           zip -r ../deploy.zip .
           cd ..
