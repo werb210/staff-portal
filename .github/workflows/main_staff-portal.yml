@@ -1,4 +1,3 @@
-# .github/workflows/main_staff-portal.yml
 name: Staff Portal CI
 
 on:
@@ -35,8 +34,7 @@ jobs:
 
       - name: Verify build output
         run: |
-          test -d dist
-          ls -la dist
+          test -f dist/index.html
 
       - name: Package dist for Azure App Service
         run: |
@@ -47,6 +45,5 @@ jobs:
       - name: Deploy to Azure App Service (Publish Profile)
         uses: azure/webapps-deploy@v3
         with:
-          app-name: staff-portal
           publish-profile: ${{ secrets.AZURE_APPSERVICE_PUBLISH_PROFILE_STAFF_PORTAL }}
           package: deploy.zip
