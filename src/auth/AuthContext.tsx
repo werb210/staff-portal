@@ -6,6 +6,8 @@ import {
   getStoredAccessToken,
   setStoredAccessToken
 } from "@/services/token";
+import { registerAuthFailureHandler } from "@/auth/authEvents";
+import { redirectToLogin } from "@/services/api";
 
 export type AuthStatus = "loading" | "authenticated" | "unauthenticated";
 
@@ -29,16 +31,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     if (!token) {
       setUser(null);
       setStatus("unauthenticated");
-      delete apiClient.defaults.headers.common.Authorization;
       return;
     }
 
-    apiClient.defaults.headers.common.Authorization = `Bearer ${token}`;
-
     const fetchProfile = async () => {
       try {
-        const { data } = await apiClient.get<AuthenticatedUser>("/auth/me");
-        setUser(data);
+        const profile = await apiClient.get<AuthenticatedUser>("/auth/me");
+        setUser(profile);
         setStatus("authenticated");
       } catch (error) {
         console.error("Auth bootstrap failed", error);
@@ -52,13 +51,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     fetchProfile();
   }, [token]);
 
+  useEffect(() => {
+    return registerAuthFailureHandler(() => {
+      clearStoredAccessToken();
+      setUser(null);
+      setToken(null);
+      setStatus("unauthenticated");
+      redirectToLogin();
+    });
+  }, []);
+
   const login = useCallback(async (email: string, password: string) => {
     const result = await loginService(email, password);
     setStoredAccessToken(result.accessToken);
     setToken(result.accessToken);
     setUser(result.user);
     setStatus("authenticated");
-    apiClient.defaults.headers.common.Authorization = `Bearer ${result.accessToken}`;
     return result;
   }, []);
 
@@ -67,7 +75,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setUser(null);
     setToken(null);
     setStatus("unauthenticated");
-    delete apiClient.defaults.headers.common.Authorization;
+    redirectToLogin();
   }, []);
 
   const value = useMemo<AuthContextType>(

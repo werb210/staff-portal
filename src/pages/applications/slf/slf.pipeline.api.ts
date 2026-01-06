@@ -2,9 +2,8 @@ import { apiClient } from "@/api/client";
 import type { SLFPipelineApplication, SLFStageId } from "./slf.pipeline.types";
 
 export const slfPipelineApi = {
-  fetchColumn: async (stage: SLFStageId) => {
-    const { data } = await apiClient.get<SLFPipelineApplication[]>(`/api/slf/applications?stage=${stage}`);
-    return data;
+  fetchColumn: async (stage: SLFStageId, options?: { signal?: AbortSignal }) => {
+    return apiClient.get<SLFPipelineApplication[]>(`/api/slf/applications?stage=${stage}`, options);
   },
   moveCard: async (applicationId: string, newStage: SLFStageId) => {
     return apiClient.patch<SLFPipelineApplication>(`/api/slf/applications/${applicationId}/status`, { status: newStage });

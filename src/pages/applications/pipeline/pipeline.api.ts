@@ -17,10 +17,9 @@ const buildQueryParams = (stage: PipelineStageId, filters: PipelineFilters): str
 };
 
 export const pipelineApi = {
-  fetchColumn: async (stage: PipelineStageId, filters: PipelineFilters) => {
+  fetchColumn: async (stage: PipelineStageId, filters: PipelineFilters, options?: { signal?: AbortSignal }) => {
     const query = buildQueryParams(stage, filters);
-    const { data } = await apiClient.get<PipelineApplication[]>(`/api/applications?${query}`);
-    return data;
+    return apiClient.get<PipelineApplication[]>(`/api/applications?${query}`, options);
   },
   moveCard: async (applicationId: string, newStage: PipelineStageId) => {
     return apiClient.patch<PipelineApplication>(`/api/applications/${applicationId}/status`, { stage: newStage });

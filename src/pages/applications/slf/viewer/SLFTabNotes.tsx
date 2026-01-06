@@ -2,15 +2,20 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { apiClient } from "@/api/client";
 
+type SLFNote = {
+  id: string;
+  author: string;
+  createdAt: string;
+  text: string;
+};
+
 const SLFTabNotes = ({ applicationId }: { applicationId: string }) => {
   const queryClient = useQueryClient();
   const [text, setText] = useState("");
-  const { data } = useQuery({
+  const { data: notes = [] } = useQuery<SLFNote[]>({
     queryKey: ["slf", "notes", applicationId],
-    queryFn: () => apiClient.get(`/api/slf/applications/${applicationId}/notes`)
+    queryFn: ({ signal }) => apiClient.get(`/api/slf/applications/${applicationId}/notes`, { signal })
   });
-
-  const notes = data?.data ?? [];
 
   const mutation = useMutation({
     mutationFn: async () => apiClient.post(`/api/slf/applications/${applicationId}/notes`, { text }),

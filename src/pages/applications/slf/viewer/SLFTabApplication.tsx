@@ -1,17 +1,23 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/api/client";
 
+type SLFApplication = {
+  businessInfo?: Record<string, unknown>;
+  applicantInfo?: Record<string, unknown>;
+  fundingRequest?: Record<string, unknown>;
+  financialSnapshot?: Record<string, unknown>;
+  contact?: Record<string, unknown>;
+};
+
 const SLFTabApplication = ({ applicationId }: { applicationId: string }) => {
-  const { data, isLoading } = useQuery({
+  const { data: application = {}, isLoading } = useQuery<SLFApplication>({
     queryKey: ["slf", "application", applicationId],
-    queryFn: () => apiClient.get(`/api/slf/applications/${applicationId}`)
+    queryFn: ({ signal }) => apiClient.get(`/api/slf/applications/${applicationId}`, { signal })
   });
 
   if (isLoading) {
     return <div>Loading application data...</div>;
   }
-
-  const application = data?.data ?? {};
 
   return (
     <div className="slf-application-view">

@@ -14,7 +14,7 @@ export type LoginSuccess = {
 };
 
 export async function login(email: string, password: string): Promise<LoginSuccess> {
-  const { data } = await apiClient.post<LoginSuccess>(
+  const data = await apiClient.post<LoginSuccess>(
     "/auth/login",
     { email, password },
     {

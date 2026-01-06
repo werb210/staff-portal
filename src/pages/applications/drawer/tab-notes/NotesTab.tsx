@@ -1,16 +1,17 @@
 import { useEffect, useRef } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { fetchNotesThread, sendNoteMessage } from "@/api/notes";
+import { fetchNotesThread, sendNoteMessage, type NoteMessage } from "@/api/notes";
 import { useApplicationDrawerStore } from "@/state/applicationDrawer.store";
 import NotesComposer from "./NotesComposer";
+import { getErrorMessage } from "@/utils/errors";
 
 const NotesTab = () => {
   const applicationId = useApplicationDrawerStore((state) => state.selectedApplicationId);
   const queryClient = useQueryClient();
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const { data, isLoading, isError } = useQuery({
+  const { data: messages = [], isLoading, error } = useQuery<NoteMessage[]>({
     queryKey: ["notes", applicationId],
-    queryFn: () => fetchNotesThread(applicationId ?? ""),
+    queryFn: ({ signal }) => fetchNotesThread(applicationId ?? "", { signal }),
     enabled: Boolean(applicationId)
   });
 
@@ -23,7 +24,7 @@ const NotesTab = () => {
     if (containerRef.current) {
       containerRef.current.scrollTop = containerRef.current.scrollHeight;
     }
-  }, [data]);
+  }, [messages]);
 
   const handleSend = async (text: string) => {
     await mutation.mutateAsync(text);
@@ -31,13 +32,13 @@ const NotesTab = () => {
 
   if (!applicationId) return <div className="drawer-placeholder">Select an application to view notes.</div>;
   if (isLoading) return <div className="drawer-placeholder">Loading notes…</div>;
-  if (isError) return <div className="drawer-placeholder">Unable to load notes.</div>;
+  if (error) return <div className="drawer-placeholder">{getErrorMessage(error, "Unable to load notes.")}</div>;
 
   return (
     <div className="drawer-tab drawer-tab__notes">
       <div className="notes-thread" ref={containerRef}>
-        {data?.data?.length ? (
-          data.data.map((message) => (
+        {messages.length ? (
+          messages.map((message) => (
             <div key={message.id} className="note-message">
               <div className="note-message__avatar">{message.author.slice(0, 2).toUpperCase()}</div>
               <div className="note-message__body">

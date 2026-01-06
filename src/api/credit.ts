@@ -1,4 +1,4 @@
-import { apiClient } from "./client";
+import { apiClient, type RequestOptions } from "./client";
 
 export type CreditSummary = {
   businessOverview?: string;
@@ -10,8 +10,8 @@ export type CreditSummary = {
   pdfUrl?: string;
 };
 
-export const fetchCreditSummary = (applicationId: string) =>
-  apiClient.get<CreditSummary>(`/internal/application/${applicationId}/credit-summary`);
+export const fetchCreditSummary = (applicationId: string, options?: RequestOptions) =>
+  apiClient.get<CreditSummary>(`/internal/application/${applicationId}/credit-summary`, options);
 
 export const regenerateCreditSummary = (applicationId: string) =>
   apiClient.post(`/internal/application/${applicationId}/credit-summary/regenerate`);

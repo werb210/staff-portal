@@ -1,16 +1,16 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { fetchApplicationDetails } from "@/api/applications";
+import { fetchApplicationDetails, type ApplicationDetails } from "@/api/applications";
 
 const DrawerHeader = ({ applicationId, onClose }: { applicationId: string; onClose: () => void }) => {
-  const { data } = useQuery({
+  const { data } = useQuery<ApplicationDetails>({
     queryKey: ["applications", applicationId, "details"],
-    queryFn: () => fetchApplicationDetails(applicationId),
+    queryFn: ({ signal }) => fetchApplicationDetails(applicationId, { signal }),
     enabled: Boolean(applicationId)
   });
 
-  const title = useMemo(() => data?.data?.applicant ?? "Application", [data]);
-  const status = data?.data?.status ?? "";
+  const title = useMemo(() => data?.applicant ?? "Application", [data]);
+  const status = data?.status ?? "";
 
   return (
     <div className="application-drawer__header">

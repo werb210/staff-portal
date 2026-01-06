@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchOcrResults, type OcrSection } from "@/api/ocr";
+import { fetchOcrResults, type OcrSection, type OcrResults } from "@/api/ocr";
 import { useApplicationDrawerStore } from "@/state/applicationDrawer.store";
+import { getErrorMessage } from "@/utils/errors";
 
 const SectionBlock = ({ section }: { section?: OcrSection }) => {
   if (!section) return null;
@@ -30,17 +31,15 @@ const SectionBlock = ({ section }: { section?: OcrSection }) => {
 
 const FinancialTab = () => {
   const applicationId = useApplicationDrawerStore((state) => state.selectedApplicationId);
-  const { data, isLoading, isError } = useQuery({
+  const { data: results, isLoading, error } = useQuery<OcrResults>({
     queryKey: ["ocr", applicationId, "results"],
-    queryFn: () => fetchOcrResults(applicationId ?? ""),
+    queryFn: ({ signal }) => fetchOcrResults(applicationId ?? "", { signal }),
     enabled: Boolean(applicationId)
   });
 
   if (!applicationId) return <div className="drawer-placeholder">Select an application to view financial data.</div>;
   if (isLoading) return <div className="drawer-placeholder">Loading financial data…</div>;
-  if (isError) return <div className="drawer-placeholder">Unable to load financial data.</div>;
-
-  const results = data?.data;
+  if (error) return <div className="drawer-placeholder">{getErrorMessage(error, "Unable to load financial data.")}</div>;
 
   return (
     <div className="drawer-tab drawer-tab__financial">

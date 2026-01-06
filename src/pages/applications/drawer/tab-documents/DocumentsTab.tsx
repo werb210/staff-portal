@@ -1,32 +1,32 @@
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { fetchApplicationDocuments } from "@/api/applications";
-import { acceptDocument, fetchDocumentPresign, rejectDocument } from "@/api/documents";
+import { fetchApplicationDocuments, type ApplicationDocumentsResponse } from "@/api/applications";
+import { acceptDocument, fetchDocumentPresign, rejectDocument, type DocumentPresignResponse } from "@/api/documents";
 import { useApplicationDrawerStore } from "@/state/applicationDrawer.store";
 import DocumentListItem from "./DocumentListItem";
 import DocumentVersionHistory from "./DocumentVersionHistory";
+import { getErrorMessage } from "@/utils/errors";
 
 const DocumentsTab = () => {
   const applicationId = useApplicationDrawerStore((state) => state.selectedApplicationId);
   const queryClient = useQueryClient();
-  const { data, isLoading, isError } = useQuery({
+  const { data: documents = [], isLoading, error } = useQuery<ApplicationDocumentsResponse>({
     queryKey: ["applications", applicationId, "documents"],
-    queryFn: () => fetchApplicationDocuments(applicationId ?? ""),
+    queryFn: ({ signal }) => fetchApplicationDocuments(applicationId ?? "", { signal }),
     enabled: Boolean(applicationId)
   });
-  const documents = data?.data ?? [];
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const selectedDocument = useMemo(() => documents.find((doc) => doc.id === selectedId) ?? documents[0], [documents, selectedId]);
-  const { data: presignData } = useQuery({
+  const { data: presignData } = useQuery<DocumentPresignResponse>({
     queryKey: ["documents", selectedDocument?.id, "presign"],
-    queryFn: () => fetchDocumentPresign(selectedDocument?.id ?? ""),
+    queryFn: ({ signal }) => fetchDocumentPresign(selectedDocument?.id ?? "", { signal }),
     enabled: Boolean(selectedDocument?.id)
   });
 
   if (!applicationId) return <div className="drawer-placeholder">Select an application to view documents.</div>;
   if (isLoading) return <div className="drawer-placeholder">Loading documents…</div>;
-  if (isError) return <div className="drawer-placeholder">Unable to load documents.</div>;
+  if (error) return <div className="drawer-placeholder">{getErrorMessage(error, "Unable to load documents.")}</div>;
 
   const handleAccept = async () => {
     if (!selectedDocument) return;
@@ -61,7 +61,7 @@ const DocumentsTab = () => {
                   <div className="documents-viewer__meta">Version {selectedDocument.version ?? 1}</div>
                 </div>
                 <div className="documents-viewer__actions">
-                  <a className="btn btn--ghost" href={presignData?.data?.url} target="_blank" rel="noreferrer">
+                  <a className="btn btn--ghost" href={presignData?.url} target="_blank" rel="noreferrer">
                     Download
                   </a>
                   <button type="button" className="btn btn--primary" onClick={handleAccept}>
@@ -73,8 +73,8 @@ const DocumentsTab = () => {
                 </div>
               </div>
               <div className="documents-viewer__preview">
-                {presignData?.data?.url ? (
-                  <iframe title="Document preview" src={presignData.data.url} className="documents-viewer__frame" />
+                {presignData?.url ? (
+                  <iframe title="Document preview" src={presignData.url} className="documents-viewer__frame" />
                 ) : (
                   <div className="drawer-placeholder">No preview available.</div>
                 )}

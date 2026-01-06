@@ -1,13 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchCreditSummary, regenerateCreditSummary } from "@/api/credit";
+import { fetchCreditSummary, regenerateCreditSummary, type CreditSummary } from "@/api/credit";
 import { useApplicationDrawerStore } from "@/state/applicationDrawer.store";
+import { getErrorMessage } from "@/utils/errors";
 
 const CreditSummaryTab = () => {
   const applicationId = useApplicationDrawerStore((state) => state.selectedApplicationId);
   const queryClient = useQueryClient();
-  const { data, isLoading, isError } = useQuery({
+  const { data: summary, isLoading, error } = useQuery<CreditSummary>({
     queryKey: ["credit", applicationId],
-    queryFn: () => fetchCreditSummary(applicationId ?? ""),
+    queryFn: ({ signal }) => fetchCreditSummary(applicationId ?? "", { signal }),
     enabled: Boolean(applicationId)
   });
 
@@ -18,9 +19,7 @@ const CreditSummaryTab = () => {
 
   if (!applicationId) return <div className="drawer-placeholder">Select an application to view credit summary.</div>;
   if (isLoading) return <div className="drawer-placeholder">Loading credit summary…</div>;
-  if (isError) return <div className="drawer-placeholder">Unable to load credit summary.</div>;
-
-  const summary = data?.data;
+  if (error) return <div className="drawer-placeholder">{getErrorMessage(error, "Unable to load credit summary.")}</div>;
 
   return (
     <div className="drawer-tab drawer-tab__credit">

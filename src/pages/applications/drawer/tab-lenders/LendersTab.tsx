@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { fetchLenderMatches, sendToLenders } from "@/api/lenders";
+import { fetchLenderMatches, sendToLenders, type LenderMatch } from "@/api/lenders";
 import { useApplicationDrawerStore } from "@/state/applicationDrawer.store";
+import { getErrorMessage } from "@/utils/errors";
 
 const LendersTab = () => {
   const applicationId = useApplicationDrawerStore((state) => state.selectedApplicationId);
-  const { data, isLoading, isError } = useQuery({
+  const { data: matches = [], isLoading, error } = useQuery<LenderMatch[]>({
     queryKey: ["lenders", applicationId, "matches"],
-    queryFn: () => fetchLenderMatches(applicationId ?? ""),
+    queryFn: ({ signal }) => fetchLenderMatches(applicationId ?? "", { signal }),
     enabled: Boolean(applicationId)
   });
 
@@ -24,15 +25,15 @@ const LendersTab = () => {
 
   if (!applicationId) return <div className="drawer-placeholder">Select an application to view lenders.</div>;
   if (isLoading) return <div className="drawer-placeholder">Loading lenders…</div>;
-  if (isError) return <div className="drawer-placeholder">Unable to load lenders.</div>;
+  if (error) return <div className="drawer-placeholder">{getErrorMessage(error, "Unable to load lenders.")}</div>;
 
   return (
     <div className="drawer-tab drawer-tab__lenders">
       <div className="drawer-section">
         <div className="drawer-section__title">Recommended Lenders</div>
-        {data?.data?.length ? (
+        {matches.length ? (
           <ul className="drawer-list">
-            {data.data.map((match) => (
+            {matches.map((match) => (
               <li key={match.id} className="lender-row">
                 <label>
                   <input type="checkbox" checked={selected.includes(match.id)} onChange={() => toggleSelection(match.id)} />

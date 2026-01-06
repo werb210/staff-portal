@@ -42,7 +42,7 @@ const renderLenderRouter = () => {
 describe("Lender authentication flow", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    localStorage.clear();
+    sessionStorage.clear();
   });
 
   it("handles login and OTP verification with isolated storage", async () => {
@@ -72,8 +72,8 @@ describe("Lender authentication flow", () => {
       expect(verifyLenderOtp).toHaveBeenCalledWith({ email: "lender@example.com", code: "123456", sessionId: "sess-1" })
     );
 
-    const stored = JSON.parse(localStorage.getItem("lender-portal.auth") ?? "{}");
+    const stored = JSON.parse(sessionStorage.getItem("lender-portal.auth") ?? "{}");
     expect(stored.tokens.accessToken).toBe("lender-access");
-    expect(localStorage.getItem("staff-portal.auth")).toBeNull();
+    expect(sessionStorage.getItem("staff-portal.auth")).toBeNull();
   });
 });

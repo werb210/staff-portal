@@ -1,20 +1,21 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchDocumentVersions, restoreDocumentVersion } from "@/api/documents";
+import { fetchDocumentVersions, restoreDocumentVersion, type DocumentVersion } from "@/api/documents";
+import { getErrorMessage } from "@/utils/errors";
 
 const DocumentVersionHistory = ({ documentId }: { documentId: string }) => {
-  const { data, isLoading, isError } = useQuery({
+  const { data: versions = [], isLoading, error } = useQuery<DocumentVersion[]>({
     queryKey: ["documents", documentId, "versions"],
-    queryFn: () => fetchDocumentVersions(documentId),
+    queryFn: ({ signal }) => fetchDocumentVersions(documentId, { signal }),
     enabled: Boolean(documentId)
   });
 
   if (isLoading) return <div className="drawer-placeholder">Loading version history…</div>;
-  if (isError) return <div className="drawer-placeholder">Unable to load versions.</div>;
+  if (error) return <div className="drawer-placeholder">{getErrorMessage(error, "Unable to load versions.")}</div>;
 
   return (
     <div className="document-version-history">
-      {data?.data?.length ? (
-        data.data.map((version) => (
+      {versions.length ? (
+        versions.map((version) => (
           <div key={version.id} className="document-version">
             <div>
               <div className="document-version__title">Version {version.version}</div>

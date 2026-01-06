@@ -11,6 +11,7 @@ import CompanyDetailsDrawer from "./CompanyDetailsDrawer";
 import { fetchCompanies } from "@/api/crm";
 import type { Company } from "@/api/crm";
 import { useCrmStore } from "@/state/crm.store";
+import { getErrorMessage } from "@/utils/errors";
 
 const CompaniesPage = () => {
   const { silo, setSilo } = useCrmStore();
@@ -56,7 +57,7 @@ const CompaniesPage = () => {
         <div className="flex gap-2 mb-2 items-center">
           <Input placeholder="Search" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
-        {error && <p className="text-red-700">Unable to load companies.</p>}
+        {error && <p className="text-red-700">{getErrorMessage(error, "Unable to load companies.")}</p>}
         {!error && (
           <Table headers={["Name", "Industry", "Silo", "Owner", "Tags", "Actions"]}>
             {isLoading && (

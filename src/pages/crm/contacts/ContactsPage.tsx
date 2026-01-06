@@ -11,6 +11,7 @@ import ContactForm from "./ContactForm";
 import { fetchContacts } from "@/api/crm";
 import type { Contact } from "@/api/crm";
 import { useCrmStore } from "@/state/crm.store";
+import { getErrorMessage } from "@/utils/errors";
 
 const owners = ["Alex", "Taylor"];
 
@@ -80,7 +81,7 @@ const ContactsPage = () => {
             Reset
           </Button>
         </div>
-        {error && <p className="text-red-700">Unable to load contacts.</p>}
+        {error && <p className="text-red-700">{getErrorMessage(error, "Unable to load contacts.")}</p>}
         {!error && (
           <Table headers={["Name", "Email", "Phone", "Silo", "Owner", "Active", "Actions"]}>
             {isLoading && (

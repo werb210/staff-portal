@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useTasksStore, type TaskFilters } from "@/state/tasks.store";
 import TaskListItem from "./TaskListItem";
 import TaskEditor from "./TaskEditor";
+import { getErrorMessage } from "@/utils/errors";
 
 const filterTasks = (tasks: TaskItem[], filters: TaskFilters, currentUserId?: string) => {
   return tasks.filter((task) => {
@@ -36,6 +37,7 @@ const TaskPane = () => {
   const { filters, setFilters, selectedTask, setSelectedTask, toggleCompletion } = useTasksStore();
   const [showEditor, setShowEditor] = useState(false);
   const tasksToDisplay = useMemo(() => filterTasks(tasks, filters, user?.id), [filters, tasks, user?.id]);
+  const errorMessage = error ? getErrorMessage(error, "Unable to load tasks.") : null;
 
   useEffect(() => {
     if (error) {
@@ -98,7 +100,7 @@ const TaskPane = () => {
           <h4>My Tasks</h4>
           <ul>
             {isLoading && <li>Loading tasks…</li>}
-            {error && <li className="text-red-700">Unable to load tasks.</li>}
+            {errorMessage && <li className="text-red-700">{errorMessage}</li>}
             {!isLoading &&
               !error &&
               tasksToDisplay
@@ -112,7 +114,7 @@ const TaskPane = () => {
           <h4>Assigned Tasks</h4>
           <ul>
             {isLoading && <li>Loading tasks…</li>}
-            {error && <li className="text-red-700">Unable to load tasks.</li>}
+            {errorMessage && <li className="text-red-700">{errorMessage}</li>}
             {!isLoading &&
               !error &&
               tasksToDisplay
@@ -126,7 +128,7 @@ const TaskPane = () => {
           <h4>Due Today</h4>
           <ul>
             {isLoading && <li>Loading tasks…</li>}
-            {error && <li className="text-red-700">Unable to load tasks.</li>}
+            {errorMessage && <li className="text-red-700">{errorMessage}</li>}
             {!isLoading &&
               !error &&
               tasksToDisplay
@@ -140,7 +142,7 @@ const TaskPane = () => {
           <h4>Overdue</h4>
           <ul>
             {isLoading && <li>Loading tasks…</li>}
-            {error && <li className="text-red-700">Unable to load tasks.</li>}
+            {errorMessage && <li className="text-red-700">{errorMessage}</li>}
             {!isLoading &&
               !error &&
               tasksToDisplay

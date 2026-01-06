@@ -18,6 +18,7 @@ import RetargetingRules from "./Retargeting/RetargetingRules";
 import RetargetingAudienceList from "./Retargeting/RetargetingAudienceList";
 import BrandLibrary from "./Assets/BrandLibrary";
 import MarketingToDoList from "./ToDo/MarketingToDoList";
+import { getErrorMessage } from "@/utils/errors";
 
 const MarketingDashboard = () => {
   const { dateRange } = useMarketingStore();
@@ -64,7 +65,7 @@ const MarketingDashboard = () => {
           </ul>
         </Card>
         <Card title="Performance Snapshot">
-          {adsError && <p className="text-red-700">Unable to load ads performance.</p>}
+          {adsError && <p className="text-red-700">{getErrorMessage(adsError, "Unable to load ads performance.")}</p>}
           {loadingAds && <AppLoading />}
           {!loadingAds && !adsError && (
             <Table headers={["Platform", "Spend", "Impr.", "Clicks", "Conv.", "CPQA"]}>
@@ -87,7 +88,9 @@ const MarketingDashboard = () => {
         </Card>
       </div>
 
-      {attributionError && <p className="text-red-700">Unable to load attribution analytics.</p>}
+      {attributionError && (
+        <p className="text-red-700">{getErrorMessage(attributionError, "Unable to load attribution analytics.")}</p>
+      )}
       <CampaignAnalytics />
       <CampaignList />
       <AdsList />
@@ -106,7 +109,7 @@ const MarketingDashboard = () => {
       <AttributionDashboard data={attribution} loading={loadingAttribution} />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {assetsError && <p className="text-red-700">Unable to load brand assets.</p>}
+        {assetsError && <p className="text-red-700">{getErrorMessage(assetsError, "Unable to load brand assets.")}</p>}
         <BrandLibrary assets={assets} />
         <MarketingToDoList />
       </div>

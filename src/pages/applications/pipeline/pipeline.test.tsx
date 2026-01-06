@@ -68,7 +68,8 @@ describe("Pipeline foundation", () => {
     await waitFor(() =>
       expect(pipelineApi.fetchColumn).toHaveBeenCalledWith(
         expect.any(String),
-        expect.objectContaining({ searchTerm: "Acme" })
+        expect.objectContaining({ searchTerm: "Acme" }),
+        expect.any(Object)
       )
     );
   });

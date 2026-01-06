@@ -16,8 +16,18 @@ const CompanyDetailsDrawer = ({ company, onClose }: CompanyDetailsDrawerProps) =
 
   useEffect(() => {
     if (!company) return;
-    fetchCompanyContacts(company).then(setContacts);
-    fetchTimeline("company", company.id).then(setTimeline);
+    let isActive = true;
+
+    fetchCompanyContacts(company).then((result) => {
+      if (isActive) setContacts(result);
+    });
+    fetchTimeline("company", company.id).then((result) => {
+      if (isActive) setTimeline(result);
+    });
+
+    return () => {
+      isActive = false;
+    };
   }, [company]);
 
   if (!company) return null;
