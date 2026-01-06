@@ -14,27 +14,33 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
           node-version: "20"
           cache: "npm"
 
-      - run: npm ci
+      - name: Install dependencies
+        run: npm ci
 
-      - run: npm run build
+      - name: Build
+        run: npm run build
         env:
           VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
           VITE_ENV: ${{ secrets.VITE_ENV }}
 
-      - run: |
+      - name: Zip build output
+        run: |
           cd dist
           zip -r ../deploy.zip .
           cd ..
 
-      - uses: azure/webapps-deploy@v3
+      - name: Deploy to Azure App Service
+        uses: azure/webapps-deploy@v3
         with:
-          app-name: staff-portal
+          app-name: Staff-Portal
           publish-profile: ${{ secrets.AZURE_APPSERVICE_PUBLISH_PROFILE_STAFF_PORTAL }}
           package: deploy.zip
