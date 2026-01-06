@@ -23,7 +23,7 @@ jobs:
           node-version: "20"
           cache: "npm"
 
-      - name: Install dependencies
+      - name: Install deps
         run: npm ci
 
       - name: Build
@@ -32,15 +32,19 @@ jobs:
           VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
           VITE_ENV: ${{ secrets.VITE_ENV }}
 
-      - name: Zip build output
+      - name: Zip build
         run: |
           cd dist
           zip -r ../deploy.zip .
           cd ..
 
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
       - name: Deploy to Azure App Service
         uses: azure/webapps-deploy@v3
         with:
-          app-name: Staff-Portal
-          publish-profile: ${{ secrets.AZURE_APPSERVICE_PUBLISH_PROFILE_STAFF_PORTAL }}
+          app-name: staff-portal
           package: deploy.zip
