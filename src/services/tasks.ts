@@ -1,5 +1,6 @@
-import { apiFetch } from "./api";
+import { apiClient } from "@/api/client";
 
 export async function getTasks() {
-  return apiFetch("/tasks");
+  const { data } = await apiClient.get("/tasks");
+  return data;
 }
