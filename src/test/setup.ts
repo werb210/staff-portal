@@ -1,5 +1,4 @@
 import "@testing-library/jest-dom/vitest";
+import { vi } from "vitest";
 
-(window as any).__ENV__ = {
-  API_BASE_URL: "http://localhost/api"
-};
+vi.stubEnv("VITE_API_BASE_URL", "http://localhost/api");

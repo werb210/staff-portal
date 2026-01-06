@@ -1,6 +1,4 @@
-import { RUNTIME_ENV } from "@/config/runtime";
-
-const API_BASE = RUNTIME_ENV.API_BASE_URL;
+import { getApiBaseUrl } from "@/config/runtime";
 
 function baseHasApiPrefix(base: string) {
   return base.replace(/\/+$/, "").endsWith("/api");
@@ -13,7 +11,7 @@ function normalizePath(path: string, base: string) {
 }
 
 function buildApiUrl(path: string) {
-  const baseUrl = API_BASE ?? "";
+  const baseUrl = getApiBaseUrl();
   return `${baseUrl}${normalizePath(path, baseUrl)}`;
 }
 
@@ -23,4 +21,6 @@ export const redirectToLogin = () => {
   }
 };
 
-export { API_BASE, buildApiUrl };
+const getApiBaseUrlValue = () => getApiBaseUrl();
+
+export { buildApiUrl, getApiBaseUrlValue as API_BASE };

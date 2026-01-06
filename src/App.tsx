@@ -15,6 +15,7 @@ import TaskPane from "./pages/tasks/TaskPane";
 import ApiConfigGuard from "./components/layout/ApiConfigGuard";
 import { notifyRouteChange } from "./api/client";
 import { AuthProvider } from "./auth/AuthContext";
+import { getApiBaseUrlOptional } from "./config/runtime";
 
 const RouteChangeObserver = () => {
   const location = useLocation();
@@ -37,6 +38,11 @@ const ProtectedApp = () => (
 );
 
 export default function App() {
+  useEffect(() => {
+    const apiBaseUrl = getApiBaseUrlOptional();
+    console.log(`[runtime] API base URL: ${apiBaseUrl ?? "missing"}`);
+  }, []);
+
   return (
     <BrowserRouter>
       <RouteChangeObserver />
