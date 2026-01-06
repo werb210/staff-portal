@@ -5,10 +5,6 @@ on:
     branches:
       - main
 
-concurrency:
-  group: staff-portal-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -20,30 +16,19 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
-          cache: "npm"
+          node-version: 20
 
       - name: Install dependencies
         run: npm ci
 
       - name: Build
-        env:
-          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
-          VITE_ENV: ${{ secrets.VITE_ENV }}
         run: npm run build
 
       - name: Verify build output
-        run: |
-          test -f dist/index.html
-
-      - name: Package dist for Azure App Service
-        run: |
-          cd dist
-          zip -r ../deploy.zip .
-          cd ..
+        run: ls -la dist
 
       - name: Deploy to Azure App Service (Publish Profile)
         uses: azure/webapps-deploy@v3
         with:
           publish-profile: ${{ secrets.AZURE_APPSERVICE_PUBLISH_PROFILE_STAFF_PORTAL }}
-          package: deploy.zip
+          package: dist
