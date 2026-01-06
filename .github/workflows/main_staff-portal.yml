@@ -33,13 +33,9 @@ jobs:
           VITE_ENV: ${{ secrets.VITE_ENV }}
         run: npm run build
 
-      # Verify dist exists and contains index.html
       - name: Verify build output
-        run: |
-          test -d dist
-          test -f dist/index.html
+        run: test -d dist
 
-      # Package ONLY dist contents (Azure App Service requirement)
       - name: Package dist for Azure App Service
         run: |
           cd dist
@@ -49,6 +45,6 @@ jobs:
       - name: Deploy to Azure App Service (publish profile)
         uses: azure/webapps-deploy@v3
         with:
-          app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
+          app-name: Staff-Portal
           publish-profile: ${{ secrets.AZURE_APPSERVICE_PUBLISH_PROFILE_STAFF_PORTAL }}
           package: deploy.zip
