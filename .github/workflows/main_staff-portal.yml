@@ -33,18 +33,28 @@ jobs:
           VITE_ENV: ${{ secrets.VITE_ENV }}
         run: npm run build
 
-      - name: Verify build output
-        run: test -d dist
-
-      - name: Package dist for Azure App Service
+      # Zip the CONTENTS of dist/, not the dist folder itself
+      - name: Package dist for deployment
         run: |
+          set -euo pipefail
+          test -d dist
           cd dist
           zip -r ../deploy.zip .
           cd ..
+          test -f deploy.zip
 
-      - name: Deploy to Azure App Service (publish profile)
+      # Login using service principal secrets (no publish profile)
+      - name: Azure Login (Service Principal)
+        uses: azure/login@v2
+        with:
+          auth-type: SERVICE_PRINCIPAL
+          client-id: ${{ secrets.AZURE_APPSERVICE_CLIENTID }}
+          tenant-id: ${{ secrets.AZURE_APPSERVICE_TENANTID }}
+          subscription-id: ${{ secrets.AZURE_APPSERVICE_SUBSCRIPTIONID }}
+          client-secret: ${{ secrets.AZURE_APPSERVICE_CLIENTSECRET }}
+
+      - name: Deploy to Azure App Service
         uses: azure/webapps-deploy@v3
         with:
-          app-name: Staff-Portal
-          publish-profile: ${{ secrets.AZURE_APPSERVICE_PUBLISH_PROFILE_STAFF_PORTAL }}
+          app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
           package: deploy.zip
