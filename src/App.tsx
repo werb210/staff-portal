@@ -29,13 +29,11 @@ const RouteChangeObserver = () => {
 };
 
 const ProtectedApp = () => (
-  <AuthProvider>
-    <ApiConfigGuard>
-      <PrivateRoute>
-        <AppLayout />
-      </PrivateRoute>
-    </ApiConfigGuard>
-  </AuthProvider>
+  <ApiConfigGuard>
+    <PrivateRoute>
+      <AppLayout />
+    </PrivateRoute>
+  </ApiConfigGuard>
 );
 
 export default function App() {
@@ -47,24 +45,26 @@ export default function App() {
   }, []);
 
   return (
-    <BrowserRouter>
-      <RouteChangeObserver />
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route element={<ProtectedApp />}>
-          <Route path="/" element={<DashboardPage />} />
-          <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/applications" element={<ApplicationsPage />} />
-          <Route path="/crm" element={<CRMPage />} />
-          <Route path="/communications" element={<CommunicationsPage />} />
-          <Route path="/comms" element={<CommunicationsPage />} />
-          <Route path="/calendar" element={<CalendarPage />} />
-          <Route path="/tasks" element={<TaskPane />} />
-          <Route path="/marketing" element={<MarketingPage />} />
-          <Route path="/lenders" element={<LendersPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+    <AuthProvider>
+      <BrowserRouter>
+        <RouteChangeObserver />
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route element={<ProtectedApp />}>
+            <Route path="/" element={<DashboardPage />} />
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/applications" element={<ApplicationsPage />} />
+            <Route path="/crm" element={<CRMPage />} />
+            <Route path="/communications" element={<CommunicationsPage />} />
+            <Route path="/comms" element={<CommunicationsPage />} />
+            <Route path="/calendar" element={<CalendarPage />} />
+            <Route path="/tasks" element={<TaskPane />} />
+            <Route path="/marketing" element={<MarketingPage />} />
+            <Route path="/lenders" element={<LendersPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }

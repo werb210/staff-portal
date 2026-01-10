@@ -17,6 +17,7 @@ import {
 } from "@/services/token";
 import { reportAuthFailure } from "@/auth/authEvents";
 import { setApiStatus } from "@/state/apiStatus";
+import { showApiToast } from "@/state/apiNotifications";
 
 export type ApiErrorPayload = {
   status: number;
@@ -55,6 +56,8 @@ export type RequestOptions = Omit<AxiosRequestConfig, "url" | "method" | "data">
   skipAuth?: boolean;
   authMode?: "staff" | "lender" | "none";
   suppressAuthFailure?: boolean;
+  retryOnConflict?: boolean;
+  conflictRetryCount?: number;
 };
 
 export type LenderAuthTokens = {
@@ -161,7 +164,8 @@ const buildHeaders = (
     headers.set("Authorization", `Bearer ${token}`);
   }
   const normalizedMethod = typeof method === "string" ? method.toUpperCase() : undefined;
-  if (normalizedMethod !== "GET" && !headers.has("Idempotency-Key")) {
+  const idempotencyMethods = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+  if (normalizedMethod && idempotencyMethods.has(normalizedMethod) && !headers.has("Idempotency-Key")) {
     headers.set("Idempotency-Key", createIdempotencyKey());
   }
   return headers;
@@ -236,6 +240,9 @@ const toApiError = (error: AxiosError): ApiError => {
 };
 
 const reportApiError = (error: ApiError) => {
+  if (error.status >= 400 && error.status < 500 && error.status !== 401 && error.status !== 403) {
+    showApiToast(error.message, error.requestId);
+  }
   if (error.status === 400 && error.code === "missing_idempotency_key") {
     console.error("Missing Idempotency-Key in request.", { requestId: error.requestId, code: error.code });
     return;
@@ -287,10 +294,11 @@ const executeRequest = async <T>(path: string, config: RequestOptions & { method
 
   const timeout = createTimeoutSignal();
   const signal = combineSignals([config.signal, getRouteSignal(), timeout.signal]);
+  const { retryOnConflict, conflictRetryCount, ...axiosConfig } = config;
 
   try {
     const response = await getAxiosClient().request<T>({
-      ...config,
+      ...axiosConfig,
       url: buildApiUrl(path),
       data: body instanceof FormData ? body : body ? JSON.stringify(body) : undefined,
       headers: buildHeaders(config, includeAuth, authToken ?? undefined, body, config.method),
@@ -309,6 +317,9 @@ const executeRequest = async <T>(path: string, config: RequestOptions & { method
       });
     }
 
+    if (isOptions) {
+      return response.data;
+    }
     const requestId = (response.data as ApiErrorResponse | undefined)?.requestId ?? extractRequestIdFromHeaders(response.headers);
     logApiTelemetry({ endpoint: path, requestId, status: response.status });
     setApiStatus("available");
@@ -318,31 +329,54 @@ const executeRequest = async <T>(path: string, config: RequestOptions & { method
       throw error;
     }
 
+    if (isOptions) {
+      return undefined as T;
+    }
+
     if (error instanceof ApiError) {
+      if (
+        error.status === 409 &&
+        (retryOnConflict ?? true) &&
+        (conflictRetryCount ?? 0) < 1
+      ) {
+        return executeRequest<T>(
+          path,
+          { ...config, conflictRetryCount: (conflictRetryCount ?? 0) + 1 },
+          body
+        );
+      }
       reportApiError(error);
       logApiTelemetry({ endpoint: path, requestId: error.requestId, status: error.status });
       if (error.status === 401) {
         setApiStatus("unauthorized");
+      } else if (error.status === 403) {
+        setApiStatus("forbidden");
       } else if (error.status >= 500 || error.status === 0) {
         setApiStatus("unavailable");
-      }
-      if (error.isAuthError && authMode === "staff" && includeAuth && !config.suppressAuthFailure) {
-        reportAuthFailure(error.status === 403 ? "forbidden" : "unauthorized");
       }
       throw error;
     }
 
     const apiError = toApiError(error as AxiosError);
+    if (
+      apiError.status === 409 &&
+      (retryOnConflict ?? true) &&
+      (conflictRetryCount ?? 0) < 1
+    ) {
+      return executeRequest<T>(
+        path,
+        { ...config, conflictRetryCount: (conflictRetryCount ?? 0) + 1 },
+        body
+      );
+    }
     reportApiError(apiError);
     logApiTelemetry({ endpoint: path, requestId: apiError.requestId, status: apiError.status });
     if (apiError.status === 401) {
       setApiStatus("unauthorized");
+    } else if (apiError.status === 403) {
+      setApiStatus("forbidden");
     } else if (apiError.status >= 500 || apiError.status === 0) {
       setApiStatus("unavailable");
-    }
-
-    if (apiError.isAuthError && authMode === "staff" && includeAuth && !config.suppressAuthFailure) {
-      reportAuthFailure(apiError.status === 403 ? "forbidden" : "unauthorized");
     }
 
     throw apiError;
@@ -443,13 +477,21 @@ const executeStaffRequest = async <T>(path: string, config: RequestOptions & { m
       if (error.status === 401 && shouldSuppress) {
         const refreshed = await refreshStaffTokens();
         if (refreshed?.accessToken) {
-          return executeRequest<T>(path, { ...config, authMode: "staff" }, body);
+          try {
+            return await executeRequest<T>(path, { ...config, authMode: "staff" }, body);
+          } catch (retryError) {
+            if (retryError instanceof ApiError && retryError.status === 401) {
+              clearStoredAuth();
+              reportAuthFailure("unauthorized");
+            }
+            throw retryError;
+          }
         }
         clearStoredAuth();
         reportAuthFailure("unauthorized");
-      } else if (shouldSuppress) {
+      } else if (shouldSuppress && error.status === 401) {
         clearStoredAuth();
-        reportAuthFailure(error.status === 403 ? "forbidden" : "unauthorized");
+        reportAuthFailure("unauthorized");
       }
     }
     throw error;
