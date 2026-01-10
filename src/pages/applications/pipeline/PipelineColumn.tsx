@@ -6,6 +6,8 @@ import { pipelineApi } from "./pipeline.api";
 import { pipelineQueryKeys } from "./pipeline.store";
 import type { PipelineApplication, PipelineFilters, PipelineStage, PipelineStageId } from "./pipeline.types";
 import { canMoveCardToStage } from "./pipeline.types";
+import { retryUnlessClientError } from "@/api/retryPolicy";
+import { getErrorMessage } from "@/utils/errors";
 
 const LoadingSkeleton = () => (
   <div className="pipeline-card pipeline-card--skeleton">
@@ -33,10 +35,11 @@ type PipelineColumnProps = {
 
 const PipelineColumn = ({ stage, filters, onCardClick, activeCard, draggingFromStage }: PipelineColumnProps) => {
   const { setNodeRef, isOver } = useDroppable({ id: stage.id });
-  const { data = [], isLoading, isFetching } = useQuery<PipelineApplication[]>({
+  const { data = [], isLoading, isFetching, error } = useQuery<PipelineApplication[]>({
     queryKey: pipelineQueryKeys.column(stage.id, filters),
     queryFn: ({ signal }) => pipelineApi.fetchColumn(stage.id, filters, { signal }),
-    staleTime: 30_000
+    staleTime: 30_000,
+    retry: retryUnlessClientError
   });
 
   const canReceive = activeCard ? canMoveCardToStage(activeCard, draggingFromStage ?? null, stage.id) : true;
@@ -62,7 +65,10 @@ const PipelineColumn = ({ stage, filters, onCardClick, activeCard, draggingFromS
             <LoadingSkeleton />
           </>
         )}
-        {!isLoading && !data.length && <EmptyState label={stage.label} />}
+        {error && !isLoading && !isFetching && (
+          <div className="pipeline-column__empty">{getErrorMessage(error, "Unable to load applications.")}</div>
+        )}
+        {!error && !isLoading && !data.length && <EmptyState label={stage.label} />}
         {data.map((card) => (
           <PipelineCard key={card.id} card={card} stageId={stage.id} onClick={onCardClick} />
         ))}

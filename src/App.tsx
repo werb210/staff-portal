@@ -16,6 +16,7 @@ import ApiConfigGuard from "./components/layout/ApiConfigGuard";
 import { notifyRouteChange } from "./api/client";
 import { AuthProvider } from "./auth/AuthContext";
 import { getApiBaseUrlOptional } from "./config/runtime";
+import { useApiHealthCheck } from "./hooks/useApiHealthCheck";
 
 const RouteChangeObserver = () => {
   const location = useLocation();
@@ -38,6 +39,8 @@ const ProtectedApp = () => (
 );
 
 export default function App() {
+  useApiHealthCheck();
+
   useEffect(() => {
     const apiBaseUrl = getApiBaseUrlOptional();
     console.log(`[runtime] API base URL: ${apiBaseUrl ?? "missing"}`);
