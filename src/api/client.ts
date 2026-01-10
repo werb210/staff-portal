@@ -9,6 +9,7 @@ import { getApiBaseUrlOptional } from "@/config/runtime";
 import { buildApiUrl } from "@/services/api";
 import { getStoredAccessToken } from "@/services/token";
 import { reportAuthFailure } from "@/auth/authEvents";
+import { setApiStatus } from "@/state/apiStatus";
 
 export type ApiErrorPayload = {
   status: number;
@@ -137,7 +138,13 @@ const createIdempotencyKey = () => {
   });
 };
 
-const buildHeaders = (options: RequestOptions = {}, includeAuth: boolean, token?: string, body?: unknown) => {
+const buildHeaders = (
+  options: RequestOptions = {},
+  includeAuth: boolean,
+  token?: string,
+  body?: unknown,
+  method?: AxiosRequestConfig["method"]
+) => {
   const headers = new AxiosHeaders(options.headers as AxiosHeaders | Record<string, string> | string | undefined);
   if (!headers.has("Content-Type") && !(body instanceof FormData)) {
     headers.set("Content-Type", "application/json");
@@ -145,7 +152,8 @@ const buildHeaders = (options: RequestOptions = {}, includeAuth: boolean, token?
   if (includeAuth && token) {
     headers.set("Authorization", `Bearer ${token}`);
   }
-  if (!headers.has("Idempotency-Key")) {
+  const normalizedMethod = typeof method === "string" ? method.toUpperCase() : undefined;
+  if (normalizedMethod !== "GET" && !headers.has("Idempotency-Key")) {
     headers.set("Idempotency-Key", createIdempotencyKey());
   }
   return headers;
@@ -178,6 +186,21 @@ const parseErrorResponse = (data: unknown): ApiErrorResponse => {
 const extractRequestId = (error: AxiosError | { response?: { headers?: Record<string, string> } }) => {
   const headerValue = error.response?.headers?.["x-request-id"] || error.response?.headers?.["request-id"];
   return typeof headerValue === "string" ? headerValue : undefined;
+};
+
+const extractRequestIdFromHeaders = (headers?: AxiosHeaders | Record<string, string>) => {
+  if (!headers) return undefined;
+  const rawHeaders = headers as Record<string, string | undefined>;
+  return rawHeaders["x-request-id"] || rawHeaders["request-id"];
+};
+
+const getRoutePath = () => {
+  if (typeof window === "undefined") return "unknown";
+  return window.location.pathname || "unknown";
+};
+
+const logApiTelemetry = (payload: { endpoint: string; requestId?: string; status: number }) => {
+  console.info("[telemetry] api", { ...payload, route: getRoutePath() });
 };
 
 const normalizeErrorMessage = (error: AxiosError, parsed: ApiErrorResponse): string => {
@@ -258,7 +281,7 @@ const executeRequest = async <T>(path: string, config: RequestOptions & { method
       ...config,
       url: buildApiUrl(path),
       data: body instanceof FormData ? body : body ? JSON.stringify(body) : undefined,
-      headers: buildHeaders(config, includeAuth, authToken ?? undefined, body),
+      headers: buildHeaders(config, includeAuth, authToken ?? undefined, body, config.method),
       signal,
       timeout: REQUEST_TIMEOUT_MS,
       validateStatus: (status) => status >= 200 && status < 300
@@ -274,6 +297,9 @@ const executeRequest = async <T>(path: string, config: RequestOptions & { method
       });
     }
 
+    const requestId = (response.data as ApiErrorResponse | undefined)?.requestId ?? extractRequestIdFromHeaders(response.headers);
+    logApiTelemetry({ endpoint: path, requestId, status: response.status });
+    setApiStatus("available");
     return response.data;
   } catch (error) {
     if (axios.isCancel(error)) {
@@ -282,6 +308,12 @@ const executeRequest = async <T>(path: string, config: RequestOptions & { method
 
     if (error instanceof ApiError) {
       reportApiError(error);
+      logApiTelemetry({ endpoint: path, requestId: error.requestId, status: error.status });
+      if (error.status === 401) {
+        setApiStatus("unauthorized");
+      } else if (error.status >= 500 || error.status === 0) {
+        setApiStatus("unavailable");
+      }
       if (error.isAuthError && authMode === "staff" && includeAuth) {
         reportAuthFailure(error.status === 403 ? "forbidden" : "unauthorized");
       }
@@ -290,6 +322,12 @@ const executeRequest = async <T>(path: string, config: RequestOptions & { method
 
     const apiError = toApiError(error as AxiosError);
     reportApiError(apiError);
+    logApiTelemetry({ endpoint: path, requestId: apiError.requestId, status: apiError.status });
+    if (apiError.status === 401) {
+      setApiStatus("unauthorized");
+    } else if (apiError.status >= 500 || apiError.status === 0) {
+      setApiStatus("unavailable");
+    }
 
     if (apiError.isAuthError && authMode === "staff" && includeAuth) {
       reportAuthFailure(apiError.status === 403 ? "forbidden" : "unauthorized");

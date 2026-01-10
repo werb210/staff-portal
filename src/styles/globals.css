@@ -501,6 +501,14 @@ a {
   align-items: flex-start;
 }
 
+.api-status-banner {
+  background: #fef3c7;
+  border-bottom: 1px solid #fde68a;
+  color: #92400e;
+  font-size: 0.95rem;
+  padding: 12px 20px;
+}
+
 @keyframes spin {
   from {
     transform: rotate(0deg);

@@ -14,7 +14,7 @@ export { API_BASE };
    ============================================================ */
 export async function checkStaffServerHealth(): Promise<boolean> {
   try {
-    await apiClient.get("/_int/health", { skipAuth: true });
+    await apiClient.get("/health", { skipAuth: true });
     return true;
   } catch {
     return false;

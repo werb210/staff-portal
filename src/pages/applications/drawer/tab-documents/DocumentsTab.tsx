@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchApplicationDocuments, type ApplicationDocumentsResponse } from "@/api/applications";
 import { acceptDocument, fetchDocumentPresign, rejectDocument, type DocumentPresignResponse } from "@/api/documents";
+import { retryUnlessClientError } from "@/api/retryPolicy";
 import { useApplicationDrawerStore } from "@/state/applicationDrawer.store";
 import DocumentListItem from "./DocumentListItem";
 import DocumentVersionHistory from "./DocumentVersionHistory";
@@ -13,7 +14,8 @@ const DocumentsTab = () => {
   const { data: documents = [], isLoading, error } = useQuery<ApplicationDocumentsResponse>({
     queryKey: ["applications", applicationId, "documents"],
     queryFn: ({ signal }) => fetchApplicationDocuments(applicationId ?? "", { signal }),
-    enabled: Boolean(applicationId)
+    enabled: Boolean(applicationId),
+    retry: retryUnlessClientError
   });
   const [selectedId, setSelectedId] = useState<string | null>(null);
 

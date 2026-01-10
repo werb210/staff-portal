@@ -4,6 +4,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/api/client";
+import { retryUnlessClientError } from "@/api/retryPolicy";
 import { normalizeArray } from "@/utils/normalize";
 
 export function useApplications(stage: string) {
@@ -13,5 +14,6 @@ export function useApplications(stage: string) {
       const res = await apiClient.get("/api/applications", { params: { stage }, signal });
       return normalizeArray(res);
     },
+    retry: retryUnlessClientError,
   });
 }

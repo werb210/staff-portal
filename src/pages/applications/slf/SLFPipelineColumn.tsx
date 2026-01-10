@@ -3,6 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import SLFPipelineCard from "./SLFPipelineCard";
 import { slfPipelineApi } from "./slf.pipeline.api";
 import type { SLFPipelineApplication, SLFStageId, SLFPipelineStage } from "./slf.pipeline.types";
+import { retryUnlessClientError } from "@/api/retryPolicy";
+import { getErrorMessage } from "@/utils/errors";
 
 const LoadingSkeleton = () => (
   <div className="pipeline-card pipeline-card--skeleton">
@@ -28,10 +30,11 @@ type SLFPipelineColumnProps = {
 
 const SLFPipelineColumn = ({ stage, onCardClick, activeCard }: SLFPipelineColumnProps) => {
   const { setNodeRef, isOver } = useDroppable({ id: stage.id });
-  const { data = [], isLoading } = useQuery<SLFPipelineApplication[]>({
+  const { data = [], isLoading, error } = useQuery<SLFPipelineApplication[]>({
     queryKey: ["slf", "pipeline", stage.id],
     queryFn: ({ signal }) => slfPipelineApi.fetchColumn(stage.id, { signal }),
-    staleTime: 30_000
+    staleTime: 30_000,
+    retry: retryUnlessClientError
   });
 
   return (
@@ -52,7 +55,8 @@ const SLFPipelineColumn = ({ stage, onCardClick, activeCard }: SLFPipelineColumn
             <LoadingSkeleton />
           </>
         )}
-        {!isLoading && !data.length && <EmptyState label={stage.label} />}
+        {error && !isLoading && <div className="pipeline-column__empty">{getErrorMessage(error, "Unable to load applications.")}</div>}
+        {!error && !isLoading && !data.length && <EmptyState label={stage.label} />}
         {data.map((card) => (
           <SLFPipelineCard key={card.id} card={card} stageId={stage.id} onClick={onCardClick} />
         ))}

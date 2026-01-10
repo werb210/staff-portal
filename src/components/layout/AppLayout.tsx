@@ -1,6 +1,7 @@
 import { Outlet } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
+import ApiStatusBanner from "./ApiStatusBanner";
 import "@/styles/globals.css";
 
 const AppLayout = () => {
@@ -8,6 +9,7 @@ const AppLayout = () => {
     <div className="app-shell">
       <Sidebar />
       <div className="app-shell__content">
+        <ApiStatusBanner />
         <Topbar />
         <main className="app-shell__main">
           <Outlet />
