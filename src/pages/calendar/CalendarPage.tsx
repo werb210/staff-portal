@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
@@ -11,8 +11,11 @@ import CalendarHeader from "./CalendarHeader";
 import CalendarView from "./CalendarView";
 import TaskPane from "../tasks/TaskPane";
 import { useTasksStore } from "@/state/tasks.store";
+import RequireRole from "@/components/auth/RequireRole";
+import { emitUiTelemetry } from "@/utils/uiTelemetry";
+import { getErrorMessage } from "@/utils/errors";
 
-const CalendarPage = () => {
+const CalendarContent = () => {
   const { view, setView, goNext, goPrev, goToToday, meetingLinks, currentDate } = useCalendarStore();
   const { setSelectedTask } = useTasksStore();
   const [showEventForm, setShowEventForm] = useState(false);
@@ -22,13 +25,21 @@ const CalendarPage = () => {
 
   const {
     data: localEvents = [],
-    isLoading: loadingLocal
+    isLoading: loadingLocal,
+    error: localError
   } = useQuery({ queryKey: ["local-events"], queryFn: fetchLocalEvents });
 
   const {
     data: o365Events = [],
-    isLoading: loadingO365
+    isLoading: loadingO365,
+    error: o365Error
   } = useQuery({ queryKey: ["o365-events", view], queryFn: () => fetchO365Events(view === "day" ? "week" : view) });
+
+  useEffect(() => {
+    if (!loadingLocal && !loadingO365 && !localError && !o365Error) {
+      emitUiTelemetry("data_loaded", { view: "calendar", count: localEvents.length + o365Events.length });
+    }
+  }, [localError, localEvents.length, loadingLocal, loadingO365, o365Error, o365Events.length]);
 
   const createEventMutation = useMutation({
     mutationFn: createLocalEvent,
@@ -64,7 +75,13 @@ const CalendarPage = () => {
           }
         >
           {(loadingLocal || loadingO365) && <AppLoading />}
-          {!loadingLocal && !loadingO365 && (
+          {(localError || o365Error) && (
+            <p className="text-red-700">{getErrorMessage(localError ?? o365Error, "Unable to load calendar events.")}</p>
+          )}
+          {!loadingLocal && !loadingO365 && !localError && !o365Error && localEvents.length + o365Events.length === 0 && (
+            <p>No calendar events scheduled yet.</p>
+          )}
+          {!loadingLocal && !loadingO365 && !localError && !o365Error && (
             <CalendarView view={view} date={currentDate} localEvents={localEvents} o365Events={o365Events} />
           )}
           {showEventForm && (
@@ -112,5 +129,11 @@ const CalendarPage = () => {
     </div>
   );
 };
+
+const CalendarPage = () => (
+  <RequireRole roles={["ADMIN", "STAFF"]}>
+    <CalendarContent />
+  </RequireRole>
+);
 
 export default CalendarPage;

@@ -97,6 +97,16 @@ describe("Pipeline foundation", () => {
     expect(invalidateSpy).toHaveBeenCalled();
   });
 
+  it("avoids refetch storms when dragging applications", async () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const handler = createPipelineDragEndHandler({ queryClient, filters: {} });
+    const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
+
+    await handler(buildDragEvent("in_review"));
+
+    expect(invalidateSpy).toHaveBeenCalledTimes(2);
+  });
+
   it("rejects movement into start-up column for non-startup cards", () => {
     const movable = canMoveCardToStage({ ...sampleCard, productCategory: "sba" }, "new", "startup");
     expect(movable).toBe(false);

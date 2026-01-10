@@ -84,6 +84,11 @@ const UserManagement = () => {
             </td>
           </tr>
         ))}
+        {users.length === 0 && (
+          <tr>
+            <td colSpan={5}>No users have been added yet.</td>
+          </tr>
+        )}
       </Table>
 
       {statusMessage && <div role="status">{statusMessage}</div>}

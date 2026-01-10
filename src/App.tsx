@@ -14,6 +14,7 @@ import SettingsPage from "./pages/settings/SettingsPage";
 import TaskPane from "./pages/tasks/TaskPane";
 import ApiConfigGuard from "./components/layout/ApiConfigGuard";
 import { notifyRouteChange } from "./api/client";
+import { emitUiTelemetry } from "./utils/uiTelemetry";
 import { AuthProvider } from "./auth/AuthContext";
 import { getApiBaseUrlOptional } from "./config/runtime";
 import { useApiHealthCheck } from "./hooks/useApiHealthCheck";
@@ -23,6 +24,7 @@ const RouteChangeObserver = () => {
 
   useEffect(() => {
     notifyRouteChange();
+    emitUiTelemetry("page_loaded");
   }, [location.key]);
 
   return null;

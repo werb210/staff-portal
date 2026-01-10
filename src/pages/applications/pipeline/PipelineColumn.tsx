@@ -1,3 +1,4 @@
+import { useEffect, useMemo } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import { useQuery } from "@tanstack/react-query";
 import clsx from "clsx";
@@ -8,6 +9,7 @@ import type { PipelineApplication, PipelineFilters, PipelineStage, PipelineStage
 import { canMoveCardToStage } from "./pipeline.types";
 import { retryUnlessClientError } from "@/api/retryPolicy";
 import { getErrorMessage } from "@/utils/errors";
+import { emitUiTelemetry } from "@/utils/uiTelemetry";
 
 const LoadingSkeleton = () => (
   <div className="pipeline-card pipeline-card--skeleton">
@@ -42,6 +44,28 @@ const PipelineColumn = ({ stage, filters, onCardClick, activeCard, draggingFromS
     retry: retryUnlessClientError
   });
 
+  const sortedData = useMemo(() => {
+    const items = [...data];
+    const tieBreaker = (a: PipelineApplication, b: PipelineApplication) => a.id.localeCompare(b.id);
+    switch (filters.sort) {
+      case "oldest":
+        return items.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime() || tieBreaker(a, b));
+      case "highest_amount":
+        return items.sort((a, b) => b.requestedAmount - a.requestedAmount || tieBreaker(a, b));
+      case "lowest_amount":
+        return items.sort((a, b) => a.requestedAmount - b.requestedAmount || tieBreaker(a, b));
+      case "newest":
+      default:
+        return items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime() || tieBreaker(a, b));
+    }
+  }, [data, filters.sort]);
+
+  useEffect(() => {
+    if (!isLoading && !isFetching && !error) {
+      emitUiTelemetry("data_loaded", { view: "pipeline", stage: stage.id, count: sortedData.length });
+    }
+  }, [error, isFetching, isLoading, sortedData.length, stage.id]);
+
   const canReceive = activeCard ? canMoveCardToStage(activeCard, draggingFromStage ?? null, stage.id) : true;
 
   return (
@@ -69,7 +93,7 @@ const PipelineColumn = ({ stage, filters, onCardClick, activeCard, draggingFromS
           <div className="pipeline-column__empty">{getErrorMessage(error, "Unable to load applications.")}</div>
         )}
         {!error && !isLoading && !data.length && <EmptyState label={stage.label} />}
-        {data.map((card) => (
+        {sortedData.map((card) => (
           <PipelineCard key={card.id} card={card} stageId={stage.id} onClick={onCardClick} />
         ))}
         {activeCard && <div className="pipeline-column__spacer" />}

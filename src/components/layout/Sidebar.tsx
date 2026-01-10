@@ -1,5 +1,6 @@
 import { NavLink } from "react-router-dom";
 import { useSilo } from "@/hooks/useSilo";
+import { useAuth } from "@/hooks/useAuth";
 
 const baseNavigation = [
   { label: "Dashboard", path: "/" },
@@ -33,7 +34,11 @@ const siloNavigation = {
 
 const Sidebar = () => {
   const { silo } = useSilo();
-  const navigation = siloNavigation[silo];
+  const { user } = useAuth();
+  const isAdmin = user?.role === "ADMIN";
+  const navigation = siloNavigation[silo].filter((item) =>
+    item.path === "/marketing" ? isAdmin : true
+  );
 
   return (
     <aside className="sidebar">
