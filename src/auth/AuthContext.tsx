@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { login as loginService, type AuthenticatedUser, type LoginSuccess } from "@/services/auth";
+import { login as loginService, logout as logoutService, type AuthenticatedUser, type LoginSuccess } from "@/services/auth";
 import {
   clearStoredAccessToken,
   getStoredAccessToken,
@@ -46,6 +46,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const logout = useCallback(() => {
+    void logoutService().catch((error) => {
+      console.error("Logout failed", error);
+    });
     clearStoredAccessToken();
     setUser(null);
     setToken(null);
