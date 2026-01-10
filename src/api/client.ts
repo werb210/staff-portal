@@ -18,6 +18,7 @@ import {
 import { reportAuthFailure } from "@/auth/authEvents";
 import { setApiStatus } from "@/state/apiStatus";
 import { showApiToast } from "@/state/apiNotifications";
+import { emitUiTelemetry } from "@/utils/uiTelemetry";
 
 export type ApiErrorPayload = {
   status: number;
@@ -347,6 +348,7 @@ const executeRequest = async <T>(path: string, config: RequestOptions & { method
       }
       reportApiError(error);
       logApiTelemetry({ endpoint: path, requestId: error.requestId, status: error.status });
+      emitUiTelemetry("api_error", { requestId: error.requestId, status: error.status, endpoint: path });
       if (error.status === 401) {
         setApiStatus("unauthorized");
       } else if (error.status === 403) {
@@ -371,6 +373,7 @@ const executeRequest = async <T>(path: string, config: RequestOptions & { method
     }
     reportApiError(apiError);
     logApiTelemetry({ endpoint: path, requestId: apiError.requestId, status: apiError.status });
+    emitUiTelemetry("api_error", { requestId: apiError.requestId, status: apiError.status, endpoint: path });
     if (apiError.status === 401) {
       setApiStatus("unauthorized");
     } else if (apiError.status === 403) {

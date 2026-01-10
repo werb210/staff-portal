@@ -8,8 +8,9 @@ import CommunicationSettings from "./tabs/CommunicationSettings";
 import SiloSettings from "./tabs/SiloSettings";
 import BrandingSettings from "./tabs/BrandingSettings";
 import UserManagement from "./tabs/UserManagement";
+import RequireRole from "@/components/auth/RequireRole";
 
-const SettingsPage = () => {
+const SettingsContent = () => {
   const { user } = useAuth();
   const isAdmin = user?.role === "ADMIN";
   const tabs = useMemo(
@@ -58,5 +59,11 @@ const SettingsPage = () => {
     </div>
   );
 };
+
+const SettingsPage = () => (
+  <RequireRole roles={["ADMIN", "STAFF"]}>
+    <SettingsContent />
+  </RequireRole>
+);
 
 export default SettingsPage;

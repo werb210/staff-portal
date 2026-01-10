@@ -19,6 +19,7 @@ import RetargetingAudienceList from "./Retargeting/RetargetingAudienceList";
 import BrandLibrary from "./Assets/BrandLibrary";
 import MarketingToDoList from "./ToDo/MarketingToDoList";
 import { getErrorMessage } from "@/utils/errors";
+import { emitUiTelemetry } from "@/utils/uiTelemetry";
 
 const MarketingDashboard = () => {
   const { dateRange } = useMarketingStore();
@@ -53,6 +54,16 @@ const MarketingDashboard = () => {
     }
   }, [assetsError]);
 
+  useEffect(() => {
+    if (!loadingAttribution && !loadingAds && !adsError && !assetsError && !attributionError) {
+      emitUiTelemetry("data_loaded", {
+        view: "marketing",
+        adsCount: ads?.length ?? 0,
+        assetsCount: assets?.length ?? 0
+      });
+    }
+  }, [ads?.length, adsError, assets?.length, assetsError, attributionError, loadingAds, loadingAttribution]);
+
   return (
     <div className="grid gap-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -83,6 +94,11 @@ const MarketingDashboard = () => {
                   </td>
                 </tr>
               ))}
+              {!ads?.length && (
+                <tr>
+                  <td colSpan={6}>No ads data available yet.</td>
+                </tr>
+              )}
             </Table>
           )}
         </Card>

@@ -12,6 +12,7 @@ import { fetchContacts } from "@/api/crm";
 import type { Contact } from "@/api/crm";
 import { useCrmStore } from "@/state/crm.store";
 import { getErrorMessage } from "@/utils/errors";
+import { emitUiTelemetry } from "@/utils/uiTelemetry";
 
 const owners = ["Alex", "Taylor"];
 
@@ -33,6 +34,12 @@ const ContactsPage = () => {
       console.error("Failed to load contacts", error);
     }
   }, [error]);
+
+  useEffect(() => {
+    if (!isLoading && !error) {
+      emitUiTelemetry("data_loaded", { view: "crm_contacts", count: contacts.length });
+    }
+  }, [contacts.length, error, isLoading]);
 
   const filtered = useMemo(() => contacts, [contacts]);
 
@@ -98,6 +105,11 @@ const ContactsPage = () => {
                   onCall={() => setSelected(contact)}
                 />
               ))}
+            {!isLoading && filtered.length === 0 && (
+              <tr>
+                <td colSpan={7}>No contacts match these filters.</td>
+              </tr>
+            )}
           </Table>
         )}
       </Card>

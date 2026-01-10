@@ -3,8 +3,9 @@ import Card from "@/components/ui/Card";
 import ContactsPage from "./contacts/ContactsPage";
 import CompaniesPage from "./companies/CompaniesPage";
 import TimelineFeed from "./timeline/TimelineFeed";
+import RequireRole from "@/components/auth/RequireRole";
 
-const CRMPage = () => {
+const CRMContent = () => {
   const [view, setView] = useState<"contacts" | "companies" | "timeline">("contacts");
   return (
     <div className="page">
@@ -32,5 +33,11 @@ const CRMPage = () => {
     </div>
   );
 };
+
+const CRMPage = () => (
+  <RequireRole roles={["ADMIN", "STAFF"]}>
+    <CRMContent />
+  </RequireRole>
+);
 
 export default CRMPage;

@@ -5,8 +5,10 @@ import Table from "@/components/ui/Table";
 import { fetchLenders, type Lender } from "@/api/lenders";
 import AppLoading from "@/components/layout/AppLoading";
 import { getErrorMessage } from "@/utils/errors";
+import RequireRole from "@/components/auth/RequireRole";
+import { emitUiTelemetry } from "@/utils/uiTelemetry";
 
-const LendersPage = () => {
+const LendersContent = () => {
   const { data, isLoading, error } = useQuery<Lender[], Error>({
     queryKey: ["lenders"],
     queryFn: fetchLenders
@@ -17,6 +19,12 @@ const LendersPage = () => {
       console.error("Failed to load lenders", error);
     }
   }, [error]);
+
+  useEffect(() => {
+    if (!isLoading && !error) {
+      emitUiTelemetry("data_loaded", { view: "lenders", count: data?.length ?? 0 });
+    }
+  }, [data?.length, error, isLoading]);
 
   return (
     <div className="page">
@@ -42,5 +50,11 @@ const LendersPage = () => {
     </div>
   );
 };
+
+const LendersPage = () => (
+  <RequireRole roles={["ADMIN", "STAFF"]}>
+    <LendersContent />
+  </RequireRole>
+);
 
 export default LendersPage;

@@ -10,6 +10,7 @@ import { useTasksStore, type TaskFilters } from "@/state/tasks.store";
 import TaskListItem from "./TaskListItem";
 import TaskEditor from "./TaskEditor";
 import { getErrorMessage } from "@/utils/errors";
+import { emitUiTelemetry } from "@/utils/uiTelemetry";
 
 const filterTasks = (tasks: TaskItem[], filters: TaskFilters, currentUserId?: string) => {
   return tasks.filter((task) => {
@@ -44,6 +45,12 @@ const TaskPane = () => {
       console.error("Failed to load tasks", error);
     }
   }, [error]);
+
+  useEffect(() => {
+    if (!isLoading && !error) {
+      emitUiTelemetry("data_loaded", { view: "tasks", count: tasks.length });
+    }
+  }, [error, isLoading, tasks.length]);
 
   const createMutation = useMutation({
     mutationFn: createTask,
@@ -108,6 +115,11 @@ const TaskPane = () => {
                 .map((task) => (
                   <TaskListItem key={task.id} task={task} onSelect={setSelectedTask} onToggleComplete={handleToggleComplete} />
                 ))}
+            {!isLoading &&
+              !error &&
+              tasksToDisplay.filter((task) => task.assignedToUserId === user?.id).length === 0 && (
+                <li>No tasks assigned to you.</li>
+              )}
           </ul>
         </section>
         <section>
@@ -122,6 +134,11 @@ const TaskPane = () => {
                 .map((task) => (
                   <TaskListItem key={task.id} task={task} onSelect={setSelectedTask} onToggleComplete={handleToggleComplete} />
                 ))}
+            {!isLoading &&
+              !error &&
+              tasksToDisplay.filter((task) => task.assignedToUserId && task.assignedToUserId !== user?.id).length === 0 && (
+                <li>No assigned tasks yet.</li>
+              )}
           </ul>
         </section>
         <section>
@@ -136,6 +153,11 @@ const TaskPane = () => {
                 .map((task) => (
                   <TaskListItem key={task.id} task={task} onSelect={setSelectedTask} onToggleComplete={handleToggleComplete} />
                 ))}
+            {!isLoading &&
+              !error &&
+              tasksToDisplay.filter((task) => task.dueDate && new Date(task.dueDate).toDateString() === new Date().toDateString()).length === 0 && (
+                <li>No tasks due today.</li>
+              )}
           </ul>
         </section>
         <section>
@@ -150,6 +172,11 @@ const TaskPane = () => {
                 .map((task) => (
                   <TaskListItem key={task.id} task={task} onSelect={setSelectedTask} onToggleComplete={handleToggleComplete} />
                 ))}
+            {!isLoading &&
+              !error &&
+              tasksToDisplay.filter((task) => task.dueDate && new Date(task.dueDate) < new Date()).length === 0 && (
+                <li>No overdue tasks.</li>
+              )}
           </ul>
         </section>
       </div>

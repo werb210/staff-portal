@@ -1,3 +1,4 @@
+import { useEffect, useMemo } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import { useQuery } from "@tanstack/react-query";
 import SLFPipelineCard from "./SLFPipelineCard";
@@ -5,6 +6,7 @@ import { slfPipelineApi } from "./slf.pipeline.api";
 import type { SLFPipelineApplication, SLFStageId, SLFPipelineStage } from "./slf.pipeline.types";
 import { retryUnlessClientError } from "@/api/retryPolicy";
 import { getErrorMessage } from "@/utils/errors";
+import { emitUiTelemetry } from "@/utils/uiTelemetry";
 
 const LoadingSkeleton = () => (
   <div className="pipeline-card pipeline-card--skeleton">
@@ -37,6 +39,21 @@ const SLFPipelineColumn = ({ stage, onCardClick, activeCard }: SLFPipelineColumn
     retry: retryUnlessClientError
   });
 
+  const sortedData = useMemo(() => {
+    const items = [...data];
+    return items.sort(
+      (a, b) =>
+        new Date(b.receivedDate).getTime() - new Date(a.receivedDate).getTime() ||
+        a.id.localeCompare(b.id)
+    );
+  }, [data]);
+
+  useEffect(() => {
+    if (!isLoading && !error) {
+      emitUiTelemetry("data_loaded", { view: "slf_pipeline", stage: stage.id, count: sortedData.length });
+    }
+  }, [error, isLoading, sortedData.length, stage.id]);
+
   return (
     <div className="pipeline-column" ref={setNodeRef} data-stage={stage.id}>
       <div className="pipeline-column__header">
@@ -57,7 +74,7 @@ const SLFPipelineColumn = ({ stage, onCardClick, activeCard }: SLFPipelineColumn
         )}
         {error && !isLoading && <div className="pipeline-column__empty">{getErrorMessage(error, "Unable to load applications.")}</div>}
         {!error && !isLoading && !data.length && <EmptyState label={stage.label} />}
-        {data.map((card) => (
+        {sortedData.map((card) => (
           <SLFPipelineCard key={card.id} card={card} stageId={stage.id} onClick={onCardClick} />
         ))}
         {activeCard && <div className="pipeline-column__spacer" />}

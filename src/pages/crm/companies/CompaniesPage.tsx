@@ -12,6 +12,7 @@ import { fetchCompanies } from "@/api/crm";
 import type { Company } from "@/api/crm";
 import { useCrmStore } from "@/state/crm.store";
 import { getErrorMessage } from "@/utils/errors";
+import { emitUiTelemetry } from "@/utils/uiTelemetry";
 
 const CompaniesPage = () => {
   const { silo, setSilo } = useCrmStore();
@@ -32,6 +33,12 @@ const CompaniesPage = () => {
       console.error("Failed to load companies", error);
     }
   }, [error]);
+
+  useEffect(() => {
+    if (!isLoading && !error) {
+      emitUiTelemetry("data_loaded", { view: "crm_companies", count: companies.length });
+    }
+  }, [companies.length, error, isLoading]);
 
   const filtered = companies.filter(
     (company) =>
@@ -69,6 +76,11 @@ const CompaniesPage = () => {
               filtered.map((company) => (
                 <CompanyRow key={company.id} company={company} onSelect={setSelected} />
               ))}
+            {!isLoading && filtered.length === 0 && (
+              <tr>
+                <td colSpan={6}>No companies found for this search.</td>
+              </tr>
+            )}
           </Table>
         )}
       </Card>
