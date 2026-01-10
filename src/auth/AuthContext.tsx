@@ -1,9 +1,12 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { login as loginService, logout as logoutService, type AuthenticatedUser, type LoginSuccess } from "@/services/auth";
 import {
-  clearStoredAccessToken,
+  clearStoredAuth,
   getStoredAccessToken,
-  setStoredAccessToken
+  getStoredUser,
+  setStoredAccessToken,
+  setStoredRefreshToken,
+  setStoredUser
 } from "@/services/token";
 import { registerAuthFailureHandler } from "@/auth/authEvents";
 import { redirectToLogin } from "@/services/api";
@@ -22,13 +25,13 @@ export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const storedToken = getStoredAccessToken();
-  const [user, setUser] = useState<AuthenticatedUser | null>(null);
+  const [user, setUser] = useState<AuthenticatedUser | null>(() => getStoredUser<AuthenticatedUser>());
   const [token, setToken] = useState<string | null>(() => storedToken);
   const [status, setStatus] = useState<AuthStatus>(storedToken ? "authenticated" : "unauthenticated");
 
   useEffect(() => {
     return registerAuthFailureHandler(() => {
-      clearStoredAccessToken();
+      clearStoredAuth();
       setUser(null);
       setToken(null);
       setStatus("unauthenticated");
@@ -39,6 +42,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const login = useCallback(async (email: string, password: string) => {
     const result = await loginService(email, password);
     setStoredAccessToken(result.accessToken);
+    setStoredRefreshToken(result.refreshToken);
+    setStoredUser(result.user);
     setToken(result.accessToken);
     setUser(result.user);
     setStatus("authenticated");
@@ -49,7 +54,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     void logoutService().catch((error) => {
       console.error("Logout failed", error);
     });
-    clearStoredAccessToken();
+    clearStoredAuth();
     setUser(null);
     setToken(null);
     setStatus("unauthenticated");

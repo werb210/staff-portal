@@ -7,7 +7,14 @@ import axios, {
 } from "axios";
 import { getApiBaseUrlOptional } from "@/config/runtime";
 import { buildApiUrl } from "@/services/api";
-import { getStoredAccessToken } from "@/services/token";
+import {
+  clearStoredAuth,
+  getStoredAccessToken,
+  getStoredRefreshToken,
+  setStoredAccessToken,
+  setStoredRefreshToken,
+  setStoredUser
+} from "@/services/token";
 import { reportAuthFailure } from "@/auth/authEvents";
 import { setApiStatus } from "@/state/apiStatus";
 
@@ -47,6 +54,7 @@ export class ApiError extends Error {
 export type RequestOptions = Omit<AxiosRequestConfig, "url" | "method" | "data"> & {
   skipAuth?: boolean;
   authMode?: "staff" | "lender" | "none";
+  suppressAuthFailure?: boolean;
 };
 
 export type LenderAuthTokens = {
@@ -260,11 +268,15 @@ const executeRequest = async <T>(path: string, config: RequestOptions & { method
   ensureApiBaseUrl();
 
   const authMode = config.authMode ?? "staff";
-  const includeAuth = authMode !== "none" && !config.skipAuth;
+  const normalizedMethod = typeof config.method === "string" ? config.method.toUpperCase() : undefined;
+  const isOptions = normalizedMethod === "OPTIONS";
+  const includeAuth = authMode !== "none" && !config.skipAuth && !isOptions;
   const authToken = authMode === "staff" ? getStoredAccessToken() : lenderTokenProvider()?.accessToken ?? null;
 
   if (includeAuth && authMode === "staff" && !authToken) {
-    reportAuthFailure("missing-token");
+    if (!config.suppressAuthFailure) {
+      reportAuthFailure("missing-token");
+    }
     throw new ApiError({ status: 401, message: "Missing access token", isAuthError: true });
   }
 
@@ -314,7 +326,7 @@ const executeRequest = async <T>(path: string, config: RequestOptions & { method
       } else if (error.status >= 500 || error.status === 0) {
         setApiStatus("unavailable");
       }
-      if (error.isAuthError && authMode === "staff" && includeAuth) {
+      if (error.isAuthError && authMode === "staff" && includeAuth && !config.suppressAuthFailure) {
         reportAuthFailure(error.status === 403 ? "forbidden" : "unauthorized");
       }
       throw error;
@@ -329,7 +341,7 @@ const executeRequest = async <T>(path: string, config: RequestOptions & { method
       setApiStatus("unavailable");
     }
 
-    if (apiError.isAuthError && authMode === "staff" && includeAuth) {
+    if (apiError.isAuthError && authMode === "staff" && includeAuth && !config.suppressAuthFailure) {
       reportAuthFailure(apiError.status === 403 ? "forbidden" : "unauthorized");
     }
 
@@ -343,6 +355,7 @@ let lenderTokenProvider: TokenProvider = () => null;
 let lenderTokenUpdater: TokenUpdater = () => undefined;
 let lenderUnauthorizedHandler: LogoutHandler = () => undefined;
 let refreshInFlight: Promise<LenderAuthTokens | null> | null = null;
+let staffRefreshInFlight: Promise<{ accessToken: string; refreshToken?: string; user?: unknown } | null> | null = null;
 
 export const configureLenderApiClient = (options: {
   tokenProvider: TokenProvider;
@@ -384,6 +397,65 @@ const refreshLenderTokens = async (): Promise<LenderAuthTokens | null> => {
   return refreshInFlight;
 };
 
+const refreshStaffTokens = async (): Promise<{ accessToken: string; refreshToken?: string; user?: unknown } | null> => {
+  const refreshToken = getStoredRefreshToken();
+  if (!refreshToken) return null;
+
+  if (!staffRefreshInFlight) {
+    staffRefreshInFlight = executeRequest<{ accessToken: string; refreshToken?: string; user?: unknown }>(
+      "/auth/refresh",
+      {
+        method: "POST",
+        authMode: "none",
+        skipAuth: true,
+        suppressAuthFailure: true
+      },
+      { refreshToken }
+    )
+      .then((body) => {
+        if (!body?.accessToken) return null;
+        setStoredAccessToken(body.accessToken);
+        if (body.refreshToken) {
+          setStoredRefreshToken(body.refreshToken);
+        }
+        if (body.user) {
+          setStoredUser(body.user);
+        }
+        return body;
+      })
+      .catch(() => null)
+      .finally(() => {
+        staffRefreshInFlight = null;
+      });
+  }
+
+  return staffRefreshInFlight;
+};
+
+const executeStaffRequest = async <T>(path: string, config: RequestOptions & { method: AxiosRequestConfig["method"] }, body?: unknown) => {
+  const hasToken = !!getStoredAccessToken();
+  const shouldSuppress = hasToken && !config.skipAuth;
+
+  try {
+    return await executeRequest<T>(path, { ...config, authMode: "staff", suppressAuthFailure: shouldSuppress }, body);
+  } catch (error) {
+    if (error instanceof ApiError && error.isAuthError && !config.skipAuth) {
+      if (error.status === 401 && shouldSuppress) {
+        const refreshed = await refreshStaffTokens();
+        if (refreshed?.accessToken) {
+          return executeRequest<T>(path, { ...config, authMode: "staff" }, body);
+        }
+        clearStoredAuth();
+        reportAuthFailure("unauthorized");
+      } else if (shouldSuppress) {
+        clearStoredAuth();
+        reportAuthFailure(error.status === 403 ? "forbidden" : "unauthorized");
+      }
+    }
+    throw error;
+  }
+};
+
 const executeLenderRequest = async <T>(path: string, config: RequestOptions & { method: AxiosRequestConfig["method"] }, body?: unknown) => {
   try {
     return await executeRequest<T>(path, { ...config, authMode: "lender" }, body);
@@ -402,12 +474,14 @@ const executeLenderRequest = async <T>(path: string, config: RequestOptions & { 
 };
 
 export const apiClient = {
-  get: <T>(path: string, options: RequestOptions = {}) => executeRequest<T>(path, { ...options, method: "GET" }),
+  get: <T>(path: string, options: RequestOptions = {}) => executeStaffRequest<T>(path, { ...options, method: "GET" }),
   post: <T>(path: string, body?: unknown, options: RequestOptions = {}) =>
-    executeRequest<T>(path, { ...options, method: "POST" }, body),
+    executeStaffRequest<T>(path, { ...options, method: "POST" }, body),
   patch: <T>(path: string, body?: unknown, options: RequestOptions = {}) =>
-    executeRequest<T>(path, { ...options, method: "PATCH" }, body),
-  delete: <T>(path: string, options: RequestOptions = {}) => executeRequest<T>(path, { ...options, method: "DELETE" })
+    executeStaffRequest<T>(path, { ...options, method: "PATCH" }, body),
+  delete: <T>(path: string, options: RequestOptions = {}) => executeStaffRequest<T>(path, { ...options, method: "DELETE" }),
+  options: <T>(path: string, options: RequestOptions = {}) =>
+    executeStaffRequest<T>(path, { ...options, method: "OPTIONS", skipAuth: true }, undefined)
 };
 
 export const lenderApiClient = {

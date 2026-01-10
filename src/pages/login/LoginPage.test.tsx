@@ -1,18 +1,15 @@
-import { describe, expect, test, beforeEach, vi } from "vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import "@testing-library/jest-dom";
+// @vitest-environment jsdom
+import { describe, expect, test, beforeEach, afterEach, vi } from "vitest";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import "@testing-library/jest-dom/vitest";
 import LoginPage from "./LoginPage";
 
 let loginMock = vi.fn();
-const setStoredAccessTokenMock = vi.fn();
 
-vi.mock("@/services/auth", () => ({
-  login: (...args: Parameters<typeof loginMock>) => loginMock(...args)
-}));
-
-vi.mock("@/services/token", () => ({
-  setStoredAccessToken: (...args: Parameters<typeof setStoredAccessTokenMock>) =>
-    setStoredAccessTokenMock(...args)
+vi.mock("@/auth/AuthContext", () => ({
+  useAuth: () => ({
+    login: (...args: Parameters<typeof loginMock>) => loginMock(...args)
+  })
 }));
 
 const navigateMock = vi.fn();
@@ -28,8 +25,11 @@ vi.mock("react-router-dom", async () => {
 
 describe("LoginPage", () => {
   beforeEach(() => {
-    setStoredAccessTokenMock.mockReset();
     navigateMock.mockReset();
+  });
+
+  afterEach(() => {
+    cleanup();
   });
 
   const renderLogin = (login = vi.fn()) => {
@@ -51,7 +51,6 @@ describe("LoginPage", () => {
     fireEvent.click(screen.getByRole("button", { name: /Login/i }));
 
     await waitFor(() => expect(loginMock).toHaveBeenCalledWith("demo@example.com", "password123"));
-    expect(setStoredAccessTokenMock).toHaveBeenCalledWith("token-123");
     expect(navigateMock).toHaveBeenCalledWith("/dashboard", { replace: true });
   });
 
