@@ -2,25 +2,31 @@ export const ACCESS_TOKEN_KEY = "accessToken";
 export const REFRESH_TOKEN_KEY = "refreshToken";
 export const USER_KEY = "staff-portal.user";
 
+/**
+ * Session persistence rules (staff portal):
+ * - Local storage keeps access token, refresh token, and user profile across reloads.
+ * - In-memory values mirror local storage and are used when storage is unavailable.
+ * - A hard logout clears both local storage and in-memory values.
+ */
 let inMemoryToken: string | null = null;
 let inMemoryRefreshToken: string | null = null;
 let inMemoryUser: string | null = null;
 
-const getSessionStorage = (): Storage | null => {
+const getLocalStorage = (): Storage | null => {
   try {
-    return window.sessionStorage;
+    return window.localStorage;
   } catch (error) {
     return null;
   }
 };
 
 export function getStoredAccessToken(): string | null {
-  const storage = getSessionStorage();
+  const storage = getLocalStorage();
   return storage?.getItem(ACCESS_TOKEN_KEY) ?? inMemoryToken;
 }
 
 export function setStoredAccessToken(token: string) {
-  const storage = getSessionStorage();
+  const storage = getLocalStorage();
   if (storage) {
     storage.setItem(ACCESS_TOKEN_KEY, token);
   }
@@ -28,7 +34,7 @@ export function setStoredAccessToken(token: string) {
 }
 
 export function clearStoredAccessToken() {
-  const storage = getSessionStorage();
+  const storage = getLocalStorage();
   if (storage) {
     storage.removeItem(ACCESS_TOKEN_KEY);
   }
@@ -36,12 +42,12 @@ export function clearStoredAccessToken() {
 }
 
 export function getStoredRefreshToken(): string | null {
-  const storage = getSessionStorage();
+  const storage = getLocalStorage();
   return storage?.getItem(REFRESH_TOKEN_KEY) ?? inMemoryRefreshToken;
 }
 
 export function setStoredRefreshToken(token: string) {
-  const storage = getSessionStorage();
+  const storage = getLocalStorage();
   if (storage) {
     storage.setItem(REFRESH_TOKEN_KEY, token);
   }
@@ -49,7 +55,7 @@ export function setStoredRefreshToken(token: string) {
 }
 
 export function clearStoredRefreshToken() {
-  const storage = getSessionStorage();
+  const storage = getLocalStorage();
   if (storage) {
     storage.removeItem(REFRESH_TOKEN_KEY);
   }
@@ -57,18 +63,19 @@ export function clearStoredRefreshToken() {
 }
 
 export function getStoredUser<T = unknown>(): T | null {
-  const storage = getSessionStorage();
+  const storage = getLocalStorage();
   const raw = storage?.getItem(USER_KEY) ?? inMemoryUser;
   if (!raw) return null;
   try {
     return JSON.parse(raw) as T;
   } catch (error) {
+    clearStoredAuth();
     return null;
   }
 }
 
 export function setStoredUser<T = unknown>(user: T) {
-  const storage = getSessionStorage();
+  const storage = getLocalStorage();
   const payload = JSON.stringify(user);
   if (storage) {
     storage.setItem(USER_KEY, payload);
@@ -77,7 +84,7 @@ export function setStoredUser<T = unknown>(user: T) {
 }
 
 export function clearStoredUser() {
-  const storage = getSessionStorage();
+  const storage = getLocalStorage();
   if (storage) {
     storage.removeItem(USER_KEY);
   }

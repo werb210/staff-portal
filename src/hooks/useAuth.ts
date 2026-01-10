@@ -23,7 +23,7 @@ export type AuthValue = {
 };
 
 export const useAuth = (): AuthValue => {
-  const { user, token, status, login, logout } = useAuthContext();
+  const { user, token, status, authReady, login, logout } = useAuthContext();
 
   const handleLogin: AuthValue["login"] = useCallback(
     async (email, password) => {
@@ -37,10 +37,10 @@ export const useAuth = (): AuthValue => {
       user,
       tokens: token ? { token } : null,
       isAuthenticated: status === "authenticated",
-      isLoading: status === "loading",
+      isLoading: !authReady,
       login: handleLogin,
       logout,
     }),
-    [user, token, status, handleLogin, logout]
+    [user, token, status, authReady, handleLogin, logout]
   );
 };

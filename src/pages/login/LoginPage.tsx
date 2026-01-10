@@ -9,6 +9,12 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const errorCodeMap: Record<string, string> = {
+    invalid_credentials: "invalid_credentials",
+    missing_idempotency_key: "missing_idempotency_key",
+    account_locked: "account_locked",
+    password_expired: "password_expired"
+  };
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -20,8 +26,18 @@ export default function LoginPage() {
     } catch (err: unknown) {
       const status = (err as { status?: number })?.status;
       const code = (err as { code?: string })?.code;
+      if (err instanceof ApiError && (status === 400 || status === 401)) {
+        console.info("Login failed request headers.", {
+          idempotencyKey: err.requestHeaders?.["Idempotency-Key"] ?? err.requestHeaders?.["idempotency-key"],
+          authorization: err.requestHeaders?.Authorization ?? err.requestHeaders?.authorization
+        });
+      }
+      if (code && errorCodeMap[code]) {
+        setError(errorCodeMap[code]);
+        return;
+      }
       if (status === 401) {
-        setError("Invalid credentials");
+        setError("invalid_credentials");
         return;
       }
       if (status === 409) {
@@ -33,7 +49,7 @@ export default function LoginPage() {
         return;
       }
       if (status === 400 && code === "missing_idempotency_key") {
-        setError("Login request missing security header. Please refresh and try again.");
+        setError("missing_idempotency_key");
         return;
       }
       setError(err instanceof ApiError ? err.message : "Authentication failed");

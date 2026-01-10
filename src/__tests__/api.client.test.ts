@@ -5,11 +5,11 @@ import { registerAuthFailureHandler } from "@/auth/authEvents";
 
 describe("api client auth handling", () => {
   beforeEach(() => {
-    sessionStorage.clear();
+    localStorage.clear();
   });
 
   it("attaches tokens to requests", async () => {
-    sessionStorage.setItem("accessToken", "abc123");
+    localStorage.setItem("accessToken", "abc123");
 
     const adapter = vi.fn(async (config) => ({
       data: {},
@@ -28,7 +28,7 @@ describe("api client auth handling", () => {
   });
 
   it("adds an idempotency key to write requests", async () => {
-    sessionStorage.setItem("accessToken", "abc123");
+    localStorage.setItem("accessToken", "abc123");
 
     const adapter = vi.fn(async (config) => ({
       data: {},
@@ -45,8 +45,8 @@ describe("api client auth handling", () => {
   });
 
   it("refreshes once on 401 responses", async () => {
-    sessionStorage.setItem("accessToken", "expired-token");
-    sessionStorage.setItem("refreshToken", "refresh-token");
+    localStorage.setItem("accessToken", "expired-token");
+    localStorage.setItem("refreshToken", "refresh-token");
 
     let secureCalls = 0;
     const adapter = vi.fn(async (config) => {
@@ -97,8 +97,8 @@ describe("api client auth handling", () => {
   });
 
   it("logs out after a second 401 response", async () => {
-    sessionStorage.setItem("accessToken", "expired-token");
-    sessionStorage.setItem("refreshToken", "refresh-token");
+    localStorage.setItem("accessToken", "expired-token");
+    localStorage.setItem("refreshToken", "refresh-token");
 
     const failureHandler = vi.fn();
     registerAuthFailureHandler(failureHandler);

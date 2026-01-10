@@ -1,5 +1,6 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import PrivateRoute from "./router/PrivateRoute";
 import LoginPage from "./pages/login/LoginPage";
 import AppLayout from "./components/layout/AppLayout";
@@ -16,6 +17,7 @@ import ApiConfigGuard from "./components/layout/ApiConfigGuard";
 import { notifyRouteChange } from "./api/client";
 import { emitUiTelemetry } from "./utils/uiTelemetry";
 import { AuthProvider } from "./auth/AuthContext";
+import GlobalErrorBoundary from "./components/errors/GlobalErrorBoundary";
 import { getApiBaseUrlOptional } from "./config/runtime";
 import { useApiHealthCheck } from "./hooks/useApiHealthCheck";
 
@@ -40,6 +42,16 @@ const ProtectedApp = () => (
 
 export default function App() {
   useApiHealthCheck();
+  const queryClient = useMemo(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: { useErrorBoundary: true },
+          mutations: { useErrorBoundary: true }
+        }
+      }),
+    []
+  );
 
   useEffect(() => {
     const apiBaseUrl = getApiBaseUrlOptional();
@@ -48,25 +60,29 @@ export default function App() {
 
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <RouteChangeObserver />
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route element={<ProtectedApp />}>
-            <Route path="/" element={<DashboardPage />} />
-            <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/applications" element={<ApplicationsPage />} />
-            <Route path="/crm" element={<CRMPage />} />
-            <Route path="/communications" element={<CommunicationsPage />} />
-            <Route path="/comms" element={<CommunicationsPage />} />
-            <Route path="/calendar" element={<CalendarPage />} />
-            <Route path="/tasks" element={<TaskPane />} />
-            <Route path="/marketing" element={<MarketingPage />} />
-            <Route path="/lenders" element={<LendersPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
+      <QueryClientProvider client={queryClient}>
+        <GlobalErrorBoundary>
+          <BrowserRouter>
+            <RouteChangeObserver />
+            <Routes>
+              <Route path="/login" element={<LoginPage />} />
+              <Route element={<ProtectedApp />}>
+                <Route path="/" element={<DashboardPage />} />
+                <Route path="/dashboard" element={<DashboardPage />} />
+                <Route path="/applications" element={<ApplicationsPage />} />
+                <Route path="/crm" element={<CRMPage />} />
+                <Route path="/communications" element={<CommunicationsPage />} />
+                <Route path="/comms" element={<CommunicationsPage />} />
+                <Route path="/calendar" element={<CalendarPage />} />
+                <Route path="/tasks" element={<TaskPane />} />
+                <Route path="/marketing" element={<MarketingPage />} />
+                <Route path="/lenders" element={<LendersPage />} />
+                <Route path="/settings" element={<SettingsPage />} />
+              </Route>
+            </Routes>
+          </BrowserRouter>
+        </GlobalErrorBoundary>
+      </QueryClientProvider>
     </AuthProvider>
   );
 }

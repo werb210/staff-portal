@@ -15,7 +15,7 @@ const adapter = vi.fn(async (config) => ({
 
 describe("apiClient auth", () => {
   beforeEach(() => {
-    sessionStorage.clear();
+    localStorage.clear();
     adapter.mockClear();
     failureHandler = vi.fn();
     registerAuthFailureHandler(failureHandler);
@@ -31,7 +31,7 @@ describe("apiClient auth", () => {
   });
 
   it("attaches the bearer token to outbound requests", async () => {
-    sessionStorage.setItem("accessToken", "abc123");
+    localStorage.setItem("accessToken", "abc123");
 
     await apiClient.get("/example", { adapter } as any);
 
@@ -42,7 +42,7 @@ describe("apiClient auth", () => {
   });
 
   it("clears auth and redirects on 401 responses", async () => {
-    sessionStorage.setItem("accessToken", "expired-token");
+    localStorage.setItem("accessToken", "expired-token");
 
     const unauthorizedAdapter = vi.fn(async (config) => ({
       data: {},

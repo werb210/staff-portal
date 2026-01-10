@@ -12,9 +12,8 @@ import {
 import { registerAuthFailureHandler } from "@/auth/authEvents";
 import { redirectToLogin } from "@/services/api";
 import { setApiStatus } from "@/state/apiStatus";
-import { ApiError } from "@/api/client";
 
-export type AuthStatus = "loading" | "authenticated" | "unauthenticated";
+export type AuthStatus = "authenticated" | "unauthenticated" | "expired";
 
 export type AuthContextType = {
   user: AuthenticatedUser | null;
@@ -31,8 +30,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const storedToken = getStoredAccessToken();
   const [user, setUser] = useState<AuthenticatedUser | null>(() => getStoredUser<AuthenticatedUser>());
   const [token, setToken] = useState<string | null>(() => storedToken);
-  const [status, setStatus] = useState<AuthStatus>(storedToken ? "authenticated" : "unauthenticated");
+  const [status, setStatus] = useState<AuthStatus>("unauthenticated");
   const [authReady, setAuthReady] = useState(false);
+
+  const forceLogout = useCallback((nextStatus: AuthStatus) => {
+    clearStoredAuth();
+    setUser(null);
+    setToken(null);
+    setStatus(nextStatus);
+    setAuthReady(true);
+    redirectToLogin();
+  }, []);
 
   useEffect(() => {
     return registerAuthFailureHandler((reason) => {
@@ -40,14 +48,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setApiStatus("forbidden");
         return;
       }
-      clearStoredAuth();
-      setUser(null);
-      setToken(null);
-      setStatus("unauthenticated");
-      setAuthReady(true);
-      redirectToLogin();
+      forceLogout("expired");
     });
-  }, []);
+  }, [forceLogout]);
 
   const loadCurrentUser = useCallback(async () => {
     const existingToken = getStoredAccessToken();
@@ -57,7 +60,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       return;
     }
 
-    setStatus("loading");
     try {
       const currentUser = await fetchCurrentUser();
       setStoredUser(currentUser);
@@ -65,19 +67,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setToken(existingToken);
       setStatus("authenticated");
     } catch (error) {
-      if (error instanceof ApiError && error.status === 403) {
-        setApiStatus("forbidden");
-        setStatus("authenticated");
-      } else {
-        clearStoredAuth();
-        setUser(null);
-        setToken(null);
-        setStatus("unauthenticated");
-      }
+      setApiStatus("unauthorized");
+      forceLogout("expired");
     } finally {
       setAuthReady(true);
     }
-  }, []);
+  }, [forceLogout]);
 
   useEffect(() => {
     void loadCurrentUser();
@@ -103,6 +98,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setUser(null);
     setToken(null);
     setStatus("unauthenticated");
+    setAuthReady(true);
     redirectToLogin();
   }, []);
 
