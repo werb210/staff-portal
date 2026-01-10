@@ -22,5 +22,18 @@ export async function login(email: string, password: string): Promise<LoginSucce
     }
   );
 
+  if (!data?.accessToken) {
+    throw new Error("Login response missing access token");
+  }
+
   return data;
 }
+
+export type RefreshResponse = {
+  accessToken: string;
+  user?: AuthenticatedUser;
+};
+
+export const refresh = () => apiClient.post<RefreshResponse>("/auth/refresh", undefined, { skipAuth: true });
+
+export const logout = () => apiClient.post<void>("/auth/logout");
