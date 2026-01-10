@@ -2,6 +2,7 @@
 import "@testing-library/jest-dom/vitest";
 import apiClient, { ApiError } from "@/api/client";
 import { AuthProvider, useAuth } from "@/auth/AuthContext";
+import { fetchCurrentUser } from "@/api/auth";
 import { login } from "@/services/auth";
 import { getStoredAccessToken, getStoredUser, setStoredAccessToken, setStoredRefreshToken, setStoredUser } from "@/services/token";
 import { render, screen, waitFor } from "@testing-library/react";
@@ -12,6 +13,12 @@ vi.mock("@/config/runtime", () => ({
   getApiBaseUrlOptional: () => "http://localhost",
   getApiBaseUrl: () => "http://localhost"
 }));
+
+vi.mock("@/api/auth", () => ({
+  fetchCurrentUser: vi.fn()
+}));
+
+const mockedFetchCurrentUser = vi.mocked(fetchCurrentUser);
 
 const adapter = vi.fn(async (config) => ({
   data: {},
@@ -47,6 +54,7 @@ describe("auth login", () => {
     adapter.mockClear();
     sessionStorage.clear();
     vi.restoreAllMocks();
+    mockedFetchCurrentUser.mockResolvedValue({ id: "1", email: "demo@example.com", role: "ADMIN" });
   });
 
   it("login succeeds with Idempotency-Key", async () => {
@@ -136,15 +144,15 @@ describe("auth login", () => {
     expect(getStoredUser<{ email: string }>()?.email).toBe("demo@example.com");
   });
 
-  it("restores session on reload", () => {
+  it("restores session on reload", async () => {
     setStoredAccessToken("token-999");
     setStoredRefreshToken("refresh-999");
     setStoredUser({ id: "1", email: "restored@example.com", role: "ADMIN" });
 
     render(createElement(AuthProvider, null, createElement(TestAuthState)));
 
-    expect(screen.getByTestId("status")).toHaveTextContent("authenticated");
+    await waitFor(() => expect(screen.getByTestId("status")).toHaveTextContent("authenticated"));
     expect(screen.getByTestId("token")).toHaveTextContent("token-999");
-    expect(screen.getByTestId("user")).toHaveTextContent("restored@example.com");
+    expect(screen.getByTestId("user")).toHaveTextContent("demo@example.com");
   });
 });

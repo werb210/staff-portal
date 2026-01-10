@@ -12,32 +12,35 @@ import LendersPage from "@/pages/lenders/LendersPage";
 import SettingsPage from "@/pages/settings/SettingsPage";
 import { fullStaffRoles } from "@/utils/roles";
 import LenderRoutes from "./lenderRoutes";
+import { AuthProvider } from "@/auth/AuthContext";
 
 const AppRouter = () => (
-  <BrowserRouter>
-    <Routes>
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/lender/*" element={<LenderRoutes />} />
-      <Route
-        path="/"
-        element={
-          <PrivateRoute allowedRoles={fullStaffRoles}>
-            <AppLayout />
-          </PrivateRoute>
-        }
-      >
-        <Route index element={<DashboardPage />} />
-        <Route path="applications" element={<ApplicationsPage />} />
-        <Route path="crm/*" element={<CRMPage />} />
-        <Route path="communications" element={<CommunicationsPage />} />
-        <Route path="calendar" element={<CalendarPage />} />
-        <Route path="marketing" element={<MarketingPage />} />
-        <Route path="lenders" element={<LendersPage />} />
-        <Route path="settings" element={<SettingsPage />} />
-      </Route>
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
-  </BrowserRouter>
+  <AuthProvider>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/lender/*" element={<LenderRoutes />} />
+        <Route
+          path="/"
+          element={
+            <PrivateRoute allowedRoles={fullStaffRoles}>
+              <AppLayout />
+            </PrivateRoute>
+          }
+        >
+          <Route index element={<DashboardPage />} />
+          <Route path="applications" element={<ApplicationsPage />} />
+          <Route path="crm/*" element={<CRMPage />} />
+          <Route path="communications" element={<CommunicationsPage />} />
+          <Route path="calendar" element={<CalendarPage />} />
+          <Route path="marketing" element={<MarketingPage />} />
+          <Route path="lenders" element={<LendersPage />} />
+          <Route path="settings" element={<SettingsPage />} />
+        </Route>
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </BrowserRouter>
+  </AuthProvider>
 );
 
 export default AppRouter;
