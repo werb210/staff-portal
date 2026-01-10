@@ -18,6 +18,7 @@ import {
 import { reportAuthFailure } from "@/auth/authEvents";
 import { setApiStatus } from "@/state/apiStatus";
 import { showApiToast } from "@/state/apiNotifications";
+import { setLastApiRequest } from "@/state/apiRequestTrace";
 import { emitUiTelemetry } from "@/utils/uiTelemetry";
 
 export type ApiErrorPayload = {
@@ -26,6 +27,7 @@ export type ApiErrorPayload = {
   message: string;
   requestId?: string;
   details?: unknown;
+  requestHeaders?: Record<string, string>;
   isAuthError?: boolean;
   isConfigurationError?: boolean;
   isRetryable?: boolean;
@@ -36,6 +38,7 @@ export class ApiError extends Error {
   code?: string;
   requestId?: string;
   details?: unknown;
+  requestHeaders?: Record<string, string>;
   isAuthError: boolean;
   isConfigurationError: boolean;
   isRetryable: boolean;
@@ -47,6 +50,7 @@ export class ApiError extends Error {
     this.code = payload.code;
     this.requestId = payload.requestId;
     this.details = payload.details;
+    this.requestHeaders = payload.requestHeaders;
     this.isAuthError = payload.isAuthError ?? false;
     this.isConfigurationError = payload.isConfigurationError ?? false;
     this.isRetryable = payload.isRetryable ?? false;
@@ -169,6 +173,12 @@ const buildHeaders = (
   if (normalizedMethod && idempotencyMethods.has(normalizedMethod) && !headers.has("Idempotency-Key")) {
     headers.set("Idempotency-Key", createIdempotencyKey());
   }
+  if (normalizedMethod && idempotencyMethods.has(normalizedMethod) && !headers.has("Idempotency-Key")) {
+    console.warn("Missing Idempotency-Key header.", { method: normalizedMethod });
+  }
+  if (includeAuth && !headers.has("Authorization")) {
+    console.warn("Missing Authorization header for authenticated request.", { method: normalizedMethod });
+  }
   return headers;
 };
 
@@ -207,6 +217,16 @@ const extractRequestIdFromHeaders = (headers?: AxiosHeaders | Record<string, str
   return rawHeaders["x-request-id"] || rawHeaders["request-id"];
 };
 
+const normalizeRequestHeaders = (headers?: AxiosHeaders | Record<string, string>) => {
+  if (!headers) return undefined;
+  if (headers instanceof AxiosHeaders) {
+    return Object.fromEntries(headers.entries());
+  }
+  return Object.fromEntries(
+    Object.entries(headers).map(([key, value]) => [key, value ?? ""])
+  );
+};
+
 const getRoutePath = () => {
   if (typeof window === "undefined") return "unknown";
   return window.location.pathname || "unknown";
@@ -228,6 +248,7 @@ const toApiError = (error: AxiosError): ApiError => {
   const message = normalizeErrorMessage(error, parsed);
   const requestId = parsed.requestId || extractRequestId(error);
   const details = error.response?.data ?? error.message;
+  const requestHeaders = normalizeRequestHeaders(error.config?.headers as AxiosHeaders | Record<string, string> | undefined);
   const isRetryable = status === 504 || error.code === "ECONNABORTED";
   return new ApiError({
     status,
@@ -235,6 +256,7 @@ const toApiError = (error: AxiosError): ApiError => {
     code: parsed.code,
     requestId,
     details,
+    requestHeaders,
     isAuthError: status === 401 || status === 403,
     isRetryable
   });
@@ -285,6 +307,7 @@ const executeRequest = async <T>(path: string, config: RequestOptions & { method
     if (!config.suppressAuthFailure) {
       reportAuthFailure("missing-token");
     }
+    console.warn("Missing Authorization header for staff request.", { path, method: normalizedMethod });
     throw new ApiError({ status: 401, message: "Missing access token", isAuthError: true });
   }
 
@@ -296,13 +319,14 @@ const executeRequest = async <T>(path: string, config: RequestOptions & { method
   const timeout = createTimeoutSignal();
   const signal = combineSignals([config.signal, getRouteSignal(), timeout.signal]);
   const { retryOnConflict, conflictRetryCount, ...axiosConfig } = config;
+  const requestHeaders = buildHeaders(config, includeAuth, authToken ?? undefined, body, config.method);
 
   try {
     const response = await getAxiosClient().request<T>({
       ...axiosConfig,
       url: buildApiUrl(path),
       data: body instanceof FormData ? body : body ? JSON.stringify(body) : undefined,
-      headers: buildHeaders(config, includeAuth, authToken ?? undefined, body, config.method),
+      headers: requestHeaders,
       signal,
       timeout: REQUEST_TIMEOUT_MS,
       validateStatus: (status) => status >= 200 && status < 300
@@ -314,7 +338,8 @@ const executeRequest = async <T>(path: string, config: RequestOptions & { method
         message: response.statusText || "Request failed",
         details: response.data,
         isAuthError: response.status === 401 || response.status === 403,
-        requestId: (response.data as ApiErrorResponse | undefined)?.requestId
+        requestId: (response.data as ApiErrorResponse | undefined)?.requestId,
+        requestHeaders: normalizeRequestHeaders(requestHeaders)
       });
     }
 
@@ -323,6 +348,7 @@ const executeRequest = async <T>(path: string, config: RequestOptions & { method
     }
     const requestId = (response.data as ApiErrorResponse | undefined)?.requestId ?? extractRequestIdFromHeaders(response.headers);
     logApiTelemetry({ endpoint: path, requestId, status: response.status });
+    setLastApiRequest({ path, method: normalizedMethod, status: response.status, requestId, timestamp: Date.now() });
     setApiStatus("available");
     return response.data;
   } catch (error) {
@@ -331,6 +357,10 @@ const executeRequest = async <T>(path: string, config: RequestOptions & { method
     }
 
     if (isOptions) {
+      const status = error instanceof ApiError ? error.status : (error as AxiosError)?.response?.status ?? 0;
+      const requestId = error instanceof ApiError ? error.requestId : extractRequestId(error as AxiosError);
+      console.error("OPTIONS preflight request failed.", { path, method: normalizedMethod, status, requestId });
+      setLastApiRequest({ path, method: normalizedMethod, status, requestId, timestamp: Date.now() });
       return undefined as T;
     }
 
@@ -349,6 +379,7 @@ const executeRequest = async <T>(path: string, config: RequestOptions & { method
       reportApiError(error);
       logApiTelemetry({ endpoint: path, requestId: error.requestId, status: error.status });
       emitUiTelemetry("api_error", { requestId: error.requestId, status: error.status, endpoint: path });
+      setLastApiRequest({ path, method: normalizedMethod, status: error.status, requestId: error.requestId, timestamp: Date.now() });
       if (error.status === 401) {
         setApiStatus("unauthorized");
       } else if (error.status === 403) {
@@ -374,6 +405,7 @@ const executeRequest = async <T>(path: string, config: RequestOptions & { method
     reportApiError(apiError);
     logApiTelemetry({ endpoint: path, requestId: apiError.requestId, status: apiError.status });
     emitUiTelemetry("api_error", { requestId: apiError.requestId, status: apiError.status, endpoint: path });
+    setLastApiRequest({ path, method: normalizedMethod, status: apiError.status, requestId: apiError.requestId, timestamp: Date.now() });
     if (apiError.status === 401) {
       setApiStatus("unauthorized");
     } else if (apiError.status === 403) {

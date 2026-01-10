@@ -64,6 +64,6 @@ describe("LoginPage", () => {
 
     await waitFor(() => expect(loginMock).toHaveBeenCalled());
     expect(navigateMock).not.toHaveBeenCalled();
-    await waitFor(() => expect(screen.getByText(/Invalid credentials/i)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/invalid_credentials/i)).toBeInTheDocument());
   });
 });

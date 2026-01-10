@@ -52,7 +52,7 @@ const TestLoginAction = () => {
 describe("auth login", () => {
   beforeEach(() => {
     adapter.mockClear();
-    sessionStorage.clear();
+    localStorage.clear();
     vi.restoreAllMocks();
     mockedFetchCurrentUser.mockResolvedValue({ id: "1", email: "demo@example.com", role: "ADMIN" });
   });
