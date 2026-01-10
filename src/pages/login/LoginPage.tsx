@@ -1,10 +1,11 @@
 import { FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { login as loginService } from "@/services/auth";
-import { setStoredAccessToken } from "@/services/token";
+import { ApiError } from "@/api/client";
+import { useAuth } from "@/auth/AuthContext";
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -14,16 +15,28 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      const result = await loginService(email, password);
-      setStoredAccessToken(result.accessToken);
+      await login(email, password);
       navigate("/dashboard", { replace: true });
     } catch (err: unknown) {
       const status = (err as { status?: number })?.status;
+      const code = (err as { code?: string })?.code;
       if (status === 401) {
         setError("Invalid credentials");
-      } else {
-        setError(err instanceof Error ? err.message : "Authentication failed");
+        return;
       }
+      if (status === 409) {
+        setError("Login conflict detected. Please try again.");
+        return;
+      }
+      if (status && status >= 500) {
+        setError("Server unavailable. Please try again shortly.");
+        return;
+      }
+      if (status === 400 && code === "missing_idempotency_key") {
+        setError("Login request missing security header. Please refresh and try again.");
+        return;
+      }
+      setError(err instanceof ApiError ? err.message : "Authentication failed");
     }
   };
 
