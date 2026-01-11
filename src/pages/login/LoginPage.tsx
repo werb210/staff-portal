@@ -5,28 +5,14 @@ import type { CountryCode } from "libphonenumber-js";
 import { ApiError } from "@/api/client";
 import { useAuth } from "@/auth/AuthContext";
 
-const DEFAULT_COUNTRY: CountryCode = "US";
-
-const parsePendingPhone = (pendingPhoneNumber: string | null) => {
-  if (!pendingPhoneNumber) return null;
-  const parsed = parsePhoneNumberFromString(pendingPhoneNumber);
-  if (!parsed) return null;
-  return {
-    country: (parsed.country ?? DEFAULT_COUNTRY) as CountryCode,
-    nationalNumber: parsed.nationalNumber ?? pendingPhoneNumber,
-    e164: parsed.format("E.164")
-  };
-};
-
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { startOtp, verifyOtp, pendingPhoneNumber } = useAuth();
-  const parsedPending = parsePendingPhone(pendingPhoneNumber ?? null);
-  const [country, setCountry] = useState<CountryCode | "">(parsedPending?.country ?? "");
-  const [phoneInput, setPhoneInput] = useState(parsedPending?.nationalNumber ?? pendingPhoneNumber ?? "");
-  const [submittedPhoneNumber, setSubmittedPhoneNumber] = useState(parsedPending?.e164 ?? pendingPhoneNumber ?? "");
+  const { startOtp, verifyOtp } = useAuth();
+  const [country, setCountry] = useState<CountryCode | "">("");
+  const [phoneInput, setPhoneInput] = useState("");
+  const [submittedPhoneNumber, setSubmittedPhoneNumber] = useState("");
   const [code, setCode] = useState("");
-  const [step, setStep] = useState<"phone" | "otp">(pendingPhoneNumber ? "otp" : "phone");
+  const [step, setStep] = useState<"phone" | "otp">("phone");
   const [error, setError] = useState<string | null>(null);
   const [isSending, setIsSending] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
@@ -71,11 +57,11 @@ export default function LoginPage() {
       setStep("otp");
     } catch (err: unknown) {
       if (err instanceof ApiError) {
-        setError(err.message || "Unable to send code. Please try again.");
+        setError(err.message);
       } else if (err instanceof Error) {
-        setError(err.message || "Unable to send code. Please try again.");
+        setError(err.message);
       } else {
-        setError("Unable to send code. Please try again.");
+        setError("Unable to send code.");
       }
     } finally {
       setIsSending(false);
@@ -88,16 +74,20 @@ export default function LoginPage() {
 
     try {
       setIsVerifying(true);
-      const phoneForVerification = submittedPhoneNumber || e164PhoneNumber || phoneInput;
+      const phoneForVerification = submittedPhoneNumber || e164PhoneNumber;
+      if (!phoneForVerification) {
+        setError("Missing phone number. Please start again.");
+        return;
+      }
       await verifyOtp(code, phoneForVerification);
       navigate("/dashboard", { replace: true });
     } catch (err: unknown) {
       if (err instanceof ApiError) {
-        setError(err.message || "Invalid code.");
+        setError(err.message);
       } else if (err instanceof Error) {
-        setError(err.message || "Invalid code.");
+        setError(err.message);
       } else {
-        setError("Invalid code.");
+        setError("Unable to verify code.");
       }
     } finally {
       setIsVerifying(false);
