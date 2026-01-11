@@ -23,7 +23,13 @@ export async function startOtp(phoneNumber: string): Promise<OtpStartResponse> {
   return apiClient.post<OtpStartResponse>(
     "/auth/otp/start",
     { phone: phoneNumber },
-    { skipAuth: true, retryOnConflict: false }
+    {
+      skipAuth: true,
+      authMode: "none",
+      retryOnConflict: false,
+      withCredentials: false,
+      skipIdempotencyKey: true
+    }
   );
 }
 
@@ -31,7 +37,13 @@ export async function verifyOtp(phoneNumber: string, code: string, sessionId?: s
   const data = await apiClient.post<LoginSuccess>(
     "/auth/otp/verify",
     { phone: phoneNumber, code, sessionId },
-    { skipAuth: true, retryOnConflict: false }
+    {
+      skipAuth: true,
+      authMode: "none",
+      retryOnConflict: false,
+      withCredentials: false,
+      skipIdempotencyKey: true
+    }
   );
 
   if (!data?.accessToken) {
