@@ -491,13 +491,14 @@ const refreshStaffTokens = async (): Promise<{ accessToken: string; refreshToken
 };
 
 const executeStaffRequest = async <T>(path: string, config: RequestOptions & { method: AxiosRequestConfig["method"] }, body?: unknown) => {
-  const hasToken = !!getStoredAccessToken();
-  const shouldSuppress = hasToken && !config.skipAuth;
+  const authMode = config.authMode ?? "staff";
+  const hasToken = authMode === "staff" ? !!getStoredAccessToken() : false;
+  const shouldSuppress = authMode === "staff" && hasToken && !config.skipAuth;
 
   try {
-    return await executeRequest<T>(path, { ...config, authMode: "staff", suppressAuthFailure: shouldSuppress }, body);
+    return await executeRequest<T>(path, { ...config, authMode, suppressAuthFailure: shouldSuppress }, body);
   } catch (error) {
-    if (error instanceof ApiError && error.isAuthError && !config.skipAuth) {
+    if (error instanceof ApiError && error.isAuthError && authMode === "staff" && !config.skipAuth) {
       if (error.status === 401 && shouldSuppress) {
         const refreshed = await refreshStaffTokens();
         if (refreshed?.accessToken) {
