@@ -39,7 +39,10 @@ export const renderWithProviders = (
         token: null,
         status: "authenticated",
         authReady: true,
-        login: async () => ({ user: null as never, accessToken: "", refreshToken: "" }),
+        pendingPhoneNumber: null,
+        pendingSessionId: null,
+        startOtp: async () => undefined,
+        verifyOtp: async () => ({ user: null as never, accessToken: "" }),
         logout: () => undefined,
         ...options.auth,
       }

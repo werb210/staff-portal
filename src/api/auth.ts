@@ -1,19 +1,27 @@
 import { apiClient } from "./client";
-import type { AuthenticatedUser } from "@/services/auth";
+import type { AuthenticatedUser, LoginSuccess } from "@/services/auth";
 
-export type LoginPayload = {
-  email: string;
-  password: string;
+export type OtpStartPayload = {
+  phoneNumber: string;
 };
 
-export type LoginResponse = {
-  accessToken: string;
-  refreshToken: string;
-  user: AuthenticatedUser;
+export type OtpStartResponse = {
+  sessionId?: string;
 };
 
-export const login = (payload: LoginPayload) =>
-  apiClient.post<LoginResponse>("/auth/login", payload, { skipAuth: true });
+export const startOtp = (payload: OtpStartPayload) =>
+  apiClient.post<OtpStartResponse>("/auth/otp/start", payload, { skipAuth: true });
+
+export type OtpVerifyPayload = {
+  phoneNumber: string;
+  code: string;
+  sessionId?: string;
+};
+
+export type OtpVerifyResponse = LoginSuccess;
+
+export const verifyOtp = (payload: OtpVerifyPayload) =>
+  apiClient.post<OtpVerifyResponse>("/auth/otp/verify", payload, { skipAuth: true });
 
 export const fetchCurrentUser = () => apiClient.get<AuthenticatedUser>("/auth/me");
 

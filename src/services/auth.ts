@@ -11,32 +11,24 @@ export type AuthenticatedUser = {
 
 export type LoginSuccess = {
   accessToken: string;
-  refreshToken: string;
+  refreshToken?: string;
   user: AuthenticatedUser;
 };
 
-export async function login(email: string, password: string): Promise<LoginSuccess> {
+export type OtpStartResponse = {
+  sessionId?: string;
+};
+
+export async function startOtp(phoneNumber: string): Promise<OtpStartResponse> {
   let attempt = 0;
 
   while (attempt < 2) {
     try {
-      const data = await apiClient.post<LoginSuccess>(
-        "/auth/login",
-        { email, password },
-        {
-          skipAuth: true,
-        }
+      return await apiClient.post<OtpStartResponse>(
+        "/auth/otp/start",
+        { phoneNumber },
+        { skipAuth: true }
       );
-
-      if (!data?.accessToken) {
-        throw new Error("Login response missing access token");
-      }
-
-      if (!data?.refreshToken) {
-        throw new Error("Login response missing refresh token");
-      }
-
-      return data;
     } catch (error) {
       if (error instanceof ApiError && error.status === 409 && attempt === 0) {
         attempt += 1;
@@ -46,7 +38,21 @@ export async function login(email: string, password: string): Promise<LoginSucce
     }
   }
 
-  throw new Error("Login failed after retry");
+  throw new Error("OTP start failed after retry");
+}
+
+export async function verifyOtp(phoneNumber: string, code: string, sessionId?: string): Promise<LoginSuccess> {
+  const data = await apiClient.post<LoginSuccess>(
+    "/auth/otp/verify",
+    { phoneNumber, code, sessionId },
+    { skipAuth: true }
+  );
+
+  if (!data?.accessToken) {
+    throw new Error("OTP verification response missing access token");
+  }
+
+  return data;
 }
 
 export type RefreshResponse = {
