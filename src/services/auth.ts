@@ -1,4 +1,4 @@
-import { apiClient } from "@/api/client";
+import { apiClient, otpRequestOptions } from "@/api/client";
 import type { UserRole } from "@/utils/roles";
 import { getStoredRefreshToken } from "@/services/token";
 
@@ -19,36 +19,20 @@ export type OtpStartResponse = {
   sessionId?: string;
 };
 
-export async function startOtp(phoneNumber: string): Promise<OtpStartResponse> {
+export async function startOtp(payload: { phone: string }): Promise<OtpStartResponse> {
   return apiClient.post<OtpStartResponse>(
     "/auth/otp/start",
-    { phone: phoneNumber },
-    {
-      skipAuth: true,
-      authMode: "none",
-      retryOnConflict: false,
-      withCredentials: false,
-      skipIdempotencyKey: true
-    }
+    payload,
+    otpRequestOptions
   );
 }
 
-export async function verifyOtp(phoneNumber: string, code: string, sessionId?: string): Promise<LoginSuccess> {
+export async function verifyOtp(payload: { phone: string; code: string; sessionId?: string }): Promise<LoginSuccess> {
   const data = await apiClient.post<LoginSuccess>(
     "/auth/otp/verify",
-    { phone: phoneNumber, code, sessionId },
-    {
-      skipAuth: true,
-      authMode: "none",
-      retryOnConflict: false,
-      withCredentials: false,
-      skipIdempotencyKey: true
-    }
+    payload,
+    otpRequestOptions
   );
-
-  if (!data?.accessToken) {
-    throw new Error("OTP verification response missing access token");
-  }
 
   return data;
 }

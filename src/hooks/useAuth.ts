@@ -18,8 +18,8 @@ export type AuthValue = {
   tokens: AuthTokens | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  startOtp: (phoneNumber: string) => Promise<void>;
-  verifyOtp: (code: string, phoneNumber?: string) => Promise<LoginSuccess>;
+  startOtp: (payload: { phone: string }) => Promise<void>;
+  verifyOtp: (payload: { code: string; phone?: string }) => Promise<LoginSuccess>;
   logout: () => void;
 };
 
@@ -27,12 +27,12 @@ export const useAuth = (): AuthValue => {
   const { user, token, status, authReady, startOtp, verifyOtp, logout } = useAuthContext();
 
   const handleStartOtp: AuthValue["startOtp"] = useCallback(
-    async (phoneNumber) => startOtp(phoneNumber),
+    async (payload) => startOtp(payload),
     [startOtp]
   );
 
   const handleVerifyOtp: AuthValue["verifyOtp"] = useCallback(
-    async (code, phoneNumber) => verifyOtp(code, phoneNumber),
+    async (payload) => verifyOtp(payload),
     [verifyOtp]
   );
 
