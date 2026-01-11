@@ -50,7 +50,7 @@ describe("LoginPage", () => {
     const verifyOtp = vi.fn().mockResolvedValue({ accessToken: "token-123", user: { email: "demo@example.com" } });
     renderLogin(startOtp, verifyOtp);
 
-    fireEvent.change(screen.getByLabelText(/Phone number/i), { target: { value: "+15555550100" } });
+    fireEvent.change(screen.getByLabelText(/Phone number/i), { target: { value: "(555) 555-0100" } });
     fireEvent.click(screen.getByRole("button", { name: /Send code/i }));
 
     await waitFor(() => expect(startOtp).toHaveBeenCalledWith({ phone: "+15555550100" }));

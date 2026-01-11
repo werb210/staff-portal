@@ -15,7 +15,7 @@ export default function LoginPage() {
   const [isVerifying, setIsVerifying] = useState(false);
 
   const normalizePhone = (value: string) => {
-    const stripped = value.replace(/[\s()-]/g, "");
+    const stripped = value.replace(/[\s().-]/g, "");
     if (!stripped) return "";
     return stripped.startsWith("+") ? stripped : `+1${stripped}`;
   };
