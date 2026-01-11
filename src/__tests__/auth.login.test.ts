@@ -9,11 +9,6 @@ import { render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createElement } from "react";
 
-vi.mock("@/config/runtime", () => ({
-  getApiBaseUrlOptional: () => "http://localhost",
-  getApiBaseUrl: () => "http://localhost"
-}));
-
 vi.mock("@/api/auth", () => ({
   fetchCurrentUser: vi.fn()
 }));
@@ -71,7 +66,7 @@ describe("auth login", () => {
 
     const response = await apiClient.post<{ sessionId?: string; requestId?: string }>(
       "/auth/otp/start",
-      { phoneNumber: "+15555550100" },
+      { phone: "+15555550100" },
       { skipAuth: true, adapter: startAdapter } as any
     );
 
@@ -107,11 +102,11 @@ describe("auth login", () => {
     }));
 
     await expect(
-      apiClient.post("/auth/otp/start", { phoneNumber: "+15555550100" }, { skipAuth: true, adapter: errorAdapter } as any)
+      apiClient.post("/auth/otp/start", { phone: "+15555550100" }, { skipAuth: true, adapter: errorAdapter } as any)
     ).rejects.toBeInstanceOf(ApiError);
 
     try {
-      await apiClient.post("/auth/otp/start", { phoneNumber: "+15555550100" }, { skipAuth: true, adapter: errorAdapter } as any);
+      await apiClient.post("/auth/otp/start", { phone: "+15555550100" }, { skipAuth: true, adapter: errorAdapter } as any);
     } catch (error) {
       const apiError = error as ApiError;
       expect((apiError.details as { code?: string } | undefined)?.code).toBe("missing_idempotency_key");

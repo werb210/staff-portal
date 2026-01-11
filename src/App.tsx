@@ -13,12 +13,10 @@ import MarketingPage from "./pages/marketing/MarketingPage";
 import LendersPage from "./pages/lenders/LendersPage";
 import SettingsPage from "./pages/settings/SettingsPage";
 import TaskPane from "./pages/tasks/TaskPane";
-import ApiConfigGuard from "./components/layout/ApiConfigGuard";
 import { notifyRouteChange } from "./api/client";
 import { emitUiTelemetry } from "./utils/uiTelemetry";
 import { AuthProvider } from "./auth/AuthContext";
 import GlobalErrorBoundary from "./components/errors/GlobalErrorBoundary";
-import { getApiBaseUrlOptional } from "./config/runtime";
 import { useApiHealthCheck } from "./hooks/useApiHealthCheck";
 
 const RouteChangeObserver = () => {
@@ -33,11 +31,9 @@ const RouteChangeObserver = () => {
 };
 
 const ProtectedApp = () => (
-  <ApiConfigGuard>
-    <PrivateRoute>
-      <AppLayout />
-    </PrivateRoute>
-  </ApiConfigGuard>
+  <PrivateRoute>
+    <AppLayout />
+  </PrivateRoute>
 );
 
 export default function App() {
@@ -52,11 +48,6 @@ export default function App() {
       }),
     []
   );
-
-  useEffect(() => {
-    const apiBaseUrl = getApiBaseUrlOptional();
-    console.log(`[runtime] API base URL: ${apiBaseUrl ?? "missing"}`);
-  }, []);
 
   return (
     <AuthProvider>

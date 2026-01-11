@@ -5,7 +5,6 @@ import axios, {
   type AxiosRequestConfig,
   type GenericAbortSignal
 } from "axios";
-import { getApiBaseUrlOptional } from "@/config/api";
 import { buildApiUrl } from "@/services/api";
 import {
   clearStoredAuth,
@@ -93,16 +92,6 @@ const getRouteSignal = () => routeAbortController.signal;
 export const notifyRouteChange = () => {
   routeAbortController.abort();
   routeAbortController = new AbortController();
-};
-
-const ensureApiBaseUrl = () => {
-  if (!getApiBaseUrlOptional()) {
-    throw new ApiError({
-      status: 0,
-      message: "Missing VITE_API_BASE_URL. Please configure VITE_API_BASE_URL before using the staff portal.",
-      isConfigurationError: true
-    });
-  }
 };
 
 const REQUEST_TIMEOUT_MS = 10_000;
@@ -295,8 +284,6 @@ const reportApiError = (error: ApiError) => {
 };
 
 const executeRequest = async <T>(path: string, config: RequestOptions & { method: AxiosRequestConfig["method"] }, body?: unknown) => {
-  ensureApiBaseUrl();
-
   const authMode = config.authMode ?? "staff";
   const normalizedMethod = typeof config.method === "string" ? config.method.toUpperCase() : undefined;
   const isOptions = normalizedMethod === "OPTIONS";

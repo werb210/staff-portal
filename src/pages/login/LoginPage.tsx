@@ -7,21 +7,13 @@ import { useAuth } from "@/auth/AuthContext";
 
 const DEFAULT_COUNTRY: CountryCode = "US";
 
-const stripToDigits = (value: string) => {
-  const cleaned = value.replace(/[^\d+]/g, "");
-  if (cleaned.startsWith("+")) {
-    return `+${cleaned.slice(1).replace(/\D/g, "")}`;
-  }
-  return cleaned.replace(/\D/g, "");
-};
-
 const parsePendingPhone = (pendingPhoneNumber: string | null) => {
   if (!pendingPhoneNumber) return null;
   const parsed = parsePhoneNumberFromString(pendingPhoneNumber);
   if (!parsed) return null;
   return {
     country: (parsed.country ?? DEFAULT_COUNTRY) as CountryCode,
-    nationalNumber: parsed.nationalNumber ?? stripToDigits(pendingPhoneNumber),
+    nationalNumber: parsed.nationalNumber ?? pendingPhoneNumber,
     e164: parsed.format("E.164")
   };
 };
@@ -31,55 +23,52 @@ export default function LoginPage() {
   const { startOtp, verifyOtp, pendingPhoneNumber } = useAuth();
   const parsedPending = parsePendingPhone(pendingPhoneNumber ?? null);
   const [country, setCountry] = useState<CountryCode>(parsedPending?.country ?? DEFAULT_COUNTRY);
-  const [nationalNumber, setNationalNumber] = useState(parsedPending?.nationalNumber ?? "");
-  const [submittedPhoneNumber, setSubmittedPhoneNumber] = useState(parsedPending?.e164 ?? "");
+  const [phoneInput, setPhoneInput] = useState(parsedPending?.nationalNumber ?? pendingPhoneNumber ?? "");
+  const [submittedPhoneNumber, setSubmittedPhoneNumber] = useState(parsedPending?.e164 ?? pendingPhoneNumber ?? "");
   const [code, setCode] = useState("");
   const [step, setStep] = useState<"phone" | "otp">(pendingPhoneNumber ? "otp" : "phone");
   const [error, setError] = useState<string | null>(null);
+  const [isSending, setIsSending] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
 
   const countries = useMemo(() => getCountries().sort(), []);
 
   const e164PhoneNumber = useMemo(() => {
-    const digits = stripToDigits(nationalNumber);
-    if (!digits) return "";
-    const parsed = digits.startsWith("+")
-      ? parsePhoneNumberFromString(digits)
-      : parsePhoneNumberFromString(digits, country);
+    if (!phoneInput.trim()) return "";
+    const parsed = phoneInput.trim().startsWith("+")
+      ? parsePhoneNumberFromString(phoneInput.trim())
+      : parsePhoneNumberFromString(phoneInput.trim(), country);
     if (!parsed || !parsed.isValid()) return "";
     return parsed.format("E.164");
-  }, [country, nationalNumber]);
+  }, [country, phoneInput]);
 
-  const canSubmitPhone = useMemo(() => e164PhoneNumber.length > 0, [e164PhoneNumber]);
   const canSubmitCode = useMemo(() => code.trim().length === 6, [code]);
 
   const handleStart = async (event: FormEvent) => {
     event.preventDefault();
     setError(null);
 
-    if (!e164PhoneNumber) {
-      setError("Invalid phone format. Please enter a valid phone number.");
+    const rawPhone = phoneInput;
+    if (!rawPhone.trim()) {
+      setError("Please enter a phone number.");
       return;
     }
 
     try {
-      await startOtp(e164PhoneNumber);
-      setSubmittedPhoneNumber(e164PhoneNumber);
+      setIsSending(true);
+      await startOtp(rawPhone);
+      setSubmittedPhoneNumber(rawPhone);
       setStep("otp");
     } catch (err: unknown) {
-      const status = (err as { status?: number })?.status;
-      if (status === 409) {
-        setError("OTP send failure. Please try again.");
-        return;
+      if (err instanceof ApiError) {
+        setError(err.message || "Unable to send code. Please try again.");
+      } else if (err instanceof Error) {
+        setError(err.message || "Unable to send code. Please try again.");
+      } else {
+        setError("Unable to send code. Please try again.");
       }
-      if (status && status >= 500) {
-        setError("OTP send failure. Please try again.");
-        return;
-      }
-      if (err instanceof Error && err.message === "Invalid phone format.") {
-        setError("Invalid phone format. Please enter a valid phone number.");
-        return;
-      }
-      setError(err instanceof ApiError ? err.message : "OTP send failure. Please try again.");
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -88,20 +77,19 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      await verifyOtp(code, submittedPhoneNumber || e164PhoneNumber);
+      setIsVerifying(true);
+      await verifyOtp(code, submittedPhoneNumber || phoneInput);
       navigate("/dashboard", { replace: true });
     } catch (err: unknown) {
-      const status = (err as { status?: number })?.status;
-      const errorCode = (err as { code?: string })?.code;
-      if (status === 401 || errorCode === "invalid_otp") {
+      if (err instanceof ApiError) {
+        setError(err.message || "Invalid code.");
+      } else if (err instanceof Error) {
+        setError(err.message || "Invalid code.");
+      } else {
         setError("Invalid code.");
-        return;
       }
-      if (status && status >= 500) {
-        setError("Invalid code.");
-        return;
-      }
-      setError(err instanceof ApiError ? err.message : "Invalid code.");
+    } finally {
+      setIsVerifying(false);
     }
   };
 
@@ -143,15 +131,14 @@ export default function LoginPage() {
               id="phoneNumber"
               name="phoneNumber"
               type="tel"
-              inputMode="numeric"
-              value={nationalNumber}
+              inputMode="tel"
+              value={phoneInput}
               onChange={(event) => {
-                setNationalNumber(stripToDigits(event.target.value));
+                setPhoneInput(event.target.value);
                 setError(null);
               }}
               className="border rounded px-3 py-2"
               placeholder="Enter phone number"
-              required
             />
             <p className="text-xs text-slate-500">E.164: {e164PhoneNumber || "—"}</p>
           </div>
@@ -159,9 +146,9 @@ export default function LoginPage() {
           <button
             type="submit"
             className="w-full bg-blue-600 text-white rounded px-4 py-2 disabled:opacity-60"
-            disabled={!canSubmitPhone}
+            disabled={isSending}
           >
-            Send code
+            {isSending ? "Sending..." : "Send code"}
           </button>
         </form>
       ) : (
@@ -192,9 +179,9 @@ export default function LoginPage() {
           <button
             type="submit"
             className="w-full bg-blue-600 text-white rounded px-4 py-2 disabled:opacity-60"
-            disabled={!canSubmitCode}
+            disabled={!canSubmitCode || isVerifying}
           >
-            Verify code
+            {isVerifying ? "Verifying..." : "Verify code"}
           </button>
         </form>
       )}

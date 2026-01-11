@@ -75,6 +75,6 @@ describe("LoginPage", () => {
 
     await waitFor(() => expect(verifyOtp).toHaveBeenCalled());
     expect(navigateMock).not.toHaveBeenCalled();
-    await waitFor(() => expect(screen.getByText(/Invalid verification code/i)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/Invalid code/i)).toBeInTheDocument());
   });
 });
