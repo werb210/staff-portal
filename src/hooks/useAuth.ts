@@ -18,18 +18,22 @@ export type AuthValue = {
   tokens: AuthTokens | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<LoginSuccess>;
+  startOtp: (phoneNumber: string) => Promise<void>;
+  verifyOtp: (code: string, phoneNumber?: string) => Promise<LoginSuccess>;
   logout: () => void;
 };
 
 export const useAuth = (): AuthValue => {
-  const { user, token, status, authReady, login, logout } = useAuthContext();
+  const { user, token, status, authReady, startOtp, verifyOtp, logout } = useAuthContext();
 
-  const handleLogin: AuthValue["login"] = useCallback(
-    async (email, password) => {
-      return login(email, password);
-    },
-    [login]
+  const handleStartOtp: AuthValue["startOtp"] = useCallback(
+    async (phoneNumber) => startOtp(phoneNumber),
+    [startOtp]
+  );
+
+  const handleVerifyOtp: AuthValue["verifyOtp"] = useCallback(
+    async (code, phoneNumber) => verifyOtp(code, phoneNumber),
+    [verifyOtp]
   );
 
   return useMemo(
@@ -38,9 +42,10 @@ export const useAuth = (): AuthValue => {
       tokens: token ? { token } : null,
       isAuthenticated: status === "authenticated",
       isLoading: !authReady,
-      login: handleLogin,
+      startOtp: handleStartOtp,
+      verifyOtp: handleVerifyOtp,
       logout,
     }),
-    [user, token, status, authReady, handleLogin, logout]
+    [user, token, status, authReady, handleStartOtp, handleVerifyOtp, logout]
   );
 };

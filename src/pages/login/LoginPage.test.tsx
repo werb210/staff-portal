@@ -4,11 +4,14 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import "@testing-library/jest-dom/vitest";
 import LoginPage from "./LoginPage";
 
-let loginMock = vi.fn();
+let startOtpMock = vi.fn();
+let verifyOtpMock = vi.fn();
 
 vi.mock("@/auth/AuthContext", () => ({
   useAuth: () => ({
-    login: (...args: Parameters<typeof loginMock>) => loginMock(...args)
+    startOtp: (...args: Parameters<typeof startOtpMock>) => startOtpMock(...args),
+    verifyOtp: (...args: Parameters<typeof verifyOtpMock>) => verifyOtpMock(...args),
+    pendingPhoneNumber: null
   })
 }));
 
@@ -32,38 +35,46 @@ describe("LoginPage", () => {
     cleanup();
   });
 
-  const renderLogin = (login = vi.fn()) => {
-    loginMock = login;
+  const renderLogin = (startOtp = vi.fn(), verifyOtp = vi.fn()) => {
+    startOtpMock = startOtp;
+    verifyOtpMock = verifyOtp;
 
     return render(
       <LoginPage />
     );
   };
 
-  test("submits credentials and navigates on success", async () => {
-    const loginMock = vi
-      .fn()
-      .mockResolvedValue({ accessToken: "token-123", user: { email: "demo@example.com" } });
-    renderLogin(loginMock);
+  test("submits phone number and navigates on OTP verification", async () => {
+    const startOtp = vi.fn().mockResolvedValue(undefined);
+    const verifyOtp = vi.fn().mockResolvedValue({ accessToken: "token-123", user: { email: "demo@example.com" } });
+    renderLogin(startOtp, verifyOtp);
 
-    fireEvent.change(screen.getByLabelText(/Email/i), { target: { value: "demo@example.com" } });
-    fireEvent.change(screen.getByLabelText(/Password/i), { target: { value: "password123" } });
-    fireEvent.click(screen.getByRole("button", { name: /Login/i }));
+    fireEvent.change(screen.getByLabelText(/Phone number/i), { target: { value: "+15555550100" } });
+    fireEvent.click(screen.getByRole("button", { name: /Send code/i }));
 
-    await waitFor(() => expect(loginMock).toHaveBeenCalledWith("demo@example.com", "password123"));
+    await waitFor(() => expect(startOtp).toHaveBeenCalledWith("+15555550100"));
+
+    fireEvent.change(screen.getByLabelText(/Verification code/i), { target: { value: "123456" } });
+    fireEvent.click(screen.getByRole("button", { name: /Verify code/i }));
+
+    await waitFor(() => expect(verifyOtp).toHaveBeenCalledWith("123456"));
     expect(navigateMock).toHaveBeenCalledWith("/dashboard", { replace: true });
   });
 
-  test("shows an error when login fails", async () => {
-    const loginMock = vi.fn().mockRejectedValue({ status: 401 });
-    renderLogin(loginMock);
+  test("shows an error when OTP verification fails", async () => {
+    const startOtp = vi.fn().mockResolvedValue(undefined);
+    const verifyOtp = vi.fn().mockRejectedValue({ status: 401 });
+    renderLogin(startOtp, verifyOtp);
 
-    fireEvent.change(screen.getByLabelText(/Email/i), { target: { value: "demo@example.com" } });
-    fireEvent.change(screen.getByLabelText(/Password/i), { target: { value: "wrong" } });
-    fireEvent.click(screen.getByRole("button", { name: /Login/i }));
+    fireEvent.change(screen.getByLabelText(/Phone number/i), { target: { value: "+15555550100" } });
+    fireEvent.click(screen.getByRole("button", { name: /Send code/i }));
+    await waitFor(() => expect(startOtp).toHaveBeenCalled());
 
-    await waitFor(() => expect(loginMock).toHaveBeenCalled());
+    fireEvent.change(screen.getByLabelText(/Verification code/i), { target: { value: "000000" } });
+    fireEvent.click(screen.getByRole("button", { name: /Verify code/i }));
+
+    await waitFor(() => expect(verifyOtp).toHaveBeenCalled());
     expect(navigateMock).not.toHaveBeenCalled();
-    await waitFor(() => expect(screen.getByText(/invalid_credentials/i)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/Invalid verification code/i)).toBeInTheDocument());
   });
 });

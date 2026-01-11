@@ -1,58 +1,63 @@
-import { FormEvent, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ApiError } from "@/api/client";
 import { useAuth } from "@/auth/AuthContext";
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { login } = useAuth();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const { startOtp, verifyOtp, pendingPhoneNumber } = useAuth();
+  const [phoneNumber, setPhoneNumber] = useState(pendingPhoneNumber ?? "");
+  const [code, setCode] = useState("");
+  const [step, setStep] = useState<"phone" | "otp">(pendingPhoneNumber ? "otp" : "phone");
   const [error, setError] = useState<string | null>(null);
-  const errorCodeMap: Record<string, string> = {
-    invalid_credentials: "invalid_credentials",
-    missing_idempotency_key: "missing_idempotency_key",
-    account_locked: "account_locked",
-    password_expired: "password_expired"
-  };
+  const canSubmitPhone = useMemo(() => phoneNumber.trim().length > 0, [phoneNumber]);
+  const canSubmitCode = useMemo(() => code.trim().length === 6, [code]);
 
-  const handleSubmit = async (event: FormEvent) => {
+  const handleStart = async (event: FormEvent) => {
     event.preventDefault();
     setError(null);
 
     try {
-      await login(email, password);
-      navigate("/dashboard", { replace: true });
+      await startOtp(phoneNumber);
+      setStep("otp");
     } catch (err: unknown) {
       const status = (err as { status?: number })?.status;
       const code = (err as { code?: string })?.code;
-      if (err instanceof ApiError && (status === 400 || status === 401)) {
-        console.info("Login failed request headers.", {
-          idempotencyKey: err.requestHeaders?.["Idempotency-Key"] ?? err.requestHeaders?.["idempotency-key"],
-          authorization: err.requestHeaders?.Authorization ?? err.requestHeaders?.authorization
-        });
-      }
-      if (code && errorCodeMap[code]) {
-        setError(errorCodeMap[code]);
-        return;
-      }
-      if (status === 401) {
-        setError("invalid_credentials");
-        return;
-      }
       if (status === 409) {
-        setError("Login conflict detected. Please try again.");
+        setError("OTP request conflict detected. Please try again.");
         return;
       }
       if (status && status >= 500) {
         setError("Server unavailable. Please try again shortly.");
         return;
       }
-      if (status === 400 && code === "missing_idempotency_key") {
-        setError("missing_idempotency_key");
+      if (status === 400 && code === "invalid_phone") {
+        setError("Please enter a valid phone number.");
         return;
       }
-      setError(err instanceof ApiError ? err.message : "Authentication failed");
+      setError(err instanceof ApiError ? err.message : "Unable to start verification");
+    }
+  };
+
+  const handleVerify = async (event: FormEvent) => {
+    event.preventDefault();
+    setError(null);
+
+    try {
+      await verifyOtp(code, phoneNumber);
+      navigate("/dashboard", { replace: true });
+    } catch (err: unknown) {
+      const status = (err as { status?: number })?.status;
+      const code = (err as { code?: string })?.code;
+      if (status === 401 || code === "invalid_otp") {
+        setError("Invalid verification code.");
+        return;
+      }
+      if (status && status >= 500) {
+        setError("Server unavailable. Please try again shortly.");
+        return;
+      }
+      setError(err instanceof ApiError ? err.message : "Verification failed");
     }
   };
 
@@ -66,40 +71,56 @@ export default function LoginPage() {
         </div>
       )}
 
-      <form className="space-y-4" onSubmit={handleSubmit}>
-        <div className="flex flex-col space-y-1">
-          <label htmlFor="email">Email</label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="border rounded px-3 py-2"
-            required
-          />
-        </div>
+      {step === "phone" ? (
+        <form className="space-y-4" onSubmit={handleStart}>
+          <div className="flex flex-col space-y-1">
+            <label htmlFor="phoneNumber">Phone number</label>
+            <input
+              id="phoneNumber"
+              name="phoneNumber"
+              type="tel"
+              value={phoneNumber}
+              onChange={(e) => setPhoneNumber(e.target.value)}
+              className="border rounded px-3 py-2"
+              required
+            />
+          </div>
 
-        <div className="flex flex-col space-y-1">
-          <label htmlFor="password">Password</label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="border rounded px-3 py-2"
-            required
-          />
-        </div>
+          <button
+            type="submit"
+            className="w-full bg-blue-600 text-white rounded px-4 py-2"
+            disabled={!canSubmitPhone}
+          >
+            Send code
+          </button>
+        </form>
+      ) : (
+        <form className="space-y-4" onSubmit={handleVerify}>
+          <div className="flex flex-col space-y-1">
+            <label htmlFor="otp">Verification code</label>
+            <input
+              id="otp"
+              name="otp"
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]{6}"
+              maxLength={6}
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              className="border rounded px-3 py-2"
+              required
+            />
+          </div>
 
-        <button
-          type="submit"
-          className="w-full bg-blue-600 text-white rounded px-4 py-2"
-        >
-          Login
-        </button>
-      </form>
+          <button
+            type="submit"
+            className="w-full bg-blue-600 text-white rounded px-4 py-2"
+            disabled={!canSubmitCode}
+          >
+            Verify code
+          </button>
+        </form>
+      )}
     </div>
   );
 }

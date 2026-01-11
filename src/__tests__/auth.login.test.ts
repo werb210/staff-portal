@@ -3,7 +3,7 @@ import "@testing-library/jest-dom/vitest";
 import apiClient, { ApiError } from "@/api/client";
 import { AuthProvider, useAuth } from "@/auth/AuthContext";
 import { fetchCurrentUser } from "@/api/auth";
-import { login } from "@/services/auth";
+import { verifyOtp } from "@/services/auth";
 import { getStoredAccessToken, getStoredUser, setStoredAccessToken, setStoredRefreshToken, setStoredUser } from "@/services/token";
 import { render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -39,13 +39,13 @@ const TestAuthState = () => {
   );
 };
 
-const TestLoginAction = () => {
-  const { login } = useAuth();
+const TestVerifyAction = () => {
+  const { verifyOtp } = useAuth();
 
   return createElement(
     "button",
-    { type: "button", onClick: () => void login("demo@example.com", "password") },
-    "Login"
+    { type: "button", onClick: () => void verifyOtp("123456", "+15555550100") },
+    "Verify"
   );
 };
 
@@ -57,12 +57,10 @@ describe("auth login", () => {
     mockedFetchCurrentUser.mockResolvedValue({ id: "1", email: "demo@example.com", role: "ADMIN" });
   });
 
-  it("login succeeds with Idempotency-Key", async () => {
-    const loginAdapter = vi.fn(async (config) => ({
+  it("OTP start succeeds with Idempotency-Key", async () => {
+    const startAdapter = vi.fn(async (config) => ({
       data: {
-        accessToken: "token-123",
-        refreshToken: "refresh-123",
-        user: { id: "1", email: "demo@example.com", role: "ADMIN" },
+        sessionId: "session-1",
         requestId: "req-1"
       },
       status: 200,
@@ -71,34 +69,34 @@ describe("auth login", () => {
       config,
     }));
 
-    const response = await apiClient.post<{ accessToken: string; requestId?: string }>(
-      "/auth/login",
-      { email: "demo@example.com", password: "password" },
-      { skipAuth: true, adapter: loginAdapter } as any
+    const response = await apiClient.post<{ sessionId?: string; requestId?: string }>(
+      "/auth/otp/start",
+      { phoneNumber: "+15555550100" },
+      { skipAuth: true, adapter: startAdapter } as any
     );
 
-    expect(loginAdapter).toHaveBeenCalledOnce();
-    const passedConfig = loginAdapter.mock.calls[0][0];
+    expect(startAdapter).toHaveBeenCalledOnce();
+    const passedConfig = startAdapter.mock.calls[0][0];
     const idempotencyKey =
       passedConfig?.headers?.["Idempotency-Key"] ?? passedConfig?.headers?.get?.("Idempotency-Key");
     expect(idempotencyKey).toBeTruthy();
-    expect(response.accessToken).toBe("token-123");
+    expect(response.sessionId).toBe("session-1");
     expect(response.requestId).toBe("req-1");
   });
 
-  it("login fails without tokens", async () => {
+  it("OTP verification fails without tokens", async () => {
     const apiPostSpy = vi.spyOn(apiClient, "post").mockResolvedValueOnce({
       user: { id: "1", email: "demo@example.com", role: "ADMIN" },
     } as any);
 
-    await expect(login("demo@example.com", "password"))
+    await expect(verifyOtp("+15555550100", "123456"))
       .rejects
-      .toThrow("Login response missing access token");
+      .toThrow("OTP verification response missing access token");
 
     apiPostSpy.mockRestore();
   });
 
-  it("login fails without Idempotency-Key", async () => {
+  it("OTP start fails without Idempotency-Key", async () => {
     const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
     const errorAdapter = vi.fn(async (config) => ({
       data: { code: "missing_idempotency_key", message: "Idempotency-Key required", requestId: "req-400" },
@@ -109,11 +107,11 @@ describe("auth login", () => {
     }));
 
     await expect(
-      apiClient.post("/auth/login", { email: "demo@example.com", password: "password" }, { skipAuth: true, adapter: errorAdapter } as any)
+      apiClient.post("/auth/otp/start", { phoneNumber: "+15555550100" }, { skipAuth: true, adapter: errorAdapter } as any)
     ).rejects.toBeInstanceOf(ApiError);
 
     try {
-      await apiClient.post("/auth/login", { email: "demo@example.com", password: "password" }, { skipAuth: true, adapter: errorAdapter } as any);
+      await apiClient.post("/auth/otp/start", { phoneNumber: "+15555550100" }, { skipAuth: true, adapter: errorAdapter } as any);
     } catch (error) {
       const apiError = error as ApiError;
       expect((apiError.details as { code?: string } | undefined)?.code).toBe("missing_idempotency_key");
@@ -129,16 +127,16 @@ describe("auth login", () => {
     expect(adapter).toHaveBeenCalledOnce();
   });
 
-  it("stores tokens after a successful login", async () => {
+  it("stores tokens after a successful OTP verification", async () => {
     vi.spyOn(apiClient, "post").mockResolvedValueOnce({
       accessToken: "token-456",
       refreshToken: "refresh-456",
       user: { id: "1", email: "demo@example.com", role: "ADMIN" }
     });
 
-    render(createElement(AuthProvider, null, createElement(TestLoginAction)));
+    render(createElement(AuthProvider, null, createElement(TestVerifyAction)));
 
-    screen.getByRole("button", { name: "Login" }).click();
+    screen.getByRole("button", { name: "Verify" }).click();
 
     await waitFor(() => expect(getStoredAccessToken()).toBe("token-456"));
     expect(getStoredUser<{ email: string }>()?.email).toBe("demo@example.com");

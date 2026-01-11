@@ -6,7 +6,7 @@ import { createElement } from "react";
 import apiClient, { ApiError } from "@/api/client";
 import { AuthProvider, useAuth } from "@/auth/AuthContext";
 import { fetchCurrentUser } from "@/api/auth";
-import { login as loginService, logout as logoutService } from "@/services/auth";
+import { startOtp as startOtpService, verifyOtp as verifyOtpService, logout as logoutService } from "@/services/auth";
 import LoginPage from "@/pages/login/LoginPage";
 
 vi.mock("@/api/auth", () => ({
@@ -14,11 +14,13 @@ vi.mock("@/api/auth", () => ({
 }));
 
 vi.mock("@/services/auth", () => ({
-  login: vi.fn(),
+  startOtp: vi.fn(),
+  verifyOtp: vi.fn(),
   logout: vi.fn()
 }));
 
-const mockedLogin = vi.mocked(loginService);
+const mockedStartOtp = vi.mocked(startOtpService);
+const mockedVerifyOtp = vi.mocked(verifyOtpService);
 const mockedLogout = vi.mocked(logoutService);
 const mockedFetchCurrentUser = vi.mocked(fetchCurrentUser);
 
@@ -27,12 +29,12 @@ const TestAuthState = () => {
   return createElement("span", { "data-testid": "status" }, status);
 };
 
-const TestLoginAction = () => {
-  const { login } = useAuth();
+const TestVerifyAction = () => {
+  const { verifyOtp } = useAuth();
   return createElement(
     "button",
-    { type: "button", onClick: () => void login("demo@example.com", "password") },
-    "Login"
+    { type: "button", onClick: () => void verifyOtp("123456", "+15555550100") },
+    "Verify"
   );
 };
 
@@ -54,8 +56,8 @@ describe("auth flow", () => {
     vi.spyOn(window.location, "assign").mockImplementation(() => undefined);
   });
 
-  it("logs in successfully", async () => {
-    mockedLogin.mockResolvedValue({
+  it("verifies OTP successfully", async () => {
+    mockedVerifyOtp.mockResolvedValue({
       accessToken: "token-123",
       refreshToken: "refresh-123",
       user: { id: "1", email: "demo@example.com", role: "ADMIN" }
@@ -63,12 +65,12 @@ describe("auth flow", () => {
 
     render(
       <AuthProvider>
-        <TestLoginAction />
+        <TestVerifyAction />
         <TestAuthState />
       </AuthProvider>
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Login" }));
+    fireEvent.click(screen.getByRole("button", { name: "Verify" }));
 
     await waitFor(() => expect(screen.getByTestId("status")).toHaveTextContent("authenticated"));
     expect(localStorage.getItem("accessToken")).toBe("token-123");
@@ -76,14 +78,14 @@ describe("auth flow", () => {
   });
 
   it.each([
-    ["invalid_credentials", 401],
-    ["missing_idempotency_key", 400],
-    ["account_locked", 401],
-    ["password_expired", 401]
-  ])("surfaces login failures for %s", async (code, status) => {
-    mockedLogin.mockRejectedValue(
-      new ApiError({ status, message: "Login failed", code })
-    );
+    ["invalid_otp", 401],
+    ["missing_idempotency_key", 400]
+  ])("surfaces OTP failures for %s", async (code, status) => {
+    if (code === "missing_idempotency_key") {
+      mockedStartOtp.mockRejectedValue(new ApiError({ status, message: "Start failed", code }));
+    } else {
+      mockedVerifyOtp.mockRejectedValue(new ApiError({ status, message: "Verify failed", code }));
+    }
 
     render(
       <AuthProvider>
@@ -91,11 +93,20 @@ describe("auth flow", () => {
       </AuthProvider>
     );
 
-    fireEvent.change(screen.getByLabelText(/Email/i), { target: { value: "demo@example.com" } });
-    fireEvent.change(screen.getByLabelText(/Password/i), { target: { value: "password" } });
-    fireEvent.click(screen.getByRole("button", { name: /Login/i }));
+    fireEvent.change(screen.getByLabelText(/Phone number/i), { target: { value: "+15555550100" } });
+    fireEvent.click(screen.getByRole("button", { name: /Send code/i }));
 
-    await waitFor(() => expect(screen.getByText(code)).toBeInTheDocument());
+    if (code !== "missing_idempotency_key") {
+      await waitFor(() => expect(mockedStartOtp).toHaveBeenCalled());
+      fireEvent.change(screen.getByLabelText(/Verification code/i), { target: { value: "000000" } });
+      fireEvent.click(screen.getByRole("button", { name: /Verify code/i }));
+    }
+
+    if (code === "missing_idempotency_key") {
+      await waitFor(() => expect(screen.getByText(/Start failed/i)).toBeInTheDocument());
+    } else {
+      await waitFor(() => expect(screen.getByText(/Invalid verification code/i)).toBeInTheDocument());
+    }
   });
 
   it("refreshes tokens after mid-session expiry", async () => {
