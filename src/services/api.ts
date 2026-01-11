@@ -1,4 +1,4 @@
-import { getApiBaseUrl } from "@/config/runtime";
+import { getApiBaseUrl } from "@/config/api";
 
 function baseHasApiPrefix(base: string) {
   return base.replace(/\/+$/, "").endsWith("/api");

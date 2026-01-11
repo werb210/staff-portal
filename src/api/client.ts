@@ -5,7 +5,7 @@ import axios, {
   type AxiosRequestConfig,
   type GenericAbortSignal
 } from "axios";
-import { getApiBaseUrlOptional } from "@/config/runtime";
+import { getApiBaseUrlOptional } from "@/config/api";
 import { buildApiUrl } from "@/services/api";
 import {
   clearStoredAuth,
