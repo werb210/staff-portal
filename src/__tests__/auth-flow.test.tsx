@@ -33,7 +33,7 @@ const TestVerifyAction = () => {
   const { verifyOtp } = useAuth();
   return createElement(
     "button",
-    { type: "button", onClick: () => void verifyOtp("123456", "+15555550100") },
+    { type: "button", onClick: () => void verifyOtp({ code: "123456", phone: "+15555550100" }) },
     "Verify"
   );
 };
@@ -105,7 +105,7 @@ describe("auth flow", () => {
     if (code === "missing_idempotency_key") {
       await waitFor(() => expect(screen.getByText(/Start failed/i)).toBeInTheDocument());
     } else {
-      await waitFor(() => expect(screen.getByText(/Invalid verification code/i)).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByText(/Verify failed/i)).toBeInTheDocument());
     }
   });
 

@@ -65,6 +65,14 @@ export type RequestOptions = Omit<AxiosRequestConfig, "url" | "method" | "data">
   skipIdempotencyKey?: boolean;
 };
 
+export const otpRequestOptions: RequestOptions = {
+  skipAuth: true,
+  authMode: "none",
+  retryOnConflict: false,
+  withCredentials: false,
+  skipIdempotencyKey: true
+};
+
 export type LenderAuthTokens = {
   refreshToken: string;
   accessToken: string;

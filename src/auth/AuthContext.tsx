@@ -22,8 +22,8 @@ export type AuthContextType = {
   authReady: boolean;
   pendingPhoneNumber: string | null;
   pendingSessionId: string | null;
-  startOtp: (phoneNumber: string) => Promise<void>;
-  verifyOtp: (code: string, phoneNumber?: string) => Promise<LoginSuccess>;
+  startOtp: (payload: { phone: string }) => Promise<void>;
+  verifyOtp: (payload: { code: string; phone?: string }) => Promise<LoginSuccess>;
   logout: () => void;
 };
 
@@ -83,18 +83,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     void loadCurrentUser();
   }, [loadCurrentUser]);
 
-  const startOtp = useCallback(async (phoneNumber: string) => {
-    const result = await startOtpService(phoneNumber);
-    setPendingPhoneNumber(phoneNumber);
+  const startOtp = useCallback(async ({ phone }: { phone: string }) => {
+    const result = await startOtpService({ phone });
+    setPendingPhoneNumber(phone);
     setPendingSessionId(result.sessionId ?? null);
   }, []);
 
-  const verifyOtp = useCallback(async (code: string, phoneNumber?: string) => {
-    const targetPhoneNumber = phoneNumber ?? pendingPhoneNumber;
+  const verifyOtp = useCallback(async ({ code, phone }: { code: string; phone?: string }) => {
+    const targetPhoneNumber = phone ?? pendingPhoneNumber;
     if (!targetPhoneNumber) {
       throw new Error("Missing phone number for OTP verification");
     }
-    const result = await verifyOtpService(targetPhoneNumber, code, pendingSessionId ?? undefined);
+    const result = await verifyOtpService({
+      phone: targetPhoneNumber,
+      code,
+      sessionId: pendingSessionId ?? undefined
+    });
     setStoredAccessToken(result.accessToken);
     if (result.refreshToken) {
       setStoredRefreshToken(result.refreshToken);

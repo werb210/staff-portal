@@ -1,93 +1,107 @@
 import { FormEvent, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getCountries, getCountryCallingCode, parsePhoneNumberFromString } from "libphonenumber-js";
-import type { CountryCode } from "libphonenumber-js";
+import { parsePhoneNumberFromString } from "libphonenumber-js";
 import { ApiError } from "@/api/client";
 import { useAuth } from "@/auth/AuthContext";
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const { startOtp, verifyOtp } = useAuth();
-  const [country, setCountry] = useState<CountryCode | "">("");
-  const [phoneInput, setPhoneInput] = useState("");
+  const [rawPhone, setRawPhone] = useState("");
+  const [phoneE164, setPhoneE164] = useState("");
+  const [isValid, setIsValid] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [submittedPhoneNumber, setSubmittedPhoneNumber] = useState("");
   const [code, setCode] = useState("");
   const [step, setStep] = useState<"phone" | "otp">("phone");
-  const [error, setError] = useState<string | null>(null);
-  const [isSending, setIsSending] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
 
-  const countries = useMemo(() => getCountries().sort(), []);
+  const normalizePhone = (nextValue: string) => {
+    setRawPhone(nextValue);
+    const trimmed = nextValue.trim();
+    if (!trimmed) {
+      setPhoneE164("");
+      setIsValid(false);
+      setErrorMessage(null);
+      return;
+    }
 
-  const e164PhoneNumber = useMemo(() => {
-    if (!phoneInput.trim()) return "";
-    if (!country) return "";
-    const parsed = parsePhoneNumberFromString(phoneInput.trim(), country);
-    if (!parsed || !parsed.isValid()) return "";
-    return parsed.format("E.164");
-  }, [country, phoneInput]);
+    const parsed = trimmed.startsWith("+")
+      ? parsePhoneNumberFromString(trimmed)
+      : parsePhoneNumberFromString(trimmed, "CA");
+
+    if (!parsed || !parsed.isValid()) {
+      setPhoneE164("");
+      setIsValid(false);
+      setErrorMessage("Invalid phone number");
+      return;
+    }
+
+    setPhoneE164(parsed.format("E.164"));
+    setIsValid(true);
+    setErrorMessage(null);
+  };
 
   const canSubmitCode = useMemo(() => code.trim().length === 6, [code]);
 
   const handleStart = async (event: FormEvent) => {
     event.preventDefault();
-    setError(null);
+    setErrorMessage(null);
 
-    const rawPhone = phoneInput;
-    if (!rawPhone.trim()) {
-      setError("Please enter a phone number.");
+    if (!isValid || !phoneE164) {
+      setErrorMessage("Invalid phone number");
       return;
     }
-    if (!country) {
-      setError("Please select a country.");
-      return;
-    }
-
-    const parsed = parsePhoneNumberFromString(rawPhone.trim(), country);
-    if (!parsed || !parsed.isValid()) {
-      setError("Please enter a valid phone number.");
-      return;
-    }
-    const formattedPhone = parsed.format("E.164");
 
     try {
-      setIsSending(true);
-      await startOtp(formattedPhone);
-      setSubmittedPhoneNumber(formattedPhone);
+      setIsSubmitting(true);
+      await startOtp({ phone: phoneE164 });
+      setSubmittedPhoneNumber(phoneE164);
       setStep("otp");
     } catch (err: unknown) {
       if (err instanceof ApiError) {
-        setError(err.message);
+        const fallbackMap: Record<number, string> = {
+          400: "Invalid phone number",
+          401: "SMS service authentication failure",
+          500: "Server error"
+        };
+        setErrorMessage(err.message || fallbackMap[err.status] || "Request failed");
       } else if (err instanceof Error) {
-        setError(err.message);
+        setErrorMessage(err.message);
       } else {
-        setError("Unable to send code.");
+        setErrorMessage("Unable to send code.");
       }
     } finally {
-      setIsSending(false);
+      setIsSubmitting(false);
     }
   };
 
   const handleVerify = async (event: FormEvent) => {
     event.preventDefault();
-    setError(null);
+    setErrorMessage(null);
 
     try {
       setIsVerifying(true);
-      const phoneForVerification = submittedPhoneNumber || e164PhoneNumber;
+      const phoneForVerification = submittedPhoneNumber || phoneE164;
       if (!phoneForVerification) {
-        setError("Missing phone number. Please start again.");
+        setErrorMessage("Missing phone number. Please start again.");
         return;
       }
-      await verifyOtp(code, phoneForVerification);
+      await verifyOtp({ code, phone: phoneForVerification });
       navigate("/dashboard", { replace: true });
     } catch (err: unknown) {
       if (err instanceof ApiError) {
-        setError(err.message);
+        const fallbackMap: Record<number, string> = {
+          400: "Invalid phone number",
+          401: "SMS service authentication failure",
+          500: "Server error"
+        };
+        setErrorMessage(err.message || fallbackMap[err.status] || "Request failed");
       } else if (err instanceof Error) {
-        setError(err.message);
+        setErrorMessage(err.message);
       } else {
-        setError("Unable to verify code.");
+        setErrorMessage("Unable to verify code.");
       }
     } finally {
       setIsVerifying(false);
@@ -98,36 +112,14 @@ export default function LoginPage() {
     <div className="max-w-md mx-auto p-6 space-y-4">
       <h1 className="text-2xl font-bold">Staff Login</h1>
 
-      {error && (
+      {errorMessage && (
         <div role="alert" className="text-sm text-red-700">
-          {error}
+          {errorMessage}
         </div>
       )}
 
       {step === "phone" ? (
         <form className="space-y-4" onSubmit={handleStart}>
-          <div className="flex flex-col space-y-1">
-            <label htmlFor="country">Country</label>
-            <select
-              id="country"
-              name="country"
-              value={country}
-              onChange={(event) => {
-                setCountry(event.target.value as CountryCode | "");
-                setError(null);
-              }}
-              className="border rounded px-3 py-2"
-              required
-            >
-              <option value="">Select a country</option>
-              {countries.map((countryCode) => (
-                <option key={countryCode} value={countryCode}>
-                  {countryCode} +{getCountryCallingCode(countryCode)}
-                </option>
-              ))}
-            </select>
-          </div>
-
           <div className="flex flex-col space-y-1">
             <label htmlFor="phoneNumber">Phone number</label>
             <input
@@ -135,23 +127,24 @@ export default function LoginPage() {
               name="phoneNumber"
               type="tel"
               inputMode="tel"
-              value={phoneInput}
+              value={rawPhone}
               onChange={(event) => {
-                setPhoneInput(event.target.value);
-                setError(null);
+                normalizePhone(event.target.value);
               }}
               className="border rounded px-3 py-2"
-              placeholder="Enter phone number"
+              placeholder="+1 587 888 1837"
             />
-            <p className="text-xs text-slate-500">E.164: {e164PhoneNumber || "—"}</p>
+            {isValid ? (
+              <p className="text-xs text-slate-500">Normalized: {phoneE164}</p>
+            ) : null}
           </div>
 
           <button
             type="submit"
             className="w-full bg-blue-600 text-white rounded px-4 py-2 disabled:opacity-60"
-            disabled={isSending}
+            disabled={!isValid || isSubmitting}
           >
-            {isSending ? "Sending..." : "Send code"}
+            {isSubmitting ? "Sending..." : "Send code"}
           </button>
         </form>
       ) : (
@@ -172,7 +165,7 @@ export default function LoginPage() {
               value={code}
               onChange={(event) => {
                 setCode(event.target.value.replace(/\D/g, ""));
-                setError(null);
+                setErrorMessage(null);
               }}
               className="border rounded px-3 py-2"
               required
