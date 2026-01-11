@@ -1,6 +1,5 @@
 import { FormEvent, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { parsePhoneNumberFromString } from "libphonenumber-js";
 import { ApiError } from "@/api/client";
 import { useAuth } from "@/auth/AuthContext";
 
@@ -8,8 +7,6 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const { startOtp, verifyOtp } = useAuth();
   const [rawPhone, setRawPhone] = useState("");
-  const [phoneE164, setPhoneE164] = useState("");
-  const [isValid, setIsValid] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [submittedPhoneNumber, setSubmittedPhoneNumber] = useState("");
@@ -17,30 +14,10 @@ export default function LoginPage() {
   const [step, setStep] = useState<"phone" | "otp">("phone");
   const [isVerifying, setIsVerifying] = useState(false);
 
-  const normalizePhone = (nextValue: string) => {
-    setRawPhone(nextValue);
-    const trimmed = nextValue.trim();
-    if (!trimmed) {
-      setPhoneE164("");
-      setIsValid(false);
-      setErrorMessage(null);
-      return;
-    }
-
-    const parsed = trimmed.startsWith("+")
-      ? parsePhoneNumberFromString(trimmed)
-      : parsePhoneNumberFromString(trimmed, "CA");
-
-    if (!parsed || !parsed.isValid()) {
-      setPhoneE164("");
-      setIsValid(false);
-      setErrorMessage("Invalid phone number");
-      return;
-    }
-
-    setPhoneE164(parsed.format("E.164"));
-    setIsValid(true);
-    setErrorMessage(null);
+  const normalizePhone = (value: string) => {
+    const stripped = value.replace(/[\s()-]/g, "");
+    if (!stripped) return "";
+    return stripped.startsWith("+") ? stripped : `+1${stripped}`;
   };
 
   const canSubmitCode = useMemo(() => code.trim().length === 6, [code]);
@@ -48,25 +25,21 @@ export default function LoginPage() {
   const handleStart = async (event: FormEvent) => {
     event.preventDefault();
     setErrorMessage(null);
+    const normalizedPhone = normalizePhone(rawPhone);
 
-    if (!isValid || !phoneE164) {
+    if (!normalizedPhone || !/^\+\d{10,15}$/.test(normalizedPhone)) {
       setErrorMessage("Invalid phone number");
       return;
     }
 
     try {
       setIsSubmitting(true);
-      await startOtp({ phone: phoneE164 });
-      setSubmittedPhoneNumber(phoneE164);
+      await startOtp({ phone: normalizedPhone });
+      setSubmittedPhoneNumber(normalizedPhone);
       setStep("otp");
     } catch (err: unknown) {
       if (err instanceof ApiError) {
-        const fallbackMap: Record<number, string> = {
-          400: "Invalid phone number",
-          401: "SMS service authentication failure",
-          500: "Server error"
-        };
-        setErrorMessage(err.message || fallbackMap[err.status] || "Request failed");
+        setErrorMessage(err.message || "Request failed");
       } else if (err instanceof Error) {
         setErrorMessage(err.message);
       } else {
@@ -83,7 +56,7 @@ export default function LoginPage() {
 
     try {
       setIsVerifying(true);
-      const phoneForVerification = submittedPhoneNumber || phoneE164;
+      const phoneForVerification = submittedPhoneNumber;
       if (!phoneForVerification) {
         setErrorMessage("Missing phone number. Please start again.");
         return;
@@ -92,12 +65,7 @@ export default function LoginPage() {
       navigate("/dashboard", { replace: true });
     } catch (err: unknown) {
       if (err instanceof ApiError) {
-        const fallbackMap: Record<number, string> = {
-          400: "Invalid phone number",
-          401: "SMS service authentication failure",
-          500: "Server error"
-        };
-        setErrorMessage(err.message || fallbackMap[err.status] || "Request failed");
+        setErrorMessage(err.message || "Request failed");
       } else if (err instanceof Error) {
         setErrorMessage(err.message);
       } else {
@@ -129,20 +97,18 @@ export default function LoginPage() {
               inputMode="tel"
               value={rawPhone}
               onChange={(event) => {
-                normalizePhone(event.target.value);
+                setRawPhone(event.target.value);
+                setErrorMessage(null);
               }}
               className="border rounded px-3 py-2"
               placeholder="+1 587 888 1837"
             />
-            {isValid ? (
-              <p className="text-xs text-slate-500">Normalized: {phoneE164}</p>
-            ) : null}
           </div>
 
           <button
             type="submit"
             className="w-full bg-blue-600 text-white rounded px-4 py-2 disabled:opacity-60"
-            disabled={!isValid || isSubmitting}
+            disabled={isSubmitting}
           >
             {isSubmitting ? "Sending..." : "Send code"}
           </button>

@@ -21,7 +21,7 @@ export type OtpStartResponse = {
 
 export async function startOtp(payload: { phone: string }): Promise<OtpStartResponse> {
   return apiClient.post<OtpStartResponse>(
-    "/auth/otp/start",
+    "/api/auth/otp/start",
     payload,
     otpRequestOptions
   );
@@ -29,7 +29,7 @@ export async function startOtp(payload: { phone: string }): Promise<OtpStartResp
 
 export async function verifyOtp(payload: { phone: string; code: string; sessionId?: string }): Promise<LoginSuccess> {
   const data = await apiClient.post<LoginSuccess>(
-    "/auth/otp/verify",
+    "/api/auth/otp/verify",
     payload,
     otpRequestOptions
   );

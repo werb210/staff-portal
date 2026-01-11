@@ -20,7 +20,7 @@ export type SiloPermissions = {
 export type SiloAccess = {
   code: SiloCode;
   name: string;
-  twilioNumber: string;
+  phoneNumber: string;
   emailSync: "Connected" | "Disconnected" | "Refreshing";
   permissions: SiloPermissions;
 };
@@ -125,7 +125,7 @@ const createInitialState = (): SettingsSnapshot => ({
       {
         code: "BF",
         name: "BF Silo",
-        twilioNumber: "+1 555-100-1000",
+        phoneNumber: "+1 555-100-1000",
         emailSync: "Connected",
         permissions: {
           canViewApplications: true,
@@ -138,7 +138,7 @@ const createInitialState = (): SettingsSnapshot => ({
       {
         code: "BI",
         name: "BI Silo",
-        twilioNumber: "+1 555-200-2000",
+        phoneNumber: "+1 555-200-2000",
         emailSync: "Connected",
         permissions: {
           canViewApplications: true,
@@ -151,7 +151,7 @@ const createInitialState = (): SettingsSnapshot => ({
       {
         code: "SLF",
         name: "SLF Silo",
-        twilioNumber: "+1 555-300-3000",
+        phoneNumber: "+1 555-300-3000",
         emailSync: "Disconnected",
         permissions: {
           canViewApplications: false,
