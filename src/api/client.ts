@@ -62,6 +62,7 @@ export type RequestOptions = Omit<AxiosRequestConfig, "url" | "method" | "data">
   suppressAuthFailure?: boolean;
   retryOnConflict?: boolean;
   conflictRetryCount?: number;
+  skipIdempotencyKey?: boolean;
 };
 
 export type LenderAuthTokens = {
@@ -159,10 +160,11 @@ const buildHeaders = (
   }
   const normalizedMethod = typeof method === "string" ? method.toUpperCase() : undefined;
   const idempotencyMethods = new Set(["POST", "PUT", "PATCH", "DELETE"]);
-  if (normalizedMethod && idempotencyMethods.has(normalizedMethod) && !headers.has("Idempotency-Key")) {
+  const allowIdempotency = !options.skipIdempotencyKey;
+  if (normalizedMethod && idempotencyMethods.has(normalizedMethod) && allowIdempotency && !headers.has("Idempotency-Key")) {
     headers.set("Idempotency-Key", createIdempotencyKey());
   }
-  if (normalizedMethod && idempotencyMethods.has(normalizedMethod) && !headers.has("Idempotency-Key")) {
+  if (normalizedMethod && idempotencyMethods.has(normalizedMethod) && allowIdempotency && !headers.has("Idempotency-Key")) {
     console.warn("Missing Idempotency-Key header.", { method: normalizedMethod });
   }
   if (includeAuth && !headers.has("Authorization")) {

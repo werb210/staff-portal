@@ -10,7 +10,13 @@ export type OtpStartResponse = {
 };
 
 export const startOtp = (payload: OtpStartPayload) =>
-  apiClient.post<OtpStartResponse>("/auth/otp/start", payload, { skipAuth: true });
+  apiClient.post<OtpStartResponse>("/auth/otp/start", payload, {
+    skipAuth: true,
+    authMode: "none",
+    retryOnConflict: false,
+    withCredentials: false,
+    skipIdempotencyKey: true
+  });
 
 export type OtpVerifyPayload = {
   phone: string;
@@ -21,7 +27,13 @@ export type OtpVerifyPayload = {
 export type OtpVerifyResponse = LoginSuccess;
 
 export const verifyOtp = (payload: OtpVerifyPayload) =>
-  apiClient.post<OtpVerifyResponse>("/auth/otp/verify", payload, { skipAuth: true });
+  apiClient.post<OtpVerifyResponse>("/auth/otp/verify", payload, {
+    skipAuth: true,
+    authMode: "none",
+    retryOnConflict: false,
+    withCredentials: false,
+    skipIdempotencyKey: true
+  });
 
 export const fetchCurrentUser = () => apiClient.get<AuthenticatedUser>("/auth/me");
 
