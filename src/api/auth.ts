@@ -2,7 +2,7 @@ import { apiClient } from "./client";
 import type { AuthenticatedUser, LoginSuccess } from "@/services/auth";
 
 export type OtpStartPayload = {
-  phoneNumber: string;
+  phone: string;
 };
 
 export type OtpStartResponse = {
@@ -13,7 +13,7 @@ export const startOtp = (payload: OtpStartPayload) =>
   apiClient.post<OtpStartResponse>("/auth/otp/start", payload, { skipAuth: true });
 
 export type OtpVerifyPayload = {
-  phoneNumber: string;
+  phone: string;
   code: string;
   sessionId?: string;
 };
