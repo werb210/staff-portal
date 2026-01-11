@@ -11,7 +11,7 @@ const CommunicationSettings = () => {
     <section className="settings-panel" aria-label="Communication settings">
       <header>
         <h2>Communication channels</h2>
-        <p>Twilio dialer numbers and Office 365 sync status for each silo.</p>
+        <p>Dialer numbers and Office 365 sync status for each silo.</p>
       </header>
 
       <div className="silo-communication">
@@ -20,7 +20,7 @@ const CommunicationSettings = () => {
             <header className="settings-card__header">
               <div>
                 <h3>{silo.name}</h3>
-                <p>Phone: {silo.twilioNumber}</p>
+                <p>Phone: {silo.phoneNumber}</p>
               </div>
               <span className={`pill pill--${silo.emailSync.toLowerCase()}`}>
                 Email Sync: {silo.emailSync}

@@ -141,6 +141,6 @@ describe("Standalone Dialer", () => {
   it("requests token and shows status", async () => {
     renderWithProviders(<VoiceDialer visible contact={janeContact} onClose={() => undefined} />);
     expect(await screen.findByTestId("voice-dialer")).toBeInTheDocument();
-    await waitFor(() => expect(screen.getByText(/Twilio token/)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/Status: idle/i)).toBeInTheDocument());
   });
 });

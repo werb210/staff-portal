@@ -65,7 +65,7 @@ describe("auth login", () => {
     }));
 
     const response = await apiClient.post<{ sessionId?: string; requestId?: string }>(
-      "/auth/otp/start",
+      "/api/auth/otp/start",
       { phone: "+15555550100" },
       { ...otpRequestOptions, adapter: startAdapter } as any
     );

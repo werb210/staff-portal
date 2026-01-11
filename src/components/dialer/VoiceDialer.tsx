@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import type { Contact } from "@/api/crm";
-import { logCall, requestVoiceToken } from "@/api/communications";
+import { logCall } from "@/api/communications";
 
 interface VoiceDialerProps {
   visible: boolean;
@@ -12,15 +12,9 @@ interface VoiceDialerProps {
 }
 
 const VoiceDialer = ({ visible, contact, onClose, onCallLogged }: VoiceDialerProps) => {
-  const [token, setToken] = useState<string | null>(null);
   const [status, setStatus] = useState("idle");
   const [muted, setMuted] = useState(false);
   const [onHold, setOnHold] = useState(false);
-
-  useEffect(() => {
-    if (!visible) return;
-    requestVoiceToken().then((receivedToken) => setToken(receivedToken));
-  }, [visible]);
 
   if (!visible) return null;
 
@@ -46,7 +40,6 @@ const VoiceDialer = ({ visible, contact, onClose, onCallLogged }: VoiceDialerPro
           </Button>
         }
       >
-        <p>Twilio token: {token ?? "Requesting..."}</p>
         <div className="flex gap-2 my-2">
           <Button onClick={handleCall}>Dial</Button>
           <Button variant="secondary" onClick={() => setMuted((m) => !m)}>

@@ -381,8 +381,6 @@ export const sendSms = async (contact: Contact, body: string, siloNumber: string
 export const logCall = async (contactId: string, summary: string) =>
   new Promise((resolve) => setTimeout(() => resolve({ contactId, summary }), 10));
 
-export const requestVoiceToken = async () => new Promise<string>((resolve) => setTimeout(() => resolve("mock-twilio-token"), 10));
-
 export const getCrmTimelineEntries = (contactId: string) => crmTimeline.filter((entry) => entry.contactId === contactId);
 
 export const getApplicationTimelineEntries = (applicationId: string) =>
