@@ -1,3 +1,4 @@
+import { parsePhoneNumberFromString } from "libphonenumber-js/min";
 import { apiClient, ApiError } from "@/api/client";
 import type { UserRole } from "@/utils/roles";
 import { getStoredRefreshToken } from "@/services/token";
@@ -19,14 +20,23 @@ export type OtpStartResponse = {
   sessionId?: string;
 };
 
+const normalizePhoneNumber = (phoneNumber: string) => {
+  const parsed = parsePhoneNumberFromString(phoneNumber);
+  if (!parsed || !parsed.isValid()) {
+    throw new Error("Invalid phone format.");
+  }
+  return parsed.format("E.164");
+};
+
 export async function startOtp(phoneNumber: string): Promise<OtpStartResponse> {
+  const normalizedPhoneNumber = normalizePhoneNumber(phoneNumber);
   let attempt = 0;
 
   while (attempt < 2) {
     try {
       return await apiClient.post<OtpStartResponse>(
         "/auth/otp/start",
-        { phoneNumber },
+        { phoneNumber: normalizedPhoneNumber },
         { skipAuth: true }
       );
     } catch (error) {
@@ -42,9 +52,10 @@ export async function startOtp(phoneNumber: string): Promise<OtpStartResponse> {
 }
 
 export async function verifyOtp(phoneNumber: string, code: string, sessionId?: string): Promise<LoginSuccess> {
+  const normalizedPhoneNumber = normalizePhoneNumber(phoneNumber);
   const data = await apiClient.post<LoginSuccess>(
     "/auth/otp/verify",
-    { phoneNumber, code, sessionId },
+    { phoneNumber: normalizedPhoneNumber, code, sessionId },
     { skipAuth: true }
   );
 
