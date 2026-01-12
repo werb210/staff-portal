@@ -1,4 +1,4 @@
-import { apiClient, otpRequestOptions } from "@/api/client";
+import { apiClient, otpRequestOptions, otpStartRequestOptions } from "@/api/client";
 import type { UserRole } from "@/utils/roles";
 import { getStoredRefreshToken } from "@/services/token";
 
@@ -23,7 +23,7 @@ export async function startOtp(payload: { phone: string }): Promise<OtpStartResp
   return apiClient.post<OtpStartResponse>(
     "/api/auth/otp/start",
     payload,
-    otpRequestOptions
+    otpStartRequestOptions
   );
 }
 

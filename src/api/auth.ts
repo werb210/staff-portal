@@ -1,4 +1,4 @@
-import { apiClient, otpRequestOptions } from "./client";
+import { apiClient, otpRequestOptions, otpStartRequestOptions } from "./client";
 import type { AuthenticatedUser, LoginSuccess } from "@/services/auth";
 
 export type OtpStartPayload = {
@@ -10,7 +10,7 @@ export type OtpStartResponse = {
 };
 
 export const startOtp = (payload: OtpStartPayload) =>
-  apiClient.post<OtpStartResponse>("/api/auth/otp/start", payload, otpRequestOptions);
+  apiClient.post<OtpStartResponse>("/api/auth/otp/start", payload, otpStartRequestOptions);
 
 export type OtpVerifyPayload = {
   phone: string;
