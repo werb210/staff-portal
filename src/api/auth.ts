@@ -15,7 +15,6 @@ export const startOtp = (payload: OtpStartPayload) =>
 export type OtpVerifyPayload = {
   phone: string;
   code: string;
-  sessionId?: string;
 };
 
 export type OtpVerifyResponse = LoginSuccess;

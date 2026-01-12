@@ -21,7 +21,6 @@ export type AuthContextType = {
   status: AuthStatus;
   authReady: boolean;
   pendingPhoneNumber: string | null;
-  pendingSessionId: string | null;
   startOtp: (payload: { phone: string }) => Promise<void>;
   verifyOtp: (payload: { code: string; phone?: string }) => Promise<LoginSuccess>;
   logout: () => void;
@@ -36,7 +35,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [status, setStatus] = useState<AuthStatus>("unauthenticated");
   const [authReady, setAuthReady] = useState(false);
   const [pendingPhoneNumber, setPendingPhoneNumber] = useState<string | null>(null);
-  const [pendingSessionId, setPendingSessionId] = useState<string | null>(null);
 
   const forceLogout = useCallback((nextStatus: AuthStatus) => {
     clearStoredAuth();
@@ -84,9 +82,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [loadCurrentUser]);
 
   const startOtp = useCallback(async ({ phone }: { phone: string }) => {
-    const result = await startOtpService({ phone });
+    await startOtpService({ phone });
     setPendingPhoneNumber(phone);
-    setPendingSessionId(result.sessionId ?? null);
   }, []);
 
   const verifyOtp = useCallback(async ({ code, phone }: { code: string; phone?: string }) => {
@@ -96,8 +93,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
     const result = await verifyOtpService({
       phone: targetPhoneNumber,
-      code,
-      sessionId: pendingSessionId ?? undefined
+      code
     });
     setStoredAccessToken(result.accessToken);
     if (result.refreshToken) {
@@ -107,11 +103,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setToken(result.accessToken);
     setUser(result.user);
     setPendingPhoneNumber(null);
-    setPendingSessionId(null);
     setAuthReady(false);
     await loadCurrentUser();
     return result;
-  }, [loadCurrentUser, pendingPhoneNumber, pendingSessionId]);
+  }, [loadCurrentUser, pendingPhoneNumber]);
 
   const logout = useCallback(() => {
     void logoutService().catch((error) => {
@@ -123,13 +118,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setStatus("unauthenticated");
     setAuthReady(true);
     setPendingPhoneNumber(null);
-    setPendingSessionId(null);
     redirectToLogin();
   }, []);
 
   const value = useMemo<AuthContextType>(
-    () => ({ user, token, status, authReady, pendingPhoneNumber, pendingSessionId, startOtp, verifyOtp, logout }),
-    [authReady, logout, pendingPhoneNumber, pendingSessionId, startOtp, status, token, user, verifyOtp]
+    () => ({ user, token, status, authReady, pendingPhoneNumber, startOtp, verifyOtp, logout }),
+    [authReady, logout, pendingPhoneNumber, startOtp, status, token, user, verifyOtp]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
