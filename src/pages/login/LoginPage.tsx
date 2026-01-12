@@ -39,10 +39,6 @@ export default function LoginPage() {
     event.preventDefault();
     setErrorMessage(null);
 
-    if (!isPhoneValid) {
-      return;
-    }
-
     try {
       setIsSubmitting(true);
       await startOtp({ phone: normalizedPhone });
@@ -50,14 +46,23 @@ export default function LoginPage() {
       setStep("otp");
     } catch (err: unknown) {
       if (err instanceof ApiError) {
+        console.error("OTP start failed.", {
+          status: err.status,
+          code: err.code,
+          requestId: err.requestId,
+          message: err.message,
+          details: err.details,
+          requestHeaders: err.requestHeaders
+        });
         if (err.code?.toLowerCase().includes("expired") || err.status === 410) {
           setErrorMessage("Verification expired");
         } else {
-          setErrorMessage("OTP failed");
+          setErrorMessage(err.message);
         }
         return;
       }
-      setErrorMessage("OTP failed");
+      console.error("OTP start failed.", err);
+      setErrorMessage(err instanceof Error ? err.message : "OTP failed");
     } finally {
       setIsSubmitting(false);
     }
@@ -78,14 +83,23 @@ export default function LoginPage() {
       navigate("/dashboard", { replace: true });
     } catch (err: unknown) {
       if (err instanceof ApiError) {
+        console.error("OTP verification failed.", {
+          status: err.status,
+          code: err.code,
+          requestId: err.requestId,
+          message: err.message,
+          details: err.details,
+          requestHeaders: err.requestHeaders
+        });
         if (err.code?.toLowerCase().includes("expired") || err.status === 410) {
           setErrorMessage("Verification expired");
         } else {
-          setErrorMessage("OTP failed");
+          setErrorMessage(err.message);
         }
         return;
       }
-      setErrorMessage("OTP failed");
+      console.error("OTP verification failed.", err);
+      setErrorMessage(err instanceof Error ? err.message : "OTP failed");
     } finally {
       setIsVerifying(false);
     }
@@ -125,7 +139,7 @@ export default function LoginPage() {
           <button
             type="submit"
             className="w-full bg-blue-600 text-white rounded px-4 py-2 disabled:opacity-60"
-            disabled={isSubmitting || !isPhoneValid}
+            disabled={isSubmitting}
           >
             {isSubmitting ? "Sending..." : "Send code"}
           </button>
