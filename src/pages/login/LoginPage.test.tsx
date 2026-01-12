@@ -50,7 +50,7 @@ describe("LoginPage", () => {
     const verifyOtp = vi.fn().mockResolvedValue({ accessToken: "token-123", user: { email: "demo@example.com" } });
     renderLogin(startOtp, verifyOtp);
 
-    fireEvent.change(screen.getByLabelText(/Phone number/i), { target: { value: "(555) 555-0100" } });
+    fireEvent.change(screen.getByLabelText(/Phone number/i), { target: { value: "+1 (555) 555-0100" } });
     fireEvent.click(screen.getByRole("button", { name: /Send code/i }));
 
     await waitFor(() => expect(startOtp).toHaveBeenCalledWith({ phone: "+15555550100" }));
@@ -76,6 +76,15 @@ describe("LoginPage", () => {
 
     await waitFor(() => expect(verifyOtp).toHaveBeenCalled());
     expect(navigateMock).not.toHaveBeenCalled();
-    await waitFor(() => expect(screen.getByText(/Invalid code/i)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/OTP failed/i)).toBeInTheDocument());
+  });
+
+  test("flags invalid phone numbers immediately", async () => {
+    renderLogin(vi.fn(), vi.fn());
+
+    fireEvent.change(screen.getByLabelText(/Phone number/i), { target: { value: "555-0100" } });
+
+    expect(screen.getByText(/Invalid phone/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Send code/i })).toBeDisabled();
   });
 });

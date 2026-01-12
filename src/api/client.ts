@@ -3,6 +3,7 @@ import axios, {
   AxiosHeaders,
   type AxiosInstance,
   type AxiosRequestConfig,
+  type AxiosResponse,
   type GenericAbortSignal
 } from "axios";
 import { buildApiUrl } from "@/services/api";
@@ -317,9 +318,14 @@ const executeRequest = async <T>(path: string, config: RequestOptions & { method
   const signal = combineSignals([config.signal, getRouteSignal(), timeout.signal]);
   const { retryOnConflict, conflictRetryCount, ...axiosConfig } = config;
   const requestHeaders = buildHeaders(config, includeAuth, authToken ?? undefined, body, config.method);
+  const client = getAxiosClient();
+  const previousAdapter = config.adapter ? client.defaults.adapter : undefined;
+  if (config.adapter) {
+    client.defaults.adapter = config.adapter;
+  }
 
   try {
-    const response = await getAxiosClient().request<T>({
+    const requestConfig: AxiosRequestConfig = {
       ...axiosConfig,
       url: buildApiUrl(path),
       data: body instanceof FormData ? body : body ? JSON.stringify(body) : undefined,
@@ -327,7 +333,10 @@ const executeRequest = async <T>(path: string, config: RequestOptions & { method
       signal,
       timeout: REQUEST_TIMEOUT_MS,
       validateStatus: (status) => status >= 200 && status < 300
-    });
+    };
+    const response: AxiosResponse<T> = config.adapter
+      ? await config.adapter(requestConfig)
+      : await client.request<T>(requestConfig);
 
     if (response.status < 200 || response.status >= 300) {
       throw new ApiError({
@@ -413,6 +422,9 @@ const executeRequest = async <T>(path: string, config: RequestOptions & { method
 
     throw apiError;
   } finally {
+    if (config.adapter) {
+      client.defaults.adapter = previousAdapter;
+    }
     timeout.clear();
   }
 };
@@ -463,7 +475,9 @@ const refreshLenderTokens = async (): Promise<LenderAuthTokens | null> => {
   return refreshInFlight;
 };
 
-const refreshStaffTokens = async (): Promise<{ accessToken: string; refreshToken?: string; user?: unknown } | null> => {
+const refreshStaffTokens = async (
+  adapter?: AxiosRequestConfig["adapter"]
+): Promise<{ accessToken: string; refreshToken?: string; user?: unknown } | null> => {
   const refreshToken = getStoredRefreshToken();
   if (!refreshToken) return null;
 
@@ -474,7 +488,8 @@ const refreshStaffTokens = async (): Promise<{ accessToken: string; refreshToken
         method: "POST",
         authMode: "none",
         skipAuth: true,
-        suppressAuthFailure: true
+        suppressAuthFailure: true,
+        adapter
       },
       { refreshToken }
     )
@@ -502,13 +517,14 @@ const executeStaffRequest = async <T>(path: string, config: RequestOptions & { m
   const authMode = config.authMode ?? "staff";
   const hasToken = authMode === "staff" ? !!getStoredAccessToken() : false;
   const shouldSuppress = authMode === "staff" && hasToken && !config.skipAuth;
+  const resolvedAdapter = config.adapter ?? getAxiosClient().defaults.adapter;
 
   try {
-    return await executeRequest<T>(path, { ...config, authMode, suppressAuthFailure: shouldSuppress }, body);
+    return await executeRequest<T>(path, { ...config, adapter: resolvedAdapter, authMode, suppressAuthFailure: shouldSuppress }, body);
   } catch (error) {
     if (error instanceof ApiError && error.isAuthError && authMode === "staff" && !config.skipAuth) {
       if (error.status === 401 && shouldSuppress) {
-        const refreshed = await refreshStaffTokens();
+        const refreshed = await refreshStaffTokens(config.adapter);
         if (refreshed?.accessToken) {
           try {
             return await executeRequest<T>(path, { ...config, authMode: "staff" }, body);
@@ -557,6 +573,11 @@ export const apiClient = {
   delete: <T>(path: string, options: RequestOptions = {}) => executeStaffRequest<T>(path, { ...options, method: "DELETE" }),
   options: <T>(path: string, options: RequestOptions = {}) =>
     executeStaffRequest<T>(path, { ...options, method: "OPTIONS", skipAuth: true }, undefined)
+};
+
+export const setAxiosAdapterForTests = (adapter?: AxiosRequestConfig["adapter"]) => {
+  const client = getAxiosClient();
+  client.defaults.adapter = adapter;
 };
 
 export const lenderApiClient = {
