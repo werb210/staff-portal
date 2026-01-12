@@ -220,7 +220,18 @@ const extractRequestIdFromHeaders = (headers?: AxiosHeaders | Record<string, str
 const normalizeRequestHeaders = (headers?: AxiosHeaders | Record<string, string>) => {
   if (!headers) return undefined;
   if (headers instanceof AxiosHeaders) {
-    return Object.fromEntries(headers.entries());
+    if (typeof headers.entries === "function") {
+      return Object.fromEntries(headers.entries());
+    }
+    if (typeof headers.toJSON === "function") {
+      return headers.toJSON() as Record<string, string>;
+    }
+    return Object.fromEntries(
+      Object.entries(headers as Record<string, string | undefined>).map(([key, value]) => [
+        key,
+        value ?? ""
+      ])
+    );
   }
   return Object.fromEntries(
     Object.entries(headers).map(([key, value]) => [key, value ?? ""])
