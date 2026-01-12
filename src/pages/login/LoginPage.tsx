@@ -39,6 +39,11 @@ export default function LoginPage() {
     event.preventDefault();
     setErrorMessage(null);
 
+    if (!normalizedPhone || !isPhoneValid) {
+      setErrorMessage("Enter a valid phone number.");
+      return;
+    }
+
     try {
       setIsSubmitting(true);
       await startOtp({ phone: normalizedPhone });
