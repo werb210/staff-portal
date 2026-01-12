@@ -1,7 +1,35 @@
 import { FormEvent, useMemo, useState } from "react";
+import type { AxiosError } from "axios";
 import { useNavigate } from "react-router-dom";
 import { ApiError } from "@/api/client";
 import { useAuth } from "@/auth/AuthContext";
+
+const parseOtpStartErrorMessage = (error: unknown): string => {
+  if (error instanceof ApiError) {
+    return error.message;
+  }
+  if (typeof error === "string") {
+    return error;
+  }
+  if (typeof error === "object" && error) {
+    const axiosError = error as AxiosError;
+    const responseData = axiosError?.response?.data;
+    if (typeof responseData === "string" && responseData.trim()) {
+      return responseData;
+    }
+    if (typeof responseData === "object" && responseData) {
+      const message = (responseData as { message?: unknown }).message;
+      if (typeof message === "string" && message.trim()) {
+        return message;
+      }
+    }
+    const fallbackMessage = (axiosError as { message?: unknown })?.message;
+    if (typeof fallbackMessage === "string" && fallbackMessage.trim()) {
+      return fallbackMessage;
+    }
+  }
+  return "OTP failed";
+};
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -46,10 +74,14 @@ export default function LoginPage() {
 
     try {
       setIsSubmitting(true);
-      await startOtp({ phone: normalizedPhone });
+      console.info("otp_start_request_sent", { phone: normalizedPhone });
+      const response = await startOtp({ phone: normalizedPhone });
+      console.info("otp_start_response", response ?? null);
       setSubmittedPhoneNumber(normalizedPhone);
       setStep("otp");
     } catch (err: unknown) {
+      const parsedMessage = parseOtpStartErrorMessage(err);
+      console.info("otp_start_error_parsed", { message: parsedMessage });
       if (err instanceof ApiError) {
         console.error("OTP start failed.", {
           status: err.status,
@@ -62,12 +94,12 @@ export default function LoginPage() {
         if (err.code?.toLowerCase().includes("expired") || err.status === 410) {
           setErrorMessage("Verification expired");
         } else {
-          setErrorMessage(err.message);
+          setErrorMessage(parsedMessage);
         }
         return;
       }
       console.error("OTP start failed.", err);
-      setErrorMessage(err instanceof Error ? err.message : "OTP failed");
+      setErrorMessage(parsedMessage);
     } finally {
       setIsSubmitting(false);
     }

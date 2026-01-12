@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { logout as logoutService, startOtp as startOtpService, verifyOtp as verifyOtpService, type AuthenticatedUser, type LoginSuccess } from "@/services/auth";
+import { logout as logoutService, startOtp as startOtpService, verifyOtp as verifyOtpService, type AuthenticatedUser, type LoginSuccess, type OtpStartResponse } from "@/services/auth";
 import { fetchCurrentUser } from "@/api/auth";
 import {
   clearStoredAuth,
@@ -21,7 +21,7 @@ export type AuthContextType = {
   status: AuthStatus;
   authReady: boolean;
   pendingPhoneNumber: string | null;
-  startOtp: (payload: { phone: string }) => Promise<void>;
+  startOtp: (payload: { phone: string }) => Promise<OtpStartResponse>;
   verifyOtp: (payload: { code: string; phone?: string }) => Promise<LoginSuccess>;
   logout: () => void;
 };
@@ -82,8 +82,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [loadCurrentUser]);
 
   const startOtp = useCallback(async ({ phone }: { phone: string }) => {
-    await startOtpService({ phone });
+    const response = await startOtpService({ phone });
     setPendingPhoneNumber(phone);
+    return response;
   }, []);
 
   const verifyOtp = useCallback(async ({ code, phone }: { code: string; phone?: string }) => {
