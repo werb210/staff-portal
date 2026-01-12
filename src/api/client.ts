@@ -64,6 +64,8 @@ export type RequestOptions = Omit<AxiosRequestConfig, "url" | "method" | "data">
   retryOnConflict?: boolean;
   conflictRetryCount?: number;
   skipIdempotencyKey?: boolean;
+  disableTimeout?: boolean;
+  disableRouteAbort?: boolean;
 };
 
 export const otpRequestOptions: RequestOptions = {
@@ -72,6 +74,12 @@ export const otpRequestOptions: RequestOptions = {
   retryOnConflict: false,
   withCredentials: true,
   skipIdempotencyKey: true
+};
+
+export const otpStartRequestOptions: RequestOptions = {
+  ...otpRequestOptions,
+  disableTimeout: true,
+  disableRouteAbort: true
 };
 
 export type LenderAuthTokens = {
@@ -326,9 +334,10 @@ const executeRequest = async <T>(path: string, config: RequestOptions & { method
     throw new ApiError({ status: 401, message: "Missing lender access token", isAuthError: true });
   }
 
-  const timeout = createTimeoutSignal();
-  const signal = combineSignals([config.signal, getRouteSignal(), timeout.signal]);
-  const { retryOnConflict, conflictRetryCount, ...axiosConfig } = config;
+  const timeout = config.disableTimeout ? null : createTimeoutSignal();
+  const routeSignal = config.disableRouteAbort ? undefined : getRouteSignal();
+  const signal = combineSignals([config.signal, routeSignal, timeout?.signal]);
+  const { retryOnConflict, conflictRetryCount, disableTimeout, disableRouteAbort, ...axiosConfig } = config;
   const requestHeaders = buildHeaders(config, includeAuth, authToken ?? undefined, body, config.method);
   const client = getAxiosClient();
   if (config.adapter && typeof config.adapter !== "function") {
@@ -350,7 +359,7 @@ const executeRequest = async <T>(path: string, config: RequestOptions & { method
       data: body instanceof FormData ? body : body ? JSON.stringify(body) : undefined,
       headers: requestHeaders,
       signal,
-      timeout: REQUEST_TIMEOUT_MS,
+      timeout: disableTimeout ? undefined : REQUEST_TIMEOUT_MS,
       validateStatus: (status) => status >= 200 && status < 300
     };
     const response: AxiosResponse<T> = config.adapter
@@ -444,7 +453,7 @@ const executeRequest = async <T>(path: string, config: RequestOptions & { method
     if (config.adapter) {
       client.defaults.adapter = previousAdapter;
     }
-    timeout.clear();
+    timeout?.clear();
   }
 };
 
