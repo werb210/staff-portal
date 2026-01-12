@@ -75,6 +75,7 @@ describe("auth login", () => {
     const idempotencyKey =
       passedConfig?.headers?.["Idempotency-Key"] ?? passedConfig?.headers?.get?.("Idempotency-Key");
     expect(idempotencyKey).toBeUndefined();
+    expect(passedConfig?.withCredentials).toBe(true);
     expect(response.sessionId).toBe("session-1");
     expect(response.requestId).toBe("req-1");
   });

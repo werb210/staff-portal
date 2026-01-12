@@ -70,7 +70,7 @@ export const otpRequestOptions: RequestOptions = {
   skipAuth: true,
   authMode: "none",
   retryOnConflict: false,
-  withCredentials: false,
+  withCredentials: true,
   skipIdempotencyKey: true
 };
 
