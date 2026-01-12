@@ -239,7 +239,8 @@ const logApiTelemetry = (payload: { endpoint: string; requestId?: string; status
 const normalizeErrorMessage = (error: AxiosError, parsed: ApiErrorResponse): string => {
   if (parsed.message) return parsed.message;
   if (typeof error.response?.data === "string" && error.response.data) return error.response.data;
-  return error.response?.statusText || "Request failed";
+  if (!error.response) return error.message || "Network request failed";
+  return error.response.statusText || "Request failed";
 };
 
 const toApiError = (error: AxiosError): ApiError => {
@@ -319,6 +320,13 @@ const executeRequest = async <T>(path: string, config: RequestOptions & { method
   const { retryOnConflict, conflictRetryCount, ...axiosConfig } = config;
   const requestHeaders = buildHeaders(config, includeAuth, authToken ?? undefined, body, config.method);
   const client = getAxiosClient();
+  if (config.adapter && typeof config.adapter !== "function") {
+    throw new ApiError({
+      status: 0,
+      message: "Invalid HTTP adapter configuration",
+      isConfigurationError: true
+    });
+  }
   const previousAdapter = config.adapter ? client.defaults.adapter : undefined;
   if (config.adapter) {
     client.defaults.adapter = config.adapter;
@@ -517,10 +525,8 @@ const executeStaffRequest = async <T>(path: string, config: RequestOptions & { m
   const authMode = config.authMode ?? "staff";
   const hasToken = authMode === "staff" ? !!getStoredAccessToken() : false;
   const shouldSuppress = authMode === "staff" && hasToken && !config.skipAuth;
-  const resolvedAdapter = config.adapter ?? getAxiosClient().defaults.adapter;
-
   try {
-    return await executeRequest<T>(path, { ...config, adapter: resolvedAdapter, authMode, suppressAuthFailure: shouldSuppress }, body);
+    return await executeRequest<T>(path, { ...config, authMode, suppressAuthFailure: shouldSuppress }, body);
   } catch (error) {
     if (error instanceof ApiError && error.isAuthError && authMode === "staff" && !config.skipAuth) {
       if (error.status === 401 && shouldSuppress) {
