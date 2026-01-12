@@ -15,20 +15,31 @@ export default function LoginPage() {
   const [isVerifying, setIsVerifying] = useState(false);
 
   const normalizePhone = (value: string) => {
-    const stripped = value.replace(/[\s().-]/g, "");
-    if (!stripped) return "";
-    return stripped.startsWith("+") ? stripped : `+1${stripped}`;
+    const trimmed = value.trim();
+    if (!trimmed) return "";
+    const digits = trimmed.replace(/\D/g, "");
+    if (!digits) return "";
+    return `+${digits}`;
   };
+
+  const normalizedPhone = useMemo(() => normalizePhone(rawPhone), [rawPhone]);
+  const isPhoneValid = useMemo(
+    () => Boolean(normalizedPhone && /^\+\d{10,15}$/.test(normalizedPhone)),
+    [normalizedPhone]
+  );
+  const phoneError = useMemo(() => {
+    if (step !== "phone") return null;
+    if (!rawPhone.trim()) return null;
+    return isPhoneValid ? null : "Invalid phone";
+  }, [isPhoneValid, rawPhone, step]);
 
   const canSubmitCode = useMemo(() => code.trim().length === 6, [code]);
 
   const handleStart = async (event: FormEvent) => {
     event.preventDefault();
     setErrorMessage(null);
-    const normalizedPhone = normalizePhone(rawPhone);
 
-    if (!normalizedPhone || !/^\+\d{10,15}$/.test(normalizedPhone)) {
-      setErrorMessage("Invalid phone number");
+    if (!isPhoneValid) {
       return;
     }
 
@@ -39,12 +50,14 @@ export default function LoginPage() {
       setStep("otp");
     } catch (err: unknown) {
       if (err instanceof ApiError) {
-        setErrorMessage(err.message || "Request failed");
-      } else if (err instanceof Error) {
-        setErrorMessage(err.message);
-      } else {
-        setErrorMessage("Unable to send code.");
+        if (err.code?.toLowerCase().includes("expired") || err.status === 410) {
+          setErrorMessage("Verification expired");
+        } else {
+          setErrorMessage("OTP failed");
+        }
+        return;
       }
+      setErrorMessage("OTP failed");
     } finally {
       setIsSubmitting(false);
     }
@@ -65,12 +78,14 @@ export default function LoginPage() {
       navigate("/dashboard", { replace: true });
     } catch (err: unknown) {
       if (err instanceof ApiError) {
-        setErrorMessage(err.message || "Request failed");
-      } else if (err instanceof Error) {
-        setErrorMessage(err.message);
-      } else {
-        setErrorMessage("Unable to verify code.");
+        if (err.code?.toLowerCase().includes("expired") || err.status === 410) {
+          setErrorMessage("Verification expired");
+        } else {
+          setErrorMessage("OTP failed");
+        }
+        return;
       }
+      setErrorMessage("OTP failed");
     } finally {
       setIsVerifying(false);
     }
@@ -100,15 +115,17 @@ export default function LoginPage() {
                 setRawPhone(event.target.value);
                 setErrorMessage(null);
               }}
+              aria-invalid={phoneError ? "true" : "false"}
               className="border rounded px-3 py-2"
-              placeholder="+1 587 888 1837"
+              placeholder="+15555550100"
             />
+            {phoneError && <span className="text-xs text-red-700">{phoneError}</span>}
           </div>
 
           <button
             type="submit"
             className="w-full bg-blue-600 text-white rounded px-4 py-2 disabled:opacity-60"
-            disabled={isSubmitting}
+            disabled={isSubmitting || !isPhoneValid}
           >
             {isSubmitting ? "Sending..." : "Send code"}
           </button>

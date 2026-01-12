@@ -89,6 +89,11 @@ describe("auth login", () => {
       accessToken: "token-123"
     });
 
+    expect(apiPostSpy).toHaveBeenCalledWith(
+      "/api/auth/otp/verify",
+      { phone: "+15555550100", code: "123456" },
+      otpRequestOptions
+    );
     apiPostSpy.mockRestore();
   });
 
