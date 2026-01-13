@@ -151,13 +151,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       phone: targetPhoneNumber,
       code
     });
-    const storedToken = (() => {
-      try {
-        return window.localStorage.getItem(ACCESS_TOKEN_KEY);
-      } catch (error) {
-        return null;
-      }
-    })();
+    const storedToken = getStoredAccessToken();
     if (!storedToken) {
       clearStoredAuth();
       throw new Error("Missing access token after OTP verification");

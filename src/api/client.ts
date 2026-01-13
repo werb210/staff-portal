@@ -96,13 +96,7 @@ type LogoutHandler = () => void;
 
 let axiosClient: AxiosInstance | null = null;
 
-const getAccessTokenFromLocalStorage = () => {
-  try {
-    return window.localStorage.getItem(ACCESS_TOKEN_KEY);
-  } catch (error) {
-    return null;
-  }
-};
+const getAccessTokenFromStorage = () => getStoredAccessToken();
 
 const getAxiosClient = () => {
   if (!axiosClient) {
@@ -111,7 +105,7 @@ const getAxiosClient = () => {
       const requestOptions = config as RequestOptions;
       const authMode = requestOptions.authMode ?? "staff";
       const includeAuth = authMode !== "none" && !requestOptions.skipAuth;
-      const token = getAccessTokenFromLocalStorage();
+      const token = getAccessTokenFromStorage();
       if (includeAuth && token) {
         const headers = config.headers ?? {};
         if (headers instanceof AxiosHeaders) {
