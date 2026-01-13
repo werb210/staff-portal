@@ -5,7 +5,7 @@ import { ApiError } from "@/api/client";
 import {
   clearStoredAuth,
   getStoredAccessToken,
-  getStoredUser,
+  clearStoredUser,
   setStoredAccessToken,
   setStoredRefreshToken,
   setStoredTokens,
@@ -15,7 +15,7 @@ import { registerAuthFailureHandler } from "@/auth/authEvents";
 import { redirectToLogin } from "@/services/api";
 import { setApiStatus } from "@/state/apiStatus";
 
-export type AuthStatus = "authenticated" | "unauthenticated" | "expired";
+export type AuthStatus = "authenticated" | "unauthenticated" | "expired" | "forbidden";
 
 export type AuthContextType = {
   user: AuthenticatedUser | null;
@@ -34,7 +34,7 @@ const isValidAccessToken = (token: string | null | undefined): token is string =
   typeof token === "string" && token.length > 50 && token.startsWith("eyJ");
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<AuthenticatedUser | null>(() => getStoredUser<AuthenticatedUser>());
+  const [user, setUser] = useState<AuthenticatedUser | null>(null);
   const [token, setToken] = useState<string | null>(() => getStoredAccessToken());
   const [status, setStatus] = useState<AuthStatus>("unauthenticated");
   const [authReady, setAuthReady] = useState(false);
@@ -53,7 +53,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return registerAuthFailureHandler((reason) => {
       if (reason === "forbidden") {
         setApiStatus("forbidden");
-        forceLogout("unauthenticated");
+        setStatus("forbidden");
+        setAuthReady(true);
         return;
       }
       forceLogout("expired");
@@ -79,8 +80,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     setAuthReady(false);
-    setStatus("authenticated");
+    setStatus("unauthenticated");
     setToken(existingToken);
+    setUser(null);
+    clearStoredUser();
 
     try {
       const currentUser = await fetchCurrentUser();
@@ -91,7 +94,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     } catch (error) {
       if (error instanceof ApiError && error.status === 403) {
         setApiStatus("forbidden");
-        forceLogout("unauthenticated");
+        setStatus("forbidden");
+        setUser(null);
+        setAuthReady(true);
         return false;
       }
 
@@ -101,9 +106,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           setStoredAccessToken(refreshed.accessToken);
           if (refreshed.refreshToken) {
             setStoredRefreshToken(refreshed.refreshToken);
-          }
-          if (refreshed.user) {
-            setStoredUser(refreshed.user);
           }
           setToken(refreshed.accessToken);
           const currentUser = await fetchCurrentUser();
@@ -136,7 +138,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       redirectToLogin();
       return;
     }
-    setStatus("authenticated");
     setToken(existingToken);
     void loadCurrentUser(existingToken);
   }, [loadCurrentUser]);
@@ -156,7 +157,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       phone: targetPhoneNumber,
       code
     });
-    const { accessToken, refreshToken, user } = result;
+    const { accessToken, refreshToken } = result;
     if (!accessToken || !refreshToken) {
       clearStoredAuth();
       throw new Error("Missing tokens from OTP verification");
@@ -166,10 +167,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       clearStoredAuth();
       throw new Error("Invalid access token from OTP verification");
     }
-    setStoredUser(user);
-    setStatus("authenticated");
     setToken(accessToken);
-    setUser(user);
     setPendingPhoneNumber(null);
     setAuthReady(false);
     const didLoadUser = await loadCurrentUser(accessToken);
