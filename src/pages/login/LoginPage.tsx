@@ -3,6 +3,7 @@ import type { AxiosError } from "axios";
 import { useNavigate } from "react-router-dom";
 import { ApiError } from "@/api/client";
 import { useAuth } from "@/auth/AuthContext";
+import { normalizeToE164 } from "@/utils/phone";
 
 const parseOtpStartErrorMessage = (error: unknown): string => {
   if (error instanceof ApiError) {
@@ -42,24 +43,24 @@ export default function LoginPage() {
   const [step, setStep] = useState<"phone" | "otp">("phone");
   const [isVerifying, setIsVerifying] = useState(false);
 
-  const normalizePhone = (value: string) => {
-    const trimmed = value.trim();
-    if (!trimmed) return "";
-    const digits = trimmed.replace(/\D/g, "");
-    if (!digits) return "";
-    return `+${digits}`;
-  };
-
-  const normalizedPhone = useMemo(() => normalizePhone(rawPhone), [rawPhone]);
-  const isPhoneValid = useMemo(
-    () => Boolean(normalizedPhone && /^\+\d{10,15}$/.test(normalizedPhone)),
-    [normalizedPhone]
-  );
+  const { normalizedPhone, normalizationError } = useMemo(() => {
+    if (!rawPhone.trim()) {
+      return { normalizedPhone: "", normalizationError: null };
+    }
+    try {
+      return { normalizedPhone: normalizeToE164(rawPhone), normalizationError: null };
+    } catch {
+      return {
+        normalizedPhone: "",
+        normalizationError: "Invalid phone number. Enter a 10-digit number."
+      };
+    }
+  }, [rawPhone]);
   const phoneError = useMemo(() => {
     if (step !== "phone") return null;
     if (!rawPhone.trim()) return null;
-    return isPhoneValid ? null : "Invalid phone";
-  }, [isPhoneValid, rawPhone, step]);
+    return normalizationError;
+  }, [normalizationError, rawPhone, step]);
 
   const canSubmitCode = useMemo(() => code.trim().length === 6, [code]);
 
@@ -67,8 +68,8 @@ export default function LoginPage() {
     event.preventDefault();
     setErrorMessage(null);
 
-    if (!normalizedPhone || !isPhoneValid) {
-      setErrorMessage("Enter a valid phone number.");
+    if (!normalizedPhone || normalizationError) {
+      setErrorMessage("Invalid phone number. Enter a 10-digit number.");
       return;
     }
 

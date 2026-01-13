@@ -85,13 +85,13 @@ describe("LoginPage", () => {
 
     fireEvent.change(screen.getByLabelText(/Phone number/i), { target: { value: "555-0100" } });
 
-    expect(screen.getByText(/Invalid phone/i)).toBeInTheDocument();
+    expect(screen.getByText(/Invalid phone number\. Enter a 10-digit number\./i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Send code/i })).toBeEnabled();
 
     fireEvent.click(screen.getByRole("button", { name: /Send code/i }));
 
     await waitFor(() => expect(startOtp).not.toHaveBeenCalled());
-    expect(screen.getByText(/Enter a valid phone number/i)).toBeInTheDocument();
+    expect(screen.getByText(/Invalid phone number\. Enter a 10-digit number\./i)).toBeInTheDocument();
   });
 
   test("shows server error details when OTP start fails", async () => {
