@@ -50,6 +50,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return registerAuthFailureHandler((reason) => {
       if (reason === "forbidden") {
         setApiStatus("forbidden");
+        forceLogout("unauthenticated");
         return;
       }
       forceLogout("expired");
@@ -61,6 +62,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     if (!existingToken) {
       setStatus("unauthenticated");
       setAuthReady(true);
+      redirectToLogin();
       return;
     }
 
@@ -75,8 +77,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     } catch (error) {
       if (error instanceof ApiError && error.status === 403) {
         setApiStatus("forbidden");
-        setUser(null);
-        setAuthReady(true);
+        forceLogout("unauthenticated");
         return;
       }
 
@@ -114,6 +115,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     if (!existingToken) {
       setStatus("unauthenticated");
       setAuthReady(true);
+      redirectToLogin();
       return;
     }
     void loadCurrentUser();

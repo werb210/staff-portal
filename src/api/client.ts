@@ -6,7 +6,7 @@ import axios, {
   type AxiosResponse,
   type GenericAbortSignal
 } from "axios";
-import { buildApiUrl } from "@/services/api";
+import { buildApiUrl, redirectToLogin } from "@/services/api";
 import {
   clearStoredAuth,
   getStoredAccessToken,
@@ -325,6 +325,7 @@ const executeRequest = async <T>(path: string, config: RequestOptions & { method
     if (!config.suppressAuthFailure) {
       reportAuthFailure("missing-token");
     }
+    redirectToLogin();
     console.warn("Missing Authorization header for staff request.", { path, method: normalizedMethod });
     throw new ApiError({ status: 401, message: "Missing access token", isAuthError: true });
   }

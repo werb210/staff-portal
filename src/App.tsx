@@ -15,7 +15,6 @@ import SettingsPage from "./pages/settings/SettingsPage";
 import TaskPane from "./pages/tasks/TaskPane";
 import { notifyRouteChange } from "./api/client";
 import { emitUiTelemetry } from "./utils/uiTelemetry";
-import { AuthProvider } from "./auth/AuthContext";
 import GlobalErrorBoundary from "./components/errors/GlobalErrorBoundary";
 import { useApiHealthCheck } from "./hooks/useApiHealthCheck";
 
@@ -50,30 +49,28 @@ export default function App() {
   );
 
   return (
-    <AuthProvider>
-      <QueryClientProvider client={queryClient}>
-        <GlobalErrorBoundary>
-          <BrowserRouter>
-            <RouteChangeObserver />
-            <Routes>
-              <Route path="/login" element={<LoginPage />} />
-              <Route element={<ProtectedApp />}>
-                <Route path="/" element={<DashboardPage />} />
-                <Route path="/dashboard" element={<DashboardPage />} />
-                <Route path="/applications" element={<ApplicationsPage />} />
-                <Route path="/crm" element={<CRMPage />} />
-                <Route path="/communications" element={<CommunicationsPage />} />
-                <Route path="/comms" element={<CommunicationsPage />} />
-                <Route path="/calendar" element={<CalendarPage />} />
-                <Route path="/tasks" element={<TaskPane />} />
-                <Route path="/marketing" element={<MarketingPage />} />
-                <Route path="/lenders" element={<LendersPage />} />
-                <Route path="/settings" element={<SettingsPage />} />
-              </Route>
-            </Routes>
-          </BrowserRouter>
-        </GlobalErrorBoundary>
-      </QueryClientProvider>
-    </AuthProvider>
+    <QueryClientProvider client={queryClient}>
+      <GlobalErrorBoundary>
+        <BrowserRouter>
+          <RouteChangeObserver />
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
+            <Route element={<ProtectedApp />}>
+              <Route path="/" element={<DashboardPage />} />
+              <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/applications" element={<ApplicationsPage />} />
+              <Route path="/crm" element={<CRMPage />} />
+              <Route path="/communications" element={<CommunicationsPage />} />
+              <Route path="/comms" element={<CommunicationsPage />} />
+              <Route path="/calendar" element={<CalendarPage />} />
+              <Route path="/tasks" element={<TaskPane />} />
+              <Route path="/marketing" element={<MarketingPage />} />
+              <Route path="/lenders" element={<LendersPage />} />
+              <Route path="/settings" element={<SettingsPage />} />
+            </Route>
+          </Routes>
+        </BrowserRouter>
+      </GlobalErrorBoundary>
+    </QueryClientProvider>
   );
 }
