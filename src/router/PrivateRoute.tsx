@@ -1,6 +1,5 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/auth/AuthContext";
-import AppLoading from "@/components/layout/AppLoading";
 import type { UserRole } from "@/utils/roles";
 
 type PrivateRouteProps = {
@@ -9,10 +8,10 @@ type PrivateRouteProps = {
 };
 
 export default function PrivateRoute({ children }: PrivateRouteProps) {
-  const { status, authReady } = useAuth();
+  const { user, authReady } = useAuth();
 
-  if (!authReady) return <AppLoading />;
-  if (status === "unauthenticated" || status === "expired") return <Navigate to="/login" replace />;
+  if (!authReady) return null;
+  if (!user) return <Navigate to="/login" replace />;
 
   return children;
 }

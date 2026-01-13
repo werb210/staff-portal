@@ -3,7 +3,7 @@ import type { AxiosError } from "axios";
 import { useNavigate } from "react-router-dom";
 import { ApiError } from "@/api/client";
 import { useAuth } from "@/auth/AuthContext";
-import { normalizePhone } from "@/utils/normalizePhone";
+import { normalizeToE164 } from "@/utils/phone";
 
 const parseOtpStartErrorMessage = (error: unknown): string => {
   if (error instanceof ApiError) {
@@ -48,7 +48,7 @@ export default function LoginPage() {
       return { normalizedPhone: "", normalizationError: null };
     }
     try {
-      return { normalizedPhone: normalizePhone(rawPhone), normalizationError: null };
+      return { normalizedPhone: normalizeToE164(rawPhone), normalizationError: null };
     } catch {
       return {
         normalizedPhone: "",
