@@ -98,6 +98,25 @@ let axiosClient: AxiosInstance | null = null;
 const getAxiosClient = () => {
   if (!axiosClient) {
     axiosClient = axios.create();
+    axiosClient.interceptors.request.use((config) => {
+      const requestOptions = config as RequestOptions;
+      const authMode = requestOptions.authMode ?? "staff";
+      const includeAuth = authMode !== "none" && !requestOptions.skipAuth;
+      const token = getStoredAccessToken();
+      if (includeAuth && token) {
+        const headers = config.headers ?? {};
+        if (headers instanceof AxiosHeaders) {
+          if (!headers.has("Authorization")) {
+            headers.set("Authorization", `Bearer ${token}`);
+          }
+        } else if (!("Authorization" in headers)) {
+          headers.Authorization = `Bearer ${token}`;
+        }
+        config.headers = headers;
+      }
+      config.withCredentials = true;
+      return config;
+    });
   }
 
   return axiosClient;

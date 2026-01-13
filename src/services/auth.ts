@@ -1,7 +1,7 @@
 import { apiClient, otpRequestOptions, otpStartRequestOptions } from "@/api/client";
 import type { UserRole } from "@/utils/roles";
 import { getStoredRefreshToken } from "@/services/token";
-import { normalizePhone } from "@/utils/normalizePhone";
+import { normalizeToE164 } from "@/utils/phone";
 
 export type AuthenticatedUser = {
   id: string;
@@ -21,7 +21,7 @@ export type OtpStartResponse = {
 };
 
 export async function startOtp(payload: { phone: string }): Promise<OtpStartResponse> {
-  const normalizedPhone = normalizePhone(payload.phone);
+  const normalizedPhone = normalizeToE164(payload.phone);
   return apiClient.post<OtpStartResponse>(
     "/api/auth/otp/start",
     { ...payload, phone: normalizedPhone },
@@ -30,7 +30,7 @@ export async function startOtp(payload: { phone: string }): Promise<OtpStartResp
 }
 
 export async function verifyOtp(payload: { phone: string; code: string }): Promise<LoginSuccess> {
-  const normalizedPhone = normalizePhone(payload.phone);
+  const normalizedPhone = normalizeToE164(payload.phone);
   const data = await apiClient.post<LoginSuccess>(
     "/api/auth/otp/verify",
     { ...payload, phone: normalizedPhone },

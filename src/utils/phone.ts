@@ -1,40 +1,12 @@
-export function normalizeToE164(
-  rawInput: string,
-  defaultCountryCode = "1" // Canada + US
-): string {
-  if (!rawInput) {
-    throw new Error("Phone number is required");
+export function normalizeToE164(input: string, defaultCountry = "US"): string {
+  const digits = input.replace(/\D/g, "");
+
+  if (defaultCountry === "US") {
+    if (digits.length === 10) return `+1${digits}`;
+    if (digits.length === 11 && digits.startsWith("1")) return `+${digits}`;
   }
 
-  // Remove all non-digits except leading +
-  let cleaned = rawInput.trim();
+  if (input.startsWith("+") && digits.length >= 10) return `+${digits}`;
 
-  // If starts with +, keep it and strip other junk
-  if (cleaned.startsWith("+")) {
-    cleaned = "+" + cleaned.slice(1).replace(/\D/g, "");
-  } else {
-    // Strip everything non-digit
-    cleaned = cleaned.replace(/\D/g, "");
-  }
-
-  // Handle common cases
-  if (cleaned.length === 10) {
-    // Local number, assume default country
-    return `+${defaultCountryCode}${cleaned}`;
-  }
-
-  if (cleaned.length === 11 && cleaned.startsWith(defaultCountryCode)) {
-    // Country code included but missing +
-    return `+${cleaned}`;
-  }
-
-  if (cleaned.length > 11 && cleaned.startsWith(defaultCountryCode)) {
-    return `+${cleaned}`;
-  }
-
-  if (cleaned.startsWith("+") && cleaned.length >= 11) {
-    return cleaned;
-  }
-
-  throw new Error("Invalid phone number format");
+  throw new Error("Invalid phone number");
 }

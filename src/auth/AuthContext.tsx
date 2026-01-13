@@ -56,13 +56,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     });
   }, [forceLogout]);
 
-  const loadCurrentUser = useCallback(async (accessToken?: string) => {
+  const loadCurrentUser = useCallback(async (accessToken?: string): Promise<boolean> => {
     const existingToken = accessToken ?? getStoredAccessToken();
     if (!existingToken) {
       setStatus("unauthenticated");
       setAuthReady(true);
       redirectToLogin();
-      return;
+      return false;
     }
 
     setAuthReady(false);
@@ -74,11 +74,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setStoredUser(currentUser);
       setUser(currentUser);
       setStatus("authenticated");
+      return true;
     } catch (error) {
       if (error instanceof ApiError && error.status === 403) {
         setApiStatus("forbidden");
         forceLogout("unauthenticated");
-        return;
+        return false;
       }
 
       if (error instanceof ApiError && error.status === 401) {
@@ -97,7 +98,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           setUser(currentUser);
           setStatus("authenticated");
           setAuthReady(true);
-          return;
+          return true;
         } catch (refreshError) {
           console.error("Token refresh failed.", refreshError);
         }
@@ -105,6 +106,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       setApiStatus("unauthorized");
       forceLogout("expired");
+      return false;
     } finally {
       setAuthReady(true);
     }
@@ -149,7 +151,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setUser(result.user);
     setPendingPhoneNumber(null);
     setAuthReady(false);
-    await loadCurrentUser(result.accessToken);
+    const didLoadUser = await loadCurrentUser(result.accessToken);
+    if (!didLoadUser) {
+      throw new Error("Unable to load current user");
+    }
     return result;
   }, [loadCurrentUser, pendingPhoneNumber]);
 
