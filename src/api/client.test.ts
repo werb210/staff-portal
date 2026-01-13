@@ -1,7 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("@/services/api", async () => {
+  const actual = await vi.importActual<typeof import("@/services/api")>("@/services/api");
+  return {
+    ...actual,
+    redirectToLogin: vi.fn()
+  };
+});
+
 import apiClient from "./client";
-import { buildApiUrl } from "@/services/api";
+import { buildApiUrl, redirectToLogin } from "@/services/api";
 import { registerAuthFailureHandler } from "@/auth/authEvents";
+import { ACCESS_TOKEN_KEY } from "@/services/token";
 
 let failureHandler: ReturnType<typeof vi.fn>;
 
@@ -31,7 +41,7 @@ describe("apiClient auth", () => {
   });
 
   it("attaches the bearer token to outbound requests", async () => {
-    localStorage.setItem("accessToken", "abc123");
+    localStorage.setItem(ACCESS_TOKEN_KEY, "abc123");
 
     await apiClient.get("/example", { adapter } as any);
 
@@ -42,7 +52,7 @@ describe("apiClient auth", () => {
   });
 
   it("clears auth and redirects on 401 responses", async () => {
-    localStorage.setItem("accessToken", "expired-token");
+    localStorage.setItem(ACCESS_TOKEN_KEY, "expired-token");
 
     const unauthorizedAdapter = vi.fn(async (config) => ({
       data: {},
@@ -57,5 +67,13 @@ describe("apiClient auth", () => {
     ).rejects.toBeDefined();
 
     expect(failureHandler).toHaveBeenCalledWith("unauthorized");
+  });
+
+  it("redirects to login when the token is missing", async () => {
+    await expect(
+      apiClient.get("/secure", { adapter } as any)
+    ).rejects.toBeDefined();
+
+    expect(redirectToLogin).toHaveBeenCalled();
   });
 });

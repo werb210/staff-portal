@@ -13,6 +13,14 @@ vi.mock("@/api/auth", () => ({
   fetchCurrentUser: vi.fn()
 }));
 
+vi.mock("@/services/api", async () => {
+  const actual = await vi.importActual<typeof import("@/services/api")>("@/services/api");
+  return {
+    ...actual,
+    redirectToLogin: vi.fn()
+  };
+});
+
 const mockedFetchCurrentUser = vi.mocked(fetchCurrentUser);
 
 const adapter = vi.fn(async (config) => ({

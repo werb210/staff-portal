@@ -10,6 +10,7 @@ import { AuthProvider, useAuth } from "@/auth/AuthContext";
 import { fetchCurrentUser } from "@/api/auth";
 import { startOtp as startOtpService, verifyOtp as verifyOtpService, logout as logoutService } from "@/services/auth";
 import LoginPage from "@/pages/login/LoginPage";
+import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from "@/services/token";
 
 vi.mock("@/api/auth", () => ({
   fetchCurrentUser: vi.fn()
@@ -88,8 +89,8 @@ describe("auth flow", () => {
     fireEvent.click(screen.getByRole("button", { name: "Verify" }));
 
     await waitFor(() => expect(screen.getByTestId("status")).toHaveTextContent("authenticated"));
-    expect(localStorage.getItem("accessToken")).toBe("token-123");
-    expect(localStorage.getItem("refreshToken")).toBe("refresh-123");
+    expect(localStorage.getItem(ACCESS_TOKEN_KEY)).toBe("token-123");
+    expect(localStorage.getItem(REFRESH_TOKEN_KEY)).toBe("refresh-123");
   });
 
   it.each([
@@ -123,8 +124,8 @@ describe("auth flow", () => {
   });
 
   it.skip("refreshes tokens after mid-session expiry", async () => {
-    localStorage.setItem("accessToken", "expired-token");
-    localStorage.setItem("refreshToken", "refresh-token");
+    localStorage.setItem(ACCESS_TOKEN_KEY, "expired-token");
+    localStorage.setItem(REFRESH_TOKEN_KEY, "refresh-token");
 
     let secureCalls = 0;
     const adapter = vi.fn(async (config) => {
@@ -171,12 +172,12 @@ describe("auth flow", () => {
     setAxiosAdapterForTests(adapter);
     await apiClient.get("/secure", { adapter } as any);
 
-    expect(localStorage.getItem("accessToken")).toBe("new-token");
+    expect(localStorage.getItem(ACCESS_TOKEN_KEY)).toBe("new-token");
   });
 
   it.skip("forces logout on refresh failure", async () => {
-    localStorage.setItem("accessToken", "expired-token");
-    localStorage.setItem("refreshToken", "refresh-token");
+    localStorage.setItem(ACCESS_TOKEN_KEY, "expired-token");
+    localStorage.setItem(REFRESH_TOKEN_KEY, "refresh-token");
 
     const adapter = vi.fn(async (config) => {
       if (String(config.url).includes("/auth/refresh")) {
@@ -222,8 +223,8 @@ describe("auth flow", () => {
   });
 
   it("clears session on manual logout", async () => {
-    localStorage.setItem("accessToken", "token-123");
-    localStorage.setItem("refreshToken", "refresh-123");
+    localStorage.setItem(ACCESS_TOKEN_KEY, "token-123");
+    localStorage.setItem(REFRESH_TOKEN_KEY, "refresh-123");
 
     render(
       <AuthProvider>
@@ -235,7 +236,7 @@ describe("auth flow", () => {
     fireEvent.click(screen.getByRole("button", { name: "Logout" }));
 
     expect(mockedLogout).toHaveBeenCalled();
-    expect(localStorage.getItem("accessToken")).toBeNull();
+    expect(localStorage.getItem(ACCESS_TOKEN_KEY)).toBeNull();
     expect(screen.getByTestId("status")).toHaveTextContent("unauthenticated");
   });
 });

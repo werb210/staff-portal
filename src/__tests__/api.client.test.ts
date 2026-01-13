@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import apiClient, { ApiError } from "@/api/client";
 import { buildApiUrl } from "@/services/api";
 import { registerAuthFailureHandler } from "@/auth/authEvents";
+import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from "@/services/token";
 
 describe("api client auth handling", () => {
   beforeEach(() => {
@@ -9,7 +10,7 @@ describe("api client auth handling", () => {
   });
 
   it("attaches tokens to requests", async () => {
-    localStorage.setItem("accessToken", "abc123");
+    localStorage.setItem(ACCESS_TOKEN_KEY, "abc123");
 
     const adapter = vi.fn(async (config) => ({
       data: {},
@@ -28,7 +29,7 @@ describe("api client auth handling", () => {
   });
 
   it("adds an idempotency key to write requests", async () => {
-    localStorage.setItem("accessToken", "abc123");
+    localStorage.setItem(ACCESS_TOKEN_KEY, "abc123");
 
     const adapter = vi.fn(async (config) => ({
       data: {},
@@ -45,8 +46,8 @@ describe("api client auth handling", () => {
   });
 
   it("refreshes once on 401 responses", async () => {
-    localStorage.setItem("accessToken", "expired-token");
-    localStorage.setItem("refreshToken", "refresh-token");
+    localStorage.setItem(ACCESS_TOKEN_KEY, "expired-token");
+    localStorage.setItem(REFRESH_TOKEN_KEY, "refresh-token");
 
     let secureCalls = 0;
     const adapter = vi.fn(async (config) => {
@@ -97,8 +98,8 @@ describe("api client auth handling", () => {
   });
 
   it("logs out after a second 401 response", async () => {
-    localStorage.setItem("accessToken", "expired-token");
-    localStorage.setItem("refreshToken", "refresh-token");
+    localStorage.setItem(ACCESS_TOKEN_KEY, "expired-token");
+    localStorage.setItem(REFRESH_TOKEN_KEY, "refresh-token");
 
     const failureHandler = vi.fn();
     registerAuthFailureHandler(failureHandler);
