@@ -24,16 +24,28 @@ function buildApiUrl(path: string) {
   return `${baseUrl}${normalizedPath}`;
 }
 
-export const redirectToLogin = () => {
-  if (window.location.pathname !== "/login") {
-    window.location.assign("/login");
+const navigateTo = (path: string) => {
+  if (window.location.pathname === path) return;
+  const isTestEnv = typeof process !== "undefined" && process.env?.NODE_ENV === "test";
+  if (isTestEnv) {
+    window.history.pushState({}, "", path);
+    window.dispatchEvent(new PopStateEvent("popstate"));
+    return;
+  }
+  try {
+    window.location.assign(path);
+  } catch (error) {
+    window.history.pushState({}, "", path);
+    window.dispatchEvent(new PopStateEvent("popstate"));
   }
 };
 
+export const redirectToLogin = () => {
+  navigateTo("/login");
+};
+
 export const redirectToDashboard = () => {
-  if (window.location.pathname !== "/dashboard") {
-    window.location.assign("/dashboard");
-  }
+  navigateTo("/dashboard");
 };
 
 const getApiBaseUrlValue = () => getApiBaseUrl();

@@ -20,11 +20,12 @@ export type AuthValue = {
   isLoading: boolean;
   startOtp: (payload: { phone: string }) => Promise<void>;
   verifyOtp: (payload: { code: string; phone?: string }) => Promise<LoginSuccess>;
+  refreshUser: (accessToken?: string) => Promise<boolean>;
   logout: () => void;
 };
 
 export const useAuth = (): AuthValue => {
-  const { user, token, status, authReady, startOtp, verifyOtp, logout } = useAuthContext();
+  const { user, token, status, authReady, startOtp, verifyOtp, refreshUser, logout } = useAuthContext();
 
   const handleStartOtp: AuthValue["startOtp"] = useCallback(
     async (payload) => startOtp(payload),
@@ -44,8 +45,9 @@ export const useAuth = (): AuthValue => {
       isLoading: !authReady,
       startOtp: handleStartOtp,
       verifyOtp: handleVerifyOtp,
+      refreshUser,
       logout,
     }),
-    [user, token, status, authReady, handleStartOtp, handleVerifyOtp, logout]
+    [user, token, status, authReady, handleStartOtp, handleVerifyOtp, refreshUser, logout]
   );
 };

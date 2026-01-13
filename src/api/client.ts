@@ -58,6 +58,7 @@ export class ApiError extends Error {
 
 export type RequestOptions = Omit<AxiosRequestConfig, "url" | "method" | "data"> & {
   skipAuth?: boolean;
+  skipAuthRefresh?: boolean;
   authMode?: "staff" | "lender" | "none";
   suppressAuthFailure?: boolean;
   retryOnConflict?: boolean;
@@ -339,7 +340,7 @@ const executeRequest = async <T>(path: string, config: RequestOptions & { method
   const includeAuth = authMode !== "none" && !config.skipAuth && !isOptions;
   const authToken = authMode === "staff" ? getStoredAccessToken() : lenderTokenProvider()?.accessToken ?? null;
 
-  if (authMode === "staff" && path === "/auth/me" && !authToken) {
+  if (authMode === "staff" && (path === "/auth/me" || path === "/api/auth/me") && !authToken) {
     if (!config.suppressAuthFailure) {
       reportAuthFailure("missing-token");
     }
@@ -569,10 +570,11 @@ const executeStaffRequest = async <T>(path: string, config: RequestOptions & { m
   const authMode = config.authMode ?? "staff";
   const hasToken = authMode === "staff" ? !!getStoredAccessToken() : false;
   const shouldSuppress = authMode === "staff" && hasToken && !config.skipAuth;
+  const shouldAttemptRefresh = authMode === "staff" && !config.skipAuth && !config.skipAuthRefresh;
   try {
     return await executeRequest<T>(path, { ...config, authMode, suppressAuthFailure: shouldSuppress }, body);
   } catch (error) {
-    if (error instanceof ApiError && error.isAuthError && authMode === "staff" && !config.skipAuth) {
+    if (error instanceof ApiError && error.isAuthError && shouldAttemptRefresh) {
       if (error.status === 401 && shouldSuppress) {
         const refreshed = await refreshStaffTokens(config.adapter);
         if (refreshed?.accessToken) {

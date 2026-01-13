@@ -1,6 +1,5 @@
 import { FormEvent, useMemo, useState } from "react";
 import type { AxiosError } from "axios";
-import { useNavigate } from "react-router-dom";
 import { ApiError } from "@/api/client";
 import { useAuth } from "@/auth/AuthContext";
 import { normalizeToE164 } from "@/utils/phone";
@@ -33,7 +32,6 @@ const parseOtpStartErrorMessage = (error: unknown): string => {
 };
 
 export default function LoginPage() {
-  const navigate = useNavigate();
   const { startOtp, verifyOtp } = useAuth();
   const [rawPhone, setRawPhone] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -69,7 +67,6 @@ export default function LoginPage() {
     setErrorMessage(null);
 
     if (!normalizedPhone || normalizationError) {
-      setErrorMessage("Invalid phone number. Enter a valid phone number.");
       return;
     }
 
@@ -81,6 +78,7 @@ export default function LoginPage() {
     } catch (err: unknown) {
       const parsedMessage = parseOtpStartErrorMessage(err);
       if (err instanceof ApiError) {
+        console.error("OTP start failed.", { requestId: err.requestId });
         if (err.code?.toLowerCase().includes("expired") || err.status === 410) {
           setErrorMessage("Verification expired");
         } else {
@@ -106,7 +104,6 @@ export default function LoginPage() {
         return;
       }
       await verifyOtp({ code, phone: phoneForVerification });
-      navigate("/dashboard", { replace: true });
     } catch (err: unknown) {
       if (err instanceof ApiError) {
         if (err.code?.toLowerCase().includes("expired") || err.status === 410) {
