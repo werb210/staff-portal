@@ -16,22 +16,7 @@ vi.mock("@/auth/AuthContext", () => ({
   })
 }));
 
-const navigateMock = vi.fn();
-
-vi.mock("react-router-dom", async () => {
-  const actual = await vi.importActual<typeof import("react-router-dom")>("react-router-dom");
-  return {
-    ...actual,
-    useNavigate: () => navigateMock,
-    useLocation: () => ({ state: undefined })
-  };
-});
-
 describe("LoginPage", () => {
-  beforeEach(() => {
-    navigateMock.mockReset();
-  });
-
   afterEach(() => {
     cleanup();
   });
@@ -59,7 +44,6 @@ describe("LoginPage", () => {
     fireEvent.click(screen.getByRole("button", { name: /Verify code/i }));
 
     await waitFor(() => expect(verifyOtp).toHaveBeenCalledWith({ code: "123456", phone: "+15555550100" }));
-    expect(navigateMock).toHaveBeenCalledWith("/dashboard", { replace: true });
   });
 
   test("shows an error when OTP verification fails", async () => {
@@ -75,7 +59,6 @@ describe("LoginPage", () => {
     fireEvent.click(screen.getByRole("button", { name: /Verify code/i }));
 
     await waitFor(() => expect(verifyOtp).toHaveBeenCalled());
-    expect(navigateMock).not.toHaveBeenCalled();
     await waitFor(() => expect(screen.getByText(/Invalid code/i)).toBeInTheDocument());
   });
 

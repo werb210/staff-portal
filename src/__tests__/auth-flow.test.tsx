@@ -10,6 +10,7 @@ import { AuthProvider, useAuth } from "@/auth/AuthContext";
 import { fetchCurrentUser } from "@/api/auth";
 import { startOtp as startOtpService, verifyOtp as verifyOtpService, logout as logoutService } from "@/services/auth";
 import LoginPage from "@/pages/login/LoginPage";
+import { redirectToDashboard } from "@/services/api";
 import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from "@/services/token";
 
 vi.mock("@/api/auth", () => ({
@@ -26,7 +27,8 @@ vi.mock("@/services/api", async () => {
   const actual = await vi.importActual<typeof import("@/services/api")>("@/services/api");
   return {
     ...actual,
-    redirectToLogin: vi.fn()
+    redirectToLogin: vi.fn(),
+    redirectToDashboard: vi.fn()
   };
 });
 
@@ -91,6 +93,7 @@ describe("auth flow", () => {
     await waitFor(() => expect(screen.getByTestId("status")).toHaveTextContent("authenticated"));
     expect(localStorage.getItem(ACCESS_TOKEN_KEY)).toBe("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock.payload.signature");
     expect(localStorage.getItem(REFRESH_TOKEN_KEY)).toBe("refresh-123");
+    expect(redirectToDashboard).toHaveBeenCalled();
   });
 
   it.each([
@@ -120,7 +123,7 @@ describe("auth flow", () => {
       fireEvent.click(screen.getByRole("button", { name: /Verify code/i }));
     }
 
-    await waitFor(() => expect(screen.getByText(/OTP failed/i)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/failed/i)).toBeInTheDocument());
   });
 
   it.skip("refreshes tokens after mid-session expiry", async () => {

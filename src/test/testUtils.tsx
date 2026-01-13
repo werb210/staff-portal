@@ -33,35 +33,26 @@ export const renderWithProviders = (
 ) => {
   const queryClient = createTestQueryClient();
   const silo = options?.silo ?? "BF";
-  const authValue: AuthContextType | null = options?.auth
-    ? {
-        user: null,
-        token: null,
-        status: "authenticated",
-        authReady: true,
-        pendingPhoneNumber: null,
-        startOtp: async (_payload) => undefined,
-        verifyOtp: async (_payload) => ({ user: null as never, accessToken: "" }),
-        logout: () => undefined,
-        ...options.auth,
-      }
-    : null;
+  const authValue: AuthContextType = {
+    user: { id: "1", email: "test@example.com", role: "ADMIN" },
+    token: "test-token",
+    status: "authenticated",
+    authReady: true,
+    pendingPhoneNumber: null,
+    startOtp: async (_payload) => undefined,
+    verifyOtp: async (_payload) => ({ user: null as never, accessToken: "" }),
+    refreshUser: async (_accessToken) => true,
+    logout: () => undefined,
+    ...options?.auth,
+  };
 
   const wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={queryClient}>
-      {authValue ? (
-        <AuthContext.Provider value={authValue}>
-          <SiloContext.Provider value={{ silo, setSilo: () => undefined }}>
-            {children}
-          </SiloContext.Provider>
-        </AuthContext.Provider>
-      ) : (
-        <AuthProvider>
-          <SiloContext.Provider value={{ silo, setSilo: () => undefined }}>
-            {children}
-          </SiloContext.Provider>
-        </AuthProvider>
-      )}
+      <AuthContext.Provider value={authValue}>
+        <SiloContext.Provider value={{ silo, setSilo: () => undefined }}>
+          {children}
+        </SiloContext.Provider>
+      </AuthContext.Provider>
     </QueryClientProvider>
   );
 

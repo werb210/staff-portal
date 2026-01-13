@@ -41,7 +41,7 @@ describe("apiClient auth", () => {
   });
 
   it("attaches the bearer token to outbound requests", async () => {
-    localStorage.setItem(ACCESS_TOKEN_KEY, "abc123");
+    localStorage.setItem("accessToken", "abc123");
 
     await apiClient.get("/example", { adapter } as any);
 

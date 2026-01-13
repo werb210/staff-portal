@@ -9,6 +9,12 @@ export default defineConfig({
     outDir: "dist",
     emptyOutDir: true,
   },
+  test: {
+    globals: true,
+    environment: "jsdom",
+    setupFiles: ["src/test/setupTests.ts"],
+    exclude: ["node_modules/**", "tests/e2e/**"]
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
