@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { logout as logoutService, startOtp as startOtpService, verifyOtp as verifyOtpService, type AuthenticatedUser, type LoginSuccess, type OtpStartResponse } from "@/services/auth";
+import { logout as logoutService, refresh as refreshService, startOtp as startOtpService, verifyOtp as verifyOtpService, type AuthenticatedUser, type LoginSuccess, type OtpStartResponse } from "@/services/auth";
 import { fetchCurrentUser } from "@/api/auth";
+import { ApiError } from "@/api/client";
 import {
   clearStoredAuth,
   getStoredAccessToken,
@@ -63,13 +64,44 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       return;
     }
 
+    setStatus("authenticated");
+    setToken(existingToken);
+
     try {
       const currentUser = await fetchCurrentUser();
       setStoredUser(currentUser);
       setUser(currentUser);
-      setToken(existingToken);
       setStatus("authenticated");
     } catch (error) {
+      if (error instanceof ApiError && error.status === 403) {
+        setApiStatus("forbidden");
+        setUser(null);
+        setAuthReady(true);
+        return;
+      }
+
+      if (error instanceof ApiError && error.status === 401) {
+        try {
+          const refreshed = await refreshService();
+          setStoredAccessToken(refreshed.accessToken);
+          if (refreshed.refreshToken) {
+            setStoredRefreshToken(refreshed.refreshToken);
+          }
+          if (refreshed.user) {
+            setStoredUser(refreshed.user);
+          }
+          setToken(refreshed.accessToken);
+          const currentUser = await fetchCurrentUser();
+          setStoredUser(currentUser);
+          setUser(currentUser);
+          setStatus("authenticated");
+          setAuthReady(true);
+          return;
+        } catch (refreshError) {
+          console.error("Token refresh failed.", refreshError);
+        }
+      }
+
       setApiStatus("unauthorized");
       forceLogout("expired");
     } finally {
@@ -78,6 +110,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [forceLogout]);
 
   useEffect(() => {
+    const existingToken = getStoredAccessToken();
+    if (!existingToken) {
+      setStatus("unauthenticated");
+      setAuthReady(true);
+      return;
+    }
     void loadCurrentUser();
   }, [loadCurrentUser]);
 
@@ -97,10 +135,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       code
     });
     setStoredAccessToken(result.accessToken);
-    if (result.refreshToken) {
-      setStoredRefreshToken(result.refreshToken);
+    if (!result.refreshToken) {
+      throw new Error("Missing refresh token from OTP verification");
     }
+    setStoredRefreshToken(result.refreshToken);
     setStoredUser(result.user);
+    setStatus("authenticated");
     setToken(result.accessToken);
     setUser(result.user);
     setPendingPhoneNumber(null);
