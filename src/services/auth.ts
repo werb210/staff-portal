@@ -1,6 +1,6 @@
 import { apiClient, otpRequestOptions, otpStartRequestOptions } from "@/api/client";
 import type { UserRole } from "@/utils/roles";
-import { getStoredRefreshToken } from "@/services/token";
+import { getStoredRefreshToken, setStoredAccessToken, setStoredRefreshToken } from "@/services/token";
 import { normalizeToE164 } from "@/utils/phone";
 
 export type AuthenticatedUser = {
@@ -36,7 +36,13 @@ export async function verifyOtp(payload: { phone: string; code: string }): Promi
     { ...payload, phone: normalizedPhone },
     otpRequestOptions
   );
-
+  if (!data.accessToken) {
+    throw new Error("Missing access token from OTP verification");
+  }
+  setStoredAccessToken(data.accessToken);
+  if (data.refreshToken) {
+    setStoredRefreshToken(data.refreshToken);
+  }
   return data;
 }
 

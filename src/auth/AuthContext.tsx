@@ -10,11 +10,10 @@ import {
 import { fetchCurrentUser } from "@/api/auth";
 import { ApiError } from "@/api/client";
 import {
+  ACCESS_TOKEN_KEY,
   clearStoredAuth,
   clearStoredUser,
   getStoredAccessToken,
-  setStoredAccessToken,
-  setStoredRefreshToken,
   setStoredUser
 } from "@/services/token";
 import { registerAuthFailureHandler } from "@/auth/authEvents";
@@ -152,23 +151,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       phone: targetPhoneNumber,
       code
     });
-    const { accessToken, refreshToken } = result;
-    if (!accessToken) {
+    const storedToken = (() => {
+      try {
+        return window.localStorage.getItem(ACCESS_TOKEN_KEY);
+      } catch (error) {
+        return null;
+      }
+    })();
+    if (!storedToken) {
       clearStoredAuth();
-      throw new Error("Missing access token from OTP verification");
+      throw new Error("Missing access token after OTP verification");
     }
-    setStoredAccessToken(accessToken);
-    if (refreshToken) {
-      setStoredRefreshToken(refreshToken);
-    }
-    if (!isValidAccessToken(accessToken)) {
+    if (!isValidAccessToken(storedToken)) {
       clearStoredAuth();
       throw new Error("Invalid access token from OTP verification");
     }
-    setToken(accessToken);
+    setToken(storedToken);
     setPendingPhoneNumber(null);
     setAuthReady(false);
-    const didLoadUser = await loadCurrentUser(accessToken);
+    const didLoadUser = await loadCurrentUser(storedToken);
     if (!didLoadUser) {
       throw new ApiError({ status: 401, message: "Unable to load your profile. Please try again." });
     }
