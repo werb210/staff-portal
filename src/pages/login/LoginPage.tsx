@@ -75,23 +75,12 @@ export default function LoginPage() {
 
     try {
       setIsSubmitting(true);
-      console.info("otp_start_request_sent", { phone: normalizedPhone });
       const response = await startOtp({ phone: normalizedPhone });
-      console.info("otp_start_response", response ?? null);
       setSubmittedPhoneNumber(normalizedPhone);
       setStep("otp");
     } catch (err: unknown) {
       const parsedMessage = parseOtpStartErrorMessage(err);
-      console.info("otp_start_error_parsed", { message: parsedMessage });
       if (err instanceof ApiError) {
-        console.error("OTP start failed.", {
-          status: err.status,
-          code: err.code,
-          requestId: err.requestId,
-          message: err.message,
-          details: err.details,
-          requestHeaders: err.requestHeaders
-        });
         if (err.code?.toLowerCase().includes("expired") || err.status === 410) {
           setErrorMessage("Verification expired");
         } else {
@@ -99,7 +88,6 @@ export default function LoginPage() {
         }
         return;
       }
-      console.error("OTP start failed.", err);
       setErrorMessage(parsedMessage);
     } finally {
       setIsSubmitting(false);
@@ -121,14 +109,6 @@ export default function LoginPage() {
       navigate("/dashboard", { replace: true });
     } catch (err: unknown) {
       if (err instanceof ApiError) {
-        console.error("OTP verification failed.", {
-          status: err.status,
-          code: err.code,
-          requestId: err.requestId,
-          message: err.message,
-          details: err.details,
-          requestHeaders: err.requestHeaders
-        });
         if (err.code?.toLowerCase().includes("expired") || err.status === 410) {
           setErrorMessage("Verification expired");
         } else {
@@ -136,7 +116,6 @@ export default function LoginPage() {
         }
         return;
       }
-      console.error("OTP verification failed.", err);
       setErrorMessage(err instanceof Error ? err.message : "OTP failed");
     } finally {
       setIsVerifying(false);

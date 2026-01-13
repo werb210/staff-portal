@@ -30,9 +30,8 @@ export type AuthContextType = {
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const storedToken = getStoredAccessToken();
   const [user, setUser] = useState<AuthenticatedUser | null>(() => getStoredUser<AuthenticatedUser>());
-  const [token, setToken] = useState<string | null>(() => storedToken);
+  const [token, setToken] = useState<string | null>(() => getStoredAccessToken());
   const [status, setStatus] = useState<AuthStatus>("unauthenticated");
   const [authReady, setAuthReady] = useState(false);
   const [pendingPhoneNumber, setPendingPhoneNumber] = useState<string | null>(null);
@@ -57,8 +56,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     });
   }, [forceLogout]);
 
-  const loadCurrentUser = useCallback(async () => {
-    const existingToken = getStoredAccessToken();
+  const loadCurrentUser = useCallback(async (accessToken?: string) => {
+    const existingToken = accessToken ?? getStoredAccessToken();
     if (!existingToken) {
       setStatus("unauthenticated");
       setAuthReady(true);
@@ -66,6 +65,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       return;
     }
 
+    setAuthReady(false);
     setStatus("authenticated");
     setToken(existingToken);
 
@@ -118,7 +118,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       redirectToLogin();
       return;
     }
-    void loadCurrentUser();
+    setStatus("authenticated");
+    setToken(existingToken);
+    void loadCurrentUser(existingToken);
   }, [loadCurrentUser]);
 
   const startOtp = useCallback(async ({ phone }: { phone: string }) => {
@@ -147,7 +149,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setUser(result.user);
     setPendingPhoneNumber(null);
     setAuthReady(false);
-    await loadCurrentUser();
+    await loadCurrentUser(result.accessToken);
     return result;
   }, [loadCurrentUser, pendingPhoneNumber]);
 
