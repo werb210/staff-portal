@@ -9,6 +9,7 @@ import axios, {
 import { buildApiUrl, redirectToLogin } from "@/services/api";
 import {
   clearStoredAuth,
+  ACCESS_TOKEN_KEY,
   getStoredAccessToken,
   getStoredRefreshToken,
   setStoredAccessToken,
@@ -95,6 +96,14 @@ type LogoutHandler = () => void;
 
 let axiosClient: AxiosInstance | null = null;
 
+const getAccessTokenFromLocalStorage = () => {
+  try {
+    return window.localStorage.getItem(ACCESS_TOKEN_KEY);
+  } catch (error) {
+    return null;
+  }
+};
+
 const getAxiosClient = () => {
   if (!axiosClient) {
     axiosClient = axios.create();
@@ -102,7 +111,7 @@ const getAxiosClient = () => {
       const requestOptions = config as RequestOptions;
       const authMode = requestOptions.authMode ?? "staff";
       const includeAuth = authMode !== "none" && !requestOptions.skipAuth;
-      const token = getStoredAccessToken();
+      const token = getAccessTokenFromLocalStorage();
       if (includeAuth && token) {
         const headers = config.headers ?? {};
         if (headers instanceof AxiosHeaders) {
