@@ -30,6 +30,12 @@ export const redirectToLogin = () => {
   }
 };
 
+export const redirectToDashboard = () => {
+  if (window.location.pathname !== "/dashboard") {
+    window.location.assign("/dashboard");
+  }
+};
+
 const getApiBaseUrlValue = () => getApiBaseUrl();
 
 export { buildApiUrl, getApiBaseUrlValue as API_BASE };

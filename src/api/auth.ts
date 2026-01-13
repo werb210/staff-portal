@@ -22,7 +22,7 @@ export type OtpVerifyResponse = LoginSuccess;
 export const verifyOtp = (payload: OtpVerifyPayload) =>
   apiClient.post<OtpVerifyResponse>("/api/auth/otp/verify", payload, otpRequestOptions);
 
-export const fetchCurrentUser = () => apiClient.get<AuthenticatedUser>("/auth/me");
+export const fetchCurrentUser = () => apiClient.get<AuthenticatedUser>("/api/auth/me");
 
 export type RefreshResponse = {
   accessToken: string;

@@ -1,18 +1,24 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { logout as logoutService, refresh as refreshService, startOtp as startOtpService, verifyOtp as verifyOtpService, type AuthenticatedUser, type LoginSuccess, type OtpStartResponse } from "@/services/auth";
+import {
+  logout as logoutService,
+  startOtp as startOtpService,
+  verifyOtp as verifyOtpService,
+  type AuthenticatedUser,
+  type LoginSuccess,
+  type OtpStartResponse
+} from "@/services/auth";
 import { fetchCurrentUser } from "@/api/auth";
 import { ApiError } from "@/api/client";
 import {
   clearStoredAuth,
-  getStoredAccessToken,
   clearStoredUser,
+  getStoredAccessToken,
   setStoredAccessToken,
   setStoredRefreshToken,
-  setStoredTokens,
   setStoredUser
 } from "@/services/token";
 import { registerAuthFailureHandler } from "@/auth/authEvents";
-import { redirectToLogin } from "@/services/api";
+import { redirectToDashboard, redirectToLogin } from "@/services/api";
 import { setApiStatus } from "@/state/apiStatus";
 
 export type AuthStatus = "authenticated" | "unauthenticated" | "expired" | "forbidden";
@@ -50,14 +56,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   useEffect(() => {
-    return registerAuthFailureHandler((reason) => {
-      if (reason === "forbidden") {
-        setApiStatus("forbidden");
-        setStatus("forbidden");
-        setAuthReady(true);
-        return;
-      }
-      forceLogout("expired");
+    return registerAuthFailureHandler(() => {
+      setApiStatus("unauthorized");
+      forceLogout("unauthenticated");
     });
   }, [forceLogout]);
 
@@ -90,37 +91,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setStoredUser(currentUser);
       setUser(currentUser);
       setStatus("authenticated");
+      setAuthReady(true);
+      redirectToDashboard();
       return true;
     } catch (error) {
-      if (error instanceof ApiError && error.status === 403) {
-        setApiStatus("forbidden");
-        setStatus("forbidden");
-        setUser(null);
-        setAuthReady(true);
+      if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
+        setApiStatus("unauthorized");
+        forceLogout("unauthenticated");
         return false;
       }
 
-      if (error instanceof ApiError && error.status === 401) {
-        try {
-          const refreshed = await refreshService();
-          setStoredAccessToken(refreshed.accessToken);
-          if (refreshed.refreshToken) {
-            setStoredRefreshToken(refreshed.refreshToken);
-          }
-          setToken(refreshed.accessToken);
-          const currentUser = await fetchCurrentUser();
-          setStoredUser(currentUser);
-          setUser(currentUser);
-          setStatus("authenticated");
-          setAuthReady(true);
-          return true;
-        } catch (refreshError) {
-          console.error("Token refresh failed.", refreshError);
-        }
-      }
-
       setApiStatus("unauthorized");
-      forceLogout("expired");
+      forceLogout("unauthenticated");
       return false;
     } finally {
       setAuthReady(true);
@@ -158,11 +140,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       code
     });
     const { accessToken, refreshToken } = result;
-    if (!accessToken || !refreshToken) {
+    if (!accessToken) {
       clearStoredAuth();
-      throw new Error("Missing tokens from OTP verification");
+      throw new Error("Missing access token from OTP verification");
     }
-    setStoredTokens({ accessToken, refreshToken });
+    setStoredAccessToken(accessToken);
+    if (refreshToken) {
+      setStoredRefreshToken(refreshToken);
+    }
     if (!isValidAccessToken(accessToken)) {
       clearStoredAuth();
       throw new Error("Invalid access token from OTP verification");
