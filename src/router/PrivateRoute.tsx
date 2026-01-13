@@ -8,10 +8,12 @@ type PrivateRouteProps = {
 };
 
 export default function PrivateRoute({ children }: PrivateRouteProps) {
-  const { user, authReady } = useAuth();
+  const { authReady, status } = useAuth();
 
   if (!authReady) return null;
-  if (!user) return <Navigate to="/login" replace />;
+  if (status === "unauthenticated" || status === "expired") {
+    return <Navigate to="/login" replace />;
+  }
 
   return children;
 }

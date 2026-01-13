@@ -12,8 +12,7 @@ import {
   getStoredAccessToken,
   getStoredRefreshToken,
   setStoredAccessToken,
-  setStoredRefreshToken,
-  setStoredUser
+  setStoredRefreshToken
 } from "@/services/token";
 import { reportAuthFailure } from "@/auth/authEvents";
 import { setApiStatus } from "@/state/apiStatus";
@@ -554,9 +553,6 @@ const refreshStaffTokens = async (
         setStoredAccessToken(body.accessToken);
         if (body.refreshToken) {
           setStoredRefreshToken(body.refreshToken);
-        }
-        if (body.user) {
-          setStoredUser(body.user);
         }
         return body;
       })

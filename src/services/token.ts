@@ -1,6 +1,8 @@
 export const ACCESS_TOKEN_KEY = "boreal.accessToken";
 export const REFRESH_TOKEN_KEY = "boreal.refreshToken";
 export const USER_KEY = "staff-portal.user";
+const LEGACY_ACCESS_TOKEN_KEY = "accessToken";
+const LEGACY_REFRESH_TOKEN_KEY = "refreshToken";
 
 /**
  * Session persistence rules (staff portal):
@@ -22,13 +24,14 @@ const getLocalStorage = (): Storage | null => {
 
 export function getStoredAccessToken(): string | null {
   const storage = getLocalStorage();
-  return storage?.getItem(ACCESS_TOKEN_KEY) ?? inMemoryToken;
+  return storage?.getItem(ACCESS_TOKEN_KEY) ?? storage?.getItem(LEGACY_ACCESS_TOKEN_KEY) ?? inMemoryToken;
 }
 
 export function setStoredAccessToken(token: string) {
   const storage = getLocalStorage();
   if (storage) {
     storage.setItem(ACCESS_TOKEN_KEY, token);
+    storage.setItem(LEGACY_ACCESS_TOKEN_KEY, token);
   }
   inMemoryToken = token;
 }
@@ -37,19 +40,21 @@ export function clearStoredAccessToken() {
   const storage = getLocalStorage();
   if (storage) {
     storage.removeItem(ACCESS_TOKEN_KEY);
+    storage.removeItem(LEGACY_ACCESS_TOKEN_KEY);
   }
   inMemoryToken = null;
 }
 
 export function getStoredRefreshToken(): string | null {
   const storage = getLocalStorage();
-  return storage?.getItem(REFRESH_TOKEN_KEY) ?? inMemoryRefreshToken;
+  return storage?.getItem(REFRESH_TOKEN_KEY) ?? storage?.getItem(LEGACY_REFRESH_TOKEN_KEY) ?? inMemoryRefreshToken;
 }
 
 export function setStoredRefreshToken(token: string) {
   const storage = getLocalStorage();
   if (storage) {
     storage.setItem(REFRESH_TOKEN_KEY, token);
+    storage.setItem(LEGACY_REFRESH_TOKEN_KEY, token);
   }
   inMemoryRefreshToken = token;
 }
@@ -63,6 +68,7 @@ export function clearStoredRefreshToken() {
   const storage = getLocalStorage();
   if (storage) {
     storage.removeItem(REFRESH_TOKEN_KEY);
+    storage.removeItem(LEGACY_REFRESH_TOKEN_KEY);
   }
   inMemoryRefreshToken = null;
 }

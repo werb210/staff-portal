@@ -125,7 +125,7 @@ describe("auth login", () => {
     screen.getByRole("button", { name: "Verify" }).click();
 
     await waitFor(() => expect(getStoredAccessToken()).toBe("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock.payload.signature"));
-    expect(getStoredUser<{ email: string }>()?.email).toBe("demo@example.com");
+    await waitFor(() => expect(getStoredUser<{ email: string }>()?.email).toBe("demo@example.com"));
   });
 
   it("restores session on reload", async () => {
