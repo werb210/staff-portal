@@ -90,13 +90,13 @@ describe("auth login", () => {
 
   it("OTP verification returns tokens from the service", async () => {
     const apiPostSpy = vi.spyOn(apiClient, "post").mockResolvedValueOnce({
-      accessToken: "token-123",
+      accessToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock.payload.signature",
       refreshToken: "refresh-123",
       user: { id: "1", email: "demo@example.com", role: "ADMIN" },
     } as any);
 
     await expect(verifyOtp({ phone: "+15555550100", code: "123456" })).resolves.toMatchObject({
-      accessToken: "token-123",
+      accessToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock.payload.signature",
       refreshToken: "refresh-123"
     });
 
@@ -115,7 +115,7 @@ describe("auth login", () => {
 
   it("stores tokens after a successful OTP verification", async () => {
     vi.spyOn(apiClient, "post").mockResolvedValueOnce({
-      accessToken: "token-456",
+      accessToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock.payload.signature",
       refreshToken: "refresh-456",
       user: { id: "1", email: "demo@example.com", role: "ADMIN" }
     });
@@ -124,19 +124,19 @@ describe("auth login", () => {
 
     screen.getByRole("button", { name: "Verify" }).click();
 
-    await waitFor(() => expect(getStoredAccessToken()).toBe("token-456"));
+    await waitFor(() => expect(getStoredAccessToken()).toBe("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock.payload.signature"));
     expect(getStoredUser<{ email: string }>()?.email).toBe("demo@example.com");
   });
 
   it("restores session on reload", async () => {
-    setStoredAccessToken("token-999");
+    setStoredAccessToken("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock.payload.signature");
     setStoredRefreshToken("refresh-999");
     setStoredUser({ id: "1", email: "restored@example.com", role: "ADMIN" });
 
     render(createElement(AuthProvider, null, createElement(TestAuthState)));
 
     await waitFor(() => expect(screen.getByTestId("status")).toHaveTextContent("authenticated"));
-    expect(screen.getByTestId("token")).toHaveTextContent("token-999");
+    expect(screen.getByTestId("token")).toHaveTextContent("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock.payload.signature");
     expect(screen.getByTestId("user")).toHaveTextContent("demo@example.com");
   });
 });

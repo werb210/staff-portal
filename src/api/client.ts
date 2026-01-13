@@ -340,6 +340,14 @@ const executeRequest = async <T>(path: string, config: RequestOptions & { method
   const includeAuth = authMode !== "none" && !config.skipAuth && !isOptions;
   const authToken = authMode === "staff" ? getStoredAccessToken() : lenderTokenProvider()?.accessToken ?? null;
 
+  if (authMode === "staff" && path === "/auth/me" && !authToken) {
+    if (!config.suppressAuthFailure) {
+      reportAuthFailure("missing-token");
+    }
+    redirectToLogin();
+    throw new ApiError({ status: 401, message: "Missing access token for /auth/me", isAuthError: true });
+  }
+
   if (includeAuth && authMode === "staff" && !authToken) {
     if (!config.suppressAuthFailure) {
       reportAuthFailure("missing-token");

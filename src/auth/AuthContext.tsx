@@ -8,6 +8,7 @@ import {
   getStoredUser,
   setStoredAccessToken,
   setStoredRefreshToken,
+  setStoredTokens,
   setStoredUser
 } from "@/services/token";
 import { registerAuthFailureHandler } from "@/auth/authEvents";
@@ -28,6 +29,9 @@ export type AuthContextType = {
 };
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+const isValidAccessToken = (token: string | null | undefined): token is string =>
+  typeof token === "string" && token.length > 50 && token.startsWith("eyJ");
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<AuthenticatedUser | null>(() => getStoredUser<AuthenticatedUser>());
@@ -59,6 +63,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const loadCurrentUser = useCallback(async (accessToken?: string): Promise<boolean> => {
     const existingToken = accessToken ?? getStoredAccessToken();
     if (!existingToken) {
+      setStatus("unauthenticated");
+      setAuthReady(true);
+      redirectToLogin();
+      return false;
+    }
+    if (!isValidAccessToken(existingToken)) {
+      clearStoredAuth();
+      setUser(null);
+      setToken(null);
       setStatus("unauthenticated");
       setAuthReady(true);
       redirectToLogin();
@@ -114,7 +127,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const existingToken = getStoredAccessToken();
-    if (!existingToken) {
+    if (!existingToken || !isValidAccessToken(existingToken)) {
+      if (existingToken) {
+        clearStoredAuth();
+      }
       setStatus("unauthenticated");
       setAuthReady(true);
       redirectToLogin();
@@ -140,18 +156,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       phone: targetPhoneNumber,
       code
     });
-    setStoredAccessToken(result.accessToken);
-    if (!result.refreshToken) {
-      throw new Error("Missing refresh token from OTP verification");
+    const { accessToken, refreshToken, user } = result;
+    if (!accessToken || !refreshToken) {
+      clearStoredAuth();
+      throw new Error("Missing tokens from OTP verification");
     }
-    setStoredRefreshToken(result.refreshToken);
-    setStoredUser(result.user);
+    setStoredTokens({ accessToken, refreshToken });
+    if (!isValidAccessToken(accessToken)) {
+      clearStoredAuth();
+      throw new Error("Invalid access token from OTP verification");
+    }
+    setStoredUser(user);
     setStatus("authenticated");
-    setToken(result.accessToken);
-    setUser(result.user);
+    setToken(accessToken);
+    setUser(user);
     setPendingPhoneNumber(null);
     setAuthReady(false);
-    const didLoadUser = await loadCurrentUser(result.accessToken);
+    const didLoadUser = await loadCurrentUser(accessToken);
     if (!didLoadUser) {
       throw new Error("Unable to load current user");
     }

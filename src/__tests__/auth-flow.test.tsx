@@ -74,7 +74,7 @@ describe("auth flow", () => {
 
   it("verifies OTP successfully", async () => {
     mockedVerifyOtp.mockResolvedValue({
-      accessToken: "token-123",
+      accessToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock.payload.signature",
       refreshToken: "refresh-123",
       user: { id: "1", email: "demo@example.com", role: "ADMIN" }
     });
@@ -89,7 +89,7 @@ describe("auth flow", () => {
     fireEvent.click(screen.getByRole("button", { name: "Verify" }));
 
     await waitFor(() => expect(screen.getByTestId("status")).toHaveTextContent("authenticated"));
-    expect(localStorage.getItem(ACCESS_TOKEN_KEY)).toBe("token-123");
+    expect(localStorage.getItem(ACCESS_TOKEN_KEY)).toBe("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock.payload.signature");
     expect(localStorage.getItem(REFRESH_TOKEN_KEY)).toBe("refresh-123");
   });
 
@@ -223,7 +223,7 @@ describe("auth flow", () => {
   });
 
   it("clears session on manual logout", async () => {
-    localStorage.setItem(ACCESS_TOKEN_KEY, "token-123");
+    localStorage.setItem(ACCESS_TOKEN_KEY, "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock.payload.signature");
     localStorage.setItem(REFRESH_TOKEN_KEY, "refresh-123");
 
     render(

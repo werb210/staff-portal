@@ -54,6 +54,11 @@ export function setStoredRefreshToken(token: string) {
   inMemoryRefreshToken = token;
 }
 
+export function setStoredTokens(tokens: { accessToken: string; refreshToken: string }) {
+  setStoredAccessToken(tokens.accessToken);
+  setStoredRefreshToken(tokens.refreshToken);
+}
+
 export function clearStoredRefreshToken() {
   const storage = getLocalStorage();
   if (storage) {
