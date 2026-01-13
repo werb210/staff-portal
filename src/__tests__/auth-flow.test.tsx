@@ -42,6 +42,11 @@ const TestAuthState = () => {
   return createElement("span", { "data-testid": "status" }, status);
 };
 
+const TestAuthRole = () => {
+  const { user } = useAuth();
+  return createElement("span", { "data-testid": "role" }, user?.role ?? "UNKNOWN");
+};
+
 const TestVerifyAction = () => {
   const { verifyOtp } = useAuth();
   return createElement(
@@ -75,22 +80,29 @@ describe("auth flow", () => {
   });
 
   it("verifies OTP successfully", async () => {
-    mockedVerifyOtp.mockResolvedValue({
-      accessToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock.payload.signature",
-      refreshToken: "refresh-123",
-      user: { id: "1", email: "demo@example.com", role: "ADMIN" }
+    mockedVerifyOtp.mockImplementation(async () => {
+      localStorage.setItem(ACCESS_TOKEN_KEY, "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock.payload.signature");
+      localStorage.setItem(REFRESH_TOKEN_KEY, "refresh-123");
+      return {
+        accessToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock.payload.signature",
+        refreshToken: "refresh-123",
+        user: { id: "1", email: "demo@example.com", role: "ADMIN" }
+      };
     });
 
     render(
       <AuthProvider>
         <TestVerifyAction />
         <TestAuthState />
+        <TestAuthRole />
       </AuthProvider>
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Verify" }));
 
     await waitFor(() => expect(screen.getByTestId("status")).toHaveTextContent("authenticated"));
+    expect(mockedFetchCurrentUser).toHaveBeenCalled();
+    expect(screen.getByTestId("role")).toHaveTextContent("ADMIN");
     expect(localStorage.getItem(ACCESS_TOKEN_KEY)).toBe("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock.payload.signature");
     expect(localStorage.getItem(REFRESH_TOKEN_KEY)).toBe("refresh-123");
     expect(redirectToDashboard).toHaveBeenCalled();
