@@ -83,11 +83,13 @@ describe("auth login", () => {
   it("OTP verification returns tokens from the service", async () => {
     const apiPostSpy = vi.spyOn(apiClient, "post").mockResolvedValueOnce({
       accessToken: "token-123",
+      refreshToken: "refresh-123",
       user: { id: "1", email: "demo@example.com", role: "ADMIN" },
     } as any);
 
     await expect(verifyOtp({ phone: "+15555550100", code: "123456" })).resolves.toMatchObject({
-      accessToken: "token-123"
+      accessToken: "token-123",
+      refreshToken: "refresh-123"
     });
 
     expect(apiPostSpy).toHaveBeenCalledWith(

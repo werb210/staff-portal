@@ -3,7 +3,7 @@ import type { AxiosError } from "axios";
 import { useNavigate } from "react-router-dom";
 import { ApiError } from "@/api/client";
 import { useAuth } from "@/auth/AuthContext";
-import { normalizeToE164 } from "@/utils/phone";
+import { normalizePhone } from "@/utils/normalizePhone";
 
 const parseOtpStartErrorMessage = (error: unknown): string => {
   if (error instanceof ApiError) {
@@ -48,11 +48,11 @@ export default function LoginPage() {
       return { normalizedPhone: "", normalizationError: null };
     }
     try {
-      return { normalizedPhone: normalizeToE164(rawPhone), normalizationError: null };
+      return { normalizedPhone: normalizePhone(rawPhone), normalizationError: null };
     } catch {
       return {
         normalizedPhone: "",
-        normalizationError: "Invalid phone number. Enter a 10-digit number."
+        normalizationError: "Invalid phone number. Enter a valid phone number."
       };
     }
   }, [rawPhone]);
@@ -69,7 +69,7 @@ export default function LoginPage() {
     setErrorMessage(null);
 
     if (!normalizedPhone || normalizationError) {
-      setErrorMessage("Invalid phone number. Enter a 10-digit number.");
+      setErrorMessage("Invalid phone number. Enter a valid phone number.");
       return;
     }
 
