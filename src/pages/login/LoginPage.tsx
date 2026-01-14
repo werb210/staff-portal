@@ -1,4 +1,4 @@
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useMemo, useRef, useState } from "react";
 import type { AxiosError } from "axios";
 import { ApiError } from "@/api/client";
 import { useAuth } from "@/auth/AuthContext";
@@ -36,10 +36,33 @@ export default function LoginPage() {
   const [rawPhone, setRawPhone] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [errorRequestId, setErrorRequestId] = useState<string | null>(null);
   const [submittedPhoneNumber, setSubmittedPhoneNumber] = useState("");
   const [code, setCode] = useState("");
   const [step, setStep] = useState<"phone" | "otp">("phone");
   const [isVerifying, setIsVerifying] = useState(false);
+  const lastVerifyAttempt = useRef<{ code: string; timestamp: number } | null>(null);
+
+  const setError = (message: string | null, requestId?: string | null) => {
+    setErrorMessage(message);
+    setErrorRequestId(requestId ?? null);
+  };
+
+  const shouldShowGenericServerError = (error: ApiError) => {
+    if (error.status < 500) return false;
+    if (error.code) return false;
+    const details = error.details;
+    if (details && typeof details === "object") {
+      return false;
+    }
+    const message = error.message?.trim().toLowerCase();
+    if (!message) return true;
+    return (
+      message === "internal server error" ||
+      message === "request failed" ||
+      message === "request failed with status code 500"
+    );
+  };
 
   const { normalizedPhone, normalizationError } = useMemo(() => {
     if (!rawPhone.trim()) {
@@ -64,7 +87,7 @@ export default function LoginPage() {
 
   const handleStart = async (event: FormEvent) => {
     event.preventDefault();
-    setErrorMessage(null);
+    setError(null);
 
     if (!normalizedPhone || normalizationError) {
       return;
@@ -72,7 +95,7 @@ export default function LoginPage() {
 
     try {
       setIsSubmitting(true);
-      const response = await startOtp({ phone: normalizedPhone });
+      await startOtp({ phone: normalizedPhone });
       setSubmittedPhoneNumber(normalizedPhone);
       setStep("otp");
     } catch (err: unknown) {
@@ -80,13 +103,13 @@ export default function LoginPage() {
       if (err instanceof ApiError) {
         console.error("OTP start failed.", { requestId: err.requestId });
         if (err.code?.toLowerCase().includes("expired") || err.status === 410) {
-          setErrorMessage("Verification expired");
+          setError("Verification expired", err.requestId);
         } else {
-          setErrorMessage(parsedMessage);
+          setError(parsedMessage, err.requestId);
         }
         return;
       }
-      setErrorMessage(parsedMessage);
+      setError(parsedMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -94,26 +117,42 @@ export default function LoginPage() {
 
   const handleVerify = async (event: FormEvent) => {
     event.preventDefault();
-    setErrorMessage(null);
+    setError(null);
 
     try {
-      setIsVerifying(true);
-      const phoneForVerification = submittedPhoneNumber;
-      if (!phoneForVerification) {
-        setErrorMessage("Missing phone number. Please start again.");
+      if (isVerifying) {
         return;
       }
+      const phoneForVerification = submittedPhoneNumber;
+      if (!phoneForVerification) {
+        setError("Missing phone number. Please start again.");
+        return;
+      }
+      const trimmedCode = code.trim();
+      const now = Date.now();
+      if (
+        lastVerifyAttempt.current &&
+        lastVerifyAttempt.current.code === trimmedCode &&
+        now - lastVerifyAttempt.current.timestamp < 4000
+      ) {
+        setError("Please wait a few seconds before trying again.");
+        return;
+      }
+      lastVerifyAttempt.current = { code: trimmedCode, timestamp: now };
+      setIsVerifying(true);
       await verifyOtp({ code, phone: phoneForVerification });
     } catch (err: unknown) {
       if (err instanceof ApiError) {
         if (err.code?.toLowerCase().includes("expired") || err.status === 410) {
-          setErrorMessage("Verification expired");
+          setError("Verification expired", err.requestId);
+        } else if (shouldShowGenericServerError(err)) {
+          setError("Authentication failed. Try again.", err.requestId);
         } else {
-          setErrorMessage(err.message);
+          setError(err.message, err.requestId);
         }
         return;
       }
-      setErrorMessage(err instanceof Error ? err.message : "OTP failed");
+      setError(err instanceof Error ? err.message : "OTP failed");
     } finally {
       setIsVerifying(false);
     }
@@ -125,7 +164,8 @@ export default function LoginPage() {
 
       {errorMessage && (
         <div role="alert" className="text-sm text-red-700">
-          {errorMessage}
+          <div>{errorMessage}</div>
+          {errorRequestId && <div className="mt-1 text-xs text-red-700">Request ID: {errorRequestId}</div>}
         </div>
       )}
 
@@ -141,7 +181,7 @@ export default function LoginPage() {
               value={rawPhone}
               onChange={(event) => {
                 setRawPhone(event.target.value);
-                setErrorMessage(null);
+                setError(null);
               }}
               aria-invalid={phoneError ? "true" : "false"}
               className="border rounded px-3 py-2"
@@ -176,7 +216,7 @@ export default function LoginPage() {
               value={code}
               onChange={(event) => {
                 setCode(event.target.value.replace(/\D/g, ""));
-                setErrorMessage(null);
+                setError(null);
               }}
               className="border rounded px-3 py-2"
               required
