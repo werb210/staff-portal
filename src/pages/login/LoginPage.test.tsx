@@ -48,7 +48,9 @@ describe("LoginPage", () => {
 
   test("shows an error when OTP verification fails", async () => {
     const startOtp = vi.fn().mockResolvedValue(undefined);
-    const verifyOtp = vi.fn().mockRejectedValue(new ApiError({ status: 401, message: "Invalid code" }));
+    const verifyOtp = vi
+      .fn()
+      .mockRejectedValue(new ApiError({ status: 401, message: "Invalid code", requestId: "req-401" }));
     renderLogin(startOtp, verifyOtp);
 
     fireEvent.change(screen.getByLabelText(/Phone number/i), { target: { value: "+15555550100" } });
@@ -60,6 +62,7 @@ describe("LoginPage", () => {
 
     await waitFor(() => expect(verifyOtp).toHaveBeenCalled());
     await waitFor(() => expect(screen.getByText(/Invalid code/i)).toBeInTheDocument());
+    expect(screen.getByText(/Request ID: req-401/i)).toBeInTheDocument();
   });
 
   test("flags invalid phone numbers immediately", async () => {
@@ -89,11 +92,31 @@ describe("LoginPage", () => {
 
     await waitFor(() => expect(startOtp).toHaveBeenCalled());
     expect(await screen.findByText(/Phone blocked/i)).toBeInTheDocument();
+    expect(screen.getByText(/Request ID: req-123/i)).toBeInTheDocument();
     expect(consoleSpy).toHaveBeenCalledWith(
       "OTP start failed.",
       expect.objectContaining({ requestId: "req-123" })
     );
 
     consoleSpy.mockRestore();
+  });
+
+  test("shows generic error for server failures without details and does not retry verify", async () => {
+    const startOtp = vi.fn().mockResolvedValue(undefined);
+    const verifyOtp = vi
+      .fn()
+      .mockRejectedValue(new ApiError({ status: 500, message: "Internal Server Error", requestId: "req-500" }));
+    renderLogin(startOtp, verifyOtp);
+
+    fireEvent.change(screen.getByLabelText(/Phone number/i), { target: { value: "+15555550100" } });
+    fireEvent.click(screen.getByRole("button", { name: /Send code/i }));
+    await waitFor(() => expect(startOtp).toHaveBeenCalled());
+
+    fireEvent.change(screen.getByLabelText(/Verification code/i), { target: { value: "123456" } });
+    fireEvent.click(screen.getByRole("button", { name: /Verify code/i }));
+
+    await waitFor(() => expect(verifyOtp).toHaveBeenCalledTimes(1));
+    expect(await screen.findByText(/Authentication failed\. Try again\./i)).toBeInTheDocument();
+    expect(screen.getByText(/Request ID: req-500/i)).toBeInTheDocument();
   });
 });
