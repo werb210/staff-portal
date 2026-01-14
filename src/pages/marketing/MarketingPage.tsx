@@ -4,7 +4,7 @@ import MarketingDashboard from "./MarketingDashboard";
 
 const MarketingPage = () => {
   return (
-    <RequireRole roles={["ADMIN"]} message="This space is limited to Administrators.">
+    <RequireRole roles={["Admin"]} message="This space is limited to Admins.">
       <div className="page">
         <Card title="Marketing">
           <MarketingDashboard />

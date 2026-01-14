@@ -4,7 +4,7 @@ import "@testing-library/jest-dom";
 import SettingsPage from "./SettingsPage";
 import { useSettingsStore } from "@/state/settings.store";
 
-let mockRole: "ADMIN" | "STAFF" = "ADMIN";
+let mockRole: "Admin" | "Staff" = "Admin";
 
 vi.mock("@/hooks/useAuth", () => ({
   useAuth: () => ({
@@ -18,7 +18,7 @@ vi.mock("@/hooks/useAuth", () => ({
   })
 }));
 
-const renderWithAuth = (role: "ADMIN" | "STAFF" = "ADMIN") => {
+const renderWithAuth = (role: "Admin" | "Staff" = "Admin") => {
   mockRole = role;
   return render(<SettingsPage />);
 };
@@ -29,7 +29,7 @@ beforeEach(() => {
 
 describe("SettingsPage", () => {
   test("renders all tabs for admins", () => {
-    renderWithAuth("ADMIN");
+    renderWithAuth("Admin");
     expect(screen.getByRole("button", { name: /Profile/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Security/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Meeting Links/i })).toBeInTheDocument();
@@ -79,7 +79,7 @@ describe("SettingsPage", () => {
   });
 
   test("enforces permissions for non-admins", () => {
-    renderWithAuth("STAFF");
+    renderWithAuth("Staff");
     expect(screen.queryByRole("button", { name: /User Management/i })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /Communication/i }));
     expect(screen.queryByRole("button", { name: /Refresh O365 Token/i })).not.toBeInTheDocument();

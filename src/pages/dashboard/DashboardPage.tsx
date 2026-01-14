@@ -16,7 +16,7 @@ const DashboardPage = () => {
   }
 
   return (
-    <RequireRole roles={["ADMIN", "STAFF"]}>
+    <RequireRole roles={["Admin", "Staff"]}>
       <div className="page">
         <Card title="Dashboard Overview">
           <p>Welcome to the Staff Portal. Select a silo to tailor your workflow.</p>

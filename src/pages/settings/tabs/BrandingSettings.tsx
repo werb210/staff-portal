@@ -5,7 +5,7 @@ import { useSettingsStore } from "@/state/settings.store";
 const BrandingSettings = () => {
   const { branding, uploadFavicon, statusMessage } = useSettingsStore();
   const { user } = useAuth();
-  const isAdmin = user?.role === "ADMIN";
+  const isAdmin = user?.role === "Admin";
 
   const handleFavicon = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];

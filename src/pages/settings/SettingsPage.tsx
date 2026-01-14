@@ -12,7 +12,7 @@ import RequireRole from "@/components/auth/RequireRole";
 
 const SettingsContent = () => {
   const { user } = useAuth();
-  const isAdmin = user?.role === "ADMIN";
+  const isAdmin = user?.role === "Admin";
   const tabs = useMemo(
     () => [
       { key: "profile", label: "Profile", component: <ProfileSettings /> },
@@ -61,7 +61,7 @@ const SettingsContent = () => {
 };
 
 const SettingsPage = () => (
-  <RequireRole roles={["ADMIN", "STAFF"]}>
+  <RequireRole roles={["Admin", "Staff"]}>
     <SettingsContent />
   </RequireRole>
 );

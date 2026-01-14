@@ -51,7 +51,7 @@ describe("Lender authentication flow", () => {
     (verifyLenderOtp as MockedFunction<typeof verifyLenderOtp>).mockResolvedValue({
       accessToken: "lender-access",
       refreshToken: "lender-refresh",
-      user: { id: "l1", name: "Lender", email: "lender@example.com", role: "LENDER", companyName: "Acme Lending" }
+      user: { id: "l1", name: "Lender", email: "lender@example.com", role: "Lender", companyName: "Acme Lending" }
     });
 
     renderLenderRouter();

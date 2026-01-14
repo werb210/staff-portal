@@ -84,7 +84,7 @@ const CommunicationsContent = () => {
 };
 
 const CommunicationsPage = () => (
-  <RequireRole roles={["ADMIN", "STAFF"]}>
+  <RequireRole roles={["Admin", "Staff"]}>
     <CommunicationsContent />
   </RequireRole>
 );

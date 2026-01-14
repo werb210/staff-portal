@@ -75,7 +75,7 @@ describe("auth flow", () => {
   beforeEach(() => {
     localStorage.clear();
     vi.clearAllMocks();
-    mockedFetchCurrentUser.mockResolvedValue({ id: "1", email: "demo@example.com", role: "ADMIN" });
+    mockedFetchCurrentUser.mockResolvedValue({ id: "1", email: "demo@example.com", role: "Admin" });
     mockedLogout.mockResolvedValue(undefined);
   });
 
@@ -86,7 +86,7 @@ describe("auth flow", () => {
       return {
         accessToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock.payload.signature",
         refreshToken: "refresh-123",
-        user: { id: "1", email: "demo@example.com", role: "ADMIN" }
+        user: { id: "1", email: "demo@example.com", role: "Admin" }
       };
     });
 
@@ -102,7 +102,7 @@ describe("auth flow", () => {
 
     await waitFor(() => expect(screen.getByTestId("status")).toHaveTextContent("authenticated"));
     expect(mockedFetchCurrentUser).toHaveBeenCalled();
-    expect(screen.getByTestId("role")).toHaveTextContent("ADMIN");
+    expect(screen.getByTestId("role")).toHaveTextContent("Admin");
     expect(localStorage.getItem(ACCESS_TOKEN_KEY)).toBe("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock.payload.signature");
     expect(localStorage.getItem(REFRESH_TOKEN_KEY)).toBe("refresh-123");
     expect(redirectToDashboard).toHaveBeenCalled();

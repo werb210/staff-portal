@@ -131,7 +131,7 @@ const CalendarContent = () => {
 };
 
 const CalendarPage = () => (
-  <RequireRole roles={["ADMIN", "STAFF"]}>
+  <RequireRole roles={["Admin", "Staff"]}>
     <CalendarContent />
   </RequireRole>
 );

@@ -58,7 +58,7 @@ describe("auth login", () => {
     adapter.mockClear();
     localStorage.clear();
     vi.restoreAllMocks();
-    mockedFetchCurrentUser.mockResolvedValue({ id: "1", email: "demo@example.com", role: "ADMIN" });
+    mockedFetchCurrentUser.mockResolvedValue({ id: "1", email: "demo@example.com", role: "Admin" });
   });
 
   it("OTP start omits Idempotency-Key", async () => {
@@ -93,7 +93,7 @@ describe("auth login", () => {
     const apiPostSpy = vi.spyOn(apiClient, "post").mockResolvedValueOnce({
       accessToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock.payload.signature",
       refreshToken: "refresh-123",
-      user: { id: "1", email: "demo@example.com", role: "ADMIN" },
+      user: { id: "1", email: "demo@example.com", role: "Admin" },
     } as any);
 
     await expect(verifyOtp({ phone: "+15555550100", code: "123456" })).resolves.toMatchObject({
@@ -118,7 +118,7 @@ describe("auth login", () => {
     vi.spyOn(apiClient, "post").mockResolvedValueOnce({
       accessToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock.payload.signature",
       refreshToken: "refresh-456",
-      user: { id: "1", email: "demo@example.com", role: "ADMIN" }
+      user: { id: "1", email: "demo@example.com", role: "Admin" }
     });
 
     render(createElement(AuthProvider, null, createElement(TestVerifyAction)));
@@ -132,7 +132,7 @@ describe("auth login", () => {
   it("restores session on reload", async () => {
     setStoredAccessToken("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock.payload.signature");
     setStoredRefreshToken("refresh-999");
-    setStoredUser({ id: "1", email: "restored@example.com", role: "ADMIN" });
+    setStoredUser({ id: "1", email: "restored@example.com", role: "Admin" });
 
     render(createElement(AuthProvider, null, createElement(TestAuthState)));
 

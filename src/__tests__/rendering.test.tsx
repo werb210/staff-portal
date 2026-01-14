@@ -14,7 +14,7 @@ const fetchLendersMock = vi.mocked(fetchLenders);
 const renderAsAdmin = () =>
   renderWithProviders(<LendersPage />, {
     auth: {
-      user: { id: "u-1", name: "Admin User", email: "admin@example.com", role: "ADMIN" },
+      user: { id: "u-1", name: "Admin User", email: "admin@example.com", role: "Admin" },
       token: "token",
       status: "authenticated",
       authReady: true

@@ -35,7 +35,7 @@ const CRMContent = () => {
 };
 
 const CRMPage = () => (
-  <RequireRole roles={["ADMIN", "STAFF"]}>
+  <RequireRole roles={["Admin", "Staff"]}>
     <CRMContent />
   </RequireRole>
 );
