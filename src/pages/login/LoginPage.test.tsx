@@ -46,6 +46,24 @@ describe("LoginPage", () => {
     await waitFor(() => expect(verifyOtp).toHaveBeenCalledWith({ code: "123456", phone: "+15555550100" }));
   });
 
+  test("does not show an error when OTP verification succeeds without tokens", async () => {
+    const startOtp = vi.fn().mockResolvedValue(undefined);
+    const verifyOtp = vi.fn().mockResolvedValue({ sent: true });
+    renderLogin(startOtp, verifyOtp);
+
+    fireEvent.change(screen.getByLabelText(/Phone number/i), { target: { value: "+1 (555) 555-0100" } });
+    fireEvent.click(screen.getByRole("button", { name: /Send code/i }));
+
+    await waitFor(() => expect(startOtp).toHaveBeenCalledWith({ phone: "+15555550100" }));
+
+    fireEvent.change(screen.getByLabelText(/Verification code/i), { target: { value: "123456" } });
+    fireEvent.click(screen.getByRole("button", { name: /Verify code/i }));
+
+    await waitFor(() => expect(verifyOtp).toHaveBeenCalledWith({ code: "123456", phone: "+15555550100" }));
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Missing access token/i)).not.toBeInTheDocument();
+  });
+
   test("shows an error when OTP verification fails", async () => {
     const startOtp = vi.fn().mockResolvedValue(undefined);
     const verifyOtp = vi

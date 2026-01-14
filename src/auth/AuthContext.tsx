@@ -4,16 +4,18 @@ import {
   startOtp as startOtpService,
   verifyOtp as verifyOtpService,
   type AuthenticatedUser,
-  type LoginSuccess,
+  fetchSession as fetchSessionService,
+  type OtpVerifyResponse,
   type OtpStartResponse
 } from "@/services/auth";
 import { fetchCurrentUser } from "@/api/auth";
 import { ApiError } from "@/api/client";
 import {
-  ACCESS_TOKEN_KEY,
   clearStoredAuth,
   clearStoredUser,
   getStoredAccessToken,
+  setStoredAccessToken,
+  setStoredRefreshToken,
   setStoredUser
 } from "@/services/token";
 import { registerAuthFailureHandler } from "@/auth/authEvents";
@@ -30,7 +32,7 @@ export type AuthContextType = {
   authReady: boolean;
   pendingPhoneNumber: string | null;
   startOtp: (payload: { phone: string }) => Promise<OtpStartResponse>;
-  verifyOtp: (payload: { code: string; phone?: string }) => Promise<LoginSuccess>;
+  verifyOtp: (payload: { code: string; phone?: string }) => Promise<OtpVerifyResponse>;
   refreshUser: (accessToken?: string) => Promise<boolean>;
   logout: () => void;
 };
@@ -153,19 +155,39 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       phone: targetPhoneNumber,
       code
     });
-    const storedToken = getStoredAccessToken();
-    if (!storedToken) {
-      clearStoredAuth();
-      throw new Error("Missing access token after OTP verification");
+
+    const hasTokens = "accessToken" in result && Boolean(result.accessToken);
+    let accessToken = hasTokens ? result.accessToken : null;
+
+    if (!accessToken) {
+      const sessionResult = await fetchSessionService();
+      accessToken = sessionResult.accessToken ?? null;
+      if (sessionResult.accessToken) {
+        setStoredAccessToken(sessionResult.accessToken);
+      }
+      if (sessionResult.refreshToken) {
+        setStoredRefreshToken(sessionResult.refreshToken);
+      }
+    } else {
+      setStoredAccessToken(accessToken);
+      if (result.refreshToken) {
+        setStoredRefreshToken(result.refreshToken);
+      }
     }
-    if (!isValidAccessToken(storedToken)) {
+
+    if (!accessToken) {
+      throw new ApiError({ status: 401, message: "Unable to confirm your session. Please try again." });
+    }
+
+    if (!isValidAccessToken(accessToken)) {
       clearStoredAuth();
       throw new Error("Invalid access token from OTP verification");
     }
-    setToken(storedToken);
+
+    setToken(accessToken);
     setPendingPhoneNumber(null);
     setAuthReady(false);
-    const didLoadUser = await loadCurrentUser(storedToken);
+    const didLoadUser = await loadCurrentUser(accessToken);
     if (!didLoadUser) {
       throw new ApiError({ status: 401, message: "Unable to load your profile. Please try again." });
     }

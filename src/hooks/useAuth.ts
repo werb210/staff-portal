@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from "react";
 import { useAuth as useAuthContext } from "@/auth/AuthContext";
-import type { AuthenticatedUser, LoginSuccess } from "@/services/auth";
+import type { AuthenticatedUser, OtpVerifyResponse } from "@/services/auth";
 import type { UserRole } from "@/utils/roles";
 
 export type StaffUser = AuthenticatedUser & {
@@ -19,7 +19,7 @@ export type AuthValue = {
   isAuthenticated: boolean;
   isLoading: boolean;
   startOtp: (payload: { phone: string }) => Promise<void>;
-  verifyOtp: (payload: { code: string; phone?: string }) => Promise<LoginSuccess>;
+  verifyOtp: (payload: { code: string; phone?: string }) => Promise<OtpVerifyResponse>;
   refreshUser: (accessToken?: string) => Promise<boolean>;
   logout: () => void;
 };

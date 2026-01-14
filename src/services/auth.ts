@@ -16,6 +16,15 @@ export type LoginSuccess = {
   user: AuthenticatedUser;
 };
 
+export type OtpVerifyResponse =
+  | LoginSuccess
+  | {
+      alreadyVerified: true;
+    }
+  | {
+      sent: true;
+    };
+
 export type OtpStartResponse = {
   sessionId?: string;
 };
@@ -29,19 +38,38 @@ export async function startOtp(payload: { phone: string }): Promise<OtpStartResp
   );
 }
 
-export async function verifyOtp(payload: { phone: string; code: string }): Promise<LoginSuccess> {
+export async function verifyOtp(payload: { phone: string; code: string }): Promise<OtpVerifyResponse> {
   const normalizedPhone = normalizeToE164(payload.phone);
-  const data = await apiClient.post<LoginSuccess>(
+  const data = await apiClient.post<OtpVerifyResponse>(
     "/api/auth/otp/verify",
     { ...payload, phone: normalizedPhone },
     otpRequestOptions
   );
-  if (!data.accessToken) {
-    throw new Error("Missing access token from OTP verification");
+  if ("accessToken" in data && data.accessToken) {
+    setStoredAccessToken(data.accessToken);
+    if (data.refreshToken) {
+      setStoredRefreshToken(data.refreshToken);
+    }
   }
-  setStoredAccessToken(data.accessToken);
-  if (data.refreshToken) {
-    setStoredRefreshToken(data.refreshToken);
+  return data;
+}
+
+export type SessionResponse = {
+  accessToken?: string;
+  refreshToken?: string;
+  user?: AuthenticatedUser;
+};
+
+export async function fetchSession(): Promise<SessionResponse> {
+  const data = await apiClient.get<SessionResponse>("/api/auth/session", {
+    skipAuth: true,
+    authMode: "none"
+  });
+  if (data.accessToken) {
+    setStoredAccessToken(data.accessToken);
+    if (data.refreshToken) {
+      setStoredRefreshToken(data.refreshToken);
+    }
   }
   return data;
 }

@@ -8,7 +8,7 @@ import axios from "axios";
 import apiClient, { ApiError, setAxiosAdapterForTests } from "@/api/client";
 import { AuthProvider, useAuth } from "@/auth/AuthContext";
 import { fetchCurrentUser } from "@/api/auth";
-import { startOtp as startOtpService, verifyOtp as verifyOtpService, logout as logoutService } from "@/services/auth";
+import { startOtp as startOtpService, verifyOtp as verifyOtpService, fetchSession as fetchSessionService, logout as logoutService } from "@/services/auth";
 import LoginPage from "@/pages/login/LoginPage";
 import { redirectToDashboard } from "@/services/api";
 import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from "@/services/token";
@@ -20,6 +20,7 @@ vi.mock("@/api/auth", () => ({
 vi.mock("@/services/auth", () => ({
   startOtp: vi.fn(),
   verifyOtp: vi.fn(),
+  fetchSession: vi.fn(),
   logout: vi.fn()
 }));
 
@@ -34,6 +35,7 @@ vi.mock("@/services/api", async () => {
 
 const mockedStartOtp = vi.mocked(startOtpService);
 const mockedVerifyOtp = vi.mocked(verifyOtpService);
+const mockedFetchSession = vi.mocked(fetchSessionService);
 const mockedLogout = vi.mocked(logoutService);
 const mockedFetchCurrentUser = vi.mocked(fetchCurrentUser);
 
@@ -80,14 +82,10 @@ describe("auth flow", () => {
   });
 
   it("verifies OTP successfully", async () => {
-    mockedVerifyOtp.mockImplementation(async () => {
-      localStorage.setItem(ACCESS_TOKEN_KEY, "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock.payload.signature");
-      localStorage.setItem(REFRESH_TOKEN_KEY, "refresh-123");
-      return {
-        accessToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock.payload.signature",
-        refreshToken: "refresh-123",
-        user: { id: "1", email: "demo@example.com", role: "Admin" }
-      };
+    mockedVerifyOtp.mockResolvedValue({
+      accessToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock.payload.signature",
+      refreshToken: "refresh-123",
+      user: { id: "1", email: "demo@example.com", role: "Admin" }
     });
 
     render(
@@ -102,10 +100,57 @@ describe("auth flow", () => {
 
     await waitFor(() => expect(screen.getByTestId("status")).toHaveTextContent("authenticated"));
     expect(mockedFetchCurrentUser).toHaveBeenCalled();
+    expect(mockedFetchSession).not.toHaveBeenCalled();
     expect(screen.getByTestId("role")).toHaveTextContent("Admin");
     expect(localStorage.getItem(ACCESS_TOKEN_KEY)).toBe("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock.payload.signature");
     expect(localStorage.getItem(REFRESH_TOKEN_KEY)).toBe("refresh-123");
     expect(redirectToDashboard).toHaveBeenCalled();
+  });
+
+  it("bootstraps session when OTP is already verified", async () => {
+    mockedVerifyOtp.mockResolvedValue({ alreadyVerified: true });
+    mockedFetchSession.mockResolvedValue({
+      accessToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.session.payload.signature",
+      refreshToken: "refresh-session",
+      user: { id: "1", email: "demo@example.com", role: "Admin" }
+    });
+
+    render(
+      <AuthProvider>
+        <TestVerifyAction />
+        <TestAuthState />
+        <TestAuthRole />
+      </AuthProvider>
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Verify" }));
+
+    await waitFor(() => expect(mockedFetchSession).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(screen.getByTestId("status")).toHaveTextContent("authenticated"));
+    expect(screen.getByTestId("role")).toHaveTextContent("Admin");
+    expect(localStorage.getItem(ACCESS_TOKEN_KEY)).toBe("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.session.payload.signature");
+    expect(localStorage.getItem(REFRESH_TOKEN_KEY)).toBe("refresh-session");
+  });
+
+  it("attempts session bootstrap when OTP verify returns sent", async () => {
+    mockedVerifyOtp.mockResolvedValue({ sent: true });
+    mockedFetchSession.mockResolvedValue({
+      accessToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.sent.payload.signature",
+      refreshToken: "refresh-sent",
+      user: { id: "1", email: "demo@example.com", role: "Admin" }
+    });
+
+    render(
+      <AuthProvider>
+        <TestVerifyAction />
+        <TestAuthState />
+      </AuthProvider>
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Verify" }));
+
+    await waitFor(() => expect(mockedFetchSession).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(screen.getByTestId("status")).toHaveTextContent("authenticated"));
   });
 
   it.each([
