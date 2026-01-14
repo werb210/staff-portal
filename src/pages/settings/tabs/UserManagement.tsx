@@ -10,14 +10,14 @@ const UserManagement = () => {
   const [newUser, setNewUser] = useState<Omit<AdminUser, "id">>({
     name: "",
     email: "",
-    role: "STAFF",
+    role: "Staff",
     silos: ["BF"] as SiloCode[]
   });
 
   const onAddUser = (event: React.FormEvent) => {
     event.preventDefault();
     addUser(newUser);
-    setNewUser({ name: "", email: "", role: "STAFF", silos: ["BF"] });
+    setNewUser({ name: "", email: "", role: "Staff", silos: ["BF"] });
   };
 
   return (
@@ -46,8 +46,8 @@ const UserManagement = () => {
           value={newUser.role}
           onChange={(e) => setNewUser({ ...newUser, role: e.target.value as AdminUser["role"] })}
           options={[
-            { value: "ADMIN", label: "Administrator" },
-            { value: "STAFF", label: "Staff" }
+            { value: "Admin", label: "Admin" },
+            { value: "Staff", label: "Staff" }
           ]}
         />
         <Input
@@ -71,7 +71,7 @@ const UserManagement = () => {
               <Button
                 type="button"
                 variant="secondary"
-                onClick={() => updateUser(user.id, { role: user.role === "ADMIN" ? "STAFF" : "ADMIN" })}
+                onClick={() => updateUser(user.id, { role: user.role === "Admin" ? "Staff" : "Admin" })}
               >
                 Toggle Role
               </Button>

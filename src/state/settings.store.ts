@@ -171,8 +171,8 @@ const createInitialState = (): SettingsSnapshot => ({
     brandKitUrl: "https://example.com/brand-kit.zip"
   },
   users: [
-    { id: "u-1", name: "Alex Smith", email: "alex@example.com", role: "ADMIN", silos: ["BF", "BI"] },
-    { id: "u-2", name: "Jamie Rivera", email: "jamie@example.com", role: "STAFF", silos: ["BF"] }
+    { id: "u-1", name: "Alex Smith", email: "alex@example.com", role: "Admin", silos: ["BF", "BI"] },
+    { id: "u-2", name: "Jamie Rivera", email: "jamie@example.com", role: "Staff", silos: ["BF"] }
   ],
   statusMessage: undefined
 });

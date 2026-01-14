@@ -19,6 +19,7 @@ import {
 import { registerAuthFailureHandler } from "@/auth/authEvents";
 import { redirectToDashboard, redirectToLogin } from "@/services/api";
 import { setApiStatus } from "@/state/apiStatus";
+import { assertKnownRole } from "@/utils/roles";
 
 export type AuthStatus = "authenticated" | "unauthenticated" | "expired" | "forbidden";
 
@@ -37,13 +38,13 @@ export type AuthContextType = {
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const fallbackAuthContext: AuthContextType = {
-  user: { id: "test-user", email: "test@example.com", role: "ADMIN" as AuthenticatedUser["role"] },
+  user: { id: "test-user", email: "test@example.com", role: "Admin" as AuthenticatedUser["role"] },
   token: "test-token",
   status: "authenticated",
   authReady: true,
   pendingPhoneNumber: null,
   startOtp: async () => ({ sessionId: undefined }),
-  verifyOtp: async () => ({ accessToken: "test-token", user: { id: "test-user", email: "test@example.com", role: "ADMIN" as AuthenticatedUser["role"] } }),
+  verifyOtp: async () => ({ accessToken: "test-token", user: { id: "test-user", email: "test@example.com", role: "Admin" as AuthenticatedUser["role"] } }),
   refreshUser: async () => true,
   logout: () => undefined
 };
@@ -100,6 +101,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     try {
       const currentUser = await fetchCurrentUser();
+      assertKnownRole(currentUser.role);
       setStoredUser(currentUser);
       setUser(currentUser);
       setStatus("authenticated");

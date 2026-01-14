@@ -4,7 +4,7 @@ import { useSettingsStore } from "@/state/settings.store";
 
 const CommunicationSettings = () => {
   const { user } = useAuth();
-  const isAdmin = user?.role === "ADMIN";
+  const isAdmin = user?.role === "Admin";
   const { silos, refreshEmailSync, statusMessage } = useSettingsStore();
 
   return (

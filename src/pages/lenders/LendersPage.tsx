@@ -52,7 +52,7 @@ const LendersContent = () => {
 };
 
 const LendersPage = () => (
-  <RequireRole roles={["ADMIN", "STAFF"]}>
+  <RequireRole roles={["Admin", "Staff"]}>
     <LendersContent />
   </RequireRole>
 );

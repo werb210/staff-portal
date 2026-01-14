@@ -13,7 +13,7 @@ const createTestQueryClient = () =>
   });
 
 const defaultLenderAuth: LenderAuthContextValue = {
-  user: { id: "l1", name: "Lender User", email: "lender@example.com", role: "LENDER", companyName: "Lender Co" },
+  user: { id: "l1", name: "Lender User", email: "lender@example.com", role: "Lender", companyName: "Lender Co" },
   tokens: { accessToken: "lender-token", refreshToken: "lender-refresh" },
   isAuthenticated: true,
   isLoading: false,
@@ -34,7 +34,7 @@ export const renderWithProviders = (
   const queryClient = createTestQueryClient();
   const silo = options?.silo ?? "BF";
   const authValue: AuthContextType = {
-    user: { id: "1", email: "test@example.com", role: "ADMIN" },
+    user: { id: "1", email: "test@example.com", role: "Admin" },
     token: "test-token",
     status: "authenticated",
     authReady: true,

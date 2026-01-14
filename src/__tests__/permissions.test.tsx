@@ -14,7 +14,7 @@ describe("permission-aware rendering", () => {
   it("shows a block message for unauthorized roles", () => {
     renderWithProviders(<MarketingPage />, {
       auth: {
-        user: { id: "u-1", name: "Staff User", email: "staff@example.com", role: "STAFF" },
+        user: { id: "u-1", name: "Staff User", email: "staff@example.com", role: "Staff" },
         token: "token",
         status: "authenticated",
         authReady: true
@@ -22,14 +22,14 @@ describe("permission-aware rendering", () => {
     });
 
     expect(screen.getByText("Access restricted")).toBeInTheDocument();
-    expect(screen.getByText("This space is limited to Administrators.")).toBeInTheDocument();
+    expect(screen.getByText("This space is limited to Admins.")).toBeInTheDocument();
   });
 
   it("does not fire API calls when the role is insufficient", () => {
     const fetchLendersMock = vi.mocked(fetchLenders);
     renderWithProviders(<LendersPage />, {
       auth: {
-        user: { id: "u-2", name: "Lender User", email: "lender@example.com", role: "LENDER" },
+        user: { id: "u-2", name: "Lender User", email: "lender@example.com", role: "Lender" },
         token: "token",
         status: "authenticated",
         authReady: true

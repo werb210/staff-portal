@@ -35,7 +35,7 @@ const siloNavigation = {
 const Sidebar = () => {
   const { silo } = useSilo();
   const { user } = useAuth();
-  const isAdmin = user?.role === "ADMIN";
+  const isAdmin = user?.role === "Admin";
   const navigation = siloNavigation[silo].filter((item) =>
     item.path === "/marketing" ? isAdmin : true
   );

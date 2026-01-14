@@ -14,7 +14,7 @@ const ApplicationsContent = () => {
 };
 
 const ApplicationsPage = () => (
-  <RequireRole roles={["ADMIN", "STAFF"]}>
+  <RequireRole roles={["Admin", "Staff"]}>
     <ApplicationsContent />
   </RequireRole>
 );

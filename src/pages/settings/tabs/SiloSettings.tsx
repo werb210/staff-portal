@@ -12,7 +12,7 @@ const permissionLabels: Record<keyof SiloPermissions, string> = {
 
 const SiloSettings = () => {
   const { user } = useAuth();
-  const isAdmin = user?.role === "ADMIN";
+  const isAdmin = user?.role === "Admin";
   const { silos, setDefaultSilo, updateSiloPermission, statusMessage } = useSettingsStore();
 
   const togglePermission = (code: SiloCode, key: keyof SiloPermissions, value: boolean) => {
