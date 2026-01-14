@@ -1,5 +1,5 @@
 import { apiClient, otpRequestOptions, otpStartRequestOptions } from "./client";
-import type { AuthenticatedUser, LoginSuccess } from "@/services/auth";
+import type { AuthenticatedUser, OtpVerifyResponse as OtpVerifyResponseType } from "@/services/auth";
 
 export type OtpStartPayload = {
   phone: string;
@@ -17,7 +17,7 @@ export type OtpVerifyPayload = {
   code: string;
 };
 
-export type OtpVerifyResponse = LoginSuccess;
+export type OtpVerifyResponse = OtpVerifyResponseType;
 
 export const verifyOtp = (payload: OtpVerifyPayload) =>
   apiClient.post<OtpVerifyResponse>("/api/auth/otp/verify", payload, otpRequestOptions);
