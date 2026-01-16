@@ -15,6 +15,13 @@ type PipelineCardProps = {
 const formatAmount = (value: number) =>
   value.toLocaleString(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 
+const resolveMatchScore = (card: PipelineApplication) => {
+  const raw = card.matchPercentage ?? card.matchPercent ?? card.matchScore ?? null;
+  if (raw == null || Number.isNaN(raw)) return null;
+  if (raw <= 1 && raw >= 0) return raw * 100;
+  return raw;
+};
+
 const PipelineCard = ({ card, stageId, onClick }: PipelineCardProps) => {
   const { user } = useAuth();
   const setDragging = usePipelineStore((state) => state.setDragging);
@@ -37,6 +44,8 @@ const PipelineCard = ({ card, stageId, onClick }: PipelineCardProps) => {
   const handleClick = () => onClick(card.id);
 
   const staffLabel = card.assignedStaff ? `Assigned to ${card.assignedStaff}` : "Unassigned";
+  const matchScore = resolveMatchScore(card);
+  const matchLabel = matchScore != null ? `Match ${Math.round(matchScore)}%` : "Match —";
 
   return (
     <div
@@ -63,6 +72,7 @@ const PipelineCard = ({ card, stageId, onClick }: PipelineCardProps) => {
       <div className="pipeline-card__meta">
         <span className="pipeline-card__pill">{card.productCategory}</span>
         <span className="pipeline-card__pill pipeline-card__pill--muted">{card.status}</span>
+        <span className="pipeline-card__pill pipeline-card__pill--muted">{matchLabel}</span>
       </div>
       <div className="pipeline-card__progress">
         Documents: {card.documents.submitted}/{card.documents.required}
