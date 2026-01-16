@@ -49,10 +49,10 @@ const MessagesTab = () => {
           className="notes-composer__input"
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
-          placeholder="Send a message to the client"
+          placeholder="Submit a message to the client"
         />
         <button className="btn btn--primary" onClick={handleSend} disabled={mutation.isPending} type="button">
-          {mutation.isPending ? "Sending…" : "Send"}
+          {mutation.isPending ? "Submitting…" : "Submit"}
         </button>
       </div>
     </div>

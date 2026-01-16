@@ -52,7 +52,7 @@ const SLFPipelinePage = () => {
 
   return (
     <div className="pipeline-page">
-      <Card title="SLF Pipeline">
+      <Card title="SLF Application Pipeline">
         <DndContext collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
           <div className="pipeline-columns">
             {SLF_PIPELINE_STAGES.map((stage) => (

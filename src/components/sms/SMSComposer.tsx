@@ -54,7 +54,7 @@ const SMSComposer = ({ visible, contact, onClose }: SMSComposerProps) => {
           </Button>
         }
       >
-        <p>Sending from {siloNumbers[silo]}</p>
+        <p>Messages sent from {siloNumbers[silo]}</p>
         <SMSThread messages={messages} />
         <div className="flex gap-2 items-center mt-2">
           <Select value={silo} onChange={() => undefined}>
@@ -67,7 +67,7 @@ const SMSComposer = ({ visible, contact, onClose }: SMSComposerProps) => {
             value={body}
             onChange={(e) => setBody(e.target.value)}
           />
-          <Button onClick={handleSend}>Send</Button>
+          <Button onClick={handleSend}>Submit</Button>
         </div>
       </Card>
     </div>

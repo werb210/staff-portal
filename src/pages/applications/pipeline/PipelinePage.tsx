@@ -64,7 +64,7 @@ const PipelinePage = () => {
 
   return (
     <div className="pipeline-page">
-      <Card title="Sales Pipeline">
+      <Card title="Application Pipeline">
         <PipelineFilters />
         <DndContext
           collisionDetection={closestCenter}

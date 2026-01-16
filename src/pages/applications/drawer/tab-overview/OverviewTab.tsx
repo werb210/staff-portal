@@ -25,7 +25,7 @@ const OverviewTab = () => {
   return (
     <div className="drawer-tab drawer-tab__overview">
       <DetailSection title="Overview" data={overviewData} />
-      <DetailSection title="Submission Payload" data={details?.rawPayload ?? null} />
+      <DetailSection title="Application Payload" data={details?.rawPayload ?? null} />
     </div>
   );
 };

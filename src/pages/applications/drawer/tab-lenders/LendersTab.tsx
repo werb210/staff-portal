@@ -42,7 +42,7 @@ const LendersTab = () => {
                 <div className="lender-row__meta">
                   <div>Product: {match.productCategory ?? "—"}</div>
                   <div>Terms: {match.terms ?? "—"}</div>
-                  <div>Docs: {match.requiredDocsStatus ?? "—"}</div>
+                  <div>Documents: {match.requiredDocsStatus ?? "—"}</div>
                 </div>
               </li>
             ))}
@@ -53,7 +53,7 @@ const LendersTab = () => {
       </div>
       <div className="drawer-footer-actions">
         <button className="btn btn--primary" type="button" onClick={() => mutation.mutate()} disabled={!selected.length}>
-          Send Application to Selected Lenders
+          Submit Application to Selected Lenders
         </button>
       </div>
     </div>

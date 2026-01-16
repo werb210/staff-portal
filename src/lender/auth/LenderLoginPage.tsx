@@ -52,7 +52,7 @@ const LenderLoginPage = () => {
           />
           {error && <div className="auth-form__error">{error}</div>}
           <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Sending code..." : "Login"}
+            {isSubmitting ? "Submitting code..." : "Login"}
           </Button>
         </form>
       </Card>
