@@ -37,6 +37,9 @@ export type PipelineApplication = {
   productCategory: string;
   stage: PipelineStageId;
   status: string;
+  matchPercentage?: number;
+  matchPercent?: number;
+  matchScore?: number;
   documents: {
     submitted: number;
     required: number;
@@ -92,4 +95,3 @@ export const canMoveCardToStage = (
   }
   return true;
 };
-
