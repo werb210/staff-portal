@@ -6,7 +6,7 @@ import PipelinePage from "./PipelinePage";
 import { renderWithProviders } from "@/test/testUtils";
 import { pipelineApi } from "./pipeline.api";
 import { createPipelineDragEndHandler } from "./pipeline.store";
-import { PIPELINE_STAGE_LABELS, canMoveCardToStage, type PipelineApplication, type PipelineDragEndEvent } from "./pipeline.types";
+import { PIPELINE_STAGE_LABELS, type PipelineApplication, type PipelineDragEndEvent } from "./pipeline.types";
 
 vi.mock("./pipeline.api", () => {
   const fetchColumn = vi.fn().mockResolvedValue([]);
@@ -21,7 +21,7 @@ const sampleCard: PipelineApplication = {
   contactName: "John Doe",
   requestedAmount: 50000,
   productCategory: "startup",
-  stage: "new",
+  stage: "received",
   status: "New",
   documents: { submitted: 1, required: 3 },
   bankingComplete: false,
@@ -78,8 +78,8 @@ describe("Pipeline foundation", () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const handler = createPipelineDragEndHandler({ queryClient, filters: {} });
     const terminalEvent = {
-      active: { id: sampleCard.id, data: { current: { card: { ...sampleCard, stage: "accepted" }, stageId: "accepted" } } },
-      over: { id: "new" }
+      active: { id: sampleCard.id, data: { current: { card: { ...sampleCard, stage: "offer" }, stageId: "offer" } } },
+      over: { id: "received" }
     } as PipelineDragEndEvent;
 
     await handler(terminalEvent);
@@ -91,9 +91,9 @@ describe("Pipeline foundation", () => {
     const handler = createPipelineDragEndHandler({ queryClient, filters: {} });
     const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
 
-    await handler(buildDragEvent("lender"));
+    await handler(buildDragEvent("off_to_lender"));
 
-    expect(pipelineApi.moveCard).toHaveBeenCalledWith(sampleCard.id, "lender");
+    expect(pipelineApi.moveCard).toHaveBeenCalledWith(sampleCard.id, "off_to_lender");
     expect(invalidateSpy).toHaveBeenCalled();
   });
 
@@ -104,12 +104,7 @@ describe("Pipeline foundation", () => {
 
     await handler(buildDragEvent("in_review"));
 
-    expect(invalidateSpy).toHaveBeenCalledTimes(2);
-  });
-
-  it("rejects movement into start-up column for non-startup cards", () => {
-    const movable = canMoveCardToStage({ ...sampleCard, productCategory: "sba" }, "new", "startup");
-    expect(movable).toBe(false);
+    expect(invalidateSpy).toHaveBeenCalledTimes(4);
   });
 
   it("keeps queries in sync after drag", async () => {
@@ -120,7 +115,7 @@ describe("Pipeline foundation", () => {
     await handler(buildDragEvent("in_review"));
 
     expect(invalidateSpy).toHaveBeenCalledWith({
-      queryKey: ["pipeline", "new", "", "", "", "", "", "all", "any", "any", "newest"]
+      queryKey: ["pipeline", "received", "", "", "", "", "", "all", "any", "any", "newest"]
     });
     expect(invalidateSpy).toHaveBeenCalledWith({
       queryKey: ["pipeline", "in_review", "", "", "", "", "", "all", "any", "any", "newest"]

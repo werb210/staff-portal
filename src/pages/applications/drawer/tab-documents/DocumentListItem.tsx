@@ -1,4 +1,4 @@
-import type { ApplicationDocumentsResponse } from "@/api/applications";
+import type { DocumentRequirement } from "@/types/documents.types";
 
 const statusClass = (status: string) => `doc-status doc-status--${status?.toLowerCase()}`;
 
@@ -7,7 +7,7 @@ const DocumentListItem = ({
   isSelected,
   onSelect
 }: {
-  document: ApplicationDocumentsResponse[number];
+  document: DocumentRequirement;
   isSelected: boolean;
   onSelect: () => void;
 }) => (

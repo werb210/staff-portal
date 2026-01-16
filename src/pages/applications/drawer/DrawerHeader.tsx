@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { fetchApplicationDetails, type ApplicationDetails } from "@/api/applications";
+import { fetchApplicationDetails } from "@/api/applications";
+import type { ApplicationDetails } from "@/types/application.types";
 
 const DrawerHeader = ({ applicationId, onClose }: { applicationId: string; onClose: () => void }) => {
   const { data } = useQuery<ApplicationDetails>({

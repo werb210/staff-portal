@@ -84,7 +84,7 @@ const PipelinePage = () => {
             ))}
           </div>
           <DragOverlay>
-            {activeCard ? <PipelineCard card={activeCard} stageId={activeStage ?? "new"} onClick={handleCardClick} /> : null}
+            {activeCard ? <PipelineCard card={activeCard} stageId={activeStage ?? "received"} onClick={handleCardClick} /> : null}
           </DragOverlay>
         </DndContext>
       </Card>

@@ -17,8 +17,8 @@ const formatAmount = (value: number) =>
 
 const resolveMatchScore = (card: PipelineApplication) => {
   const raw = card.matchPercentage ?? card.matchPercent ?? card.matchScore ?? null;
-  if (raw == null || Number.isNaN(raw)) return null;
-  if (raw <= 1 && raw >= 0) return raw * 100;
+  if (raw == null || raw === "") return null;
+  if (typeof raw === "number" && Number.isNaN(raw)) return null;
   return raw;
 };
 
@@ -45,7 +45,7 @@ const PipelineCard = ({ card, stageId, onClick }: PipelineCardProps) => {
 
   const staffLabel = card.assignedStaff ? `Assigned to ${card.assignedStaff}` : "Unassigned";
   const matchScore = resolveMatchScore(card);
-  const matchLabel = matchScore != null ? `Match ${Math.round(matchScore)}%` : "Match —";
+  const matchLabel = matchScore != null ? `Match ${matchScore}%` : "Match pending";
 
   return (
     <div

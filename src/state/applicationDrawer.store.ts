@@ -1,6 +1,14 @@
 import { create } from "zustand";
 
-export type DrawerTabId = "application" | "banking" | "financial" | "documents" | "notes" | "credit" | "lenders";
+export type DrawerTabId =
+  | "overview"
+  | "business"
+  | "applicant"
+  | "financial"
+  | "product-fit"
+  | "documents"
+  | "messages"
+  | "audit";
 
 export type ApplicationDrawerState = {
   isOpen: boolean;
@@ -15,9 +23,9 @@ export type ApplicationDrawerActions = {
 };
 
 const defaultTab = (): DrawerTabId => {
-  if (typeof window === "undefined") return "application";
+  if (typeof window === "undefined") return "overview";
   const stored = window.localStorage.getItem("application-drawer-tab") as DrawerTabId | null;
-  return stored ?? "application";
+  return stored ?? "overview";
 };
 
 export const useApplicationDrawerStore = create<ApplicationDrawerState & ApplicationDrawerActions>((set) => ({
