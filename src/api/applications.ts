@@ -1,19 +1,11 @@
 import { apiClient, type RequestOptions } from "./client";
+import type { ApplicationDetails, ApplicationAuditEvent } from "@/types/application.types";
 
 export type ApplicationSummary = {
   id: string;
   applicant: string;
   status: string;
   submittedAt: string;
-};
-
-export type ApplicationDetails = ApplicationSummary & {
-  kyc?: Record<string, string | number | boolean>;
-  business?: Record<string, string | number | boolean>;
-  applicantInfo?: Record<string, string | number | boolean>;
-  owners?: Array<Record<string, string | number | boolean>>;
-  fundingRequest?: Record<string, string | number | boolean>;
-  productCategory?: string;
 };
 
 export type ApplicationDocumentsResponse = {
@@ -33,3 +25,6 @@ export const fetchApplicationDetails = (id: string, options?: RequestOptions) =>
 
 export const fetchApplicationDocuments = (id: string, options?: RequestOptions) =>
   apiClient.get<ApplicationDocumentsResponse>(`/applications/${id}/documents`, options);
+
+export const fetchApplicationAudit = (id: string, options?: RequestOptions) =>
+  apiClient.get<ApplicationAuditEvent[]>(`/applications/${id}/audit`, options);

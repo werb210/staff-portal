@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import type { ReactNode } from "react";
-import { fetchApplicationDetails, type ApplicationDetails } from "@/api/applications";
+import { fetchApplicationDetails } from "@/api/applications";
+import type { ApplicationDetails } from "@/types/application.types";
 import { useApplicationDrawerStore } from "@/state/applicationDrawer.store";
 import { getErrorMessage } from "@/utils/errors";
 

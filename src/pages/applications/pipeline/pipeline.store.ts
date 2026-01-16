@@ -79,7 +79,9 @@ export const createPipelineDragEndHandler = (options: {
 
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: pipelineQueryKeys.column(sourceStageId, filters) }),
-      queryClient.invalidateQueries({ queryKey: pipelineQueryKeys.column(destinationStageId, filters) })
+      queryClient.invalidateQueries({ queryKey: pipelineQueryKeys.column(destinationStageId, filters) }),
+      queryClient.invalidateQueries({ queryKey: ["applications", card.id, "details"] }),
+      queryClient.invalidateQueries({ queryKey: ["applications", card.id, "audit"] })
     ]);
   };
 };

@@ -1,23 +1,26 @@
 import { useEffect, useRef } from "react";
 import DrawerHeader from "./DrawerHeader";
-import DrawerTabs, { TABS, type DrawerTabId } from "./DrawerTabs";
-import ApplicationTab from "./tab-application/ApplicationTab";
-import BankingTab from "./tab-banking/BankingTab";
-import FinancialTab from "./tab-financial/FinancialTab";
+import { TABS, type DrawerTabId } from "./DrawerTabs";
+import ApplicationCard from "@/pages/applications/ApplicationCard";
+import OverviewTab from "./tab-overview/OverviewTab";
+import BusinessDetailsTab from "./tab-business/BusinessDetailsTab";
+import ApplicantDetailsTab from "./tab-applicant/ApplicantDetailsTab";
+import FinancialProfileTab from "./tab-financial-profile/FinancialProfileTab";
+import ProductFitTab from "./tab-product-fit/ProductFitTab";
 import DocumentsTab from "./tab-documents/DocumentsTab";
-import NotesTab from "./tab-notes/NotesTab";
-import CreditSummaryTab from "./tab-credit-summary/CreditSummaryTab";
-import LendersTab from "./tab-lenders/LendersTab";
+import MessagesTab from "./tab-messages/MessagesTab";
+import AuditTimelineTab from "./tab-audit/AuditTimelineTab";
 import { useApplicationDrawerStore } from "@/state/applicationDrawer.store";
 
 const tabContentMap: Record<DrawerTabId, JSX.Element> = {
-  application: <ApplicationTab />,
-  banking: <BankingTab />,
-  financial: <FinancialTab />,
+  overview: <OverviewTab />,
+  business: <BusinessDetailsTab />,
+  applicant: <ApplicantDetailsTab />,
+  financial: <FinancialProfileTab />,
+  "product-fit": <ProductFitTab />,
   documents: <DocumentsTab />,
-  notes: <NotesTab />,
-  credit: <CreditSummaryTab />,
-  lenders: <LendersTab />
+  messages: <MessagesTab />,
+  audit: <AuditTimelineTab />
 };
 
 const ApplicationDrawer = () => {
@@ -52,8 +55,9 @@ const ApplicationDrawer = () => {
     <div className="application-drawer-overlay" ref={overlayRef}>
       <div className="application-drawer" ref={drawerRef}>
         <DrawerHeader applicationId={selectedApplicationId} onClose={close} />
-        <DrawerTabs tabs={TABS} selectedTab={selectedTab} onSelect={handleTabChange} />
-        <div className="application-drawer__content">{tabContentMap[selectedTab]}</div>
+        <ApplicationCard tabs={TABS} selectedTab={selectedTab} onSelect={handleTabChange}>
+          <div className="application-drawer__content">{tabContentMap[selectedTab]}</div>
+        </ApplicationCard>
       </div>
     </div>
   );

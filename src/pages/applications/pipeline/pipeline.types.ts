@@ -1,20 +1,18 @@
 import type { DragEndEvent } from "@dnd-kit/core";
 
 export type PipelineStageId =
-  | "new"
-  | "requires_docs"
-  | "startup"
+  | "received"
   | "in_review"
-  | "lender"
-  | "accepted"
-  | "declined";
+  | "docs_required"
+  | "additional_steps"
+  | "off_to_lender"
+  | "offer";
 
 export type PipelineStage = {
   id: PipelineStageId;
   label: string;
   description?: string;
   terminal?: boolean;
-  acceptsCategory?: string;
 };
 
 export type PipelineFilters = {
@@ -37,9 +35,9 @@ export type PipelineApplication = {
   productCategory: string;
   stage: PipelineStageId;
   status: string;
-  matchPercentage?: number;
-  matchPercent?: number;
-  matchScore?: number;
+  matchPercentage?: number | string | null;
+  matchPercent?: number | string | null;
+  matchScore?: number | string | null;
   documents: {
     submitted: number;
     required: number;
@@ -64,13 +62,12 @@ export type PipelineDragEndEvent = DragEndEvent & {
 };
 
 export const PIPELINE_STAGES: PipelineStage[] = [
-  { id: "new", label: "New", description: "Fresh submissions" },
-  { id: "requires_docs", label: "Requires Docs", description: "Waiting on applicant documents" },
-  { id: "startup", label: "Start-Up", description: "Start-up category only", acceptsCategory: "startup" },
+  { id: "received", label: "Received", description: "Application received" },
   { id: "in_review", label: "In Review", description: "Team reviewing application" },
-  { id: "lender", label: "Lender", description: "With lender" },
-  { id: "accepted", label: "Accepted", description: "Approved funding", terminal: true },
-  { id: "declined", label: "Declined", description: "Closed out", terminal: true }
+  { id: "docs_required", label: "Docs Required", description: "Waiting on applicant documents" },
+  { id: "additional_steps", label: "Additional Steps", description: "Extra validation steps" },
+  { id: "off_to_lender", label: "Off to Lender", description: "Submitted to lender" },
+  { id: "offer", label: "Offer", description: "Offer delivered", terminal: true }
 ];
 
 export const PIPELINE_STAGE_LABELS: Record<PipelineStageId, string> = PIPELINE_STAGES.reduce(
@@ -90,8 +87,5 @@ export const canMoveCardToStage = (
 ) => {
   if (!card || !fromStage || !toStage || fromStage === toStage) return false;
   if (isTerminalStage(fromStage)) return false;
-  if (toStage === "startup") {
-    return card.productCategory.toLowerCase() === "startup";
-  }
   return true;
 };

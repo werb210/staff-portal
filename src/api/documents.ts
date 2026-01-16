@@ -1,4 +1,5 @@
 import { apiClient, type RequestOptions } from "./client";
+import type { DocumentRequirementResponse, DocumentStatus } from "@/types/documents.types";
 
 export type DocumentRecord = {
   id: string;
@@ -25,6 +26,12 @@ export type DocumentVersion = {
 
 export const fetchDocumentPresign = (documentId: string, options?: RequestOptions) =>
   apiClient.get<DocumentPresignResponse>(`/documents/${documentId}/presign`, options);
+
+export const fetchDocumentRequirements = (applicationId: string, options?: RequestOptions) =>
+  apiClient.get<DocumentRequirementResponse>(`/applications/${applicationId}/documents`, options);
+
+export const updateDocumentStatus = (documentId: string, status: DocumentStatus, reason?: string) =>
+  apiClient.patch(`/documents/${documentId}/status`, { status, reason });
 
 export const acceptDocument = (documentId: string) => apiClient.patch(`/documents/${documentId}/accept`);
 

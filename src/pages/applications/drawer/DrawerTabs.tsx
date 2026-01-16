@@ -1,7 +1,15 @@
 import type { ReactNode } from "react";
 import clsx from "clsx";
 
-export type DrawerTabId = "application" | "banking" | "financial" | "documents" | "notes" | "credit" | "lenders";
+export type DrawerTabId =
+  | "overview"
+  | "business"
+  | "applicant"
+  | "financial"
+  | "product-fit"
+  | "documents"
+  | "messages"
+  | "audit";
 
 export type DrawerTab = {
   id: DrawerTabId;
@@ -10,13 +18,14 @@ export type DrawerTab = {
 };
 
 export const TABS: DrawerTab[] = [
-  { id: "application", label: "Application Data" },
-  { id: "banking", label: "Banking Analysis" },
-  { id: "financial", label: "Financial Data" },
+  { id: "overview", label: "Overview" },
+  { id: "business", label: "Business Details" },
+  { id: "applicant", label: "Applicant Details" },
+  { id: "financial", label: "Financial Profile" },
+  { id: "product-fit", label: "Product Fit / Match" },
   { id: "documents", label: "Documents" },
-  { id: "notes", label: "Notes" },
-  { id: "credit", label: "Credit Summary" },
-  { id: "lenders", label: "Lenders" }
+  { id: "messages", label: "Messages" },
+  { id: "audit", label: "Audit / Timeline" }
 ];
 
 type DrawerTabsProps = {
