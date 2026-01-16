@@ -8,7 +8,7 @@ interface ChannelSelectorProps {
 }
 
 const ChannelSelector = ({ value, onChange, allowSms }: ChannelSelectorProps) => (
-  <Select label="Send via" value={value} onChange={(e) => onChange(e.target.value as CommunicationType)}>
+  <Select label="Submit via" value={value} onChange={(e) => onChange(e.target.value as CommunicationType)}>
     <option value="chat">Chat</option>
     {allowSms && <option value="sms">SMS</option>}
   </Select>

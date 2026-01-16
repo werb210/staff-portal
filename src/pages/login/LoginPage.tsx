@@ -195,13 +195,13 @@ export default function LoginPage() {
             className="w-full bg-blue-600 text-white rounded px-4 py-2 disabled:opacity-60"
             disabled={isSubmitting}
           >
-            {isSubmitting ? "Sending..." : "Send code"}
+            {isSubmitting ? "Submitting..." : "Submit code"}
           </button>
         </form>
       ) : (
         <form className="space-y-4" onSubmit={handleVerify}>
           <div className="rounded border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
-            Sending code to <span className="font-semibold">{submittedPhoneNumber}</span>
+            Verification code has been submitted to <span className="font-semibold">{submittedPhoneNumber}</span>
           </div>
 
           <div className="flex flex-col space-y-1">

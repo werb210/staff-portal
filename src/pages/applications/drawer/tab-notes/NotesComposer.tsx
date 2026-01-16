@@ -21,7 +21,7 @@ const NotesComposer = ({ onSend }: { onSend: (text: string) => Promise<void> | v
         placeholder="Add a note"
       />
       <button className="btn btn--primary" onClick={handleSend} disabled={sending} type="button">
-        {sending ? "Sending…" : "Send"}
+        {sending ? "Submitting…" : "Submit"}
       </button>
     </div>
   );

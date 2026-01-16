@@ -26,7 +26,7 @@ const BulkSMSComposer = () => {
       title="Bulk SMS"
       actions={
         <Button disabled={sendMutation.isPending || !form.body} onClick={() => sendMutation.mutate()}>
-          Send
+          Submit
         </Button>
       }
     >

@@ -70,7 +70,7 @@ const PipelineFilters = () => {
         options={[
           { value: "any", label: "Any" },
           { value: "true", label: "Complete" },
-          { value: "false", label: "Incomplete" }
+          { value: "false", label: "Requires Documents" }
         ]}
       />
       <Select
@@ -83,7 +83,7 @@ const PipelineFilters = () => {
         options={[
           { value: "any", label: "Any" },
           { value: "true", label: "Complete" },
-          { value: "false", label: "Incomplete" }
+          { value: "false", label: "Requires Documents" }
         ]}
       />
       <Select

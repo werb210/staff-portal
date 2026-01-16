@@ -64,9 +64,9 @@ export type PipelineDragEndEvent = DragEndEvent & {
 export const PIPELINE_STAGES: PipelineStage[] = [
   { id: "received", label: "Received", description: "Application received" },
   { id: "in_review", label: "In Review", description: "Team reviewing application" },
-  { id: "docs_required", label: "Docs Required", description: "Waiting on applicant documents" },
+  { id: "docs_required", label: "Documents Required", description: "Waiting on applicant documents" },
   { id: "additional_steps", label: "Additional Steps", description: "Extra validation steps" },
-  { id: "off_to_lender", label: "Off to Lender", description: "Submitted to lender" },
+  { id: "off_to_lender", label: "Off to Lender", description: "Application submitted to lender" },
   { id: "offer", label: "Offer", description: "Offer delivered", terminal: true }
 ];
 

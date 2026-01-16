@@ -140,7 +140,7 @@ describe("Communications workflows", () => {
     const smsConversation = useCommunicationsStore.getState().conversations.find((conv) => conv.type === "sms");
     const handleSend = vi.fn();
     render(wrapper(<MessageComposer conversation={smsConversation} onSend={handleSend} />));
-    const selector = screen.getAllByLabelText("Send via")[0] as HTMLSelectElement;
+    const selector = screen.getAllByLabelText("Submit via")[0] as HTMLSelectElement;
     expect(selector.value).toBe("sms");
     fireEvent.change(selector, { target: { value: "chat" } });
     expect(selector.value).toBe("chat");

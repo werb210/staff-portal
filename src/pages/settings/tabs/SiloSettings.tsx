@@ -7,7 +7,7 @@ const permissionLabels: Record<keyof SiloPermissions, string> = {
   canViewCRM: "CRM",
   canUseDialer: "Dialer",
   canUseMarketing: "Marketing",
-  canSendToLenders: "Send to Lenders"
+  canSendToLenders: "Submit to Lenders"
 };
 
 const SiloSettings = () => {

@@ -39,7 +39,7 @@ const MessageComposer = ({ conversation, onSend }: MessageComposerProps) => {
       </label>
       <div className="flex justify-end mt-2">
         <Button onClick={handleSend} disabled={!body.trim() || !conversation}>
-          Send
+          Submit
         </Button>
       </div>
     </div>

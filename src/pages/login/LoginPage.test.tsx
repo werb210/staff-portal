@@ -36,7 +36,7 @@ describe("LoginPage", () => {
     renderLogin(startOtp, verifyOtp);
 
     fireEvent.change(screen.getByLabelText(/Phone number/i), { target: { value: "+1 (555) 555-0100" } });
-    fireEvent.click(screen.getByRole("button", { name: /Send code/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Submit code/i }));
 
     await waitFor(() => expect(startOtp).toHaveBeenCalledWith({ phone: "+15555550100" }));
 
@@ -52,7 +52,7 @@ describe("LoginPage", () => {
     renderLogin(startOtp, verifyOtp);
 
     fireEvent.change(screen.getByLabelText(/Phone number/i), { target: { value: "+1 (555) 555-0100" } });
-    fireEvent.click(screen.getByRole("button", { name: /Send code/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Submit code/i }));
 
     await waitFor(() => expect(startOtp).toHaveBeenCalledWith({ phone: "+15555550100" }));
 
@@ -72,7 +72,7 @@ describe("LoginPage", () => {
     renderLogin(startOtp, verifyOtp);
 
     fireEvent.change(screen.getByLabelText(/Phone number/i), { target: { value: "+15555550100" } });
-    fireEvent.click(screen.getByRole("button", { name: /Send code/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Submit code/i }));
     await waitFor(() => expect(startOtp).toHaveBeenCalled());
 
     fireEvent.change(screen.getByLabelText(/Verification code/i), { target: { value: "000000" } });
@@ -90,9 +90,9 @@ describe("LoginPage", () => {
     fireEvent.change(screen.getByLabelText(/Phone number/i), { target: { value: "555-0100" } });
 
     expect(screen.getByText(/Invalid phone number\. Enter a valid phone number\./i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Send code/i })).toBeEnabled();
+    expect(screen.getByRole("button", { name: /Submit code/i })).toBeEnabled();
 
-    fireEvent.click(screen.getByRole("button", { name: /Send code/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Submit code/i }));
 
     await waitFor(() => expect(startOtp).not.toHaveBeenCalled());
     expect(screen.getByText(/Invalid phone number\. Enter a valid phone number\./i)).toBeInTheDocument();
@@ -106,7 +106,7 @@ describe("LoginPage", () => {
     renderLogin(startOtp, vi.fn());
 
     fireEvent.change(screen.getByLabelText(/Phone number/i), { target: { value: "+15555550100" } });
-    fireEvent.click(screen.getByRole("button", { name: /Send code/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Submit code/i }));
 
     await waitFor(() => expect(startOtp).toHaveBeenCalled());
     expect(await screen.findByText(/Phone blocked/i)).toBeInTheDocument();
@@ -127,7 +127,7 @@ describe("LoginPage", () => {
     renderLogin(startOtp, verifyOtp);
 
     fireEvent.change(screen.getByLabelText(/Phone number/i), { target: { value: "+15555550100" } });
-    fireEvent.click(screen.getByRole("button", { name: /Send code/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Submit code/i }));
     await waitFor(() => expect(startOtp).toHaveBeenCalled());
 
     fireEvent.change(screen.getByLabelText(/Verification code/i), { target: { value: "123456" } });

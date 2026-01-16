@@ -172,7 +172,7 @@ describe("auth flow", () => {
     );
 
     fireEvent.change(screen.getByLabelText(/Phone number/i), { target: { value: "+1 555 555 0100" } });
-    fireEvent.click(screen.getByRole("button", { name: /Send code/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Submit code/i }));
 
     if (code !== "missing_idempotency_key") {
       await waitFor(() => expect(mockedStartOtp).toHaveBeenCalled());
