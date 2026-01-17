@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { screen, waitFor } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { renderWithProviders } from "@/test/testUtils";
 import LendersPage from "@/pages/lenders/LendersPage";
 import { fetchLenders } from "@/api/lenders";
@@ -14,8 +14,10 @@ const fetchLendersMock = vi.mocked(fetchLenders);
 
 const renderAsAdmin = () =>
   renderWithProviders(
-    <MemoryRouter>
-      <LendersPage />
+    <MemoryRouter initialEntries={["/lenders"]}>
+      <Routes>
+        <Route path="/lenders/*" element={<LendersPage />} />
+      </Routes>
     </MemoryRouter>,
     {
       auth: {
@@ -186,8 +188,10 @@ describe("loading and empty-state rendering", () => {
     });
 
     rerender(
-      <MemoryRouter>
-        <LendersPage />
+      <MemoryRouter initialEntries={["/lenders"]}>
+        <Routes>
+          <Route path="/lenders/*" element={<LendersPage />} />
+        </Routes>
       </MemoryRouter>
     );
 

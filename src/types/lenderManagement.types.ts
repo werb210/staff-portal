@@ -21,8 +21,11 @@ export const LENDER_PRODUCT_CATEGORY_LABELS: Record<LenderProductCategory, strin
   MERCHANT_CASH_ADVANCE: "Merchant cash advance",
   ASSET_BASED_LENDING: "Asset based lending",
   SBA_GOVERNMENT: "SBA / Government",
-  STARTUP_CAPITAL: "Startup capital"
+  STARTUP_CAPITAL: "Startup capital (Not live)"
 };
+
+export const isLenderProductCategory = (value: string): value is LenderProductCategory =>
+  (LENDER_PRODUCT_CATEGORIES as readonly string[]).includes(value);
 
 export const DOCUMENT_TYPES = [
   "business_bank_statements",

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import Card from "@/components/ui/Card";
 import Table from "@/components/ui/Table";
 import Button from "@/components/ui/Button";
@@ -48,6 +48,8 @@ type LenderFormValues = {
   maxAmortization: string;
 };
 
+type LenderSubmissionConfig = LenderPayload["submissionConfig"];
+
 const emptyForm: LenderFormValues = {
   name: "",
   active: true,
@@ -91,6 +93,8 @@ const isValidEmail = (value: string) => value.includes("@");
 const LendersContent = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const location = useLocation();
+  const { lenderId } = useParams();
   const { data, isLoading, error } = useQuery<Lender[], Error>({
     queryKey: ["lenders"],
     queryFn: fetchLenders
@@ -98,6 +102,7 @@ const LendersContent = () => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [formValues, setFormValues] = useState<LenderFormValues>(emptyForm);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const isNewRoute = location.pathname.endsWith("/new");
   const selectedLender = useMemo(
     () => data?.find((lender) => lender.id === selectedId) ?? null,
     [data, selectedId]
@@ -107,6 +112,19 @@ const LendersContent = () => {
     setFormValues(values ?? emptyForm);
     setFormErrors({});
   };
+
+  useEffect(() => {
+    if (isNewRoute) {
+      setSelectedId(null);
+      resetForm(emptyForm);
+      return;
+    }
+    if (lenderId) {
+      setSelectedId(lenderId);
+      return;
+    }
+    setSelectedId(null);
+  }, [isNewRoute, lenderId]);
 
   useEffect(() => {
     if (selectedLender) {
@@ -129,9 +147,9 @@ const LendersContent = () => {
         primaryContactMobile: selectedLender.primaryContact.mobilePhone,
         submissionMethod: selectedLender.submissionConfig.method,
         apiBaseUrl: selectedLender.submissionConfig.apiBaseUrl ?? "",
-        apiClientId: selectedLender.submissionConfig.apiClientId ?? "",
-        apiUsername: selectedLender.submissionConfig.apiUsername ?? "",
-        apiPassword: selectedLender.submissionConfig.apiPassword ?? "",
+        apiClientId: "",
+        apiUsername: "",
+        apiPassword: "",
         submissionEmail: selectedLender.submissionConfig.submissionEmail ?? "",
         maxLendingLimit: selectedLender.operationalLimits.maxLendingLimit?.toString() ?? "",
         maxLtv: selectedLender.operationalLimits.maxLtv?.toString() ?? "",
@@ -145,9 +163,10 @@ const LendersContent = () => {
 
   const createMutation = useMutation({
     mutationFn: (payload: LenderPayload) => createLender(payload),
-    onSuccess: async () => {
+    onSuccess: async (created) => {
       await queryClient.invalidateQueries({ queryKey: ["lenders"] });
-      setSelectedId(null);
+      setSelectedId(created.id);
+      navigate(`/lenders/${created.id}/edit`);
     }
   });
 
@@ -157,6 +176,14 @@ const LendersContent = () => {
     onSuccess: async (updated) => {
       await queryClient.invalidateQueries({ queryKey: ["lenders"] });
       setSelectedId(updated.id);
+      navigate(`/lenders/${updated.id}/edit`);
+    }
+  });
+
+  const toggleMutation = useMutation({
+    mutationFn: ({ id, active }: { id: string; active: boolean }) => updateLender(id, { active }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["lenders"] });
     }
   });
 
@@ -181,9 +208,14 @@ const LendersContent = () => {
     if (!values.submissionMethod) nextErrors.submissionMethod = "Submission method is required.";
     if (values.submissionMethod === "API") {
       if (!values.apiBaseUrl.trim()) nextErrors.apiBaseUrl = "API base URL is required.";
-      if (!values.apiClientId.trim()) nextErrors.apiClientId = "API client ID is required.";
-      if (!values.apiUsername.trim()) nextErrors.apiUsername = "API username is required.";
-      if (!values.apiPassword.trim()) nextErrors.apiPassword = "API password is required.";
+      const isEditing = Boolean(selectedLender);
+      const hasCredentialUpdates =
+        Boolean(values.apiClientId.trim()) || Boolean(values.apiUsername.trim()) || Boolean(values.apiPassword.trim());
+      if (!isEditing || hasCredentialUpdates) {
+        if (!values.apiClientId.trim()) nextErrors.apiClientId = "API client ID is required.";
+        if (!values.apiUsername.trim()) nextErrors.apiUsername = "API username is required.";
+        if (!values.apiPassword.trim()) nextErrors.apiPassword = "API password is required.";
+      }
     }
     if (values.submissionMethod === "EMAIL" && !values.submissionEmail.trim()) {
       nextErrors.submissionEmail = "Submission email is required.";
@@ -210,7 +242,7 @@ const LendersContent = () => {
     return nextErrors;
   };
 
-  const buildPayload = (values: LenderFormValues): LenderPayload => ({
+  const buildCreatePayload = (values: LenderFormValues): LenderPayload => ({
     name: values.name.trim(),
     active: values.active,
     address: {
@@ -247,6 +279,37 @@ const LendersContent = () => {
     }
   });
 
+  const buildUpdatePayload = (values: LenderFormValues): Partial<LenderPayload> => {
+    const submissionConfig: Partial<LenderSubmissionConfig> = {
+      method: values.submissionMethod
+    };
+
+    if (values.submissionMethod === "API") {
+      submissionConfig.apiBaseUrl = optionalString(values.apiBaseUrl);
+      if (values.apiClientId.trim()) submissionConfig.apiClientId = values.apiClientId.trim();
+      if (values.apiUsername.trim()) submissionConfig.apiUsername = values.apiUsername.trim();
+      if (values.apiPassword.trim()) submissionConfig.apiPassword = values.apiPassword.trim();
+      submissionConfig.submissionEmail = null;
+    } else if (values.submissionMethod === "EMAIL") {
+      submissionConfig.apiBaseUrl = null;
+      submissionConfig.apiClientId = null;
+      submissionConfig.apiUsername = null;
+      submissionConfig.apiPassword = null;
+      submissionConfig.submissionEmail = optionalString(values.submissionEmail);
+    } else {
+      submissionConfig.apiBaseUrl = null;
+      submissionConfig.apiClientId = null;
+      submissionConfig.apiUsername = null;
+      submissionConfig.apiPassword = null;
+      submissionConfig.submissionEmail = null;
+    }
+
+    return {
+      ...buildCreatePayload(values),
+      submissionConfig
+    };
+  };
+
   useEffect(() => {
     if (error) {
       console.error("Failed to load lenders", error);
@@ -269,8 +332,7 @@ const LendersContent = () => {
               type="button"
               variant="secondary"
               onClick={() => {
-                setSelectedId(null);
-                resetForm(emptyForm);
+                navigate("/lenders/new");
               }}
             >
               Add Lender
@@ -287,14 +349,28 @@ const LendersContent = () => {
                   className={lender.active ? "management-row" : "management-row management-row--disabled"}
                 >
                   <td>
-                    <button type="button" className="management-link" onClick={() => setSelectedId(lender.id)}>
+                    <button
+                      type="button"
+                      className="management-link"
+                      onClick={() => navigate(`/lenders/${lender.id}/edit`)}
+                    >
                       {lender.name}
                     </button>
                   </td>
                   <td>
-                    <span className={`status-pill status-pill--${lender.active ? "active" : "paused"}`}>
-                      {lender.active ? "Active" : "Inactive"}
-                    </span>
+                    <div className="flex flex-col gap-2">
+                      <span className={`status-pill status-pill--${lender.active ? "active" : "paused"}`}>
+                        {lender.active ? "Active" : "Inactive"}
+                      </span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() => toggleMutation.mutate({ id: lender.id, active: !lender.active })}
+                        disabled={toggleMutation.isPending}
+                      >
+                        {lender.active ? "Deactivate" : "Activate"}
+                      </Button>
+                    </div>
                   </td>
                   <td>{lender.address.country}</td>
                   <td>
@@ -306,7 +382,7 @@ const LendersContent = () => {
                     <Button
                       type="button"
                       variant="ghost"
-                      onClick={() => navigate(`/lenders/products?lenderId=${lender.id}`)}
+                      onClick={() => navigate(`/lender-products?lenderId=${lender.id}`)}
                     >
                       Manage products
                     </Button>
@@ -333,12 +409,11 @@ const LendersContent = () => {
               const nextErrors = validateForm(formValues);
               setFormErrors(nextErrors);
               if (Object.keys(nextErrors).length) return;
-              const payload = buildPayload(formValues);
               if (selectedLender) {
-                updateMutation.mutate({ id: selectedLender.id, payload });
+                updateMutation.mutate({ id: selectedLender.id, payload: buildUpdatePayload(formValues) });
                 return;
               }
-              createMutation.mutate(payload);
+              createMutation.mutate(buildCreatePayload(formValues));
             }}
           >
             <div className="management-field">
@@ -499,6 +574,11 @@ const LendersContent = () => {
                       error={formErrors.apiPassword}
                     />
                   </div>
+                  {selectedLender && (
+                    <p className="text-xs text-slate-500">
+                      API credentials are stored securely and never displayed. Enter new values to rotate them.
+                    </p>
+                  )}
                 </>
               )}
               {formValues.submissionMethod === "EMAIL" && (
