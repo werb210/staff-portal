@@ -9,7 +9,7 @@ import { canAccessStaffPortal } from "@/utils/roles";
 type PipelineCardProps = {
   card: PipelineApplication;
   stageId: PipelineStageId;
-  onClick: (id: string) => void;
+  onClick: (id: string, stageId: PipelineStageId) => void;
 };
 
 const formatAmount = (value: number) =>
@@ -41,7 +41,7 @@ const PipelineCard = ({ card, stageId, onClick }: PipelineCardProps) => {
       }
     : undefined;
 
-  const handleClick = () => onClick(card.id);
+  const handleClick = () => onClick(card.id, stageId);
 
   const staffLabel = card.assignedStaff ? `Assigned to ${card.assignedStaff}` : "Unassigned";
   const matchScore = resolveMatchScore(card);

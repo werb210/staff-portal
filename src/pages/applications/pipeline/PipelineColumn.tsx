@@ -30,12 +30,26 @@ const EmptyState = ({ label }: { label: string }) => (
 type PipelineColumnProps = {
   stage: PipelineStage;
   filters: PipelineFilters;
-  onCardClick: (id: string) => void;
+  onCardClick: (id: string, stageId: PipelineStageId) => void;
+  onStageSelect: (stageId: PipelineStageId) => void;
+  onSelectionInvalid: (stageId: PipelineStageId) => void;
+  selectedApplicationId: string | null;
+  selectedStageId: PipelineStageId | null;
   activeCard?: PipelineApplication | null;
   draggingFromStage?: PipelineStageId | null;
 };
 
-const PipelineColumn = ({ stage, filters, onCardClick, activeCard, draggingFromStage }: PipelineColumnProps) => {
+const PipelineColumn = ({
+  stage,
+  filters,
+  onCardClick,
+  onStageSelect,
+  onSelectionInvalid,
+  selectedApplicationId,
+  selectedStageId,
+  activeCard,
+  draggingFromStage
+}: PipelineColumnProps) => {
   const { setNodeRef, isOver } = useDroppable({ id: stage.id });
   const { data = [], isLoading, isFetching, error } = useQuery<PipelineApplication[]>({
     queryKey: pipelineQueryKeys.column(stage.id, filters),
@@ -67,10 +81,41 @@ const PipelineColumn = ({ stage, filters, onCardClick, activeCard, draggingFromS
   }, [error, isFetching, isLoading, sortedData.length, stage.id]);
 
   const canReceive = activeCard ? canMoveCardToStage(activeCard, draggingFromStage ?? null, stage.id) : true;
+  const isSelectedStage = selectedStageId === stage.id;
+
+  useEffect(() => {
+    if (!selectedApplicationId || !isSelectedStage) return;
+    if (isLoading || isFetching || error) return;
+    const isSelectionValid = sortedData.some((application) => application.id === selectedApplicationId);
+    if (!isSelectionValid) {
+      onSelectionInvalid(stage.id);
+    }
+  }, [
+    error,
+    isFetching,
+    isLoading,
+    isSelectedStage,
+    onSelectionInvalid,
+    selectedApplicationId,
+    sortedData,
+    stage.id
+  ]);
 
   return (
     <div className="pipeline-column" ref={setNodeRef} data-stage={stage.id}>
-      <div className="pipeline-column__header">
+      <div
+        className="pipeline-column__header"
+        onClick={() => onStageSelect(stage.id)}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            onStageSelect(stage.id);
+          }
+        }}
+        aria-pressed={isSelectedStage}
+      >
         <div>
           <div className="pipeline-column__title">{stage.label}</div>
           {stage.description && <div className="pipeline-column__subtitle">{stage.description}</div>}
@@ -94,7 +139,12 @@ const PipelineColumn = ({ stage, filters, onCardClick, activeCard, draggingFromS
         )}
         {!error && !isLoading && !data.length && <EmptyState label={stage.label} />}
         {sortedData.map((card) => (
-          <PipelineCard key={card.id} card={card} stageId={stage.id} onClick={onCardClick} />
+          <PipelineCard
+            key={card.id}
+            card={card}
+            stageId={stage.id}
+            onClick={onCardClick}
+          />
         ))}
         {activeCard && <div className="pipeline-column__spacer" />}
       </div>
