@@ -27,6 +27,9 @@ const ApplicationDrawer = () => {
   const overlayRef = useRef<HTMLDivElement | null>(null);
   const drawerRef = useRef<HTMLDivElement | null>(null);
   const { isOpen, selectedApplicationId, selectedTab, setTab, close } = useApplicationDrawerStore();
+  const tabOrder = TABS.map((tab) => tab.id);
+  const selectedIndex = tabOrder.indexOf(selectedTab);
+  const previousTab = selectedIndex > 0 ? tabOrder[selectedIndex - 1] : null;
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -54,7 +57,12 @@ const ApplicationDrawer = () => {
   return (
     <div className="application-drawer-overlay" ref={overlayRef}>
       <div className="application-drawer" ref={drawerRef}>
-        <DrawerHeader applicationId={selectedApplicationId} onClose={close} />
+        <DrawerHeader
+          applicationId={selectedApplicationId}
+          onBack={previousTab ? () => setTab(previousTab) : undefined}
+          canGoBack={Boolean(previousTab)}
+          onClose={close}
+        />
         <ApplicationCard tabs={TABS} selectedTab={selectedTab} onSelect={handleTabChange}>
           <div className="application-drawer__content">{tabContentMap[selectedTab]}</div>
         </ApplicationCard>

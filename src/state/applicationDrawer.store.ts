@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { readPortalDraft, updatePortalDraft } from "@/utils/portalDraft";
 
 export type DrawerTabId =
   | "overview"
@@ -22,11 +23,7 @@ export type ApplicationDrawerActions = {
   setTab: (tab: DrawerTabId) => void;
 };
 
-const defaultTab = (): DrawerTabId => {
-  if (typeof window === "undefined") return "overview";
-  const stored = window.localStorage.getItem("application-drawer-tab") as DrawerTabId | null;
-  return stored ?? "overview";
-};
+const defaultTab = (): DrawerTabId => readPortalDraft().drawerTab ?? "overview";
 
 export const useApplicationDrawerStore = create<ApplicationDrawerState & ApplicationDrawerActions>((set) => ({
   isOpen: false,
@@ -40,9 +37,7 @@ export const useApplicationDrawerStore = create<ApplicationDrawerState & Applica
     })),
   close: () => set(() => ({ isOpen: false, selectedApplicationId: null })),
   setTab: (tab) => {
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem("application-drawer-tab", tab);
-    }
+    updatePortalDraft({ drawerTab: tab });
     set(() => ({ selectedTab: tab }));
   }
 }));
