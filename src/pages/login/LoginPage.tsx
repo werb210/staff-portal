@@ -1,4 +1,5 @@
 import { FormEvent, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import type { AxiosError } from "axios";
 import { ApiError } from "@/api/client";
 import { useAuth } from "@/auth/AuthContext";
@@ -32,7 +33,8 @@ const parseOtpStartErrorMessage = (error: unknown): string => {
 };
 
 export default function LoginPage() {
-  const { startOtp, verifyOtp } = useAuth();
+  const { startOtp, verifyOtp, setAuth } = useAuth();
+  const navigate = useNavigate();
   const [rawPhone, setRawPhone] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -140,7 +142,9 @@ export default function LoginPage() {
       }
       lastVerifyAttempt.current = { code: trimmedCode, timestamp: now };
       setIsVerifying(true);
-      await verifyOtp({ code, phone: phoneForVerification });
+      const result = await verifyOtp({ code, phone: phoneForVerification });
+      setAuth({ token: result.token, user: result.user });
+      navigate("/dashboard");
     } catch (err: unknown) {
       if (err instanceof ApiError) {
         if (err.code?.toLowerCase().includes("expired") || err.status === 410) {

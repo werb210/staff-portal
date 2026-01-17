@@ -22,6 +22,7 @@ const renderAsAdmin = () =>
         user: { id: "u-1", name: "Admin User", email: "admin@example.com", role: "Admin" },
         token: "token",
         status: "authenticated",
+        authenticated: true,
         authReady: true
       }
     }

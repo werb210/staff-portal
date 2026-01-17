@@ -2,16 +2,11 @@
 import "@testing-library/jest-dom/vitest";
 import apiClient, { otpRequestOptions } from "@/api/client";
 import { AuthProvider, useAuth } from "@/auth/AuthContext";
-import { fetchCurrentUser } from "@/api/auth";
 import { verifyOtp } from "@/services/auth";
-import { getStoredAccessToken, getStoredUser, setStoredAccessToken, setStoredRefreshToken, setStoredUser } from "@/services/token";
+import { getStoredAccessToken, getStoredUser, setStoredAccessToken } from "@/services/token";
 import { render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createElement } from "react";
-
-vi.mock("@/api/auth", () => ({
-  fetchCurrentUser: vi.fn()
-}));
 
 vi.mock("@/services/api", async () => {
   const actual = await vi.importActual<typeof import("@/services/api")>("@/services/api");
@@ -21,8 +16,6 @@ vi.mock("@/services/api", async () => {
     redirectToDashboard: vi.fn()
   };
 });
-
-const mockedFetchCurrentUser = vi.mocked(fetchCurrentUser);
 
 const adapter = vi.fn(async (config) => ({
   data: {},
@@ -44,11 +37,17 @@ const TestAuthState = () => {
 };
 
 const TestVerifyAction = () => {
-  const { verifyOtp } = useAuth();
+  const { verifyOtp, setAuth } = useAuth();
 
   return createElement(
     "button",
-    { type: "button", onClick: () => void verifyOtp({ code: "123456", phone: "+15555550100" }) },
+    {
+      type: "button",
+      onClick: () =>
+        void verifyOtp({ code: "123456", phone: "+15555550100" }).then((response) =>
+          setAuth({ token: response.token, user: response.user })
+        )
+    },
     "Verify"
   );
 };
@@ -58,7 +57,6 @@ describe("auth login", () => {
     adapter.mockClear();
     localStorage.clear();
     vi.restoreAllMocks();
-    mockedFetchCurrentUser.mockResolvedValue({ id: "1", email: "demo@example.com", role: "Admin" });
   });
 
   it("OTP start omits Idempotency-Key", async () => {
@@ -91,14 +89,12 @@ describe("auth login", () => {
 
   it("OTP verification returns tokens from the service", async () => {
     const apiPostSpy = vi.spyOn(apiClient, "post").mockResolvedValueOnce({
-      accessToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock.payload.signature",
-      refreshToken: "refresh-123",
-      user: { id: "1", email: "demo@example.com", role: "Admin" },
+      token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock.payload.signature",
+      user: { id: "1", email: "demo@example.com", role: "Admin" }
     } as any);
 
     await expect(verifyOtp({ phone: "+15555550100", code: "123456" })).resolves.toMatchObject({
-      accessToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock.payload.signature",
-      refreshToken: "refresh-123"
+      token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock.payload.signature"
     });
 
     expect(apiPostSpy).toHaveBeenCalledWith(
@@ -116,8 +112,7 @@ describe("auth login", () => {
 
   it("stores tokens after a successful OTP verification", async () => {
     vi.spyOn(apiClient, "post").mockResolvedValueOnce({
-      accessToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock.payload.signature",
-      refreshToken: "refresh-456",
+      token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock.payload.signature",
       user: { id: "1", email: "demo@example.com", role: "Admin" }
     });
 
@@ -130,14 +125,17 @@ describe("auth login", () => {
   });
 
   it("restores session on reload", async () => {
-    setStoredAccessToken("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock.payload.signature");
-    setStoredRefreshToken("refresh-999");
-    setStoredUser({ id: "1", email: "restored@example.com", role: "Admin" });
+    const payload = { sub: "1", email: "restored@example.com", role: "Admin" };
+    const payloadEncoded = btoa(JSON.stringify(payload))
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_")
+      .replace(/=+$/, "");
+    setStoredAccessToken(`eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${payloadEncoded}.signature`);
 
     render(createElement(AuthProvider, null, createElement(TestAuthState)));
 
     await waitFor(() => expect(screen.getByTestId("status")).toHaveTextContent("authenticated"));
-    expect(screen.getByTestId("token")).toHaveTextContent("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock.payload.signature");
-    expect(screen.getByTestId("user")).toHaveTextContent("demo@example.com");
+    expect(screen.getByTestId("token")).toHaveTextContent(`eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${payloadEncoded}.signature`);
+    expect(screen.getByTestId("user")).toHaveTextContent("restored@example.com");
   });
 });
