@@ -5,8 +5,9 @@ import type { MockedFunction } from "vitest";
 import PipelinePage from "./PipelinePage";
 import { renderWithProviders } from "@/test/testUtils";
 import { pipelineApi } from "./pipeline.api";
-import { createPipelineDragEndHandler } from "./pipeline.store";
+import { createPipelineDragEndHandler, usePipelineStore } from "./pipeline.store";
 import { PIPELINE_STAGE_LABELS, type PipelineApplication, type PipelineDragEndEvent } from "./pipeline.types";
+import { useApplicationDrawerStore } from "@/state/applicationDrawer.store";
 
 vi.mock("./pipeline.api", () => {
   const fetchColumn = vi.fn().mockResolvedValue([]);
@@ -42,6 +43,9 @@ describe("Pipeline foundation", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     (pipelineApi.fetchColumn as MockedFunction<typeof pipelineApi.fetchColumn>).mockResolvedValue([]);
+    usePipelineStore.getState().resetPipeline();
+    useApplicationDrawerStore.setState({ selectedTab: "overview" });
+    window.localStorage.clear();
   });
 
   it("renders all BF pipeline columns", async () => {
@@ -120,5 +124,82 @@ describe("Pipeline foundation", () => {
     expect(invalidateSpy).toHaveBeenCalledWith({
       queryKey: ["pipeline", "in_review", "", "", "", "", "", "all", "any", "any", "newest"]
     });
+  });
+});
+
+describe("Pipeline determinism", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    (pipelineApi.fetchColumn as MockedFunction<typeof pipelineApi.fetchColumn>).mockResolvedValue([]);
+    usePipelineStore.getState().resetPipeline();
+    useApplicationDrawerStore.setState({ selectedTab: "overview" });
+    window.localStorage.clear();
+  });
+
+  it("preserves selection across tab changes", () => {
+    const { selectApplication } = usePipelineStore.getState();
+    selectApplication("app-1", "received");
+    useApplicationDrawerStore.getState().setTab("documents");
+    expect(usePipelineStore.getState().selectedApplicationId).toBe("app-1");
+  });
+
+  it("preserves selection when stage still contains application", async () => {
+    (pipelineApi.fetchColumn as MockedFunction<typeof pipelineApi.fetchColumn>).mockImplementation(async (stage) => {
+      if (stage === "received" || stage === "in_review") {
+        return [{ ...sampleCard }];
+      }
+      return [];
+    });
+
+    renderWithProviders(<PipelinePage />);
+    await waitFor(() => expect(pipelineApi.fetchColumn).toHaveBeenCalled());
+    await screen.findByLabelText(new RegExp(`${sampleCard.businessName} in Received`, "i"));
+    await screen.findByLabelText(new RegExp(`${sampleCard.businessName} in In Review`, "i"));
+    usePipelineStore.getState().selectApplication(sampleCard.id, "received");
+    usePipelineStore.getState().setSelectedStageId("in_review");
+
+    await waitFor(() => expect(usePipelineStore.getState().selectedApplicationId).toBe(sampleCard.id));
+  });
+
+  it("clears selection when stage no longer contains application", async () => {
+    (pipelineApi.fetchColumn as MockedFunction<typeof pipelineApi.fetchColumn>).mockImplementation(async (stage) => {
+      if (stage === "received") {
+        return [{ ...sampleCard }];
+      }
+      return [];
+    });
+
+    renderWithProviders(<PipelinePage />);
+    await waitFor(() => expect(pipelineApi.fetchColumn).toHaveBeenCalled());
+    await userEvent.click(await screen.findByText(sampleCard.businessName));
+    await userEvent.click(screen.getAllByRole("button", { name: /In Review/i })[0]);
+
+    expect(usePipelineStore.getState().selectedApplicationId).toBeNull();
+  });
+
+  it("keeps selection when closing drawer", () => {
+    const { selectApplication, closeDrawer } = usePipelineStore.getState();
+    selectApplication("app-1", "received");
+    closeDrawer();
+    expect(usePipelineStore.getState().selectedApplicationId).toBe("app-1");
+  });
+
+  it("restores state from storage on reload", async () => {
+    window.localStorage.setItem(
+      "portal.application.pipeline",
+      JSON.stringify({
+        selectedStageId: "in_review",
+        selectedApplicationId: "app-55",
+        filters: { searchTerm: "Atlas" },
+        isDrawerOpen: true
+      })
+    );
+
+    vi.resetModules();
+    const { usePipelineStore: reloadedStore } = await import("./pipeline.store");
+    expect(reloadedStore.getState().selectedStageId).toBe("in_review");
+    expect(reloadedStore.getState().selectedApplicationId).toBe("app-55");
+    expect(reloadedStore.getState().currentFilters.searchTerm).toBe("Atlas");
+    expect(reloadedStore.getState().isDrawerOpen).toBe(true);
   });
 });

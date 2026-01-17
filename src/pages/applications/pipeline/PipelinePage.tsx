@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { DndContext, DragOverlay, closestCenter, type DragStartEvent } from "@dnd-kit/core";
 import { useQueryClient } from "@tanstack/react-query";
 import Card from "@/components/ui/Card";
@@ -18,6 +18,7 @@ import {
   usePipelineStore
 } from "./pipeline.store";
 import { useSilo } from "@/hooks/useSilo";
+import ApplicationDrawer from "@/pages/applications/drawer/ApplicationDrawer";
 
 const NoPipelineAvailable = ({ silo }: { silo: string }) => (
   <div className="pipeline-empty">Pipeline is not available for the {silo} silo.</div>
@@ -28,13 +29,26 @@ const PipelinePage = () => {
   const queryClient = useQueryClient();
   const filters = usePipelineStore((state) => state.currentFilters);
   const draggingFromStage = usePipelineStore((state) => state.draggingFromStage);
+  const selectedApplicationId = usePipelineStore((state) => state.selectedApplicationId);
+  const selectedStageId = usePipelineStore((state) => state.selectedStageId);
   const setDragging = usePipelineStore((state) => state.setDragging);
-  const setSelectedApplicationId = usePipelineStore((state) => state.setSelectedApplicationId);
+  const selectApplication = usePipelineStore((state) => state.selectApplication);
+  const setSelectedStageId = usePipelineStore((state) => state.setSelectedStageId);
+  const resetPipeline = usePipelineStore((state) => state.resetPipeline);
 
   const [activeCard, setActiveCard] = useState<PipelineApplication | null>(null);
   const [activeStage, setActiveStage] = useState<PipelineStageId | null>(null);
 
-  const handleCardClick = (id: string) => setSelectedApplicationId(id);
+  const handleCardClick = (id: string, stageId: PipelineStageId) => selectApplication(id, stageId);
+
+  const handleStageSelect = (stageId: PipelineStageId) => {
+    setSelectedStageId(stageId);
+  };
+
+  const handleInvalidSelection = (stageId: PipelineStageId) => {
+    if (selectedStageId !== stageId) return;
+    selectApplication(null);
+  };
 
   const handleDragStart = (event: DragStartEvent) => {
     const card = event.active.data.current?.card ?? null;
@@ -58,6 +72,8 @@ const PipelinePage = () => {
     clearDraggingState(setDragging)();
   };
 
+  useEffect(() => () => resetPipeline(), [resetPipeline]);
+
   if (silo !== "BF") {
     return <NoPipelineAvailable silo={silo} />;
   }
@@ -78,6 +94,10 @@ const PipelinePage = () => {
                 stage={stage}
                 filters={filters}
                 onCardClick={handleCardClick}
+                onStageSelect={handleStageSelect}
+                onSelectionInvalid={handleInvalidSelection}
+                selectedApplicationId={selectedApplicationId}
+                selectedStageId={selectedStageId}
                 activeCard={activeCard}
                 draggingFromStage={draggingFromStage}
               />
@@ -88,6 +108,7 @@ const PipelinePage = () => {
           </DragOverlay>
         </DndContext>
       </Card>
+      <ApplicationDrawer />
     </div>
   );
 };

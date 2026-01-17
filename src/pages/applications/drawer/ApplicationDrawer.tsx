@@ -11,6 +11,7 @@ import DocumentsTab from "./tab-documents/DocumentsTab";
 import MessagesTab from "./tab-messages/MessagesTab";
 import AuditTimelineTab from "./tab-audit/AuditTimelineTab";
 import { useApplicationDrawerStore } from "@/state/applicationDrawer.store";
+import { usePipelineStore } from "@/pages/applications/pipeline/pipeline.store";
 
 const tabContentMap: Record<DrawerTabId, JSX.Element> = {
   overview: <OverviewTab />,
@@ -26,21 +27,31 @@ const tabContentMap: Record<DrawerTabId, JSX.Element> = {
 const ApplicationDrawer = () => {
   const overlayRef = useRef<HTMLDivElement | null>(null);
   const drawerRef = useRef<HTMLDivElement | null>(null);
-  const { isOpen, selectedApplicationId, selectedTab, setTab, close } = useApplicationDrawerStore();
+  const { selectedTab, setTab } = useApplicationDrawerStore();
+  const isOpen = usePipelineStore((state) => state.isDrawerOpen);
+  const selectedApplicationId = usePipelineStore((state) => state.selectedApplicationId);
+  const closeDrawer = usePipelineStore((state) => state.closeDrawer);
   const tabOrder = TABS.map((tab) => tab.id);
   const selectedIndex = tabOrder.indexOf(selectedTab);
   const previousTab = selectedIndex > 0 ? tabOrder[selectedIndex - 1] : null;
 
   useEffect(() => {
+    useApplicationDrawerStore.setState({
+      isOpen,
+      selectedApplicationId
+    });
+  }, [isOpen, selectedApplicationId]);
+
+  useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (!isOpen) return;
       if (drawerRef.current && !drawerRef.current.contains(event.target as Node)) {
-        close();
+        closeDrawer();
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [isOpen, close]);
+  }, [isOpen, closeDrawer]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -61,7 +72,7 @@ const ApplicationDrawer = () => {
           applicationId={selectedApplicationId}
           onBack={previousTab ? () => setTab(previousTab) : undefined}
           canGoBack={Boolean(previousTab)}
-          onClose={close}
+          onClose={closeDrawer}
         />
         <ApplicationCard tabs={TABS} selectedTab={selectedTab} onSelect={handleTabChange}>
           <div className="application-drawer__content">{tabContentMap[selectedTab]}</div>
