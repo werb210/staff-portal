@@ -1,6 +1,6 @@
 import { apiClient, otpRequestOptions, otpStartRequestOptions } from "@/api/client";
 import type { UserRole } from "@/utils/roles";
-import { getStoredRefreshToken, setStoredAccessToken, setStoredRefreshToken } from "@/services/token";
+import { getStoredRefreshToken } from "@/services/token";
 import { normalizeToE164 } from "@/utils/phone";
 
 export type AuthenticatedUser = {
@@ -11,19 +11,11 @@ export type AuthenticatedUser = {
 };
 
 export type LoginSuccess = {
-  accessToken: string;
-  refreshToken?: string;
+  token: string;
   user: AuthenticatedUser;
 };
 
-export type OtpVerifyResponse =
-  | LoginSuccess
-  | {
-      alreadyVerified: true;
-    }
-  | {
-      sent: true;
-    };
+export type OtpVerifyResponse = LoginSuccess;
 
 export type OtpStartResponse = {
   sessionId?: string;
@@ -40,38 +32,11 @@ export async function startOtp(payload: { phone: string }): Promise<OtpStartResp
 
 export async function verifyOtp(payload: { phone: string; code: string }): Promise<OtpVerifyResponse> {
   const normalizedPhone = normalizeToE164(payload.phone);
-  const data = await apiClient.post<OtpVerifyResponse>(
+  return apiClient.post<OtpVerifyResponse>(
     "/api/auth/otp/verify",
     { ...payload, phone: normalizedPhone },
     otpRequestOptions
   );
-  if ("accessToken" in data && data.accessToken) {
-    setStoredAccessToken(data.accessToken);
-    if (data.refreshToken) {
-      setStoredRefreshToken(data.refreshToken);
-    }
-  }
-  return data;
-}
-
-export type SessionResponse = {
-  accessToken?: string;
-  refreshToken?: string;
-  user?: AuthenticatedUser;
-};
-
-export async function fetchSession(): Promise<SessionResponse> {
-  const data = await apiClient.get<SessionResponse>("/api/auth/session", {
-    skipAuth: true,
-    authMode: "none"
-  });
-  if (data.accessToken) {
-    setStoredAccessToken(data.accessToken);
-    if (data.refreshToken) {
-      setStoredRefreshToken(data.refreshToken);
-    }
-  }
-  return data;
 }
 
 export type RefreshResponse = {

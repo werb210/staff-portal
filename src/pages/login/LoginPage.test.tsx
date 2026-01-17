@@ -4,14 +4,17 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import "@testing-library/jest-dom/vitest";
 import LoginPage from "./LoginPage";
 import { ApiError } from "@/api/client";
+import { MemoryRouter } from "react-router-dom";
 
 let startOtpMock = vi.fn();
 let verifyOtpMock = vi.fn();
+let setAuthMock = vi.fn();
 
 vi.mock("@/auth/AuthContext", () => ({
   useAuth: () => ({
     startOtp: (...args: Parameters<typeof startOtpMock>) => startOtpMock(...args),
     verifyOtp: (...args: Parameters<typeof verifyOtpMock>) => verifyOtpMock(...args),
+    setAuth: (...args: Parameters<typeof setAuthMock>) => setAuthMock(...args),
     pendingPhoneNumber: null
   })
 }));
@@ -24,15 +27,18 @@ describe("LoginPage", () => {
   const renderLogin = (startOtp = vi.fn(), verifyOtp = vi.fn()) => {
     startOtpMock = startOtp;
     verifyOtpMock = verifyOtp;
+    setAuthMock = vi.fn();
 
     return render(
-      <LoginPage />
+      <MemoryRouter>
+        <LoginPage />
+      </MemoryRouter>
     );
   };
 
   test("submits phone number and navigates on OTP verification", async () => {
     const startOtp = vi.fn().mockResolvedValue(undefined);
-    const verifyOtp = vi.fn().mockResolvedValue({ accessToken: "token-123", user: { email: "demo@example.com" } });
+    const verifyOtp = vi.fn().mockResolvedValue({ token: "token-123", user: { email: "demo@example.com" } });
     renderLogin(startOtp, verifyOtp);
 
     fireEvent.change(screen.getByLabelText(/Phone number/i), { target: { value: "+1 (555) 555-0100" } });
@@ -44,11 +50,12 @@ describe("LoginPage", () => {
     fireEvent.click(screen.getByRole("button", { name: /Verify code/i }));
 
     await waitFor(() => expect(verifyOtp).toHaveBeenCalledWith({ code: "123456", phone: "+15555550100" }));
+    await waitFor(() => expect(setAuthMock).toHaveBeenCalledWith({ token: "token-123", user: { email: "demo@example.com" } }));
   });
 
-  test("does not show an error when OTP verification succeeds without tokens", async () => {
+  test("does not show an error when OTP verification succeeds", async () => {
     const startOtp = vi.fn().mockResolvedValue(undefined);
-    const verifyOtp = vi.fn().mockResolvedValue({ sent: true });
+    const verifyOtp = vi.fn().mockResolvedValue({ token: "token-123", user: { email: "demo@example.com" } });
     renderLogin(startOtp, verifyOtp);
 
     fireEvent.change(screen.getByLabelText(/Phone number/i), { target: { value: "+1 (555) 555-0100" } });
@@ -61,7 +68,6 @@ describe("LoginPage", () => {
 
     await waitFor(() => expect(verifyOtp).toHaveBeenCalledWith({ code: "123456", phone: "+15555550100" }));
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
-    expect(screen.queryByText(/Missing access token/i)).not.toBeInTheDocument();
   });
 
   test("shows an error when OTP verification fails", async () => {

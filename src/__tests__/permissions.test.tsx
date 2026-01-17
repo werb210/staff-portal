@@ -18,6 +18,7 @@ describe("permission-aware rendering", () => {
         user: { id: "u-1", name: "Staff User", email: "staff@example.com", role: "Staff" },
         token: "token",
         status: "authenticated",
+        authenticated: true,
         authReady: true
       }
     });
@@ -37,6 +38,7 @@ describe("permission-aware rendering", () => {
           user: { id: "u-2", name: "Lender User", email: "lender@example.com", role: "Lender" },
           token: "token",
           status: "authenticated",
+          authenticated: true,
           authReady: true
         }
       }
