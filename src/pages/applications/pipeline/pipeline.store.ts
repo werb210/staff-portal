@@ -3,6 +3,7 @@ import type { QueryClient } from "@tanstack/react-query";
 import type { PipelineFilters, PipelineStageId, PipelineApplication, PipelineDragEndEvent } from "./pipeline.types";
 import { PIPELINE_STAGES, canMoveCardToStage } from "./pipeline.types";
 import { pipelineApi } from "./pipeline.api";
+import { readPortalDraft, updatePortalDraft } from "@/utils/portalDraft";
 
 export type PipelineStoreState = {
   selectedApplicationId: string | null;
@@ -18,6 +19,11 @@ const defaultFilters: PipelineFilters = {
   sort: "newest"
 };
 
+const getInitialFilters = (): PipelineFilters => {
+  const stored = readPortalDraft().pipelineFilters ?? {};
+  return { ...defaultFilters, ...stored };
+};
+
 export type PipelineStoreActions = {
   setSelectedApplicationId: (id: string | null) => void;
   setDragging: (cardId: string | null, stageId: PipelineStageId | null) => void;
@@ -31,14 +37,25 @@ export const usePipelineStore = create<PipelineStore>((set) => ({
   selectedApplicationId: null,
   draggingCardId: null,
   draggingFromStage: null,
-  currentFilters: { ...defaultFilters },
+  currentFilters: getInitialFilters(),
   setSelectedApplicationId: (id) => set({ selectedApplicationId: id }),
   setDragging: (cardId, stageId) => set({ draggingCardId: cardId, draggingFromStage: stageId }),
   setFilters: (filters) =>
-    set((state) => ({
-      currentFilters: { ...state.currentFilters, ...filters }
-    })),
-  resetFilters: () => set({ currentFilters: { ...defaultFilters } })
+    set((state) => {
+      const nextFilters = { ...state.currentFilters, ...filters };
+      const categoryChanged =
+        Object.prototype.hasOwnProperty.call(filters, "productCategory") &&
+        filters.productCategory !== state.currentFilters.productCategory;
+      updatePortalDraft({ pipelineFilters: nextFilters });
+      return {
+        currentFilters: nextFilters,
+        selectedApplicationId: categoryChanged ? null : state.selectedApplicationId
+      };
+    }),
+  resetFilters: () => {
+    updatePortalDraft({ pipelineFilters: { ...defaultFilters } });
+    set({ currentFilters: { ...defaultFilters } });
+  }
 }));
 
 const filterKeyParts = (filters: PipelineFilters) => [
