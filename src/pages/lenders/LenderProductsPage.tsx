@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import Card from "@/components/ui/Card";
 import Table from "@/components/ui/Table";
 import Button from "@/components/ui/Button";
@@ -91,26 +91,23 @@ const toOptionalNumber = (value: string) => {
 
 const formatRateType = (value: RateType) => value.charAt(0).toUpperCase() + value.slice(1);
 
-const buildCategoryOptions = (country: string, currentCategory?: LenderProductCategory | null) => {
+const buildCategoryOptions = (country: string) => {
   const normalizedCountry = country.trim().toUpperCase();
   const isUs = normalizedCountry === "US";
-  return LENDER_PRODUCT_CATEGORIES.map((category) => {
-    if (category === "SBA_GOVERNMENT" && !isUs && currentCategory !== "SBA_GOVERNMENT") {
-      return null;
-    }
-    const disabled =
-      (category === "STARTUP_CAPITAL" && currentCategory !== "STARTUP_CAPITAL") ||
-      (category === "SBA_GOVERNMENT" && !isUs);
-    return {
-      value: category,
-      label: LENDER_PRODUCT_CATEGORY_LABELS[category],
-      disabled
-    };
-  }).filter((option): option is { value: LenderProductCategory; label: string; disabled: boolean } => Boolean(option));
+  const isCa = normalizedCountry === "CA";
+  return LENDER_PRODUCT_CATEGORIES.map((category) => ({
+    value: category,
+    label: LENDER_PRODUCT_CATEGORY_LABELS[category],
+    disabled:
+      (category === "SBA_GOVERNMENT" && !isUs) || (category === "STARTUP_CAPITAL" && !isCa)
+  }));
 };
 
 const LenderProductsContent = () => {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { productId } = useParams();
   const [searchParams] = useSearchParams();
   const [activeLenderId, setActiveLenderId] = useState<string>("");
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
@@ -118,6 +115,7 @@ const LenderProductsContent = () => {
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [countryFilter, setCountryFilter] = useState<string>("all");
+  const isNewRoute = location.pathname.endsWith("/new");
 
   const { data: lenders = [], isLoading: lendersLoading, error: lendersError } = useQuery<Lender[], Error>({
     queryKey: ["lenders"],
@@ -140,6 +138,7 @@ const LenderProductsContent = () => {
     () => lenders.find((lender) => lender.id === activeLenderId) ?? null,
     [activeLenderId, lenders]
   );
+  const isLenderInactive = Boolean(activeLender && !activeLender.active);
 
   const {
     data: products = [],
@@ -164,6 +163,20 @@ const LenderProductsContent = () => {
     });
   }, [categoryFilter, countryFilter, products]);
 
+  useEffect(() => {
+    if (isNewRoute) {
+      setSelectedProductId(null);
+      setFormValues(emptyProductForm(activeLenderId));
+      setFormErrors({});
+      return;
+    }
+    if (productId) {
+      setSelectedProductId(productId);
+      return;
+    }
+    setSelectedProductId(null);
+  }, [activeLenderId, isNewRoute, productId]);
+
   const availableCountries = useMemo(() => {
     const countries = new Set<string>();
     products.forEach((product) => {
@@ -178,7 +191,10 @@ const LenderProductsContent = () => {
       setFormValues({
         lenderId: selectedProduct.lenderId,
         productName: selectedProduct.productName,
-        active: selectedProduct.active,
+        active:
+          selectedProduct.category === "STARTUP_CAPITAL" || isLenderInactive
+            ? false
+            : selectedProduct.active,
         category: selectedProduct.category,
         country: selectedProduct.country,
         currency: selectedProduct.currency,
@@ -203,29 +219,35 @@ const LenderProductsContent = () => {
     }
     setFormValues(emptyProductForm(activeLenderId));
     setFormErrors({});
-  }, [activeLenderId, selectedProduct]);
+  }, [activeLenderId, isLenderInactive, selectedProduct]);
+
+  useEffect(() => {
+    if (formValues.category !== "STARTUP_CAPITAL") return;
+    if (!formValues.active) return;
+    setFormValues((prev) => ({ ...prev, active: false }));
+  }, [formValues.category, formValues.active]);
+
+  useEffect(() => {
+    if (!isLenderInactive) return;
+    if (!formValues.active) return;
+    setFormValues((prev) => ({ ...prev, active: false }));
+  }, [formValues.active, isLenderInactive]);
 
   const createMutation = useMutation({
-    mutationFn: ({ lenderId, payload }: { lenderId: string; payload: LenderProductPayload }) =>
-      createLenderProduct(lenderId, payload),
-    onSuccess: async () => {
+    mutationFn: (payload: LenderProductPayload) => createLenderProduct(payload),
+    onSuccess: async (created) => {
       await queryClient.invalidateQueries({ queryKey: ["lenders", activeLenderId, "products"] });
-      setSelectedProductId(null);
+      setSelectedProductId(created.id);
+      navigate(`/lender-products/${created.id}/edit?lenderId=${created.lenderId}`);
     }
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({
-      lenderId,
-      productId,
-      payload
-    }: {
-      lenderId: string;
-      productId: string;
-      payload: Partial<LenderProductPayload>;
-    }) => updateLenderProduct(lenderId, productId, payload),
-    onSuccess: async () => {
+    mutationFn: ({ productId, payload }: { productId: string; payload: Partial<LenderProductPayload> }) =>
+      updateLenderProduct(productId, payload),
+    onSuccess: async (updated) => {
       await queryClient.invalidateQueries({ queryKey: ["lenders", activeLenderId, "products"] });
+      navigate(`/lender-products/${updated.id}/edit?lenderId=${updated.lenderId}`);
     }
   });
 
@@ -294,8 +316,11 @@ const LenderProductsContent = () => {
     if (values.category === "SBA_GOVERNMENT" && normalizedCountry !== "US") {
       errors.category = "SBA products must be limited to US lenders.";
     }
-    if (!selectedProduct && values.category === "STARTUP_CAPITAL") {
-      errors.category = "Startup capital is disabled for new products.";
+    if (values.category === "STARTUP_CAPITAL" && normalizedCountry !== "CA") {
+      errors.category = "Startup capital is limited to Canada.";
+    }
+    if (values.category === "STARTUP_CAPITAL" && values.active) {
+      errors.active = "Startup capital products must remain inactive.";
     }
     return errors;
   };
@@ -303,7 +328,7 @@ const LenderProductsContent = () => {
   const buildPayload = (values: ProductFormValues): LenderProductPayload => ({
     lenderId: values.lenderId,
     productName: values.productName.trim(),
-    active: values.active,
+    active: values.category === "STARTUP_CAPITAL" || isLenderInactive ? false : values.active,
     category: values.category,
     country: values.country.trim(),
     currency: values.currency.trim(),
@@ -328,7 +353,7 @@ const LenderProductsContent = () => {
     requiredDocuments: values.requiredDocuments
   });
 
-  const categoryOptions = buildCategoryOptions(formValues.country, selectedProduct?.category ?? null);
+  const categoryOptions = buildCategoryOptions(formValues.country);
 
   return (
     <div className="page">
@@ -359,6 +384,9 @@ const LenderProductsContent = () => {
               {activeLender.active ? "Lender active" : "Lender inactive"}
             </span>
             <span>{activeLender.address.country}</span>
+            {!activeLender.active && (
+              <span className="text-xs text-amber-600">Inactive lenders cannot publish products.</span>
+            )}
           </div>
         )}
       </Card>
@@ -372,11 +400,9 @@ const LenderProductsContent = () => {
               variant="secondary"
               onClick={() => {
                 if (!activeLenderId) return;
-                setSelectedProductId(null);
-                setFormValues(emptyProductForm(activeLenderId));
-                setFormErrors({});
+                navigate(`/lender-products/new?lenderId=${activeLenderId}`);
               }}
-              disabled={!activeLenderId}
+              disabled={!activeLenderId || isLenderInactive}
             >
               Add Product
             </Button>
@@ -414,16 +440,20 @@ const LenderProductsContent = () => {
           )}
           {!productsLoading && !productsError && activeLenderId && (
             <Table headers={["Name", "Category", "Country", "Currency", "Status", "Amount range"]}>
-              {filteredProducts.map((product) => (
+              {filteredProducts.map((product) => {
+                const productActive = product.category === "STARTUP_CAPITAL" ? false : product.active;
+                return (
                 <tr
                   key={product.id}
-                  className={product.active ? "management-row" : "management-row management-row--disabled"}
+                  className={productActive ? "management-row" : "management-row management-row--disabled"}
                 >
                   <td>
                     <button
                       type="button"
                       className="management-link"
-                      onClick={() => setSelectedProductId(product.id)}
+                      onClick={() =>
+                        navigate(`/lender-products/${product.id}/edit?lenderId=${product.lenderId}`)
+                      }
                     >
                       {product.productName}
                     </button>
@@ -436,21 +466,21 @@ const LenderProductsContent = () => {
                       <div className="text-xs text-slate-500">Government Program</div>
                     )}
                     {product.category === "STARTUP_CAPITAL" && (
-                      <div className="text-xs text-slate-500">Admin only</div>
+                      <div className="text-xs text-amber-600">Not Live</div>
                     )}
                   </td>
                   <td>{product.country}</td>
                   <td>{product.currency}</td>
                   <td>
-                    <span className={`status-pill status-pill--${product.active ? "active" : "paused"}`}>
-                      {product.active ? "Active" : "Inactive"}
+                    <span className={`status-pill status-pill--${productActive ? "active" : "paused"}`}>
+                      {productActive ? "Active" : "Inactive"}
                     </span>
                   </td>
                   <td>
                     ${product.minAmount.toLocaleString()} - ${product.maxAmount.toLocaleString()}
                   </td>
                 </tr>
-              ))}
+              );})}
               {!filteredProducts.length && (
                 <tr>
                   <td colSpan={6}>No products for this lender.</td>
@@ -468,6 +498,7 @@ const LenderProductsContent = () => {
             className="management-form"
             onSubmit={(event) => {
               event.preventDefault();
+              if (isLenderInactive) return;
               const errors = validateForm(formValues);
               setFormErrors(errors);
               if (Object.keys(errors).length) return;
@@ -475,253 +506,261 @@ const LenderProductsContent = () => {
               const payload = buildPayload(formValues);
               if (selectedProduct) {
                 updateMutation.mutate({
-                  lenderId: selectedProduct.lenderId,
                   productId: selectedProduct.id,
                   payload
                 });
                 return;
               }
-              createMutation.mutate({ lenderId: formValues.lenderId, payload });
+              createMutation.mutate(payload);
             }}
           >
-            <div className="management-field">
-              <span className="management-field__label">Core details</span>
-              <Select
-                label="Lender"
-                value={formValues.lenderId}
-                onChange={(event) => {
-                  const lenderId = event.target.value;
-                  setFormValues((prev) => ({ ...prev, lenderId }));
-                  if (!selectedProduct) {
-                    setActiveLenderId(lenderId);
+            {isLenderInactive && (
+              <p className="text-xs text-amber-600">Activate the lender to create or edit products.</p>
+            )}
+            <fieldset className="management-form" disabled={isLenderInactive}>
+              <div className="management-field">
+                <span className="management-field__label">Core details</span>
+                <Select
+                  label="Lender"
+                  value={formValues.lenderId}
+                  onChange={(event) => {
+                    const lenderId = event.target.value;
+                    setFormValues((prev) => ({ ...prev, lenderId }));
+                    if (!selectedProduct) {
+                      setActiveLenderId(lenderId);
+                    }
+                  }}
+                  disabled={Boolean(selectedProduct)}
+                >
+                  <option value="">Select lender</option>
+                  {lenders.map((lender) => (
+                    <option key={lender.id} value={lender.id}>
+                      {lender.name}
+                    </option>
+                  ))}
+                </Select>
+                {formErrors.lenderId && <span className="ui-field__error">{formErrors.lenderId}</span>}
+                <Input
+                  label="Product name"
+                  value={formValues.productName}
+                  onChange={(event) => setFormValues((prev) => ({ ...prev, productName: event.target.value }))}
+                  error={formErrors.productName}
+                />
+                <label className="management-toggle">
+                  <input
+                    type="checkbox"
+                    checked={formValues.active}
+                    onChange={(event) => setFormValues((prev) => ({ ...prev, active: event.target.checked }))}
+                    disabled={formValues.category === "STARTUP_CAPITAL" || isLenderInactive}
+                  />
+                  <span>Active product</span>
+                </label>
+                {formErrors.active && <span className="ui-field__error">{formErrors.active}</span>}
+                <Select
+                  label="Product category"
+                  value={formValues.category}
+                  onChange={(event) =>
+                    setFormValues((prev) => ({ ...prev, category: event.target.value as LenderProductCategory }))
                   }
-                }}
-                disabled={Boolean(selectedProduct)}
-              >
-                <option value="">Select lender</option>
-                {lenders.map((lender) => (
-                  <option key={lender.id} value={lender.id}>
-                    {lender.name}
-                  </option>
-                ))}
-              </Select>
-              {formErrors.lenderId && <span className="ui-field__error">{formErrors.lenderId}</span>}
-              <Input
-                label="Product name"
-                value={formValues.productName}
-                onChange={(event) => setFormValues((prev) => ({ ...prev, productName: event.target.value }))}
-                error={formErrors.productName}
-              />
-              <label className="management-toggle">
-                <input
-                  type="checkbox"
-                  checked={formValues.active}
-                  onChange={(event) => setFormValues((prev) => ({ ...prev, active: event.target.checked }))}
-                />
-                <span>Active product</span>
-              </label>
-              <Select
-                label="Product category"
-                value={formValues.category}
-                onChange={(event) =>
-                  setFormValues((prev) => ({ ...prev, category: event.target.value as LenderProductCategory }))
-                }
-              >
-                {categoryOptions.map((option) => (
-                  <option key={option.value} value={option.value} disabled={option.disabled}>
-                    {option.label}
-                  </option>
-                ))}
-              </Select>
-              {formErrors.category && <span className="ui-field__error">{formErrors.category}</span>}
-              <div className="management-grid__row">
-                <Input
-                  label="Country"
-                  value={formValues.country}
-                  onChange={(event) => setFormValues((prev) => ({ ...prev, country: event.target.value }))}
-                  error={formErrors.country}
-                />
-                <Input
-                  label="Currency"
-                  value={formValues.currency}
-                  onChange={(event) => setFormValues((prev) => ({ ...prev, currency: event.target.value }))}
-                  error={formErrors.currency}
-                />
+                >
+                  {categoryOptions.map((option) => (
+                    <option key={option.value} value={option.value} disabled={option.disabled}>
+                      {option.label}
+                    </option>
+                  ))}
+                </Select>
+                {formErrors.category && <span className="ui-field__error">{formErrors.category}</span>}
+                <div className="management-grid__row">
+                  <Input
+                    label="Country"
+                    value={formValues.country}
+                    onChange={(event) => setFormValues((prev) => ({ ...prev, country: event.target.value }))}
+                    error={formErrors.country}
+                  />
+                  <Input
+                    label="Currency"
+                    value={formValues.currency}
+                    onChange={(event) => setFormValues((prev) => ({ ...prev, currency: event.target.value }))}
+                    error={formErrors.currency}
+                  />
+                </div>
+                {formValues.category === "SBA_GOVERNMENT" && (
+                  <div className="text-xs text-slate-500">Government Program (US only)</div>
+                )}
+                {formValues.category === "STARTUP_CAPITAL" && (
+                  <div className="text-xs text-amber-600">
+                    Not Live — startup capital products remain inactive and internal-only.
+                  </div>
+                )}
               </div>
-              {formValues.category === "SBA_GOVERNMENT" && (
-                <div className="text-xs text-slate-500">Government Program (US only)</div>
-              )}
-              {formValues.category === "STARTUP_CAPITAL" && (
-                <div className="text-xs text-slate-500">Startup capital is admin-visible only.</div>
-              )}
-            </div>
 
-            <div className="management-field">
-              <span className="management-field__label">Amount & pricing</span>
-              <div className="management-grid__row">
-                <Input
-                  label="Minimum amount"
-                  value={formValues.minAmount}
-                  onChange={(event) => setFormValues((prev) => ({ ...prev, minAmount: event.target.value }))}
-                  error={formErrors.minAmount}
-                />
-                <Input
-                  label="Maximum amount"
-                  value={formValues.maxAmount}
-                  onChange={(event) => setFormValues((prev) => ({ ...prev, maxAmount: event.target.value }))}
-                  error={formErrors.maxAmount}
-                />
-              </div>
-              <div className="management-grid__row">
-                <Input
-                  label="Interest rate min (%)"
-                  value={formValues.interestRateMin}
+              <div className="management-field">
+                <span className="management-field__label">Amount & pricing</span>
+                <div className="management-grid__row">
+                  <Input
+                    label="Minimum amount"
+                    value={formValues.minAmount}
+                    onChange={(event) => setFormValues((prev) => ({ ...prev, minAmount: event.target.value }))}
+                    error={formErrors.minAmount}
+                  />
+                  <Input
+                    label="Maximum amount"
+                    value={formValues.maxAmount}
+                    onChange={(event) => setFormValues((prev) => ({ ...prev, maxAmount: event.target.value }))}
+                    error={formErrors.maxAmount}
+                  />
+                </div>
+                <div className="management-grid__row">
+                  <Input
+                    label="Interest rate min (%)"
+                    value={formValues.interestRateMin}
+                    onChange={(event) =>
+                      setFormValues((prev) => ({ ...prev, interestRateMin: event.target.value }))
+                    }
+                    error={formErrors.interestRateMin}
+                  />
+                  <Input
+                    label="Interest rate max (%)"
+                    value={formValues.interestRateMax}
+                    onChange={(event) =>
+                      setFormValues((prev) => ({ ...prev, interestRateMax: event.target.value }))
+                    }
+                    error={formErrors.interestRateMax}
+                  />
+                </div>
+                <Select
+                  label="Rate type"
+                  value={formValues.rateType}
                   onChange={(event) =>
-                    setFormValues((prev) => ({ ...prev, interestRateMin: event.target.value }))
+                    setFormValues((prev) => ({ ...prev, rateType: event.target.value as RateType }))
                   }
-                  error={formErrors.interestRateMin}
-                />
-                <Input
-                  label="Interest rate max (%)"
-                  value={formValues.interestRateMax}
+                >
+                  {RATE_TYPES.map((rateType) => (
+                    <option key={rateType} value={rateType}>
+                      {formatRateType(rateType)}
+                    </option>
+                  ))}
+                </Select>
+                {formErrors.rateType && <span className="ui-field__error">{formErrors.rateType}</span>}
+                <div className="management-grid__row">
+                  <Input
+                    label="Term length min"
+                    value={formValues.termMin}
+                    onChange={(event) => setFormValues((prev) => ({ ...prev, termMin: event.target.value }))}
+                    error={formErrors.termMin}
+                  />
+                  <Input
+                    label="Term length max"
+                    value={formValues.termMax}
+                    onChange={(event) => setFormValues((prev) => ({ ...prev, termMax: event.target.value }))}
+                    error={formErrors.termMax}
+                  />
+                </div>
+                <Select
+                  label="Term unit"
+                  value={formValues.termUnit}
                   onChange={(event) =>
-                    setFormValues((prev) => ({ ...prev, interestRateMax: event.target.value }))
+                    setFormValues((prev) => ({ ...prev, termUnit: event.target.value as TermUnit }))
                   }
-                  error={formErrors.interestRateMax}
-                />
+                >
+                  {TERM_UNITS.map((unit) => (
+                    <option key={unit} value={unit}>
+                      {unit}
+                    </option>
+                  ))}
+                </Select>
+                <div className="management-grid__row">
+                  <Input
+                    label="Minimum credit score"
+                    value={formValues.minimumCreditScore}
+                    onChange={(event) =>
+                      setFormValues((prev) => ({ ...prev, minimumCreditScore: event.target.value }))
+                    }
+                    error={formErrors.minimumCreditScore}
+                  />
+                  <Input
+                    label="LTV (%)"
+                    value={formValues.ltv}
+                    onChange={(event) => setFormValues((prev) => ({ ...prev, ltv: event.target.value }))}
+                    error={formErrors.ltv}
+                  />
+                </div>
               </div>
-              <Select
-                label="Rate type"
-                value={formValues.rateType}
-                onChange={(event) =>
-                  setFormValues((prev) => ({ ...prev, rateType: event.target.value as RateType }))
-                }
-              >
-                {RATE_TYPES.map((rateType) => (
-                  <option key={rateType} value={rateType}>
-                    {formatRateType(rateType)}
-                  </option>
-                ))}
-              </Select>
-              {formErrors.rateType && <span className="ui-field__error">{formErrors.rateType}</span>}
-              <div className="management-grid__row">
-                <Input
-                  label="Term length min"
-                  value={formValues.termMin}
-                  onChange={(event) => setFormValues((prev) => ({ ...prev, termMin: event.target.value }))}
-                  error={formErrors.termMin}
-                />
-                <Input
-                  label="Term length max"
-                  value={formValues.termMax}
-                  onChange={(event) => setFormValues((prev) => ({ ...prev, termMax: event.target.value }))}
-                  error={formErrors.termMax}
-                />
-              </div>
-              <Select
-                label="Term unit"
-                value={formValues.termUnit}
-                onChange={(event) =>
-                  setFormValues((prev) => ({ ...prev, termUnit: event.target.value as TermUnit }))
-                }
-              >
-                {TERM_UNITS.map((unit) => (
-                  <option key={unit} value={unit}>
-                    {unit}
-                  </option>
-                ))}
-              </Select>
-              <div className="management-grid__row">
-                <Input
-                  label="Minimum credit score"
-                  value={formValues.minimumCreditScore}
-                  onChange={(event) =>
-                    setFormValues((prev) => ({ ...prev, minimumCreditScore: event.target.value }))
-                  }
-                  error={formErrors.minimumCreditScore}
-                />
-                <Input
-                  label="LTV (%)"
-                  value={formValues.ltv}
-                  onChange={(event) => setFormValues((prev) => ({ ...prev, ltv: event.target.value }))}
-                  error={formErrors.ltv}
-                />
-              </div>
-            </div>
 
-            <div className="management-field">
-              <span className="management-field__label">Eligibility requirements</span>
-              <label className="ui-field">
-                <span className="ui-field__label">Eligibility rules</span>
-                <textarea
-                  className="ui-input ui-textarea"
-                  value={formValues.eligibilityRules}
-                  onChange={(event) =>
-                    setFormValues((prev) => ({ ...prev, eligibilityRules: event.target.value }))
-                  }
-                  rows={3}
-                />
-              </label>
-              <div className="management-grid__row">
-                <Input
-                  label="Minimum revenue"
-                  value={formValues.minimumRevenue}
-                  onChange={(event) =>
-                    setFormValues((prev) => ({ ...prev, minimumRevenue: event.target.value }))
-                  }
-                  error={formErrors.minimumRevenue}
-                />
-                <Input
-                  label="Time in business (months)"
-                  value={formValues.timeInBusinessMonths}
-                  onChange={(event) =>
-                    setFormValues((prev) => ({ ...prev, timeInBusinessMonths: event.target.value }))
-                  }
-                  error={formErrors.timeInBusinessMonths}
-                />
+              <div className="management-field">
+                <span className="management-field__label">Eligibility requirements</span>
+                <label className="ui-field">
+                  <span className="ui-field__label">Eligibility rules</span>
+                  <textarea
+                    className="ui-input ui-textarea"
+                    value={formValues.eligibilityRules}
+                    onChange={(event) =>
+                      setFormValues((prev) => ({ ...prev, eligibilityRules: event.target.value }))
+                    }
+                    rows={3}
+                  />
+                </label>
+                <div className="management-grid__row">
+                  <Input
+                    label="Minimum revenue"
+                    value={formValues.minimumRevenue}
+                    onChange={(event) =>
+                      setFormValues((prev) => ({ ...prev, minimumRevenue: event.target.value }))
+                    }
+                    error={formErrors.minimumRevenue}
+                  />
+                  <Input
+                    label="Time in business (months)"
+                    value={formValues.timeInBusinessMonths}
+                    onChange={(event) =>
+                      setFormValues((prev) => ({ ...prev, timeInBusinessMonths: event.target.value }))
+                    }
+                    error={formErrors.timeInBusinessMonths}
+                  />
+                </div>
+                <label className="ui-field">
+                  <span className="ui-field__label">Industry restrictions</span>
+                  <textarea
+                    className="ui-input ui-textarea"
+                    value={formValues.industryRestrictions}
+                    onChange={(event) =>
+                      setFormValues((prev) => ({ ...prev, industryRestrictions: event.target.value }))
+                    }
+                    rows={2}
+                  />
+                </label>
               </div>
-              <label className="ui-field">
-                <span className="ui-field__label">Industry restrictions</span>
-                <textarea
-                  className="ui-input ui-textarea"
-                  value={formValues.industryRestrictions}
-                  onChange={(event) =>
-                    setFormValues((prev) => ({ ...prev, industryRestrictions: event.target.value }))
-                  }
-                  rows={2}
-                />
-              </label>
-            </div>
 
-            <div className="management-field">
-              <span className="management-field__label">Required documents</span>
-              <div className="management-checkbox-grid">
-                {DOCUMENT_TYPES.map((doc) => (
-                  <label key={doc} className="management-checkbox">
-                    <input
-                      type="checkbox"
-                      checked={formValues.requiredDocuments.includes(doc)}
-                      onChange={() =>
-                        setFormValues((prev) => ({
-                          ...prev,
-                          requiredDocuments: toggleDocument(prev.requiredDocuments, doc)
-                        }))
-                      }
-                    />
-                    <span>{DOCUMENT_TYPE_LABELS[doc]}</span>
-                  </label>
-                ))}
+              <div className="management-field">
+                <span className="management-field__label">Required documents</span>
+                <div className="management-checkbox-grid">
+                  {DOCUMENT_TYPES.map((doc) => (
+                    <label key={doc} className="management-checkbox">
+                      <input
+                        type="checkbox"
+                        checked={formValues.requiredDocuments.includes(doc)}
+                        onChange={() =>
+                          setFormValues((prev) => ({
+                            ...prev,
+                            requiredDocuments: toggleDocument(prev.requiredDocuments, doc)
+                          }))
+                        }
+                      />
+                      <span>{DOCUMENT_TYPE_LABELS[doc]}</span>
+                    </label>
+                  ))}
+                </div>
+                {formErrors.requiredDocuments && (
+                  <span className="ui-field__error">{formErrors.requiredDocuments}</span>
+                )}
               </div>
-              {formErrors.requiredDocuments && (
-                <span className="ui-field__error">{formErrors.requiredDocuments}</span>
-              )}
-            </div>
 
-            <div className="management-actions">
-              <Button type="submit" disabled={mutationLoading || !formValues.lenderId}>
-                {selectedProduct ? "Save changes" : "Create product"}
-              </Button>
-            </div>
+              <div className="management-actions">
+                <Button type="submit" disabled={mutationLoading || !formValues.lenderId}>
+                  {selectedProduct ? "Save changes" : "Create product"}
+                </Button>
+              </div>
+            </fieldset>
           </form>
         </Card>
       </div>

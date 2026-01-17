@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from "vitest";
 import { screen } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { renderWithProviders } from "@/test/testUtils";
 import LendersPage from "@/pages/lenders/LendersPage";
 import MarketingPage from "@/pages/marketing/MarketingPage";
@@ -30,8 +30,10 @@ describe("permission-aware rendering", () => {
   it("does not fire API calls when the role is insufficient", () => {
     const fetchLendersMock = vi.mocked(fetchLenders);
     renderWithProviders(
-      <MemoryRouter>
-        <LendersPage />
+      <MemoryRouter initialEntries={["/lenders"]}>
+        <Routes>
+          <Route path="/lenders/*" element={<LendersPage />} />
+        </Routes>
       </MemoryRouter>,
       {
         auth: {

@@ -36,6 +36,11 @@ const AppRouter = () => (
           <Route path="calendar" element={<CalendarPage />} />
           <Route path="marketing" element={<MarketingPage />} />
           <Route path="lenders" element={<LendersPage />} />
+          <Route path="lenders/new" element={<LendersPage />} />
+          <Route path="lenders/:lenderId/edit" element={<LendersPage />} />
+          <Route path="lender-products" element={<LenderProductsPage />} />
+          <Route path="lender-products/new" element={<LenderProductsPage />} />
+          <Route path="lender-products/:productId/edit" element={<LenderProductsPage />} />
           <Route path="lenders/products" element={<LenderProductsPage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
