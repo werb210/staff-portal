@@ -25,13 +25,4 @@ export const verifyOtp = (payload: OtpVerifyPayload) =>
 export const fetchCurrentUser = () =>
   apiClient.get<AuthenticatedUser>("/api/auth/me", { skipAuthRefresh: true });
 
-export type RefreshResponse = {
-  accessToken: string;
-  refreshToken?: string;
-  user?: AuthenticatedUser;
-};
-
-export const refresh = (refreshToken: string) =>
-  apiClient.post<RefreshResponse>("/auth/refresh", { refreshToken }, { skipAuth: true });
-
 export const logout = () => apiClient.post<void>("/auth/logout");

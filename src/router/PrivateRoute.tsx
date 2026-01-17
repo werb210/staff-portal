@@ -7,12 +7,20 @@ type PrivateRouteProps = {
   allowedRoles?: UserRole[];
 };
 
-export default function PrivateRoute({ children }: PrivateRouteProps) {
-  const { authReady, authenticated, status } = useAuth();
+export default function PrivateRoute({ children, allowedRoles }: PrivateRouteProps) {
+  const { authReady, authenticated, status, user } = useAuth();
 
   if (!authReady) return null;
+
   if (!authenticated || status === "unauthenticated" || status === "expired") {
     return <Navigate to="/login" replace />;
+  }
+
+  if (allowedRoles && allowedRoles.length > 0) {
+    const role = user?.role;
+    if (!role || !allowedRoles.includes(role)) {
+      return <Navigate to="/login" replace />;
+    }
   }
 
   return children;
