@@ -5,7 +5,6 @@ import { MemoryRouter } from "react-router-dom";
 import { renderWithProviders } from "@/test/testUtils";
 import LendersPage from "@/pages/lenders/LendersPage";
 import { fetchLenders } from "@/api/lenders";
-import { FUNDING_TYPES } from "@/types/lenderManagement.types";
 
 vi.mock("@/api/lenders", () => ({
   fetchLenders: vi.fn()
@@ -19,12 +18,12 @@ const renderAsAdmin = () =>
       <LendersPage />
     </MemoryRouter>,
     {
-    auth: {
-      user: { id: "u-1", name: "Admin User", email: "admin@example.com", role: "Admin" },
-      token: "token",
-      status: "authenticated",
-      authReady: true
-    }
+      auth: {
+        user: { id: "u-1", name: "Admin User", email: "admin@example.com", role: "Admin" },
+        token: "token",
+        status: "authenticated",
+        authReady: true
+      }
     }
   );
 
@@ -48,28 +47,78 @@ describe("loading and empty-state rendering", () => {
       value: {
         id: string;
         name: string;
-        status: "active" | "paused";
-        regions: string[];
-        industries: string[];
-        minDealAmount: number;
-        maxDealAmount: number;
-        fundingTypes: string[];
+        active: boolean;
+        address: {
+          street: string;
+          city: string;
+          stateProvince: string;
+          postalCode: string;
+          country: string;
+        };
+        phone: string;
+        website?: string | null;
+        description?: string | null;
         internalNotes?: string | null;
-        clientVisible: boolean;
+        processingNotes?: string | null;
+        primaryContact: {
+          name: string;
+          email: string;
+          phone: string;
+          mobilePhone: string;
+        };
+        submissionConfig: {
+          method: "API" | "EMAIL" | "MANUAL";
+          apiBaseUrl?: string | null;
+          apiClientId?: string | null;
+          apiUsername?: string | null;
+          apiPassword?: string | null;
+          submissionEmail?: string | null;
+        };
+        operationalLimits: {
+          maxLendingLimit?: number | null;
+          maxLtv?: number | null;
+          maxLoanTerm?: number | null;
+          maxAmortization?: number | null;
+        };
       }[]
     ) => void;
     const pending = new Promise<
       {
         id: string;
         name: string;
-        status: "active" | "paused";
-        regions: string[];
-        industries: string[];
-        minDealAmount: number;
-        maxDealAmount: number;
-        fundingTypes: string[];
+        active: boolean;
+        address: {
+          street: string;
+          city: string;
+          stateProvince: string;
+          postalCode: string;
+          country: string;
+        };
+        phone: string;
+        website?: string | null;
+        description?: string | null;
         internalNotes?: string | null;
-        clientVisible: boolean;
+        processingNotes?: string | null;
+        primaryContact: {
+          name: string;
+          email: string;
+          phone: string;
+          mobilePhone: string;
+        };
+        submissionConfig: {
+          method: "API" | "EMAIL" | "MANUAL";
+          apiBaseUrl?: string | null;
+          apiClientId?: string | null;
+          apiUsername?: string | null;
+          apiPassword?: string | null;
+          submissionEmail?: string | null;
+        };
+        operationalLimits: {
+          maxLendingLimit?: number | null;
+          maxLtv?: number | null;
+          maxLoanTerm?: number | null;
+          maxAmortization?: number | null;
+        };
       }[]
     >((resolve) => {
       resolvePromise = resolve;
@@ -85,14 +134,39 @@ describe("loading and empty-state rendering", () => {
       {
         id: "l-1",
         name: "Atlas Bank",
-        status: "active",
-        regions: ["Midwest"],
-        industries: ["Retail"],
-        minDealAmount: 25000,
-        maxDealAmount: 250000,
-        fundingTypes: [FUNDING_TYPES[1]],
+        active: true,
+        address: {
+          street: "100 Market St",
+          city: "Chicago",
+          stateProvince: "IL",
+          postalCode: "60601",
+          country: "US"
+        },
+        phone: "312-555-0100",
+        website: "https://atlas.example.com",
+        description: "Commercial lending focus",
         internalNotes: null,
-        clientVisible: true
+        processingNotes: null,
+        primaryContact: {
+          name: "Taylor Reed",
+          email: "taylor@atlas.example.com",
+          phone: "312-555-0200",
+          mobilePhone: "312-555-0300"
+        },
+        submissionConfig: {
+          method: "EMAIL",
+          submissionEmail: "submissions@atlas.example.com",
+          apiBaseUrl: null,
+          apiClientId: null,
+          apiUsername: null,
+          apiPassword: null
+        },
+        operationalLimits: {
+          maxLendingLimit: 500000,
+          maxLtv: 80,
+          maxLoanTerm: 60,
+          maxAmortization: 84
+        }
       }
     ]);
 
