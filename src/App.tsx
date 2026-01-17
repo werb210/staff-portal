@@ -11,6 +11,7 @@ import CommunicationsPage from "./pages/communications/CommunicationsPage";
 import CalendarPage from "./pages/calendar/CalendarPage";
 import MarketingPage from "./pages/marketing/MarketingPage";
 import LendersPage from "./pages/lenders/LendersPage";
+import LenderProductsPage from "./pages/lenders/LenderProductsPage";
 import SettingsPage from "./pages/settings/SettingsPage";
 import TaskPane from "./pages/tasks/TaskPane";
 import { notifyRouteChange } from "./api/client";
@@ -66,6 +67,7 @@ export default function App() {
               <Route path="/tasks" element={<TaskPane />} />
               <Route path="/marketing" element={<MarketingPage />} />
               <Route path="/lenders" element={<LendersPage />} />
+              <Route path="/lenders/products" element={<LenderProductsPage />} />
               <Route path="/settings" element={<SettingsPage />} />
             </Route>
           </Routes>

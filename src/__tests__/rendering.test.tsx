@@ -1,9 +1,11 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { screen, waitFor } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { renderWithProviders } from "@/test/testUtils";
 import LendersPage from "@/pages/lenders/LendersPage";
 import { fetchLenders } from "@/api/lenders";
+import { FUNDING_TYPES } from "@/types/lenderManagement.types";
 
 vi.mock("@/api/lenders", () => ({
   fetchLenders: vi.fn()
@@ -12,14 +14,19 @@ vi.mock("@/api/lenders", () => ({
 const fetchLendersMock = vi.mocked(fetchLenders);
 
 const renderAsAdmin = () =>
-  renderWithProviders(<LendersPage />, {
+  renderWithProviders(
+    <MemoryRouter>
+      <LendersPage />
+    </MemoryRouter>,
+    {
     auth: {
       user: { id: "u-1", name: "Admin User", email: "admin@example.com", role: "Admin" },
       token: "token",
       status: "authenticated",
       authReady: true
     }
-  });
+    }
+  );
 
 describe("loading and empty-state rendering", () => {
   beforeEach(() => {
@@ -37,8 +44,34 @@ describe("loading and empty-state rendering", () => {
   });
 
   it("transitions from loading to data", async () => {
-    let resolvePromise: (value: { id: string; name: string; region: string }[]) => void;
-    const pending = new Promise<{ id: string; name: string; region: string }[]>((resolve) => {
+    let resolvePromise: (
+      value: {
+        id: string;
+        name: string;
+        status: "active" | "paused";
+        regions: string[];
+        industries: string[];
+        minDealAmount: number;
+        maxDealAmount: number;
+        fundingTypes: string[];
+        internalNotes?: string | null;
+        clientVisible: boolean;
+      }[]
+    ) => void;
+    const pending = new Promise<
+      {
+        id: string;
+        name: string;
+        status: "active" | "paused";
+        regions: string[];
+        industries: string[];
+        minDealAmount: number;
+        maxDealAmount: number;
+        fundingTypes: string[];
+        internalNotes?: string | null;
+        clientVisible: boolean;
+      }[]
+    >((resolve) => {
       resolvePromise = resolve;
     });
 
@@ -48,7 +81,20 @@ describe("loading and empty-state rendering", () => {
 
     expect(screen.getByText("Loading experience...")).toBeInTheDocument();
 
-    resolvePromise!([{ id: "l-1", name: "Atlas Bank", region: "Midwest" }]);
+    resolvePromise!([
+      {
+        id: "l-1",
+        name: "Atlas Bank",
+        status: "active",
+        regions: ["Midwest"],
+        industries: ["Retail"],
+        minDealAmount: 25000,
+        maxDealAmount: 250000,
+        fundingTypes: [FUNDING_TYPES[1]],
+        internalNotes: null,
+        clientVisible: true
+      }
+    ]);
 
     await waitFor(() => {
       expect(screen.getByText("Atlas Bank")).toBeInTheDocument();
@@ -64,7 +110,11 @@ describe("loading and empty-state rendering", () => {
       expect(fetchLenders).toHaveBeenCalledTimes(1);
     });
 
-    rerender(<LendersPage />);
+    rerender(
+      <MemoryRouter>
+        <LendersPage />
+      </MemoryRouter>
+    );
 
     await waitFor(() => {
       expect(fetchLenders).toHaveBeenCalledTimes(1);

@@ -10,6 +10,7 @@ const baseNavigation = [
   { label: "Calendar & Tasks", path: "/calendar" },
   { label: "Marketing", path: "/marketing" },
   { label: "Lenders", path: "/lenders" },
+  { label: "Lender Products", path: "/lenders/products" },
   { label: "Settings", path: "/settings" }
 ];
 

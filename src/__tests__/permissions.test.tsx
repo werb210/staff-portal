@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from "vitest";
 import { screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { renderWithProviders } from "@/test/testUtils";
 import LendersPage from "@/pages/lenders/LendersPage";
 import MarketingPage from "@/pages/marketing/MarketingPage";
@@ -27,14 +28,19 @@ describe("permission-aware rendering", () => {
 
   it("does not fire API calls when the role is insufficient", () => {
     const fetchLendersMock = vi.mocked(fetchLenders);
-    renderWithProviders(<LendersPage />, {
-      auth: {
-        user: { id: "u-2", name: "Lender User", email: "lender@example.com", role: "Lender" },
-        token: "token",
-        status: "authenticated",
-        authReady: true
+    renderWithProviders(
+      <MemoryRouter>
+        <LendersPage />
+      </MemoryRouter>,
+      {
+        auth: {
+          user: { id: "u-2", name: "Lender User", email: "lender@example.com", role: "Lender" },
+          token: "token",
+          status: "authenticated",
+          authReady: true
+        }
       }
-    });
+    );
 
     expect(screen.getByText("Access restricted")).toBeInTheDocument();
     expect(fetchLendersMock).not.toHaveBeenCalled();
