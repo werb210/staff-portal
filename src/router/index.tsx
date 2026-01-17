@@ -9,6 +9,7 @@ import CommunicationsPage from "@/pages/communications/CommunicationsPage";
 import CalendarPage from "@/pages/calendar/CalendarPage";
 import MarketingPage from "@/pages/marketing/MarketingPage";
 import LendersPage from "@/pages/lenders/LendersPage";
+import LenderProductsPage from "@/pages/lenders/LenderProductsPage";
 import SettingsPage from "@/pages/settings/SettingsPage";
 import { fullStaffRoles } from "@/utils/roles";
 import LenderRoutes from "./lenderRoutes";
@@ -35,6 +36,7 @@ const AppRouter = () => (
           <Route path="calendar" element={<CalendarPage />} />
           <Route path="marketing" element={<MarketingPage />} />
           <Route path="lenders" element={<LendersPage />} />
+          <Route path="lenders/products" element={<LenderProductsPage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
