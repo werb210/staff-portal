@@ -139,6 +139,8 @@ const LenderProductsContent = () => {
     [activeLenderId, lenders]
   );
   const isLenderInactive = Boolean(activeLender && !activeLender.active);
+  const hasLenders = lenders.length > 0;
+  const isLenderSelected = Boolean(activeLenderId);
 
   const {
     data: products = [],
@@ -253,6 +255,7 @@ const LenderProductsContent = () => {
 
   const mutationError = createMutation.error ?? updateMutation.error;
   const mutationLoading = createMutation.isPending || updateMutation.isPending;
+  const isFormDisabled = isLenderInactive || !isLenderSelected;
 
   const validateForm = (values: ProductFormValues) => {
     const errors: Record<string, string> = {};
@@ -362,7 +365,7 @@ const LenderProductsContent = () => {
         {lendersError && (
           <p className="text-red-700">{getErrorMessage(lendersError, "Unable to load lenders.")}</p>
         )}
-        {!lendersLoading && !lendersError && (
+        {!lendersLoading && !lendersError && hasLenders && (
           <Select
             label="Filter by lender"
             value={activeLenderId}
@@ -377,6 +380,9 @@ const LenderProductsContent = () => {
               </option>
             ))}
           </Select>
+        )}
+        {!lendersLoading && !lendersError && !hasLenders && (
+          <p className="text-sm text-slate-500">No lenders yet. Create a lender to manage products.</p>
         )}
         {activeLender && (
           <div className="management-note">
@@ -402,7 +408,7 @@ const LenderProductsContent = () => {
                 if (!activeLenderId) return;
                 navigate(`/lender-products/new?lenderId=${activeLenderId}`);
               }}
-              disabled={!activeLenderId || isLenderInactive}
+              disabled={!isLenderSelected || isLenderInactive}
             >
               Add Product
             </Button>
@@ -413,6 +419,7 @@ const LenderProductsContent = () => {
               label="Category"
               value={categoryFilter}
               onChange={(event) => setCategoryFilter(event.target.value)}
+              disabled={!isLenderSelected}
             >
               <option value="all">All categories</option>
               {LENDER_PRODUCT_CATEGORIES.map((category) => (
@@ -425,6 +432,7 @@ const LenderProductsContent = () => {
               label="Country"
               value={countryFilter}
               onChange={(event) => setCountryFilter(event.target.value)}
+              disabled={!isLenderSelected}
             >
               <option value="all">All countries</option>
               {availableCountries.map((country) => (
@@ -438,7 +446,10 @@ const LenderProductsContent = () => {
           {productsError && (
             <p className="text-red-700">{getErrorMessage(productsError, "Unable to load products.")}</p>
           )}
-          {!productsLoading && !productsError && activeLenderId && (
+          {!productsLoading && !productsError && !isLenderSelected && (
+            <p className="text-sm text-slate-500">Select a lender to view products.</p>
+          )}
+          {!productsLoading && !productsError && isLenderSelected && (
             <Table headers={["Name", "Category", "Country", "Currency", "Status", "Amount range"]}>
               {filteredProducts.map((product) => {
                 const productActive = product.category === "STARTUP_CAPITAL" ? false : product.active;
@@ -498,7 +509,7 @@ const LenderProductsContent = () => {
             className="management-form"
             onSubmit={(event) => {
               event.preventDefault();
-              if (isLenderInactive) return;
+              if (isFormDisabled) return;
               const errors = validateForm(formValues);
               setFormErrors(errors);
               if (Object.keys(errors).length) return;
@@ -514,10 +525,13 @@ const LenderProductsContent = () => {
               createMutation.mutate(payload);
             }}
           >
+            {!isLenderSelected && (
+              <p className="text-xs text-slate-500">Add a lender before creating products.</p>
+            )}
             {isLenderInactive && (
               <p className="text-xs text-amber-600">Activate the lender to create or edit products.</p>
             )}
-            <fieldset className="management-form" disabled={isLenderInactive}>
+            <fieldset className="management-form" disabled={isFormDisabled}>
               <div className="management-field">
                 <span className="management-field__label">Core details</span>
                 <Select

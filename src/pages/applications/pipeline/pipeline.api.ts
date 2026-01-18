@@ -1,4 +1,5 @@
 import { apiClient } from "@/api/client";
+import { normalizeArray } from "@/utils/normalize";
 import type { PipelineApplication, PipelineFilters, PipelineStageId } from "./pipeline.types";
 
 const buildQueryParams = (stage: PipelineStageId, filters: PipelineFilters): string => {
@@ -19,7 +20,8 @@ const buildQueryParams = (stage: PipelineStageId, filters: PipelineFilters): str
 export const pipelineApi = {
   fetchColumn: async (stage: PipelineStageId, filters: PipelineFilters, options?: { signal?: AbortSignal }) => {
     const query = buildQueryParams(stage, filters);
-    return apiClient.get<PipelineApplication[]>(`/api/applications?${query}`, options);
+    const res = await apiClient.get<PipelineApplication[]>(`/api/applications?${query}`, options);
+    return normalizeArray<PipelineApplication>(res);
   },
   moveCard: async (applicationId: string, newStage: PipelineStageId) => {
     return apiClient.patch<PipelineApplication>(`/api/applications/${applicationId}/status`, { stage: newStage });

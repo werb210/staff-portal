@@ -29,8 +29,10 @@ export const createLender = (payload: LenderPayload) => apiClient.post<Lender>(`
 export const updateLender = (id: string, payload: Partial<LenderPayload>) =>
   apiClient.put<Lender>(`/lenders/${id}`, payload);
 
-export const fetchLenderProducts = (lenderId: string) =>
-  apiClient.get<LenderProduct[]>(`/lender-products`, { params: { lenderId } });
+export const fetchLenderProducts = async (lenderId: string) => {
+  const res = await apiClient.get<LenderProduct[]>(`/lender-products`, { params: { lenderId } });
+  return normalizeArray<LenderProduct>(res);
+};
 
 export const createLenderProduct = (payload: LenderProductPayload) =>
   apiClient.post<LenderProduct>(`/lender-products`, payload);
