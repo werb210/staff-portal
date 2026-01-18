@@ -1,7 +1,7 @@
-export const ACCESS_TOKEN_KEY = "boreal.accessToken";
+export const ACCESS_TOKEN_KEY = "staff_auth_token";
 export const REFRESH_TOKEN_KEY = "boreal.refreshToken";
 export const USER_KEY = "staff-portal.user";
-const LEGACY_ACCESS_TOKEN_KEY = "accessToken";
+const LEGACY_ACCESS_TOKEN_KEYS = ["boreal.accessToken", "accessToken"];
 const LEGACY_REFRESH_TOKEN_KEY = "refreshToken";
 
 /**
@@ -24,14 +24,25 @@ const getLocalStorage = (): Storage | null => {
 
 export function getStoredAccessToken(): string | null {
   const storage = getLocalStorage();
-  return storage?.getItem(ACCESS_TOKEN_KEY) ?? storage?.getItem(LEGACY_ACCESS_TOKEN_KEY) ?? inMemoryToken;
+  if (storage?.getItem(ACCESS_TOKEN_KEY)) {
+    return storage.getItem(ACCESS_TOKEN_KEY);
+  }
+  for (const legacyKey of LEGACY_ACCESS_TOKEN_KEYS) {
+    const legacyValue = storage?.getItem(legacyKey);
+    if (legacyValue) {
+      return legacyValue;
+    }
+  }
+  return inMemoryToken;
 }
 
 export function setStoredAccessToken(token: string) {
   const storage = getLocalStorage();
   if (storage) {
     storage.setItem(ACCESS_TOKEN_KEY, token);
-    storage.setItem(LEGACY_ACCESS_TOKEN_KEY, token);
+    LEGACY_ACCESS_TOKEN_KEYS.forEach((legacyKey) => {
+      storage.setItem(legacyKey, token);
+    });
   }
   inMemoryToken = token;
 }
@@ -40,7 +51,9 @@ export function clearStoredAccessToken() {
   const storage = getLocalStorage();
   if (storage) {
     storage.removeItem(ACCESS_TOKEN_KEY);
-    storage.removeItem(LEGACY_ACCESS_TOKEN_KEY);
+    LEGACY_ACCESS_TOKEN_KEYS.forEach((legacyKey) => {
+      storage.removeItem(legacyKey);
+    });
   }
   inMemoryToken = null;
 }

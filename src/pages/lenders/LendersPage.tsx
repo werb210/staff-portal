@@ -163,20 +163,20 @@ const LendersContent = () => {
 
   const createMutation = useMutation({
     mutationFn: (payload: LenderPayload) => createLender(payload),
-    onSuccess: async (created) => {
+    onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["lenders"] });
-      setSelectedId(created.id);
-      navigate(`/lenders/${created.id}/edit`);
+      setSelectedId(null);
+      navigate("/lenders");
     }
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, payload }: { id: string; payload: Partial<LenderPayload> }) =>
       updateLender(id, payload),
-    onSuccess: async (updated) => {
+    onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["lenders"] });
-      setSelectedId(updated.id);
-      navigate(`/lenders/${updated.id}/edit`);
+      setSelectedId(null);
+      navigate("/lenders");
     }
   });
 
@@ -242,6 +242,40 @@ const LendersContent = () => {
     return nextErrors;
   };
 
+  const buildSubmissionConfig = (
+    values: LenderFormValues,
+    existing?: LenderSubmissionConfig | null
+  ): LenderSubmissionConfig => {
+    if (values.submissionMethod === "API") {
+      return {
+        method: values.submissionMethod,
+        apiBaseUrl: optionalString(values.apiBaseUrl),
+        apiClientId: optionalString(values.apiClientId) ?? existing?.apiClientId ?? null,
+        apiUsername: optionalString(values.apiUsername) ?? existing?.apiUsername ?? null,
+        apiPassword: optionalString(values.apiPassword) ?? existing?.apiPassword ?? null,
+        submissionEmail: null
+      };
+    }
+    if (values.submissionMethod === "EMAIL") {
+      return {
+        method: values.submissionMethod,
+        apiBaseUrl: null,
+        apiClientId: null,
+        apiUsername: null,
+        apiPassword: null,
+        submissionEmail: optionalString(values.submissionEmail)
+      };
+    }
+    return {
+      method: values.submissionMethod,
+      apiBaseUrl: null,
+      apiClientId: null,
+      apiUsername: null,
+      apiPassword: null,
+      submissionEmail: null
+    };
+  };
+
   const buildCreatePayload = (values: LenderFormValues): LenderPayload => ({
     name: values.name.trim(),
     active: values.active,
@@ -263,14 +297,7 @@ const LendersContent = () => {
       phone: values.primaryContactPhone.trim(),
       mobilePhone: values.primaryContactMobile.trim()
     },
-    submissionConfig: {
-      method: values.submissionMethod,
-      apiBaseUrl: values.submissionMethod === "API" ? optionalString(values.apiBaseUrl) : null,
-      apiClientId: values.submissionMethod === "API" ? optionalString(values.apiClientId) : null,
-      apiUsername: values.submissionMethod === "API" ? optionalString(values.apiUsername) : null,
-      apiPassword: values.submissionMethod === "API" ? optionalString(values.apiPassword) : null,
-      submissionEmail: values.submissionMethod === "EMAIL" ? optionalString(values.submissionEmail) : null
-    },
+    submissionConfig: buildSubmissionConfig(values),
     operationalLimits: {
       maxLendingLimit: toOptionalNumber(values.maxLendingLimit),
       maxLtv: toOptionalNumber(values.maxLtv),
@@ -279,36 +306,10 @@ const LendersContent = () => {
     }
   });
 
-  const buildUpdatePayload = (values: LenderFormValues): Partial<LenderPayload> => {
-    const submissionConfig: Partial<LenderSubmissionConfig> = {
-      method: values.submissionMethod
-    };
-
-    if (values.submissionMethod === "API") {
-      submissionConfig.apiBaseUrl = optionalString(values.apiBaseUrl);
-      if (values.apiClientId.trim()) submissionConfig.apiClientId = values.apiClientId.trim();
-      if (values.apiUsername.trim()) submissionConfig.apiUsername = values.apiUsername.trim();
-      if (values.apiPassword.trim()) submissionConfig.apiPassword = values.apiPassword.trim();
-      submissionConfig.submissionEmail = null;
-    } else if (values.submissionMethod === "EMAIL") {
-      submissionConfig.apiBaseUrl = null;
-      submissionConfig.apiClientId = null;
-      submissionConfig.apiUsername = null;
-      submissionConfig.apiPassword = null;
-      submissionConfig.submissionEmail = optionalString(values.submissionEmail);
-    } else {
-      submissionConfig.apiBaseUrl = null;
-      submissionConfig.apiClientId = null;
-      submissionConfig.apiUsername = null;
-      submissionConfig.apiPassword = null;
-      submissionConfig.submissionEmail = null;
-    }
-
-    return {
-      ...buildCreatePayload(values),
-      submissionConfig
-    };
-  };
+  const buildUpdatePayload = (values: LenderFormValues): Partial<LenderPayload> => ({
+    ...buildCreatePayload(values),
+    submissionConfig: buildSubmissionConfig(values, selectedLender?.submissionConfig)
+  });
 
   useEffect(() => {
     if (error) {
