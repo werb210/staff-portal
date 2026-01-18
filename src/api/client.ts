@@ -97,13 +97,36 @@ let axiosClient: AxiosInstance | null = null;
 
 const getAccessTokenFromStorage = () => getStoredAccessToken();
 
+const normalizeRequestPath = (path?: string) => {
+  if (!path) return "";
+  if (path.startsWith("http")) {
+    try {
+      return new URL(path).pathname;
+    } catch {
+      return path;
+    }
+  }
+  return path;
+};
+
+const isAuthExcludedPath = (path: string) => {
+  const normalizedPath = normalizeRequestPath(path);
+  return (
+    normalizedPath === "/api/auth/login" ||
+    normalizedPath === "/auth/login" ||
+    normalizedPath === "/api/_int" ||
+    normalizedPath.startsWith("/api/_int/")
+  );
+};
+
 const getAxiosClient = () => {
   if (!axiosClient) {
     axiosClient = axios.create();
     axiosClient.interceptors.request.use((config) => {
       const requestOptions = config as RequestOptions;
       const authMode = requestOptions.authMode ?? "staff";
-      const includeAuth = authMode !== "none" && !requestOptions.skipAuth;
+      const includeAuth =
+        authMode !== "none" && !requestOptions.skipAuth && !isAuthExcludedPath(String(config.url ?? ""));
       const token = getAccessTokenFromStorage();
       if (includeAuth && token) {
         const headers = config.headers ?? {};
@@ -341,7 +364,8 @@ const executeRequest = async <T>(path: string, config: RequestOptions & { method
   const authMode = config.authMode ?? "staff";
   const normalizedMethod = typeof config.method === "string" ? config.method.toUpperCase() : undefined;
   const isOptions = normalizedMethod === "OPTIONS";
-  const includeAuth = authMode !== "none" && !config.skipAuth && !isOptions;
+  const includeAuth =
+    authMode !== "none" && !config.skipAuth && !isOptions && !isAuthExcludedPath(path);
   const authToken = authMode === "staff" ? getStoredAccessToken() : lenderTokenProvider()?.accessToken ?? null;
 
   if (authMode === "staff" && (path === "/auth/me" || path === "/api/auth/me") && !authToken) {
