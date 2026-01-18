@@ -1,10 +1,4 @@
-import type {
-  DocumentType,
-  LenderProductCategory,
-  RateType,
-  SubmissionMethod,
-  TermUnit
-} from "./lenderManagement.types";
+import type { LenderProductCategory, RateType, SubmissionMethod, TermUnit } from "./lenderManagement.types";
 
 export type LenderAddress = {
   street: string;
@@ -82,7 +76,11 @@ export type LenderProductEligibilityFlags = {
   industryRestrictions: string | null;
 };
 
-export type ProductDocumentRequirement = DocumentType;
+export type ProductDocumentRequirement = {
+  category: string;
+  required: boolean;
+  description: string | null;
+};
 
 export type LenderProduct = {
   id: string;
@@ -105,4 +103,6 @@ export type LenderProduct = {
   requiredDocuments: ProductDocumentRequirement[];
 };
 
-export type LenderProductPayload = Omit<LenderProduct, "id">;
+export type LenderProductPayload = Omit<LenderProduct, "id" | "requiredDocuments"> & {
+  required_documents: ProductDocumentRequirement[];
+};
