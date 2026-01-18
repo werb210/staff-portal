@@ -16,6 +16,7 @@ import {
 import { registerAuthFailureHandler } from "@/auth/authEvents";
 import { redirectToLogin } from "@/services/api";
 import { setApiStatus } from "@/state/apiStatus";
+import { showApiToast } from "@/state/apiNotifications";
 import { assertKnownRole } from "@/utils/roles";
 
 export type AuthStatus = "authenticated" | "unauthenticated" | "expired" | "forbidden";
@@ -216,7 +217,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const logout = useCallback(() => {
     void logoutService().catch((error) => {
-      console.error("Logout failed", error);
+      const message = error instanceof Error ? error.message : "Logout failed.";
+      showApiToast(message);
     });
     clearStoredAuth();
     setUser(null);

@@ -25,6 +25,7 @@ function buildApiUrl(path: string) {
 }
 
 const navigateTo = (path: string) => {
+  if (typeof window === "undefined") return;
   if (window.location.pathname === path) return;
   const isTestEnv = typeof process !== "undefined" && process.env?.NODE_ENV === "test";
   if (isTestEnv) {

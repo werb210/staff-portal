@@ -17,28 +17,74 @@ export type LenderMatch = {
   requiredDocsStatus?: string;
 };
 
-export const fetchLenders = async () => {
-  const res = await apiClient.get<Lender[]>("/lenders");
-  return normalizeArray<Lender>(res);
+const isArrayContainer = (input: unknown) => {
+  if (Array.isArray(input)) return true;
+  if (input && typeof input === "object") {
+    const payload = input as { items?: unknown; data?: unknown; results?: unknown };
+    return Array.isArray(payload.items) || Array.isArray(payload.data) || Array.isArray(payload.results);
+  }
+  return false;
 };
 
-export const fetchLenderById = (id: string) => apiClient.get<Lender>(`/lenders/${id}`);
+const ensureArray = <T>(input: unknown, context: string): T[] => {
+  if (!isArrayContainer(input)) {
+    throw new Error(`Expected ${context} response to be an array.`);
+  }
+  return normalizeArray<T>(input);
+};
 
-export const createLender = (payload: LenderPayload) => apiClient.post<Lender>(`/lenders`, payload);
+const assertEntityHasId = <T extends { id?: string }>(entity: T, context: string): T => {
+  const id = entity?.id;
+  if (typeof id !== "string" || !id.trim()) {
+    throw new Error(`Expected ${context} response to include an id.`);
+  }
+  return entity;
+};
 
-export const updateLender = (id: string, payload: Partial<LenderPayload>) =>
-  apiClient.put<Lender>(`/lenders/${id}`, payload);
+const assertEntitiesHaveIds = <T extends { id?: string }>(entities: T[], context: string) => {
+  entities.forEach((entity) => {
+    assertEntityHasId(entity, context);
+  });
+};
+
+export const fetchLenders = async () => {
+  const res = await apiClient.get<Lender[]>("/lenders");
+  const lenders = ensureArray<Lender>(res, "lenders");
+  assertEntitiesHaveIds(lenders, "lender");
+  return lenders;
+};
+
+export const fetchLenderById = async (id: string) => {
+  const lender = await apiClient.get<Lender>(`/lenders/${id}`);
+  return assertEntityHasId(lender, "lender");
+};
+
+export const createLender = async (payload: LenderPayload) => {
+  const lender = await apiClient.post<Lender>(`/lenders`, payload);
+  return assertEntityHasId(lender, "lender");
+};
+
+export const updateLender = async (id: string, payload: Partial<LenderPayload>) => {
+  const lender = await apiClient.put<Lender>(`/lenders/${id}`, payload);
+  return assertEntityHasId(lender, "lender");
+};
 
 export const fetchLenderProducts = async (lenderId: string) => {
   const res = await apiClient.get<LenderProduct[]>(`/lender-products`, { params: { lenderId } });
-  return normalizeArray<LenderProduct>(res);
+  const products = ensureArray<LenderProduct>(res, "lender products");
+  assertEntitiesHaveIds(products, "lender product");
+  return products;
 };
 
-export const createLenderProduct = (payload: LenderProductPayload) =>
-  apiClient.post<LenderProduct>(`/lender-products`, payload);
+export const createLenderProduct = async (payload: LenderProductPayload) => {
+  const product = await apiClient.post<LenderProduct>(`/lender-products`, payload);
+  return assertEntityHasId(product, "lender product");
+};
 
-export const updateLenderProduct = (productId: string, payload: Partial<LenderProductPayload>) =>
-  apiClient.put<LenderProduct>(`/lender-products/${productId}`, payload);
+export const updateLenderProduct = async (productId: string, payload: Partial<LenderProductPayload>) => {
+  const product = await apiClient.put<LenderProduct>(`/lender-products/${productId}`, payload);
+  return assertEntityHasId(product, "lender product");
+};
 
 export const fetchLenderMatches = (applicationId: string, options?: RequestOptions) =>
   apiClient.get<LenderMatch[]>(`/applications/${applicationId}/lenders`, options);

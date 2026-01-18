@@ -9,7 +9,6 @@ import axios, {
 import { buildApiUrl, redirectToLogin } from "@/services/api";
 import {
   clearStoredAuth,
-  ACCESS_TOKEN_KEY,
   getStoredAccessToken,
   getStoredRefreshToken,
   setStoredAccessToken,
@@ -305,7 +304,9 @@ const toApiError = (error: AxiosError): ApiError => {
 };
 
 const reportApiError = (error: ApiError) => {
-  if (error.status >= 400 && error.status < 500 && error.status !== 401 && error.status !== 403) {
+  if (error.isConfigurationError || error.status === 0) {
+    showApiToast(error.message, error.requestId);
+  } else if (error.status >= 400 && error.status !== 401 && error.status !== 403) {
     showApiToast(error.message, error.requestId);
   }
   if (error.status === 400 && error.code === "missing_idempotency_key") {
@@ -525,7 +526,11 @@ const refreshLenderTokens = async (): Promise<LenderAuthTokens | null> => {
         lenderTokenUpdater(nextTokens);
         return nextTokens;
       })
-      .catch(() => null)
+      .catch((error) => {
+        const message = error instanceof ApiError ? error.message : "Unable to refresh lender session.";
+        showApiToast(message, error instanceof ApiError ? error.requestId : undefined);
+        return null;
+      })
       .finally(() => {
         refreshInFlight = null;
       });
@@ -560,7 +565,11 @@ const refreshStaffTokens = async (
         }
         return body;
       })
-      .catch(() => null)
+      .catch((error) => {
+        const message = error instanceof ApiError ? error.message : "Unable to refresh staff session.";
+        showApiToast(message, error instanceof ApiError ? error.requestId : undefined);
+        return null;
+      })
       .finally(() => {
         staffRefreshInFlight = null;
       });
@@ -623,6 +632,8 @@ export const apiClient = {
   get: <T>(path: string, options: RequestOptions = {}) => executeStaffRequest<T>(path, { ...options, method: "GET" }),
   post: <T>(path: string, body?: unknown, options: RequestOptions = {}) =>
     executeStaffRequest<T>(path, { ...options, method: "POST" }, body),
+  put: <T>(path: string, body?: unknown, options: RequestOptions = {}) =>
+    executeStaffRequest<T>(path, { ...options, method: "PUT" }, body),
   patch: <T>(path: string, body?: unknown, options: RequestOptions = {}) =>
     executeStaffRequest<T>(path, { ...options, method: "PATCH" }, body),
   delete: <T>(path: string, options: RequestOptions = {}) => executeStaffRequest<T>(path, { ...options, method: "DELETE" }),
@@ -639,6 +650,8 @@ export const lenderApiClient = {
   get: <T>(path: string, options: RequestOptions = {}) => executeLenderRequest<T>(path, { ...options, method: "GET" }),
   post: <T>(path: string, body?: unknown, options: RequestOptions = {}) =>
     executeLenderRequest<T>(path, { ...options, method: "POST" }, body),
+  put: <T>(path: string, body?: unknown, options: RequestOptions = {}) =>
+    executeLenderRequest<T>(path, { ...options, method: "PUT" }, body),
   patch: <T>(path: string, body?: unknown, options: RequestOptions = {}) =>
     executeLenderRequest<T>(path, { ...options, method: "PATCH" }, body),
   delete: <T>(path: string, options: RequestOptions = {}) =>
