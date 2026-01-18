@@ -19,12 +19,12 @@ export type TaskItem = {
 };
 
 export const fetchTasks = async () => {
-  const res = await apiClient.get<TaskItem[]>("/api/tasks");
+  const res = await apiClient.get<TaskItem[]>("/calendar/tasks");
   return normalizeArray<TaskItem>(res);
 };
 
-export const createTask = (task: Partial<TaskItem>) => apiClient.post<TaskItem>("/api/tasks", task);
+export const createTask = (task: Partial<TaskItem>) => apiClient.post<TaskItem>("/calendar/tasks", task);
 
-export const updateTask = (id: string, task: Partial<TaskItem>) => apiClient.patch<TaskItem>(`/api/tasks/${id}`, task);
+export const updateTask = (id: string, task: Partial<TaskItem>) => apiClient.patch<TaskItem>(`/calendar/tasks/${id}`, task);
 
-export const deleteTask = (id: string) => apiClient.delete<void>(`/api/tasks/${id}`);
+export const deleteTask = (id: string) => apiClient.delete<void>(`/calendar/tasks/${id}`);

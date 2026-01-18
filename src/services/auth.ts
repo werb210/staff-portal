@@ -23,7 +23,7 @@ export type OtpStartResponse = {
 export async function startOtp(payload: { phone: string }): Promise<OtpStartResponse> {
   const normalizedPhone = normalizeToE164(payload.phone);
   return apiClient.post<OtpStartResponse>(
-    "/api/auth/otp/start",
+    "/auth/otp/start",
     { ...payload, phone: normalizedPhone },
     otpStartRequestOptions
   );
@@ -32,7 +32,7 @@ export async function startOtp(payload: { phone: string }): Promise<OtpStartResp
 export async function verifyOtp(payload: { phone: string; code: string }): Promise<OtpVerifyResponse> {
   const normalizedPhone = normalizeToE164(payload.phone);
   return apiClient.post<OtpVerifyResponse>(
-    "/api/auth/otp/verify",
+    "/auth/otp/verify",
     { ...payload, phone: normalizedPhone },
     otpRequestOptions
   );

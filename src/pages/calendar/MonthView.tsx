@@ -1,10 +1,9 @@
-import type { CalendarEvent, O365Event } from "@/api/calendar";
+import type { CalendarEvent } from "@/api/calendar";
 import { getMonthGrid, groupEventsByDay } from "./utils";
 
-const MonthView = ({ date, localEvents, o365Events }: { date: Date; localEvents: CalendarEvent[]; o365Events: O365Event[] }) => {
+const MonthView = ({ date, localEvents }: { date: Date; localEvents: CalendarEvent[] }) => {
   const grid = getMonthGrid(date);
   const groupedLocal = groupEventsByDay(localEvents);
-  const groupedExternal = groupEventsByDay(o365Events);
   const month = date.getMonth();
 
   return (
@@ -13,7 +12,7 @@ const MonthView = ({ date, localEvents, o365Events }: { date: Date; localEvents:
         {grid.map((day) => {
           const isCurrentMonth = day.getMonth() === month;
           const dayKey = day.toDateString();
-          const events = [...(groupedLocal[dayKey] ?? []), ...(groupedExternal[dayKey] ?? [])];
+          const events = groupedLocal[dayKey] ?? [];
           return (
             <div key={day.toISOString()} className={`calendar-month-grid__cell ${isCurrentMonth ? "" : "muted"}`}>
               <div className="calendar-month-grid__header">{day.getDate()}</div>

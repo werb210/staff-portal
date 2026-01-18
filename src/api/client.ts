@@ -472,6 +472,7 @@ const executeRequest = async <T>(path: string, config: RequestOptions & { method
       setLastApiRequest({ path, method: normalizedMethod, status: error.status, requestId: error.requestId, timestamp: Date.now() });
       if (error.status === 401) {
         setApiStatus("unauthorized");
+        redirectToLogin();
       } else if (error.status === 403) {
         setApiStatus("forbidden");
       } else if (error.status >= 500 || error.status === 0) {
@@ -498,6 +499,7 @@ const executeRequest = async <T>(path: string, config: RequestOptions & { method
     setLastApiRequest({ path, method: normalizedMethod, status: apiError.status, requestId: apiError.requestId, timestamp: Date.now() });
     if (apiError.status === 401) {
       setApiStatus("unauthorized");
+      redirectToLogin();
     } else if (apiError.status === 403) {
       setApiStatus("forbidden");
     } else if (apiError.status >= 500 || apiError.status === 0) {

@@ -123,15 +123,15 @@ const LenderProductsContent = () => {
   });
 
   useEffect(() => {
-    if (!lenders.length) return;
     if (activeLenderId) return;
     const requestedLenderId = searchParams.get("lenderId");
-    const match = lenders.find((lender) => lender.id === requestedLenderId);
-    if (match) {
-      setActiveLenderId(match.id);
+    if (requestedLenderId) {
+      setActiveLenderId(requestedLenderId);
       return;
     }
-    setActiveLenderId(lenders[0].id);
+    if (lenders.length) {
+      setActiveLenderId(lenders[0].id);
+    }
   }, [activeLenderId, lenders, searchParams]);
 
   const activeLender = useMemo(
@@ -147,9 +147,8 @@ const LenderProductsContent = () => {
     isLoading: productsLoading,
     error: productsError
   } = useQuery<LenderProduct[], Error>({
-    queryKey: ["lenders", activeLenderId, "products"],
-    queryFn: () => fetchLenderProducts(activeLenderId),
-    enabled: Boolean(activeLenderId)
+    queryKey: ["lender-products"],
+    queryFn: () => fetchLenderProducts()
   });
 
   const selectedProduct = useMemo(
@@ -157,13 +156,21 @@ const LenderProductsContent = () => {
     [products, selectedProductId]
   );
 
+  useEffect(() => {
+    if (activeLenderId) return;
+    if (selectedProduct?.lenderId) {
+      setActiveLenderId(selectedProduct.lenderId);
+    }
+  }, [activeLenderId, selectedProduct]);
+
   const filteredProducts = useMemo(() => {
     return products.filter((product) => {
+      const lenderMatch = !activeLenderId || product.lenderId === activeLenderId;
       const categoryMatch = categoryFilter === "all" || product.category === categoryFilter;
       const countryMatch = countryFilter === "all" || product.country === countryFilter;
-      return categoryMatch && countryMatch;
+      return lenderMatch && categoryMatch && countryMatch;
     });
-  }, [categoryFilter, countryFilter, products]);
+  }, [activeLenderId, categoryFilter, countryFilter, products]);
 
   useEffect(() => {
     if (isNewRoute) {
@@ -238,7 +245,7 @@ const LenderProductsContent = () => {
   const createMutation = useMutation({
     mutationFn: (payload: LenderProductPayload) => createLenderProduct(payload),
     onSuccess: async (created) => {
-      await queryClient.invalidateQueries({ queryKey: ["lenders", activeLenderId, "products"] });
+      await queryClient.invalidateQueries({ queryKey: ["lender-products"] });
       setSelectedProductId(created.id);
       navigate(`/lender-products/${created.id}/edit?lenderId=${created.lenderId}`);
     }
@@ -248,7 +255,7 @@ const LenderProductsContent = () => {
     mutationFn: ({ productId, payload }: { productId: string; payload: Partial<LenderProductPayload> }) =>
       updateLenderProduct(productId, payload),
     onSuccess: async (updated) => {
-      await queryClient.invalidateQueries({ queryKey: ["lenders", activeLenderId, "products"] });
+      await queryClient.invalidateQueries({ queryKey: ["lender-products"] });
       navigate(`/lender-products/${updated.id}/edit?lenderId=${updated.lenderId}`);
     }
   });
@@ -374,6 +381,7 @@ const LenderProductsContent = () => {
               setSelectedProductId(null);
             }}
           >
+            <option value="">All lenders</option>
             {lenders.map((lender) => (
               <option key={lender.id} value={lender.id}>
                 {lender.name}
@@ -419,7 +427,7 @@ const LenderProductsContent = () => {
               label="Category"
               value={categoryFilter}
               onChange={(event) => setCategoryFilter(event.target.value)}
-              disabled={!isLenderSelected}
+              disabled={productsLoading}
             >
               <option value="all">All categories</option>
               {LENDER_PRODUCT_CATEGORIES.map((category) => (
@@ -432,7 +440,7 @@ const LenderProductsContent = () => {
               label="Country"
               value={countryFilter}
               onChange={(event) => setCountryFilter(event.target.value)}
-              disabled={!isLenderSelected}
+              disabled={productsLoading}
             >
               <option value="all">All countries</option>
               {availableCountries.map((country) => (
@@ -446,10 +454,7 @@ const LenderProductsContent = () => {
           {productsError && (
             <p className="text-red-700">{getErrorMessage(productsError, "Unable to load products.")}</p>
           )}
-          {!productsLoading && !productsError && !isLenderSelected && (
-            <p className="text-sm text-slate-500">Select a lender to view products.</p>
-          )}
-          {!productsLoading && !productsError && isLenderSelected && (
+          {!productsLoading && !productsError && (
             <Table headers={["Name", "Category", "Country", "Currency", "Status", "Amount range"]}>
               {filteredProducts.map((product) => {
                 const productActive = product.category === "STARTUP_CAPITAL" ? false : product.active;
@@ -494,7 +499,9 @@ const LenderProductsContent = () => {
               );})}
               {!filteredProducts.length && (
                 <tr>
-                  <td colSpan={6}>No products for this lender.</td>
+                  <td colSpan={6}>
+                    {activeLenderId ? "No products for this lender." : "No lender products available."}
+                  </td>
                 </tr>
               )}
             </Table>

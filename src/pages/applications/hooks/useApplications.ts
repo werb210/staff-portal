@@ -11,8 +11,9 @@ export function useApplications(stage: string) {
   return useQuery({
     queryKey: ["applications", stage],
     queryFn: async ({ signal }) => {
-      const res = await apiClient.get("/api/applications", { params: { stage }, signal });
-      return normalizeArray(res);
+      const res = await apiClient.get("/portal/applications", { signal });
+      const items = normalizeArray(res);
+      return items.filter((application) => application.stage === stage);
     },
     retry: retryUnlessClientError,
   });

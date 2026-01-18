@@ -5,7 +5,7 @@ import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import AppLoading from "@/components/layout/AppLoading";
 import type { CalendarEvent } from "@/api/calendar";
-import { createLocalEvent, fetchLocalEvents, fetchO365Events } from "@/api/calendar";
+import { createLocalEvent, fetchLocalEvents } from "@/api/calendar";
 import { useCalendarStore } from "@/state/calendar.store";
 import CalendarHeader from "./CalendarHeader";
 import CalendarView from "./CalendarView";
@@ -29,17 +29,11 @@ const CalendarContent = () => {
     error: localError
   } = useQuery({ queryKey: ["local-events"], queryFn: fetchLocalEvents });
 
-  const {
-    data: o365Events = [],
-    isLoading: loadingO365,
-    error: o365Error
-  } = useQuery({ queryKey: ["o365-events", view], queryFn: () => fetchO365Events(view === "day" ? "week" : view) });
-
   useEffect(() => {
-    if (!loadingLocal && !loadingO365 && !localError && !o365Error) {
-      emitUiTelemetry("data_loaded", { view: "calendar", count: localEvents.length + o365Events.length });
+    if (!loadingLocal && !localError) {
+      emitUiTelemetry("data_loaded", { view: "calendar", count: localEvents.length });
     }
-  }, [localError, localEvents.length, loadingLocal, loadingO365, o365Error, o365Events.length]);
+  }, [localError, localEvents.length, loadingLocal]);
 
   const createEventMutation = useMutation({
     mutationFn: createLocalEvent,
@@ -74,15 +68,15 @@ const CalendarContent = () => {
             />
           }
         >
-          {(loadingLocal || loadingO365) && <AppLoading />}
-          {(localError || o365Error) && (
-            <p className="text-red-700">{getErrorMessage(localError ?? o365Error, "Unable to load calendar events.")}</p>
+          {loadingLocal && <AppLoading />}
+          {localError && (
+            <p className="text-red-700">{getErrorMessage(localError, "Unable to load calendar events.")}</p>
           )}
-          {!loadingLocal && !loadingO365 && !localError && !o365Error && localEvents.length + o365Events.length === 0 && (
+          {!loadingLocal && !localError && localEvents.length === 0 && (
             <p>No calendar events scheduled yet.</p>
           )}
-          {!loadingLocal && !loadingO365 && !localError && !o365Error && (
-            <CalendarView view={view} date={currentDate} localEvents={localEvents} o365Events={o365Events} />
+          {!loadingLocal && !localError && (
+            <CalendarView view={view} date={currentDate} localEvents={localEvents} />
           )}
           {showEventForm && (
             <div className="event-form" data-testid="event-form">
