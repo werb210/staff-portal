@@ -10,12 +10,7 @@ import { setStoredAccessToken } from "@/services/token";
 import LendersPage from "@/pages/lenders/LendersPage";
 import LenderProductsPage from "@/pages/lenders/LenderProductsPage";
 import LoginPage from "@/pages/login/LoginPage";
-import {
-  DOCUMENT_TYPES,
-  DOCUMENT_TYPE_LABELS,
-  LENDER_PRODUCT_CATEGORIES,
-  isLenderProductCategory
-} from "@/types/lenderManagement.types";
+import { LENDER_PRODUCT_CATEGORIES, isLenderProductCategory } from "@/types/lenderManagement.types";
 import type { Lender, LenderProduct } from "@/types/lenderManagement.models";
 import {
   createLender,
@@ -129,7 +124,13 @@ const baseProduct: LenderProduct = {
     timeInBusinessMonths: null,
     industryRestrictions: null
   },
-  requiredDocuments: ["business_bank_statements"]
+  requiredDocuments: [
+    {
+      category: "Business bank statements",
+      required: true,
+      description: null
+    }
+  ]
 };
 
 beforeEach(() => {
@@ -221,7 +222,7 @@ describe("lender product management", () => {
     await user.type(screen.getByLabelText(/Term length min/i), "6");
     await user.type(screen.getByLabelText(/Term length max/i), "24");
 
-    await user.click(screen.getByLabelText(DOCUMENT_TYPE_LABELS[DOCUMENT_TYPES[0]]));
+    await user.type(screen.getByLabelText(/Category 1/i), "Business bank statements");
 
     await user.click(screen.getByRole("button", { name: /Create product/i }));
 
@@ -230,7 +231,13 @@ describe("lender product management", () => {
         expect.objectContaining({
           lenderId: "l-1",
           category: "TERM_LOAN",
-          requiredDocuments: [DOCUMENT_TYPES[0]]
+          required_documents: [
+            {
+              category: "Business bank statements",
+              required: true,
+              description: null
+            }
+          ]
         })
       )
     );
@@ -254,7 +261,7 @@ describe("lender product management", () => {
     await user.type(screen.getByLabelText(/Term length max/i), "24");
 
     fireEvent.change(screen.getByLabelText(/Product category/i), { target: { value: "SBA_GOVERNMENT" } });
-    await user.click(screen.getByLabelText(DOCUMENT_TYPE_LABELS[DOCUMENT_TYPES[0]]));
+    await user.type(screen.getByLabelText(/Category 1/i), "Business bank statements");
     await user.click(screen.getByRole("button", { name: /Create product/i }));
 
     expect(await screen.findByText(/SBA products must be limited to US lenders/i)).toBeInTheDocument();
@@ -279,7 +286,7 @@ describe("lender product management", () => {
     await user.type(screen.getByLabelText(/Term length max/i), "24");
 
     fireEvent.change(screen.getByLabelText(/Product category/i), { target: { value: "STARTUP_CAPITAL" } });
-    await user.click(screen.getByLabelText(DOCUMENT_TYPE_LABELS[DOCUMENT_TYPES[0]]));
+    await user.type(screen.getByLabelText(/Category 1/i), "Business bank statements");
     await user.click(screen.getByRole("button", { name: /Create product/i }));
 
     expect(await screen.findByText(/Startup capital is limited to Canada/i)).toBeInTheDocument();
@@ -297,17 +304,25 @@ describe("lender product management", () => {
       {
         ...baseProduct,
         id: "p-3",
-        requiredDocuments: [DOCUMENT_TYPES[0], DOCUMENT_TYPES[1]]
+        requiredDocuments: [
+          {
+            category: "Business bank statements",
+            required: true,
+            description: null
+          },
+          {
+            category: "Tax returns",
+            required: false,
+            description: "Optional for startups"
+          }
+        ]
       }
     ]);
 
     renderWithProviders("/lender-products/p-3/edit?lenderId=l-1");
 
-    const firstDoc = await screen.findByLabelText(DOCUMENT_TYPE_LABELS[DOCUMENT_TYPES[0]]);
-    const secondDoc = screen.getByLabelText(DOCUMENT_TYPE_LABELS[DOCUMENT_TYPES[1]]);
-
-    await waitFor(() => expect(firstDoc).toBeChecked());
-    await waitFor(() => expect(secondDoc).toBeChecked());
+    expect(await screen.findByLabelText(/Category 1/i)).toHaveValue("Business bank statements");
+    expect(screen.getByLabelText(/Category 2/i)).toHaveValue("Tax returns");
   });
 
   it("matches the category enum in the dropdown", async () => {
