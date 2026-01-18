@@ -52,7 +52,23 @@ export type Lender = {
   operationalLimits: LenderOperationalLimits;
 };
 
-export type LenderPayload = Omit<Lender, "id">;
+export type LenderPayload = {
+  name: string;
+  active: boolean;
+  phone: string;
+  website: string | null;
+  description: string | null;
+  street: string;
+  city: string;
+  region: string;
+  country: string;
+  postal_code: string;
+  contact_name: string;
+  contact_email: string;
+  contact_phone: string;
+  submission_method: SubmissionMethod;
+  submission_email: string | null;
+};
 
 export type LenderProductTermLength = {
   min: number;

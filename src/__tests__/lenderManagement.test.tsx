@@ -153,9 +153,9 @@ describe("lender management", () => {
     await user.type(screen.getByLabelText(/^Name$/i), "Northwind Capital");
     await user.type(screen.getByLabelText(/Street/i), "1 Main St");
     await user.type(screen.getByLabelText(/City/i), "Austin");
-    await user.type(screen.getByLabelText(/State \/ Province/i), "TX");
     await user.type(screen.getByLabelText(/Postal code/i), "78701");
-    await user.type(screen.getByLabelText(/^Country$/i), "US");
+    await user.selectOptions(screen.getByLabelText(/^Country$/i), "US");
+    await user.selectOptions(screen.getByLabelText(/State \/ Province/i), "TX");
     await user.type(screen.getByLabelText(/^Phone$/i), "+1 555 111 2222");
     await user.type(screen.getByLabelText(/Contact name/i), "Alex Agent");
     await user.type(screen.getByLabelText(/Contact email/i), "alex@example.com");
@@ -173,9 +173,9 @@ describe("lender management", () => {
     renderWithProviders("/lenders/l-1/edit");
 
     expect(await screen.findByDisplayValue(baseLender.name)).toBeInTheDocument();
-    expect(screen.getByLabelText(/API client ID/i)).toHaveValue("");
-    expect(screen.getByLabelText(/API username/i)).toHaveValue("");
-    expect(screen.getByLabelText(/API password/i)).toHaveValue("");
+    expect(screen.queryByLabelText(/API client ID/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/API username/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/API password/i)).not.toBeInTheDocument();
 
     await user.clear(screen.getByLabelText(/^Name$/i));
     await user.type(screen.getByLabelText(/^Name$/i), "Updated name");
