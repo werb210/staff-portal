@@ -1,5 +1,4 @@
-import { apiClient, type RequestOptions } from "./client";
-import { normalizeArray } from "@/utils/normalize";
+import { apiClient, type ListResponse, type RequestOptions } from "./client";
 import type { ApplicationDetails, ApplicationAuditEvent } from "@/types/application.types";
 
 export type ApplicationSummary = {
@@ -20,19 +19,22 @@ export type ApplicationDocumentsResponse = {
 }[];
 
 export const fetchApplications = async () => {
-  const res = await apiClient.get<ApplicationSummary[]>("/applications");
-  return normalizeArray<ApplicationSummary>(res);
+  const res = await apiClient.getList<ApplicationSummary>("/applications");
+  return res.items;
 };
 
 export const fetchApplicationDetails = (id: string, options?: RequestOptions) =>
   apiClient.get<ApplicationDetails>(`/applications/${id}`, options);
 
 export const fetchApplicationDocuments = async (id: string, options?: RequestOptions) => {
-  const res = await apiClient.get<ApplicationDocumentsResponse>(`/applications/${id}/documents`, options);
-  return normalizeArray(res);
+  const res: ListResponse<ApplicationDocumentsResponse[number]> = await apiClient.getList(
+    `/applications/${id}/documents`,
+    options
+  );
+  return res.items;
 };
 
 export const fetchApplicationAudit = async (id: string, options?: RequestOptions) => {
-  const res = await apiClient.get<ApplicationAuditEvent[]>(`/applications/${id}/audit`, options);
-  return normalizeArray<ApplicationAuditEvent>(res);
+  const res = await apiClient.getList<ApplicationAuditEvent>(`/applications/${id}/audit`, options);
+  return res.items;
 };

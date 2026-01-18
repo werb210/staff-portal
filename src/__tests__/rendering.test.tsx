@@ -4,7 +4,7 @@ import { screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { renderWithProviders } from "@/test/testUtils";
 import LendersPage from "@/pages/lenders/LendersPage";
-import { fetchLenders } from "@/api/lenders";
+import { fetchLenders, type Lender } from "@/api/lenders";
 
 vi.mock("@/api/lenders", () => ({
   fetchLenders: vi.fn()
@@ -46,84 +46,8 @@ describe("loading and empty-state rendering", () => {
   });
 
   it("transitions from loading to data", async () => {
-    let resolvePromise: (
-      value: {
-        id: string;
-        name: string;
-        active: boolean;
-        address: {
-          street: string;
-          city: string;
-          stateProvince: string;
-          postalCode: string;
-          country: string;
-        };
-        phone: string;
-        website?: string | null;
-        description?: string | null;
-        internalNotes?: string | null;
-        processingNotes?: string | null;
-        primaryContact: {
-          name: string;
-          email: string;
-          phone: string;
-          mobilePhone: string;
-        };
-        submissionConfig: {
-          method: "API" | "EMAIL" | "MANUAL";
-          apiBaseUrl?: string | null;
-          apiClientId?: string | null;
-          apiUsername?: string | null;
-          apiPassword?: string | null;
-          submissionEmail?: string | null;
-        };
-        operationalLimits: {
-          maxLendingLimit?: number | null;
-          maxLtv?: number | null;
-          maxLoanTerm?: number | null;
-          maxAmortization?: number | null;
-        };
-      }[]
-    ) => void;
-    const pending = new Promise<
-      {
-        id: string;
-        name: string;
-        active: boolean;
-        address: {
-          street: string;
-          city: string;
-          stateProvince: string;
-          postalCode: string;
-          country: string;
-        };
-        phone: string;
-        website?: string | null;
-        description?: string | null;
-        internalNotes?: string | null;
-        processingNotes?: string | null;
-        primaryContact: {
-          name: string;
-          email: string;
-          phone: string;
-          mobilePhone: string;
-        };
-        submissionConfig: {
-          method: "API" | "EMAIL" | "MANUAL";
-          apiBaseUrl?: string | null;
-          apiClientId?: string | null;
-          apiUsername?: string | null;
-          apiPassword?: string | null;
-          submissionEmail?: string | null;
-        };
-        operationalLimits: {
-          maxLendingLimit?: number | null;
-          maxLtv?: number | null;
-          maxLoanTerm?: number | null;
-          maxAmortization?: number | null;
-        };
-      }[]
-    >((resolve) => {
+    let resolvePromise: (value: Lender[]) => void;
+    const pending = new Promise<Lender[]>((resolve) => {
       resolvePromise = resolve;
     });
 

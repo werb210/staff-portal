@@ -76,4 +76,24 @@ describe("apiClient auth", () => {
 
     expect(redirectToLogin).toHaveBeenCalled();
   });
+
+  it("adds idempotency and content type headers for authenticated mutating requests", async () => {
+    localStorage.setItem(ACCESS_TOKEN_KEY, "abc123");
+
+    await apiClient.post("/example", { name: "Atlas" }, { adapter } as any);
+
+    expect(adapter).toHaveBeenCalledOnce();
+    const passedConfig = adapter.mock.calls[0][0];
+    expect(passedConfig?.headers?.Authorization).toBe("Bearer abc123");
+    expect(passedConfig?.headers?.["Content-Type"]).toBe("application/json");
+    expect(passedConfig?.headers?.["Idempotency-Key"]).toBeDefined();
+  });
+
+  it("skips idempotency when no token is present", async () => {
+    await apiClient.post("/example", { name: "Atlas" }, { adapter, skipAuth: true } as any);
+
+    expect(adapter).toHaveBeenCalledOnce();
+    const passedConfig = adapter.mock.calls[0][0];
+    expect(passedConfig?.headers?.["Idempotency-Key"]).toBeUndefined();
+  });
 });

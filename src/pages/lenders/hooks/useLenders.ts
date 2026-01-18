@@ -4,14 +4,16 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/api/client";
-import { normalizeArray } from "@/utils/normalize";
 
 export function useLenders() {
   return useQuery({
     queryKey: ["lenders"],
     queryFn: async ({ signal }) => {
-      const data = await apiClient.get("/lenders", { signal });
-      return normalizeArray(data);
+      const data = await apiClient.getList("/lenders", { signal });
+      return data.items;
     },
+    placeholderData: (previousData) => previousData ?? [],
+    staleTime: 30_000,
+    refetchOnWindowFocus: false
   });
 }

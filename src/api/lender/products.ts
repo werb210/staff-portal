@@ -22,7 +22,10 @@ export type RequiredDocsPayload = {
   custom: string[];
 };
 
-export const fetchLenderProducts = () => lenderApiClient.get<LenderProduct[]>(`/lender/products`);
+export const fetchLenderProducts = async () => {
+  const res = await lenderApiClient.getList<LenderProduct>(`/lender/products`);
+  return res.items;
+};
 
 export const createLenderProduct = (payload: Partial<LenderProduct>) =>
   lenderApiClient.post<LenderProduct>(`/lender/products`, payload);

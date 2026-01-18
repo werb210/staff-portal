@@ -119,7 +119,9 @@ const LenderProductsContent = () => {
 
   const { data: lenders = [], isLoading: lendersLoading, error: lendersError } = useQuery<Lender[], Error>({
     queryKey: ["lenders"],
-    queryFn: fetchLenders
+    queryFn: fetchLenders,
+    staleTime: 30_000,
+    refetchOnWindowFocus: false
   });
 
   useEffect(() => {
@@ -147,8 +149,11 @@ const LenderProductsContent = () => {
     isLoading: productsLoading,
     error: productsError
   } = useQuery<LenderProduct[], Error>({
-    queryKey: ["lender-products"],
-    queryFn: () => fetchLenderProducts()
+    queryKey: ["lender-products", activeLenderId || "all"],
+    queryFn: () => fetchLenderProducts(activeLenderId || undefined),
+    placeholderData: (previousData) => previousData ?? [],
+    staleTime: 30_000,
+    refetchOnWindowFocus: false
   });
 
   const selectedProduct = useMemo(

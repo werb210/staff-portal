@@ -1,5 +1,4 @@
 import { apiClient } from "@/api/client";
-import { normalizeArray } from "@/utils/normalize";
 import type { PipelineApplication, PipelineFilters, PipelineStageId } from "./pipeline.types";
 
 const buildQueryParams = (filters: PipelineFilters): string => {
@@ -20,9 +19,8 @@ export const pipelineApi = {
   fetchColumn: async (stage: PipelineStageId, filters: PipelineFilters, options?: { signal?: AbortSignal }) => {
     const query = buildQueryParams(filters);
     const path = query ? `/portal/applications?${query}` : "/portal/applications";
-    const res = await apiClient.get<PipelineApplication[]>(path, options);
-    const items = normalizeArray<PipelineApplication>(res);
-    return items.filter((application) => application.stage === stage);
+    const res = await apiClient.getList<PipelineApplication>(path, options);
+    return res.items.filter((application) => application.stage === stage);
   },
   moveCard: async (applicationId: string, newStage: PipelineStageId) => {
     return apiClient.patch<PipelineApplication>(`/applications/${applicationId}/status`, { stage: newStage });

@@ -2,7 +2,10 @@ import axios, {
   AxiosError,
   AxiosHeaders,
   type AxiosInstance,
+  type InternalAxiosRequestConfig,
   type AxiosRequestConfig,
+  type AxiosResponseHeaders,
+  type RawAxiosResponseHeaders,
   type AxiosResponse,
   type GenericAbortSignal
 } from "axios";
@@ -68,6 +71,10 @@ export type RequestOptions = Omit<AxiosRequestConfig, "url" | "method" | "data">
   disableRouteAbort?: boolean;
 };
 
+export type ListResponse<T> = {
+  items: T[];
+};
+
 export const otpRequestOptions: RequestOptions = {
   skipAuth: true,
   authMode: "none",
@@ -129,13 +136,9 @@ const getAxiosClient = () => {
         authMode !== "none" && !requestOptions.skipAuth && !isAuthExcludedPath(String(config.url ?? ""));
       const token = getAccessTokenFromStorage();
       if (includeAuth && token) {
-        const headers = config.headers ?? {};
-        if (headers instanceof AxiosHeaders) {
-          if (!headers.has("Authorization")) {
-            headers.set("Authorization", `Bearer ${token}`);
-          }
-        } else if (!("Authorization" in headers)) {
-          headers.Authorization = `Bearer ${token}`;
+        const headers = new AxiosHeaders(config.headers);
+        if (!headers.has("Authorization")) {
+          headers.set("Authorization", `Bearer ${token}`);
         }
         config.headers = headers;
       }
@@ -222,11 +225,15 @@ const buildHeaders = (
   const normalizedMethod = typeof method === "string" ? method.toUpperCase() : undefined;
   const idempotencyMethods = new Set(["POST", "PUT", "PATCH", "DELETE"]);
   const allowIdempotency = !options.skipIdempotencyKey;
-  if (normalizedMethod && idempotencyMethods.has(normalizedMethod) && allowIdempotency && !headers.has("Idempotency-Key")) {
+  if (
+    normalizedMethod &&
+    idempotencyMethods.has(normalizedMethod) &&
+    allowIdempotency &&
+    includeAuth &&
+    token &&
+    !headers.has("Idempotency-Key")
+  ) {
     headers.set("Idempotency-Key", createIdempotencyKey());
-  }
-  if (normalizedMethod && idempotencyMethods.has(normalizedMethod) && allowIdempotency && !headers.has("Idempotency-Key")) {
-    console.warn("Missing Idempotency-Key header.", { method: normalizedMethod });
   }
   if (includeAuth && !headers.has("Authorization")) {
     console.warn("Missing Authorization header for authenticated request.", { method: normalizedMethod });
@@ -263,13 +270,21 @@ const extractRequestId = (error: AxiosError | { response?: { headers?: Record<st
   return typeof headerValue === "string" ? headerValue : undefined;
 };
 
-const extractRequestIdFromHeaders = (headers?: AxiosHeaders | Record<string, string>) => {
+const extractRequestIdFromHeaders = (
+  headers?:
+    | AxiosHeaders
+    | AxiosResponseHeaders
+    | RawAxiosResponseHeaders
+    | Record<string, string | number | boolean | undefined>
+) => {
   if (!headers) return undefined;
   const rawHeaders = headers as Record<string, string | undefined>;
   return rawHeaders["x-request-id"] || rawHeaders["request-id"];
 };
 
-const normalizeRequestHeaders = (headers?: AxiosHeaders | Record<string, string>) => {
+const normalizeRequestHeaders = (
+  headers?: AxiosHeaders | AxiosResponseHeaders | Record<string, string | number | boolean | undefined>
+) => {
   if (!headers) return undefined;
   if (headers instanceof AxiosHeaders) {
     if (typeof headers.entries === "function") {
@@ -288,6 +303,25 @@ const normalizeRequestHeaders = (headers?: AxiosHeaders | Record<string, string>
   return Object.fromEntries(
     Object.entries(headers).map(([key, value]) => [key, value ?? ""])
   );
+};
+
+const normalizeListResponse = <T>(data: unknown): ListResponse<T> => {
+  if (Array.isArray(data)) {
+    return { items: data as T[] };
+  }
+  if (data && typeof data === "object") {
+    const payload = data as { items?: T[]; data?: T[]; results?: T[] };
+    if (Array.isArray(payload.items)) {
+      return { items: payload.items };
+    }
+    if (Array.isArray(payload.data)) {
+      return { items: payload.data };
+    }
+    if (Array.isArray(payload.results)) {
+      return { items: payload.results };
+    }
+  }
+  return { items: [] };
 };
 
 const getRoutePath = () => {
@@ -396,16 +430,17 @@ const executeRequest = async <T>(path: string, config: RequestOptions & { method
   const { retryOnConflict, conflictRetryCount, disableTimeout, disableRouteAbort, ...axiosConfig } = config;
   const requestHeaders = buildHeaders(config, includeAuth, authToken ?? undefined, body, config.method);
   const client = getAxiosClient();
-  if (config.adapter && typeof config.adapter !== "function") {
+  const adapter = config.adapter;
+  if (adapter && typeof adapter !== "function") {
     throw new ApiError({
       status: 0,
       message: "Invalid HTTP adapter configuration",
       isConfigurationError: true
     });
   }
-  const previousAdapter = config.adapter ? client.defaults.adapter : undefined;
-  if (config.adapter) {
-    client.defaults.adapter = config.adapter;
+  const previousAdapter = adapter ? client.defaults.adapter : undefined;
+  if (adapter) {
+    client.defaults.adapter = adapter;
   }
 
   try {
@@ -418,8 +453,8 @@ const executeRequest = async <T>(path: string, config: RequestOptions & { method
       timeout: disableTimeout ? undefined : REQUEST_TIMEOUT_MS,
       validateStatus: (status) => status >= 200 && status < 300
     };
-    const response: AxiosResponse<T> = config.adapter
-      ? await config.adapter(requestConfig)
+    const response: AxiosResponse<T> = typeof adapter === "function"
+      ? await adapter(requestConfig as InternalAxiosRequestConfig)
       : await client.request<T>(requestConfig);
 
     if (response.status < 200 || response.status >= 300) {
@@ -508,7 +543,7 @@ const executeRequest = async <T>(path: string, config: RequestOptions & { method
 
     throw apiError;
   } finally {
-    if (config.adapter) {
+    if (adapter) {
       client.defaults.adapter = previousAdapter;
     }
     timeout?.clear();
@@ -656,6 +691,8 @@ const executeLenderRequest = async <T>(path: string, config: RequestOptions & { 
 
 export const apiClient = {
   get: <T>(path: string, options: RequestOptions = {}) => executeStaffRequest<T>(path, { ...options, method: "GET" }),
+  getList: <T>(path: string, options: RequestOptions = {}) =>
+    executeStaffRequest<unknown>(path, { ...options, method: "GET" }).then((data) => normalizeListResponse<T>(data)),
   post: <T>(path: string, body?: unknown, options: RequestOptions = {}) =>
     executeStaffRequest<T>(path, { ...options, method: "POST" }, body),
   put: <T>(path: string, body?: unknown, options: RequestOptions = {}) =>
@@ -674,6 +711,8 @@ export const setAxiosAdapterForTests = (adapter?: AxiosRequestConfig["adapter"])
 
 export const lenderApiClient = {
   get: <T>(path: string, options: RequestOptions = {}) => executeLenderRequest<T>(path, { ...options, method: "GET" }),
+  getList: <T>(path: string, options: RequestOptions = {}) =>
+    executeLenderRequest<unknown>(path, { ...options, method: "GET" }).then((data) => normalizeListResponse<T>(data)),
   post: <T>(path: string, body?: unknown, options: RequestOptions = {}) =>
     executeLenderRequest<T>(path, { ...options, method: "POST" }, body),
   put: <T>(path: string, body?: unknown, options: RequestOptions = {}) =>

@@ -1,5 +1,4 @@
 import { apiClient } from "./client";
-import { normalizeArray } from "@/utils/normalize";
 
 export type CalendarEvent = {
   id: string;
@@ -16,8 +15,8 @@ export type CalendarEvent = {
 };
 
 export const fetchLocalEvents = async () => {
-  const res = await apiClient.get<CalendarEvent[]>("/calendar/events");
-  return normalizeArray<CalendarEvent>(res);
+  const res = await apiClient.getList<CalendarEvent>("/calendar/events");
+  return res.items;
 };
 
 export const createLocalEvent = (event: Partial<CalendarEvent>) =>
