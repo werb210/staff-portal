@@ -24,71 +24,114 @@ type LenderFormValues = {
   active: boolean;
   street: string;
   city: string;
-  stateProvince: string;
+  region: string;
   postalCode: string;
   country: string;
   phone: string;
   website: string;
   description: string;
-  internalNotes: string;
-  processingNotes: string;
   primaryContactName: string;
   primaryContactEmail: string;
   primaryContactPhone: string;
-  primaryContactMobile: string;
   submissionMethod: SubmissionMethod;
-  apiBaseUrl: string;
-  apiClientId: string;
-  apiUsername: string;
-  apiPassword: string;
   submissionEmail: string;
-  maxLendingLimit: string;
-  maxLtv: string;
-  maxLoanTerm: string;
-  maxAmortization: string;
 };
-
-type LenderSubmissionConfig = LenderPayload["submissionConfig"];
 
 const emptyForm: LenderFormValues = {
   name: "",
   active: true,
   street: "",
   city: "",
-  stateProvince: "",
+  region: "",
   postalCode: "",
-  country: "",
+  country: "CA",
   phone: "",
   website: "",
   description: "",
-  internalNotes: "",
-  processingNotes: "",
   primaryContactName: "",
   primaryContactEmail: "",
   primaryContactPhone: "",
-  primaryContactMobile: "",
   submissionMethod: "MANUAL",
-  apiBaseUrl: "",
-  apiClientId: "",
-  apiUsername: "",
-  apiPassword: "",
-  submissionEmail: "",
-  maxLendingLimit: "",
-  maxLtv: "",
-  maxLoanTerm: "",
-  maxAmortization: ""
+  submissionEmail: ""
 };
 
 const optionalString = (value: string) => (value.trim() ? value.trim() : null);
 
-const toOptionalNumber = (value: string) => {
-  if (!value.trim()) return null;
-  const parsed = Number(value);
-  if (Number.isNaN(parsed)) return null;
-  return parsed;
-};
-
 const isValidEmail = (value: string) => value.includes("@");
+
+const COUNTRIES = [
+  { value: "CA", label: "Canada" },
+  { value: "US", label: "United States" }
+];
+
+const PROVINCES = [
+  { value: "AB", label: "Alberta" },
+  { value: "BC", label: "British Columbia" },
+  { value: "MB", label: "Manitoba" },
+  { value: "NB", label: "New Brunswick" },
+  { value: "NL", label: "Newfoundland and Labrador" },
+  { value: "NS", label: "Nova Scotia" },
+  { value: "NT", label: "Northwest Territories" },
+  { value: "NU", label: "Nunavut" },
+  { value: "ON", label: "Ontario" },
+  { value: "PE", label: "Prince Edward Island" },
+  { value: "QC", label: "Quebec" },
+  { value: "SK", label: "Saskatchewan" },
+  { value: "YT", label: "Yukon" }
+];
+
+const STATES = [
+  { value: "AL", label: "Alabama" },
+  { value: "AK", label: "Alaska" },
+  { value: "AZ", label: "Arizona" },
+  { value: "AR", label: "Arkansas" },
+  { value: "CA", label: "California" },
+  { value: "CO", label: "Colorado" },
+  { value: "CT", label: "Connecticut" },
+  { value: "DE", label: "Delaware" },
+  { value: "FL", label: "Florida" },
+  { value: "GA", label: "Georgia" },
+  { value: "HI", label: "Hawaii" },
+  { value: "ID", label: "Idaho" },
+  { value: "IL", label: "Illinois" },
+  { value: "IN", label: "Indiana" },
+  { value: "IA", label: "Iowa" },
+  { value: "KS", label: "Kansas" },
+  { value: "KY", label: "Kentucky" },
+  { value: "LA", label: "Louisiana" },
+  { value: "ME", label: "Maine" },
+  { value: "MD", label: "Maryland" },
+  { value: "MA", label: "Massachusetts" },
+  { value: "MI", label: "Michigan" },
+  { value: "MN", label: "Minnesota" },
+  { value: "MS", label: "Mississippi" },
+  { value: "MO", label: "Missouri" },
+  { value: "MT", label: "Montana" },
+  { value: "NE", label: "Nebraska" },
+  { value: "NV", label: "Nevada" },
+  { value: "NH", label: "New Hampshire" },
+  { value: "NJ", label: "New Jersey" },
+  { value: "NM", label: "New Mexico" },
+  { value: "NY", label: "New York" },
+  { value: "NC", label: "North Carolina" },
+  { value: "ND", label: "North Dakota" },
+  { value: "OH", label: "Ohio" },
+  { value: "OK", label: "Oklahoma" },
+  { value: "OR", label: "Oregon" },
+  { value: "PA", label: "Pennsylvania" },
+  { value: "RI", label: "Rhode Island" },
+  { value: "SC", label: "South Carolina" },
+  { value: "SD", label: "South Dakota" },
+  { value: "TN", label: "Tennessee" },
+  { value: "TX", label: "Texas" },
+  { value: "UT", label: "Utah" },
+  { value: "VT", label: "Vermont" },
+  { value: "VA", label: "Virginia" },
+  { value: "WA", label: "Washington" },
+  { value: "WV", label: "West Virginia" },
+  { value: "WI", label: "Wisconsin" },
+  { value: "WY", label: "Wyoming" }
+];
 
 const LendersContent = () => {
   const queryClient = useQueryClient();
@@ -133,28 +176,17 @@ const LendersContent = () => {
         active: selectedLender.active,
         street: selectedLender.address.street,
         city: selectedLender.address.city,
-        stateProvince: selectedLender.address.stateProvince,
+        region: selectedLender.address.stateProvince,
         postalCode: selectedLender.address.postalCode,
         country: selectedLender.address.country,
         phone: selectedLender.phone,
         website: selectedLender.website ?? "",
         description: selectedLender.description ?? "",
-        internalNotes: selectedLender.internalNotes ?? "",
-        processingNotes: selectedLender.processingNotes ?? "",
         primaryContactName: selectedLender.primaryContact.name,
         primaryContactEmail: selectedLender.primaryContact.email,
         primaryContactPhone: selectedLender.primaryContact.phone,
-        primaryContactMobile: selectedLender.primaryContact.mobilePhone,
         submissionMethod: selectedLender.submissionConfig.method,
-        apiBaseUrl: selectedLender.submissionConfig.apiBaseUrl ?? "",
-        apiClientId: "",
-        apiUsername: "",
-        apiPassword: "",
-        submissionEmail: selectedLender.submissionConfig.submissionEmail ?? "",
-        maxLendingLimit: selectedLender.operationalLimits.maxLendingLimit?.toString() ?? "",
-        maxLtv: selectedLender.operationalLimits.maxLtv?.toString() ?? "",
-        maxLoanTerm: selectedLender.operationalLimits.maxLoanTerm?.toString() ?? "",
-        maxAmortization: selectedLender.operationalLimits.maxAmortization?.toString() ?? ""
+        submissionEmail: selectedLender.submissionConfig.submissionEmail ?? ""
       });
       return;
     }
@@ -195,7 +227,7 @@ const LendersContent = () => {
     if (!values.name.trim()) nextErrors.name = "Name is required.";
     if (!values.street.trim()) nextErrors.street = "Street is required.";
     if (!values.city.trim()) nextErrors.city = "City is required.";
-    if (!values.stateProvince.trim()) nextErrors.stateProvince = "State/province is required.";
+    if (!values.region.trim()) nextErrors.region = "State/province is required.";
     if (!values.postalCode.trim()) nextErrors.postalCode = "Postal code is required.";
     if (!values.country.trim()) nextErrors.country = "Country is required.";
     if (!values.phone.trim()) nextErrors.phone = "Phone is required.";
@@ -206,109 +238,33 @@ const LendersContent = () => {
       nextErrors.primaryContactEmail = "Enter a valid email.";
     }
     if (!values.submissionMethod) nextErrors.submissionMethod = "Submission method is required.";
-    if (values.submissionMethod === "API") {
-      if (!values.apiBaseUrl.trim()) nextErrors.apiBaseUrl = "API base URL is required.";
-      const isEditing = Boolean(selectedLender);
-      const hasCredentialUpdates =
-        Boolean(values.apiClientId.trim()) || Boolean(values.apiUsername.trim()) || Boolean(values.apiPassword.trim());
-      if (!isEditing || hasCredentialUpdates) {
-        if (!values.apiClientId.trim()) nextErrors.apiClientId = "API client ID is required.";
-        if (!values.apiUsername.trim()) nextErrors.apiUsername = "API username is required.";
-        if (!values.apiPassword.trim()) nextErrors.apiPassword = "API password is required.";
-      }
-    }
     if (values.submissionMethod === "EMAIL" && !values.submissionEmail.trim()) {
       nextErrors.submissionEmail = "Submission email is required.";
     }
-    const maxLendingLimit = toOptionalNumber(values.maxLendingLimit);
-    if (values.maxLendingLimit.trim() && maxLendingLimit === null) {
-      nextErrors.maxLendingLimit = "Max lending limit must be a number.";
-    }
-    const maxLtv = toOptionalNumber(values.maxLtv);
-    if (values.maxLtv.trim() && maxLtv === null) {
-      nextErrors.maxLtv = "Max LTV must be a number.";
-    }
-    if (maxLtv !== null && (maxLtv < 0 || maxLtv > 100)) {
-      nextErrors.maxLtv = "Max LTV must be between 0 and 100.";
-    }
-    const maxLoanTerm = toOptionalNumber(values.maxLoanTerm);
-    if (values.maxLoanTerm.trim() && maxLoanTerm === null) {
-      nextErrors.maxLoanTerm = "Max loan term must be a number.";
-    }
-    const maxAmortization = toOptionalNumber(values.maxAmortization);
-    if (values.maxAmortization.trim() && maxAmortization === null) {
-      nextErrors.maxAmortization = "Max amortization must be a number.";
-    }
     return nextErrors;
-  };
-
-  const buildSubmissionConfig = (
-    values: LenderFormValues,
-    existing?: LenderSubmissionConfig | null
-  ): LenderSubmissionConfig => {
-    if (values.submissionMethod === "API") {
-      return {
-        method: values.submissionMethod,
-        apiBaseUrl: optionalString(values.apiBaseUrl),
-        apiClientId: optionalString(values.apiClientId) ?? existing?.apiClientId ?? null,
-        apiUsername: optionalString(values.apiUsername) ?? existing?.apiUsername ?? null,
-        apiPassword: optionalString(values.apiPassword) ?? existing?.apiPassword ?? null,
-        submissionEmail: null
-      };
-    }
-    if (values.submissionMethod === "EMAIL") {
-      return {
-        method: values.submissionMethod,
-        apiBaseUrl: null,
-        apiClientId: null,
-        apiUsername: null,
-        apiPassword: null,
-        submissionEmail: optionalString(values.submissionEmail)
-      };
-    }
-    return {
-      method: values.submissionMethod,
-      apiBaseUrl: null,
-      apiClientId: null,
-      apiUsername: null,
-      apiPassword: null,
-      submissionEmail: null
-    };
   };
 
   const buildCreatePayload = (values: LenderFormValues): LenderPayload => ({
     name: values.name.trim(),
     active: values.active,
-    address: {
-      street: values.street.trim(),
-      city: values.city.trim(),
-      stateProvince: values.stateProvince.trim(),
-      postalCode: values.postalCode.trim(),
-      country: values.country.trim()
-    },
     phone: values.phone.trim(),
     website: optionalString(values.website),
     description: optionalString(values.description),
-    internalNotes: optionalString(values.internalNotes),
-    processingNotes: optionalString(values.processingNotes),
-    primaryContact: {
-      name: values.primaryContactName.trim(),
-      email: values.primaryContactEmail.trim(),
-      phone: values.primaryContactPhone.trim(),
-      mobilePhone: values.primaryContactMobile.trim()
-    },
-    submissionConfig: buildSubmissionConfig(values),
-    operationalLimits: {
-      maxLendingLimit: toOptionalNumber(values.maxLendingLimit),
-      maxLtv: toOptionalNumber(values.maxLtv),
-      maxLoanTerm: toOptionalNumber(values.maxLoanTerm),
-      maxAmortization: toOptionalNumber(values.maxAmortization)
-    }
+    street: values.street.trim(),
+    city: values.city.trim(),
+    region: values.region.trim(),
+    country: values.country.trim(),
+    postal_code: values.postalCode.trim(),
+    contact_name: values.primaryContactName.trim(),
+    contact_email: values.primaryContactEmail.trim(),
+    contact_phone: values.primaryContactPhone.trim(),
+    submission_method: values.submissionMethod,
+    submission_email:
+      values.submissionMethod === "EMAIL" ? optionalString(values.submissionEmail) : null
   });
 
   const buildUpdatePayload = (values: LenderFormValues): Partial<LenderPayload> => ({
-    ...buildCreatePayload(values),
-    submissionConfig: buildSubmissionConfig(values, selectedLender?.submissionConfig)
+    ...buildCreatePayload(values)
   });
 
   useEffect(() => {
@@ -470,12 +426,21 @@ const LendersContent = () => {
                   onChange={(event) => setFormValues((prev) => ({ ...prev, city: event.target.value }))}
                   error={formErrors.city}
                 />
-                <Input
+                <Select
                   label="State / Province"
-                  value={formValues.stateProvince}
-                  onChange={(event) => setFormValues((prev) => ({ ...prev, stateProvince: event.target.value }))}
-                  error={formErrors.stateProvince}
-                />
+                  value={formValues.region}
+                  onChange={(event) => setFormValues((prev) => ({ ...prev, region: event.target.value }))}
+                >
+                  <option value="">
+                    Select {formValues.country === "US" ? "state" : "province"}
+                  </option>
+                  {(formValues.country === "US" ? STATES : PROVINCES).map((region) => (
+                    <option key={region.value} value={region.value}>
+                      {region.label}
+                    </option>
+                  ))}
+                </Select>
+                {formErrors.region && <span className="ui-field__error">{formErrors.region}</span>}
               </div>
               <div className="management-grid__row">
                 <Input
@@ -484,12 +449,24 @@ const LendersContent = () => {
                   onChange={(event) => setFormValues((prev) => ({ ...prev, postalCode: event.target.value }))}
                   error={formErrors.postalCode}
                 />
-                <Input
+                <Select
                   label="Country"
                   value={formValues.country}
-                  onChange={(event) => setFormValues((prev) => ({ ...prev, country: event.target.value }))}
-                  error={formErrors.country}
-                />
+                  onChange={(event) =>
+                    setFormValues((prev) => ({
+                      ...prev,
+                      country: event.target.value,
+                      region: prev.country === event.target.value ? prev.region : ""
+                    }))
+                  }
+                >
+                  {COUNTRIES.map((country) => (
+                    <option key={country.value} value={country.value}>
+                      {country.label}
+                    </option>
+                  ))}
+                </Select>
+                {formErrors.country && <span className="ui-field__error">{formErrors.country}</span>}
               </div>
             </div>
 
@@ -517,13 +494,6 @@ const LendersContent = () => {
                     setFormValues((prev) => ({ ...prev, primaryContactPhone: event.target.value }))
                   }
                 />
-                <Input
-                  label="Mobile phone"
-                  value={formValues.primaryContactMobile}
-                  onChange={(event) =>
-                    setFormValues((prev) => ({ ...prev, primaryContactMobile: event.target.value }))
-                  }
-                />
               </div>
             </div>
 
@@ -546,42 +516,6 @@ const LendersContent = () => {
                 ))}
               </Select>
               {formErrors.submissionMethod && <span className="ui-field__error">{formErrors.submissionMethod}</span>}
-              {formValues.submissionMethod === "API" && (
-                <>
-                  <Input
-                    label="API base URL"
-                    value={formValues.apiBaseUrl}
-                    onChange={(event) => setFormValues((prev) => ({ ...prev, apiBaseUrl: event.target.value }))}
-                    error={formErrors.apiBaseUrl}
-                  />
-                  <Input
-                    label="API client ID"
-                    value={formValues.apiClientId}
-                    onChange={(event) => setFormValues((prev) => ({ ...prev, apiClientId: event.target.value }))}
-                    error={formErrors.apiClientId}
-                  />
-                  <div className="management-grid__row">
-                    <Input
-                      label="API username"
-                      value={formValues.apiUsername}
-                      onChange={(event) => setFormValues((prev) => ({ ...prev, apiUsername: event.target.value }))}
-                      error={formErrors.apiUsername}
-                    />
-                    <Input
-                      label="API password"
-                      type="password"
-                      value={formValues.apiPassword}
-                      onChange={(event) => setFormValues((prev) => ({ ...prev, apiPassword: event.target.value }))}
-                      error={formErrors.apiPassword}
-                    />
-                  </div>
-                  {selectedLender && (
-                    <p className="text-xs text-slate-500">
-                      API credentials are stored securely and never displayed. Enter new values to rotate them.
-                    </p>
-                  )}
-                </>
-              )}
               {formValues.submissionMethod === "EMAIL" && (
                 <Input
                   label="Submission email"
@@ -590,64 +524,6 @@ const LendersContent = () => {
                   error={formErrors.submissionEmail}
                 />
               )}
-            </div>
-
-            <div className="management-field">
-              <span className="management-field__label">Operational limits</span>
-              <div className="management-grid__row">
-                <Input
-                  label="Max lending limit"
-                  value={formValues.maxLendingLimit}
-                  onChange={(event) =>
-                    setFormValues((prev) => ({ ...prev, maxLendingLimit: event.target.value }))
-                  }
-                  error={formErrors.maxLendingLimit}
-                />
-                <Input
-                  label="Max LTV (%)"
-                  value={formValues.maxLtv}
-                  onChange={(event) => setFormValues((prev) => ({ ...prev, maxLtv: event.target.value }))}
-                  error={formErrors.maxLtv}
-                />
-              </div>
-              <div className="management-grid__row">
-                <Input
-                  label="Max loan term (months)"
-                  value={formValues.maxLoanTerm}
-                  onChange={(event) => setFormValues((prev) => ({ ...prev, maxLoanTerm: event.target.value }))}
-                  error={formErrors.maxLoanTerm}
-                />
-                <Input
-                  label="Max amortization (months)"
-                  value={formValues.maxAmortization}
-                  onChange={(event) =>
-                    setFormValues((prev) => ({ ...prev, maxAmortization: event.target.value }))
-                  }
-                  error={formErrors.maxAmortization}
-                />
-              </div>
-            </div>
-
-            <div className="management-field">
-              <span className="management-field__label">Staff notes</span>
-              <label className="ui-field">
-                <span className="ui-field__label">Internal notes</span>
-                <textarea
-                  className="ui-input ui-textarea"
-                  value={formValues.internalNotes}
-                  onChange={(event) => setFormValues((prev) => ({ ...prev, internalNotes: event.target.value }))}
-                  rows={3}
-                />
-              </label>
-              <label className="ui-field">
-                <span className="ui-field__label">Processing notes</span>
-                <textarea
-                  className="ui-input ui-textarea"
-                  value={formValues.processingNotes}
-                  onChange={(event) => setFormValues((prev) => ({ ...prev, processingNotes: event.target.value }))}
-                  rows={3}
-                />
-              </label>
             </div>
 
             <div className="management-actions">
