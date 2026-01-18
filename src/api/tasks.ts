@@ -1,5 +1,4 @@
 import { apiClient } from "./client";
-import { normalizeArray } from "@/utils/normalize";
 
 export type TaskStatus = "todo" | "in-progress" | "done";
 export type TaskPriority = "low" | "medium" | "high";
@@ -19,8 +18,8 @@ export type TaskItem = {
 };
 
 export const fetchTasks = async () => {
-  const res = await apiClient.get<TaskItem[]>("/calendar/tasks");
-  return normalizeArray<TaskItem>(res);
+  const res = await apiClient.getList<TaskItem>("/calendar/tasks");
+  return res.items;
 };
 
 export const createTask = (task: Partial<TaskItem>) => apiClient.post<TaskItem>("/calendar/tasks", task);

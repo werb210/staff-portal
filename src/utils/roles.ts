@@ -14,8 +14,10 @@ export const canAccessReferrerPortal = (role?: UserRole | null) => role === "Ref
 export const hasRequiredRole = (role: UserRole | null | undefined, requiredRoles: UserRole[]) =>
   Boolean(role && requiredRoles.includes(role));
 
+export const isUserRole = (role: string): role is UserRole => roleValues.includes(role as UserRole);
+
 export const assertKnownRole = (role: string): asserts role is UserRole => {
-  if (!roleValues.includes(role as UserRole)) {
+  if (!isUserRole(role)) {
     throw new Error(`Unknown role: ${role}`);
   }
 };

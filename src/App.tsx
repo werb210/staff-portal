@@ -42,8 +42,8 @@ export default function App() {
     () =>
       new QueryClient({
         defaultOptions: {
-          queries: { useErrorBoundary: true },
-          mutations: { useErrorBoundary: true }
+          queries: { throwOnError: true },
+          mutations: { throwOnError: true }
         }
       }),
     []

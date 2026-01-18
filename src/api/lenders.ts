@@ -1,5 +1,4 @@
-import { apiClient, type RequestOptions } from "./client";
-import { normalizeArray } from "@/utils/normalize";
+import { apiClient, type ListResponse, type RequestOptions } from "./client";
 import type {
   Lender,
   LenderPayload,
@@ -17,8 +16,6 @@ export type LenderMatch = {
   requiredDocsStatus?: string;
 };
 
-const ensureArray = <T>(input: unknown) => normalizeArray<T>(input);
-
 const assertEntityHasId = <T extends { id?: string }>(entity: T, context: string): T => {
   const id = entity?.id;
   if (typeof id !== "string" || !id.trim()) {
@@ -34,12 +31,11 @@ const assertEntitiesHaveIds = <T extends { id?: string }>(entities: T[], context
 };
 
 export const fetchLenders = async () => {
-  const res = await apiClient.get<Lender[]>("/lenders");
-  const lenders = ensureArray<Lender>(res);
-  if (lenders.length) {
-    assertEntitiesHaveIds(lenders, "lender");
+  const res = await apiClient.getList<Lender>("/lenders");
+  if (res.items.length) {
+    assertEntitiesHaveIds(res.items, "lender");
   }
-  return lenders;
+  return res.items;
 };
 
 export const fetchLenderById = async (id: string) => {
@@ -58,14 +54,13 @@ export const updateLender = async (id: string, payload: Partial<LenderPayload>) 
 };
 
 export const fetchLenderProducts = async (lenderId?: string) => {
-  const res = await apiClient.get<LenderProduct[]>(`/lender-products`, {
+  const res: ListResponse<LenderProduct> = await apiClient.getList<LenderProduct>(`/lender-products`, {
     params: lenderId ? { lenderId } : undefined
   });
-  const products = ensureArray<LenderProduct>(res);
-  if (products.length) {
-    assertEntitiesHaveIds(products, "lender product");
+  if (res.items.length) {
+    assertEntitiesHaveIds(res.items, "lender product");
   }
-  return products;
+  return res.items;
 };
 
 export const createLenderProduct = async (payload: LenderProductPayload) => {

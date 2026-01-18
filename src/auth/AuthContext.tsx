@@ -17,7 +17,7 @@ import { registerAuthFailureHandler } from "@/auth/authEvents";
 import { redirectToLogin } from "@/services/api";
 import { setApiStatus } from "@/state/apiStatus";
 import { showApiToast } from "@/state/apiNotifications";
-import { assertKnownRole } from "@/utils/roles";
+import { isUserRole } from "@/utils/roles";
 
 export type AuthStatus = "authenticated" | "unauthenticated" | "expired" | "forbidden";
 
@@ -91,7 +91,9 @@ const buildUserFromToken = (token: string): AuthenticatedUser | null => {
   if (typeof id !== "string" || typeof email !== "string" || typeof role !== "string") {
     return null;
   }
-  assertKnownRole(role);
+  if (!isUserRole(role)) {
+    return null;
+  }
   const name = embeddedUser.name ?? payload.name;
   return {
     id,
@@ -136,7 +138,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       throw new Error("Unable to derive user from access token");
     }
 
-    assertKnownRole(resolvedUser.role);
     setStoredAccessToken(payload.token);
     setStoredUser(resolvedUser);
     setToken(payload.token);

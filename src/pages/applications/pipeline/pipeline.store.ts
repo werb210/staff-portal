@@ -63,7 +63,9 @@ const getInitialFilters = (): PipelineFilters => {
   return { ...defaultFilters, ...stored };
 };
 
-const getInitialStageId = (): PipelineStageId => readPipelineState().selectedStageId ?? "received";
+const defaultStageId: PipelineStageId = "received";
+
+const getInitialStageId = (): PipelineStageId => readPipelineState().selectedStageId ?? defaultStageId;
 
 const getInitialSelectedApplicationId = (): string | null => readPipelineState().selectedApplicationId ?? null;
 
@@ -143,7 +145,7 @@ export const usePipelineStore = create<PipelineStore>((set) => {
           ...state,
           currentFilters: { ...defaultFilters },
           selectedApplicationId: null,
-          selectedStageId: "received",
+          selectedStageId: defaultStageId,
           isDrawerOpen: false
         };
         persistPipelineState(nextState);
@@ -153,7 +155,7 @@ export const usePipelineStore = create<PipelineStore>((set) => {
       clearPipelineState();
       set({
         selectedApplicationId: null,
-        selectedStageId: "received",
+        selectedStageId: defaultStageId,
         isDrawerOpen: false,
         draggingCardId: null,
         draggingFromStage: null,

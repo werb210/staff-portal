@@ -54,7 +54,9 @@ const PipelineColumn = ({
   const { data = [], isLoading, isFetching, error } = useQuery<PipelineApplication[]>({
     queryKey: pipelineQueryKeys.column(stage.id, filters),
     queryFn: ({ signal }) => pipelineApi.fetchColumn(stage.id, filters, { signal }),
+    placeholderData: (previousData) => previousData ?? [],
     staleTime: 30_000,
+    refetchOnWindowFocus: false,
     retry: retryUnlessClientError
   });
 

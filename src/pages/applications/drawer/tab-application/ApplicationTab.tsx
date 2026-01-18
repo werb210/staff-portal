@@ -12,14 +12,22 @@ const Section = ({ title, children }: { title: string; children: ReactNode }) =>
   </div>
 );
 
-const KeyValueList = ({ data }: { data?: Record<string, string | number | boolean> }) => {
+const KeyValueList = ({ data }: { data?: Record<string, unknown> | null }) => {
   if (!data || Object.keys(data).length === 0) return <div className="drawer-placeholder">No data available.</div>;
   return (
     <dl className="drawer-kv-list">
       {Object.entries(data).map(([key, value]) => (
         <div key={key} className="drawer-kv-list__item">
           <dt>{key}</dt>
-          <dd>{typeof value === "string" && key.toLowerCase().includes("ssn") ? "***-**-****" : String(value)}</dd>
+          <dd>
+            {typeof value === "string" && key.toLowerCase().includes("ssn")
+              ? "***-**-****"
+              : typeof value === "string" || typeof value === "number" || typeof value === "boolean"
+                ? String(value)
+                : value == null
+                  ? ""
+                  : JSON.stringify(value)}
+          </dd>
         </div>
       ))}
     </dl>
