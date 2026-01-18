@@ -17,21 +17,7 @@ export type LenderMatch = {
   requiredDocsStatus?: string;
 };
 
-const isArrayContainer = (input: unknown) => {
-  if (Array.isArray(input)) return true;
-  if (input && typeof input === "object") {
-    const payload = input as { items?: unknown; data?: unknown; results?: unknown };
-    return Array.isArray(payload.items) || Array.isArray(payload.data) || Array.isArray(payload.results);
-  }
-  return false;
-};
-
-const ensureArray = <T>(input: unknown, context: string): T[] => {
-  if (!isArrayContainer(input)) {
-    throw new Error(`Expected ${context} response to be an array.`);
-  }
-  return normalizeArray<T>(input);
-};
+const ensureArray = <T>(input: unknown) => normalizeArray<T>(input);
 
 const assertEntityHasId = <T extends { id?: string }>(entity: T, context: string): T => {
   const id = entity?.id;
@@ -49,8 +35,10 @@ const assertEntitiesHaveIds = <T extends { id?: string }>(entities: T[], context
 
 export const fetchLenders = async () => {
   const res = await apiClient.get<Lender[]>("/lenders");
-  const lenders = ensureArray<Lender>(res, "lenders");
-  assertEntitiesHaveIds(lenders, "lender");
+  const lenders = ensureArray<Lender>(res);
+  if (lenders.length) {
+    assertEntitiesHaveIds(lenders, "lender");
+  }
   return lenders;
 };
 
@@ -69,10 +57,14 @@ export const updateLender = async (id: string, payload: Partial<LenderPayload>) 
   return assertEntityHasId(lender, "lender");
 };
 
-export const fetchLenderProducts = async (lenderId: string) => {
-  const res = await apiClient.get<LenderProduct[]>(`/lender-products`, { params: { lenderId } });
-  const products = ensureArray<LenderProduct>(res, "lender products");
-  assertEntitiesHaveIds(products, "lender product");
+export const fetchLenderProducts = async (lenderId?: string) => {
+  const res = await apiClient.get<LenderProduct[]>(`/lender-products`, {
+    params: lenderId ? { lenderId } : undefined
+  });
+  const products = ensureArray<LenderProduct>(res);
+  if (products.length) {
+    assertEntitiesHaveIds(products, "lender product");
+  }
   return products;
 };
 

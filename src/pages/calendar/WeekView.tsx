@@ -1,17 +1,16 @@
-import type { CalendarEvent, O365Event } from "@/api/calendar";
+import type { CalendarEvent } from "@/api/calendar";
 import { getWeekDays, groupEventsByDay, sortEvents } from "./utils";
 
-const WeekView = ({ date, localEvents, o365Events }: { date: Date; localEvents: CalendarEvent[]; o365Events: O365Event[] }) => {
+const WeekView = ({ date, localEvents }: { date: Date; localEvents: CalendarEvent[] }) => {
   const days = getWeekDays(date);
   const groupedLocal = groupEventsByDay(localEvents);
-  const groupedExternal = groupEventsByDay(o365Events);
 
   return (
     <div className="calendar-view calendar-view--week">
       <div className="calendar-week-grid">
         {days.map((day) => {
           const dayKey = day.toDateString();
-          const events = sortEvents([...(groupedLocal[dayKey] ?? []), ...(groupedExternal[dayKey] ?? [])]);
+          const events = sortEvents(groupedLocal[dayKey] ?? []);
           return (
             <div key={day.toISOString()} className="calendar-week-grid__cell">
               <div className="calendar-week-grid__header">{day.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}</div>

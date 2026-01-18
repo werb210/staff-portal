@@ -10,9 +10,6 @@ vi.mock("@/api/calendar", () => ({
   fetchLocalEvents: vi.fn().mockResolvedValue([
     { id: "1", title: "Local Event", start: now.toISOString(), end: oneHourLater.toISOString() }
   ]),
-  fetchO365Events: vi.fn().mockResolvedValue([
-    { id: "o1", title: "Teams Sync", start: "2024-01-01T12:00:00Z", end: "2024-01-01T13:00:00Z", attendees: ["A", "B"] }
-  ]),
   createLocalEvent: vi.fn().mockResolvedValue({
     id: "2",
     title: "Created Event",
@@ -77,11 +74,6 @@ describe("CalendarPage", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /Month/ }));
     await waitFor(() => expect(document.querySelector(".calendar-view--month")).not.toBeNull());
-  });
-
-  it("shows O365 events with attendees", async () => {
-    renderWithProviders(<CalendarPage />);
-    await waitFor(() => expect(mockedCalendar.fetchO365Events).toHaveBeenCalled());
   });
 
   it("allows creating local events", async () => {

@@ -1,26 +1,15 @@
 import { getApiBaseUrl } from "@/config/api";
 
-function baseHasApiPrefix(base: string) {
-  return base.replace(/\/+$/, "").endsWith("/api");
-}
-
-function stripApiSuffix(base: string) {
-  return base.replace(/\/api\/?$/, "");
-}
-
-function normalizePath(path: string, base: string) {
+function normalizePath(path: string) {
   if (!path.startsWith("/")) path = `/${path}`;
-  if (path === "/health") return "/health";
-  if (!baseHasApiPrefix(base) && !path.startsWith("/api/")) return `/api${path}`;
-  return path;
+  if (path === "/health") return path;
+  const trimmed = path.startsWith("/api/") ? path.replace(/^\/api/, "") : path;
+  return `/api${trimmed}`;
 }
 
 function buildApiUrl(path: string) {
   const baseUrl = getApiBaseUrl();
-  const normalizedPath = normalizePath(path, baseUrl);
-  if (normalizedPath === "/health") {
-    return `${stripApiSuffix(baseUrl)}${normalizedPath}`;
-  }
+  const normalizedPath = normalizePath(path);
   return `${baseUrl}${normalizedPath}`;
 }
 

@@ -72,7 +72,7 @@ describe("auth login", () => {
     }));
 
     const response = await apiClient.post<{ sessionId?: string; requestId?: string }>(
-      "/api/auth/otp/start",
+      "/auth/otp/start",
       { phone: "+15555550100" },
       { ...otpRequestOptions, adapter: startAdapter } as any
     );
@@ -98,7 +98,7 @@ describe("auth login", () => {
     });
 
     expect(apiPostSpy).toHaveBeenCalledWith(
-      "/api/auth/otp/verify",
+      "/auth/otp/verify",
       { phone: "+15555550100", code: "123456" },
       otpRequestOptions
     );

@@ -1,16 +1,14 @@
-import type { CalendarEvent, O365Event } from "@/api/calendar";
+import type { CalendarEvent } from "@/api/calendar";
 
-type EventLike = CalendarEvent | O365Event;
-
-export const groupEventsByDay = (events: EventLike[]) => {
-  return events.reduce<Record<string, EventLike[]>>((acc, event) => {
+export const groupEventsByDay = (events: CalendarEvent[]) => {
+  return events.reduce<Record<string, CalendarEvent[]>>((acc, event) => {
     const key = new Date(event.start).toDateString();
     acc[key] = acc[key] ? [...acc[key], event] : [event];
     return acc;
   }, {});
 };
 
-export const sortEvents = (events: EventLike[]) =>
+export const sortEvents = (events: CalendarEvent[]) =>
   [...events].sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
 
 export const getStartOfWeek = (date: Date) => {

@@ -2,9 +2,8 @@ import { apiClient } from "@/api/client";
 import { normalizeArray } from "@/utils/normalize";
 import type { PipelineApplication, PipelineFilters, PipelineStageId } from "./pipeline.types";
 
-const buildQueryParams = (stage: PipelineStageId, filters: PipelineFilters): string => {
+const buildQueryParams = (filters: PipelineFilters): string => {
   const params = new URLSearchParams();
-  params.set("stage", stage);
   if (filters.searchTerm) params.set("search", filters.searchTerm);
   if (filters.productCategory) params.set("productCategory", filters.productCategory);
   if (filters.assignedStaffId) params.set("assignedStaff", filters.assignedStaffId);
@@ -19,15 +18,17 @@ const buildQueryParams = (stage: PipelineStageId, filters: PipelineFilters): str
 
 export const pipelineApi = {
   fetchColumn: async (stage: PipelineStageId, filters: PipelineFilters, options?: { signal?: AbortSignal }) => {
-    const query = buildQueryParams(stage, filters);
-    const res = await apiClient.get<PipelineApplication[]>(`/api/applications?${query}`, options);
-    return normalizeArray<PipelineApplication>(res);
+    const query = buildQueryParams(filters);
+    const path = query ? `/portal/applications?${query}` : "/portal/applications";
+    const res = await apiClient.get<PipelineApplication[]>(path, options);
+    const items = normalizeArray<PipelineApplication>(res);
+    return items.filter((application) => application.stage === stage);
   },
   moveCard: async (applicationId: string, newStage: PipelineStageId) => {
-    return apiClient.patch<PipelineApplication>(`/api/applications/${applicationId}/status`, { stage: newStage });
+    return apiClient.patch<PipelineApplication>(`/applications/${applicationId}/status`, { stage: newStage });
   },
   fetchSummary: async (applicationId: string) => {
-    return apiClient.get<PipelineApplication>(`/api/applications/${applicationId}/summary`);
+    return apiClient.get<PipelineApplication>(`/applications/${applicationId}/summary`);
   }
 };
 

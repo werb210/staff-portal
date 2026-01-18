@@ -1,4 +1,4 @@
-import type { CalendarEvent, O365Event } from "@/api/calendar";
+import type { CalendarEvent } from "@/api/calendar";
 import { groupEventsByDay, sortEvents } from "./utils";
 
 const EventBlock = ({ title, time, subtitle, color }: { title: string; time: string; subtitle?: string; color?: string }) => (
@@ -9,11 +9,9 @@ const EventBlock = ({ title, time, subtitle, color }: { title: string; time: str
   </div>
 );
 
-const DayView = ({ date, localEvents, o365Events }: { date: Date; localEvents: CalendarEvent[]; o365Events: O365Event[] }) => {
+const DayView = ({ date, localEvents }: { date: Date; localEvents: CalendarEvent[] }) => {
   const dayKey = date.toDateString();
-  const local = groupEventsByDay(localEvents)[dayKey] ?? [];
-  const external = groupEventsByDay(o365Events)[dayKey] ?? [];
-  const events = sortEvents([...local, ...external]);
+  const events = sortEvents(groupEventsByDay(localEvents)[dayKey] ?? []);
 
   return (
     <div className="calendar-view calendar-view--day">
@@ -24,8 +22,7 @@ const DayView = ({ date, localEvents, o365Events }: { date: Date; localEvents: C
           key={event.id}
           title={event.title}
           time={`${new Date(event.start).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} - ${new Date(event.end).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`}
-          subtitle={(event as O365Event).attendees?.join(", ") || (event as CalendarEvent).description}
-          color={(event as O365Event).categoryColor}
+          subtitle={event.description}
         />
       ))}
     </div>
