@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import apiClient, { otpRequestOptions } from "@/api/client";
+import apiClient, { otpClient, otpStartRequestOptions, otpVerifyRequestOptions } from "@/api/client";
 import { AuthProvider, useAuth } from "@/auth/AuthContext";
 import { verifyOtp } from "@/services/auth";
 import { getStoredAccessToken, getStoredUser, setStoredAccessToken } from "@/services/token";
@@ -71,10 +71,10 @@ describe("auth login", () => {
       config,
     }));
 
-    const response = await apiClient.post<{ sessionId?: string; requestId?: string }>(
+    const response = await otpClient.post<{ sessionId?: string; requestId?: string }>(
       "/auth/otp/start",
       { phone: "+15555550100" },
-      { ...otpRequestOptions, adapter: startAdapter } as any
+      { ...otpStartRequestOptions, adapter: startAdapter } as any
     );
 
     expect(startAdapter).toHaveBeenCalledOnce();
@@ -88,7 +88,7 @@ describe("auth login", () => {
   });
 
   it("OTP verification returns tokens from the service", async () => {
-    const apiPostSpy = vi.spyOn(apiClient, "post").mockResolvedValueOnce({
+    const apiPostSpy = vi.spyOn(otpClient, "post").mockResolvedValueOnce({
       token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock.payload.signature",
       user: { id: "1", email: "demo@example.com", role: "Admin" }
     } as any);
@@ -100,7 +100,7 @@ describe("auth login", () => {
     expect(apiPostSpy).toHaveBeenCalledWith(
       "/auth/otp/verify",
       { phone: "+15555550100", code: "123456" },
-      otpRequestOptions
+      otpVerifyRequestOptions
     );
     apiPostSpy.mockRestore();
   });
@@ -111,7 +111,7 @@ describe("auth login", () => {
   });
 
   it("stores tokens after a successful OTP verification", async () => {
-    vi.spyOn(apiClient, "post").mockResolvedValueOnce({
+    vi.spyOn(otpClient, "post").mockResolvedValueOnce({
       token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock.payload.signature",
       user: { id: "1", email: "demo@example.com", role: "Admin" }
     });

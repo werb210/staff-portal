@@ -55,8 +55,15 @@ const baseURL = rawBaseUrl.endsWith("/api")
   ? rawBaseUrl
   : `${rawBaseUrl}/api`;
 
+const otpBaseURL = rawBaseUrl;
+
 const api = axios.create({
   baseURL,
+  withCredentials: true,
+});
+
+export const otpClient = axios.create({
+  baseURL: otpBaseURL,
   withCredentials: true,
 });
 
@@ -115,5 +122,5 @@ lenderApiClient.interceptors.response.use(
 
 export default api;
 export const apiClient = api;
-export const otpRequestOptions = { skipAuth: true };
-export const otpStartRequestOptions = { skipAuth: true };
+export const otpStartRequestOptions = { withCredentials: true };
+export const otpVerifyRequestOptions = { withCredentials: true };
