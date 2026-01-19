@@ -5,7 +5,7 @@ import { ApiError } from "@/api/http";
 import { useAuth } from "@/auth/AuthContext";
 import { normalizeToE164 } from "@/utils/phone";
 
-const parseOtpStartErrorMessage = (error: unknown): string => {
+const parseOtpErrorMessage = (error: unknown): string => {
   if (error instanceof ApiError) return error.message;
   if (typeof error === "string") return error;
   if (typeof error === "object" && error) {
@@ -18,16 +18,14 @@ const parseOtpStartErrorMessage = (error: unknown): string => {
 };
 
 export default function LoginPage() {
-  const { startOtp, verifyOtp, setAuthenticated } = useAuth();
+  const { startOtp, verifyOtp, status, error: authError } = useAuth();
   const navigate = useNavigate();
 
   const [rawPhone, setRawPhone] = useState("");
   const [submittedPhoneNumber, setSubmittedPhoneNumber] = useState("");
   const [code, setCode] = useState("");
-  const [step, setStep] = useState<"phone" | "otp">("phone");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isVerifying, setIsVerifying] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [hasRequestedCode, setHasRequestedCode] = useState(false);
+  const [localError, setLocalError] = useState<string | null>(null);
 
   const lastVerifyAttempt = useRef<{ code: string; ts: number } | null>(null);
 
@@ -41,31 +39,30 @@ export default function LoginPage() {
   }, [rawPhone]);
 
   const canSubmitCode = useMemo(() => code.trim().length === 6, [code]);
+  const isSending = status === "sending";
+  const isVerifying = status === "verifying";
+  const showCodeStep = hasRequestedCode;
+  const errorMessage = localError ?? authError;
 
   const handleStart = async (e: FormEvent) => {
     e.preventDefault();
-    setError(null);
+    setLocalError(null);
     if (!normalizedPhone || normalizationError) return;
 
     try {
-      setIsSubmitting(true);
       await startOtp({ phone: normalizedPhone });
       setSubmittedPhoneNumber(normalizedPhone);
-      setStep("otp");
+      setHasRequestedCode(true);
     } catch (err) {
-      setError(parseOtpStartErrorMessage(err));
-    } finally {
-      setIsSubmitting(false);
+      setLocalError(parseOtpErrorMessage(err));
     }
   };
 
   const handleVerify = async (e: FormEvent) => {
     e.preventDefault();
-    setError(null);
-
-    if (isVerifying) return;
+    setLocalError(null);
     if (!submittedPhoneNumber) {
-      setError("Missing phone number. Please start again.");
+      setLocalError("Missing phone number. Please start again.");
       return;
     }
 
@@ -76,20 +73,32 @@ export default function LoginPage() {
       lastVerifyAttempt.current.code === trimmed &&
       now - lastVerifyAttempt.current.ts < 4000
     ) {
-      setError("Please wait before retrying.");
+      setLocalError("Please wait before retrying.");
       return;
     }
     lastVerifyAttempt.current = { code: trimmed, ts: now };
 
     try {
-      setIsVerifying(true);
       await verifyOtp({ phone: submittedPhoneNumber, code: trimmed });
-      setAuthenticated();
       navigate("/");
     } catch (err: any) {
-      setError(err?.message ?? "Verification failed");
-    } finally {
-      setIsVerifying(false);
+      setLocalError(parseOtpErrorMessage(err));
+    }
+  };
+
+  const handleResend = async () => {
+    setLocalError(null);
+    const phone = submittedPhoneNumber || normalizedPhone;
+    if (!phone) {
+      setLocalError("Enter a valid phone number to resend the code.");
+      return;
+    }
+    try {
+      await startOtp({ phone });
+      setSubmittedPhoneNumber(phone);
+      setHasRequestedCode(true);
+    } catch (err) {
+      setLocalError(parseOtpErrorMessage(err));
     }
   };
 
@@ -97,9 +106,13 @@ export default function LoginPage() {
     <div className="max-w-md mx-auto p-6 space-y-4">
       <h1 className="text-2xl font-bold">Staff Login</h1>
 
-      {error && <div role="alert" className="text-sm text-red-700">{error}</div>}
+      {errorMessage && (
+        <div role="alert" className="text-sm text-red-700">
+          {errorMessage}
+        </div>
+      )}
 
-      {step === "phone" ? (
+      {!showCodeStep ? (
         <form onSubmit={handleStart} className="space-y-4">
           <label className="block">
             Phone number
@@ -114,9 +127,9 @@ export default function LoginPage() {
           <button
             type="submit"
             className="w-full bg-blue-600 text-white rounded px-4 py-2"
-            disabled={isSubmitting}
+            disabled={isSending}
           >
-            {isSubmitting ? "Submitting..." : "Submit code"}
+            {isSending ? "Sending..." : "Send code"}
           </button>
         </form>
       ) : (
@@ -138,6 +151,14 @@ export default function LoginPage() {
             disabled={!canSubmitCode || isVerifying}
           >
             {isVerifying ? "Verifying..." : "Verify code"}
+          </button>
+          <button
+            type="button"
+            className="w-full border border-blue-600 text-blue-600 rounded px-4 py-2"
+            onClick={handleResend}
+            disabled={isSending}
+          >
+            {isSending ? "Resending..." : "Resend code"}
           </button>
         </form>
       )}
