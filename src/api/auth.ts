@@ -1,4 +1,4 @@
-import { apiClient, otpClient, otpStartRequestOptions, otpVerifyRequestOptions } from "./client";
+import { api, otp } from "./client";
 import type { AuthenticatedUser, OtpVerifyResponse as OtpVerifyResponseType } from "@/services/auth";
 
 export type OtpStartPayload = {
@@ -10,7 +10,7 @@ export type OtpStartResponse = {
 };
 
 export const startOtp = (payload: OtpStartPayload) =>
-  otpClient.post<OtpStartResponse>("/auth/otp/start", payload, otpStartRequestOptions);
+  otp.post<OtpStartResponse>("/auth/otp/start", payload);
 
 export type OtpVerifyPayload = {
   phone: string;
@@ -20,9 +20,9 @@ export type OtpVerifyPayload = {
 export type OtpVerifyResponse = OtpVerifyResponseType;
 
 export const verifyOtp = (payload: OtpVerifyPayload) =>
-  otpClient.post<OtpVerifyResponse>("/auth/otp/verify", payload, otpVerifyRequestOptions);
+  otp.post<OtpVerifyResponse>("/auth/otp/verify", payload);
 
 export const fetchCurrentUser = () =>
-  apiClient.get<AuthenticatedUser>("/auth/me", { skipAuthRefresh: true });
+  api.get<AuthenticatedUser>("/auth/me", { skipAuthRefresh: true });
 
-export const logout = () => apiClient.post<void>("/auth/logout");
+export const logout = () => api.post<void>("/auth/logout");

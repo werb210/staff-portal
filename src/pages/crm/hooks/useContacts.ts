@@ -3,7 +3,7 @@
    ========================================================= */
 
 import { useQuery } from "@tanstack/react-query";
-import { apiClient } from "@/api/client";
+import { apiClient } from "@/api/http";
 
 export function useContacts() {
   return useQuery({

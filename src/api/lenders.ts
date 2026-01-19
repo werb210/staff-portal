@@ -1,4 +1,4 @@
-import { apiClient, type ListResponse, type RequestOptions } from "./client";
+import { apiClient, type ListResponse, type RequestOptions } from "./http";
 import type {
   Lender,
   LenderPayload,

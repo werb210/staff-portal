@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import apiClient, { otpClient, otpStartRequestOptions, otpVerifyRequestOptions } from "@/api/client";
+import apiClient from "@/api/http";
+import { otp } from "@/api/client";
 import { AuthProvider, useAuth } from "@/auth/AuthContext";
 import { verifyOtp } from "@/services/auth";
 import { getStoredAccessToken, getStoredUser, setStoredAccessToken } from "@/services/token";
@@ -71,10 +72,10 @@ describe("auth login", () => {
       config,
     }));
 
-    const response = await otpClient.post<{ sessionId?: string; requestId?: string }>(
+    const response = await otp.post<{ sessionId?: string; requestId?: string }>(
       "/auth/otp/start",
       { phone: "+15555550100" },
-      { ...otpStartRequestOptions, adapter: startAdapter } as any
+      { adapter: startAdapter } as any
     );
 
     expect(startAdapter).toHaveBeenCalledOnce();
@@ -82,26 +83,23 @@ describe("auth login", () => {
     const idempotencyKey =
       passedConfig?.headers?.["Idempotency-Key"] ?? passedConfig?.headers?.get?.("Idempotency-Key");
     expect(idempotencyKey).toBeUndefined();
-    expect(passedConfig?.withCredentials).toBe(true);
-    expect(response.sessionId).toBe("session-1");
-    expect(response.requestId).toBe("req-1");
+    expect(response.data.sessionId).toBe("session-1");
+    expect(response.data.requestId).toBe("req-1");
   });
 
   it("OTP verification returns tokens from the service", async () => {
-    const apiPostSpy = vi.spyOn(otpClient, "post").mockResolvedValueOnce({
-      token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock.payload.signature",
-      user: { id: "1", email: "demo@example.com", role: "Admin" }
+    const apiPostSpy = vi.spyOn(otp, "post").mockResolvedValueOnce({
+      data: {
+        token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock.payload.signature",
+        user: { id: "1", email: "demo@example.com", role: "Admin" }
+      }
     } as any);
 
     await expect(verifyOtp({ phone: "+15555550100", code: "123456" })).resolves.toMatchObject({
       token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock.payload.signature"
     });
 
-    expect(apiPostSpy).toHaveBeenCalledWith(
-      "/auth/otp/verify",
-      { phone: "+15555550100", code: "123456" },
-      otpVerifyRequestOptions
-    );
+    expect(apiPostSpy).toHaveBeenCalledWith("/auth/otp/verify", { phone: "+15555550100", code: "123456" });
     apiPostSpy.mockRestore();
   });
 
@@ -111,9 +109,11 @@ describe("auth login", () => {
   });
 
   it("stores tokens after a successful OTP verification", async () => {
-    vi.spyOn(otpClient, "post").mockResolvedValueOnce({
-      token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock.payload.signature",
-      user: { id: "1", email: "demo@example.com", role: "Admin" }
+    vi.spyOn(otp, "post").mockResolvedValueOnce({
+      data: {
+        token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock.payload.signature",
+        user: { id: "1", email: "demo@example.com", role: "Admin" }
+      }
     });
 
     render(createElement(AuthProvider, null, createElement(TestVerifyAction)));

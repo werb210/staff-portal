@@ -3,7 +3,7 @@ import { describe, expect, test, beforeEach, afterEach, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom/vitest";
 import LoginPage from "./LoginPage";
-import { ApiError } from "@/api/client";
+import { ApiError } from "@/api/http";
 import { MemoryRouter } from "react-router-dom";
 
 let startOtpMock = vi.fn();

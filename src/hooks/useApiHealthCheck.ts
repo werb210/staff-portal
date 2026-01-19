@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import apiClient, { ApiError } from "@/api/client";
+import apiClient, { ApiError } from "@/api/http";
 import { useApiStatusStore } from "@/state/apiStatus";
 
 export const useApiHealthCheck = () => {
