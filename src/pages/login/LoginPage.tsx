@@ -1,120 +1,143 @@
 import { FormEvent, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import type { AxiosError } from "axios";
+import { ApiError } from "@/api/http";
 import { useAuth } from "@/auth/AuthContext";
 import { normalizeToE164 } from "@/utils/phone";
+
+const parseOtpStartErrorMessage = (error: unknown): string => {
+  if (error instanceof ApiError) return error.message;
+  if (typeof error === "string") return error;
+  if (typeof error === "object" && error) {
+    const axiosError = error as AxiosError;
+    const data = axiosError?.response?.data as any;
+    if (typeof data?.message === "string") return data.message;
+    if (typeof axiosError.message === "string") return axiosError.message;
+  }
+  return "OTP failed";
+};
 
 export default function LoginPage() {
   const { startOtp, verifyOtp, setAuthenticated } = useAuth();
   const navigate = useNavigate();
 
   const [rawPhone, setRawPhone] = useState("");
-  const [submittedPhone, setSubmittedPhone] = useState("");
+  const [submittedPhoneNumber, setSubmittedPhoneNumber] = useState("");
   const [code, setCode] = useState("");
   const [step, setStep] = useState<"phone" | "otp">("phone");
-  const [loading, setLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const lastVerify = useRef<number>(0);
+  const lastVerifyAttempt = useRef<{ code: string; ts: number } | null>(null);
 
-  const normalizedPhone = useMemo(() => {
+  const { normalizedPhone, normalizationError } = useMemo(() => {
+    if (!rawPhone.trim()) return { normalizedPhone: "", normalizationError: null };
     try {
-      return rawPhone ? normalizeToE164(rawPhone) : "";
+      return { normalizedPhone: normalizeToE164(rawPhone), normalizationError: null };
     } catch {
-      return "";
+      return { normalizedPhone: "", normalizationError: "Invalid phone number." };
     }
   }, [rawPhone]);
 
-  async function handleStart(e: FormEvent) {
+  const canSubmitCode = useMemo(() => code.trim().length === 6, [code]);
+
+  const handleStart = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
-
-    if (!normalizedPhone) {
-      setError("Enter a valid phone number");
-      return;
-    }
+    if (!normalizedPhone || normalizationError) return;
 
     try {
-      setLoading(true);
+      setIsSubmitting(true);
       await startOtp({ phone: normalizedPhone });
-      setSubmittedPhone(normalizedPhone);
+      setSubmittedPhoneNumber(normalizedPhone);
       setStep("otp");
-    } catch {
-      setError("Failed to send verification code");
+    } catch (err) {
+      setError(parseOtpStartErrorMessage(err));
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
-  }
+  };
 
-  async function handleVerify(e: FormEvent) {
+  const handleVerify = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    if (code.length !== 6) {
-      setError("Enter the 6-digit code");
+    if (isVerifying) return;
+    if (!submittedPhoneNumber) {
+      setError("Missing phone number. Please start again.");
       return;
     }
 
+    const trimmed = code.trim();
     const now = Date.now();
-    if (now - lastVerify.current < 3000) {
-      setError("Please wait before retrying");
+    if (
+      lastVerifyAttempt.current &&
+      lastVerifyAttempt.current.code === trimmed &&
+      now - lastVerifyAttempt.current.ts < 4000
+    ) {
+      setError("Please wait before retrying.");
       return;
     }
-    lastVerify.current = now;
+    lastVerifyAttempt.current = { code: trimmed, ts: now };
 
     try {
-      setLoading(true);
-      await verifyOtp({ phone: submittedPhone, code });
+      setIsVerifying(true);
+      await verifyOtp({ phone: submittedPhoneNumber, code: trimmed });
       setAuthenticated();
       navigate("/");
-    } catch {
-      setError("Invalid or expired code");
+    } catch (err: any) {
+      setError(err?.message ?? "Verification failed");
     } finally {
-      setLoading(false);
+      setIsVerifying(false);
     }
-  }
+  };
 
   return (
     <div className="max-w-md mx-auto p-6 space-y-4">
       <h1 className="text-2xl font-bold">Staff Login</h1>
 
-      {error && <div className="text-red-600 text-sm">{error}</div>}
+      {error && <div role="alert" className="text-sm text-red-700">{error}</div>}
 
       {step === "phone" ? (
         <form onSubmit={handleStart} className="space-y-4">
-          <input
-            type="tel"
-            placeholder="+15555550100"
-            value={rawPhone}
-            onChange={(e) => setRawPhone(e.target.value)}
-            className="w-full border px-3 py-2 rounded"
-          />
+          <label className="block">
+            Phone number
+            <input
+              type="tel"
+              className="border rounded px-3 py-2 w-full"
+              value={rawPhone}
+              onChange={(e) => setRawPhone(e.target.value)}
+              placeholder="+15555550100"
+            />
+          </label>
           <button
             type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 text-white py-2 rounded"
+            className="w-full bg-blue-600 text-white rounded px-4 py-2"
+            disabled={isSubmitting}
           >
-            {loading ? "Sending…" : "Submit code"}
+            {isSubmitting ? "Submitting..." : "Submit code"}
           </button>
         </form>
       ) : (
         <form onSubmit={handleVerify} className="space-y-4">
-          <div className="text-sm text-gray-600">
-            Code sent to {submittedPhone}
+          <div className="text-sm">
+            Verification code sent to <b>{submittedPhoneNumber}</b>
           </div>
           <input
             type="text"
             inputMode="numeric"
             maxLength={6}
+            className="border rounded px-3 py-2 w-full"
             value={code}
             onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-            className="w-full border px-3 py-2 rounded"
           />
           <button
             type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 text-white py-2 rounded"
+            className="w-full bg-blue-600 text-white rounded px-4 py-2"
+            disabled={!canSubmitCode || isVerifying}
           >
-            {loading ? "Verifying…" : "Verify code"}
+            {isVerifying ? "Verifying..." : "Verify code"}
           </button>
         </form>
       )}
