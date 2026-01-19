@@ -1,7 +1,7 @@
 import { FormEvent, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { AxiosError } from "axios";
-import { ApiError } from "@/api/client";
+import { ApiError } from "@/api/http";
 import { useAuth } from "@/auth/AuthContext";
 import { normalizeToE164 } from "@/utils/phone";
 

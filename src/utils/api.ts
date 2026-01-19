@@ -3,7 +3,7 @@
    PURPOSE: Centralized API utilities + health check export
    ============================================================ */
 
-import { apiClient } from "@/api/client";
+import { apiClient } from "@/api/http";
 import { API_BASE } from "@/services/api";
 
 export { API_BASE };

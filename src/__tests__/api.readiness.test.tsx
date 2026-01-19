@@ -2,7 +2,7 @@
 
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
-import apiClient, { ApiError } from "@/api/client";
+import apiClient, { ApiError } from "@/api/http";
 import { useApiHealthCheck } from "@/hooks/useApiHealthCheck";
 import ApiStatusBanner from "@/components/layout/ApiStatusBanner";
 import { useApiStatusStore } from "@/state/apiStatus";

@@ -1,4 +1,4 @@
-import { apiClient } from "./client";
+import { apiClient } from "./http";
 import type { AdminUser, BrandingSettingsState, LoginHistoryEntry, ProfileSettings, SiloAccess, SiloCode } from "@/state/settings.store";
 
 export const fetchProfile = () => apiClient.get<ProfileSettings>("/users/me");

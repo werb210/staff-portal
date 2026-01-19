@@ -43,7 +43,7 @@ const fallbackAuthContext: AuthContextType = {
   authenticated: true,
   authReady: true,
   pendingPhoneNumber: null,
-  startOtp: async () => ({ sessionId: undefined }),
+  startOtp: async () => undefined,
   verifyOtp: async () => ({ token: "test-token", user: { id: "test-user", email: "test@example.com", role: "Admin" as AuthenticatedUser["role"] } }),
   setAuth: () => undefined,
   refreshUser: async () => true,
@@ -166,7 +166,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [loadCurrentUser]);
 
   const startOtp = useCallback(async ({ phone }: { phone: string }) => {
-    const response = await startOtpService({ phone });
+    const response = await startOtpService(phone);
     setPendingPhoneNumber(phone);
     return response;
   }, []);
@@ -176,10 +176,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     if (!targetPhoneNumber) {
       throw new Error("Missing phone number for OTP verification");
     }
-    const result = await verifyOtpService({
-      phone: targetPhoneNumber,
-      code
-    });
+    const result = await verifyOtpService(targetPhoneNumber, code);
     setPendingPhoneNumber(null);
     return result;
   }, [pendingPhoneNumber]);

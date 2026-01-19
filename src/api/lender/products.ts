@@ -1,4 +1,4 @@
-import { lenderApiClient } from "@/api/client";
+import { lenderApiClient } from "@/api/http";
 
 export type LenderProduct = {
   id: string;
