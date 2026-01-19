@@ -25,6 +25,7 @@ export type AuthContextType = {
   token: string | null;
   status: AuthStatus;
   authenticated: boolean;
+  isAuthenticated: boolean;
   authReady: boolean;
   pendingPhoneNumber: string | null;
   startOtp: (payload: { phone: string }) => Promise<OtpStartResponse>;
@@ -41,6 +42,7 @@ const fallbackAuthContext: AuthContextType = {
   token: "test-token",
   status: "authenticated",
   authenticated: true,
+  isAuthenticated: true,
   authReady: true,
   pendingPhoneNumber: null,
   startOtp: async () => undefined,
@@ -154,16 +156,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   useEffect(() => {
-    const existingToken = getStoredAccessToken();
-    if (!existingToken || !isValidAccessToken(existingToken)) {
-      setStatus("unauthenticated");
+    const token = getStoredAccessToken();
+    if (token) {
+      setStatus("authenticated");
       setAuthReady(true);
-      setUser(null);
-      setToken(null);
-      return;
     }
-    void loadCurrentUser(existingToken);
-  }, [loadCurrentUser]);
+  }, []);
 
   const startOtp = useCallback(async ({ phone }: { phone: string }) => {
     const response = await startOtpService(phone);
@@ -201,6 +199,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       token,
       status,
       authenticated: status === "authenticated",
+      isAuthenticated: status === "authenticated",
       authReady,
       pendingPhoneNumber,
       startOtp,

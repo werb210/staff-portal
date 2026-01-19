@@ -1,28 +1,30 @@
-import axios, { type AxiosRequestConfig } from "axios";
+import axios, { AxiosRequestConfig } from "axios";
 import { getStoredAccessToken } from "@/services/token";
 
-const rawBase = import.meta.env.VITE_API_BASE_URL;
-if (!rawBase) throw new Error("VITE_API_BASE_URL missing");
+const rawBaseURL = import.meta.env.VITE_API_BASE_URL;
+if (!rawBaseURL) {
+  throw new Error("VITE_API_BASE_URL is not defined");
+}
 
-const apiBase = rawBase.endsWith("/api") ? rawBase : `${rawBase}/api`;
-const otpBase = rawBase; // OTP is NOT /api-prefixed
+const apiBaseURL = rawBaseURL.endsWith("/api")
+  ? rawBaseURL
+  : `${rawBaseURL}/api`;
 
 export const api = axios.create({
-  baseURL: apiBase,
+  baseURL: apiBaseURL,
 });
 
 export const otp = axios.create({
-  baseURL: otpBase,
+  baseURL: rawBaseURL,
 });
 
-api.interceptors.request.use(cfg => {
+api.interceptors.request.use((config: AxiosRequestConfig) => {
   const token = getStoredAccessToken();
   if (token) {
-    cfg.headers = cfg.headers ?? {};
-    cfg.headers.Authorization = `Bearer ${token}`;
+    config.headers = {
+      ...config.headers,
+      Authorization: `Bearer ${token}`,
+    };
   }
-  return cfg;
+  return config;
 });
-
-export type OtpStartOptions = AxiosRequestConfig;
-export type OtpVerifyOptions = AxiosRequestConfig;
