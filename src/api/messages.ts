@@ -1,4 +1,4 @@
-import { apiClient, type RequestOptions } from "./http";
+import { apiClient, type RequestOptions } from "./httpClient";
 import type { MessageRecord } from "@/types/messages.types";
 
 export const fetchMessagesThread = (applicationId: string, options?: RequestOptions) =>

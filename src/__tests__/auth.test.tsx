@@ -3,7 +3,7 @@ import "@testing-library/jest-dom/vitest";
 import { createElement } from "react";
 import { render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import apiClient from "@/api/http";
+import apiClient from "@/api/httpClient";
 import { AuthProvider, useAuth } from "@/auth/AuthContext";
 import { setStoredAccessToken } from "@/services/token";
 

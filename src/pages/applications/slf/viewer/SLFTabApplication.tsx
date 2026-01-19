@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { apiClient } from "@/api/http";
+import { apiClient } from "@/api/httpClient";
 
 type SLFApplication = {
   businessInfo?: Record<string, unknown>;

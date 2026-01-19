@@ -1,4 +1,4 @@
-import { apiClient, type RequestOptions } from "./http";
+import { apiClient, type RequestOptions } from "./httpClient";
 import type { DocumentRequirementResponse, DocumentStatus } from "@/types/documents.types";
 
 export type DocumentRecord = {

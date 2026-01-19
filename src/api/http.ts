@@ -1,16 +1,65 @@
-import { api } from "./client";
+import axios, { AxiosError, type AxiosRequestConfig } from "axios";
+import { getStoredAccessToken } from "@/services/token";
 
-export function notifyRouteChange() {
-  /* noop – telemetry only */
+export type ApiErrorOptions = {
+  status: number;
+  message: string;
+  code?: string;
+  requestId?: string;
+  details?: unknown;
+};
+
+export class ApiError extends Error {
+  status: number;
+  code?: string;
+  requestId?: string;
+  details?: unknown;
+
+  constructor({ status, message, code, requestId, details }: ApiErrorOptions) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.code = code;
+    this.requestId = requestId;
+    this.details = details;
+    Object.setPrototypeOf(this, ApiError.prototype);
+  }
 }
 
+const rawBaseURL = import.meta.env.VITE_API_BASE_URL;
+if (!rawBaseURL) {
+  throw new Error("VITE_API_BASE_URL is not defined");
+}
+
+const apiBaseURL = rawBaseURL.endsWith("/api")
+  ? rawBaseURL
+  : `${rawBaseURL}/api`;
+
+export const api = axios.create({
+  baseURL: apiBaseURL,
+});
+
+api.interceptors.request.use((config: AxiosRequestConfig) => {
+  const token = getStoredAccessToken();
+  if (token) {
+    config.headers = {
+      ...config.headers,
+      Authorization: `Bearer ${token}`,
+    };
+  }
+  return config;
+});
+
 api.interceptors.response.use(
-  res => res,
-  err => {
-    if (err?.response?.status === 401) {
-      // DO NOT clear auth here
-      // Explicit logout only
-    }
-    return Promise.reject(err);
+  r => r,
+  (error: AxiosError) => {
+    const status = error.response?.status ?? 500;
+    throw new ApiError({
+      status,
+      message: error.message,
+      code: (error.response?.data as any)?.code,
+      requestId: error.response?.headers?.["x-request-id"],
+      details: error.response?.data,
+    });
   }
 );

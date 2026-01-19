@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { apiClient } from "@/api/http";
+import { apiClient } from "@/api/httpClient";
 
 type SLFNote = {
   id: string;

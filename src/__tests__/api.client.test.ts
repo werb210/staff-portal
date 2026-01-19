@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import apiClient, { ApiError } from "@/api/http";
+import apiClient from "@/api/httpClient";
+import { ApiError } from "@/api/http";
 import { buildApiUrl } from "@/services/api";
 import { registerAuthFailureHandler } from "@/auth/authEvents";
 import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from "@/services/token";

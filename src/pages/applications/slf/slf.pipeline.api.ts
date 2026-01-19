@@ -1,4 +1,4 @@
-import { apiClient } from "@/api/http";
+import { apiClient } from "@/api/httpClient";
 import type { SLFPipelineApplication, SLFStageId } from "./slf.pipeline.types";
 
 export const slfPipelineApi = {

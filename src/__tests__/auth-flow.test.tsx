@@ -5,7 +5,8 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { createElement } from "react";
 import { MemoryRouter } from "react-router-dom";
 import axios from "axios";
-import apiClient, { ApiError } from "@/api/http";
+import apiClient from "@/api/httpClient";
+import { ApiError } from "@/api/http";
 import { AuthProvider, useAuth } from "@/auth/AuthContext";
 import { startOtp as startOtpService, verifyOtp as verifyOtpService, logout as logoutService } from "@/services/auth";
 import LoginPage from "@/pages/login/LoginPage";

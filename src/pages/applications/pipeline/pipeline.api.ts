@@ -1,4 +1,4 @@
-import { apiClient } from "@/api/http";
+import { apiClient } from "@/api/httpClient";
 import type { PipelineApplication, PipelineFilters, PipelineStageId } from "./pipeline.types";
 
 const buildQueryParams = (filters: PipelineFilters): string => {

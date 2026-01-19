@@ -14,6 +14,7 @@ import {
   setStoredAccessToken,
   setStoredUser
 } from "@/services/token";
+import { ApiError } from "@/api/http";
 import { redirectToLogin } from "@/services/api";
 import { showApiToast } from "@/state/apiNotifications";
 import { isUserRole } from "@/utils/roles";
@@ -163,21 +164,47 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, []);
 
-  const startOtp = useCallback(async ({ phone }: { phone: string }) => {
-    const response = await startOtpService(phone);
-    setPendingPhoneNumber(phone);
-    return response;
-  }, []);
+  const handleAuthFailure = useCallback(
+    (error: unknown, isOtpFlow = false) => {
+      // do NOT clear auth on OTP failures
+      if (error instanceof ApiError && error.status === 401 && isOtpFlow) {
+        return;
+      }
+    },
+    []
+  );
 
-  const verifyOtp = useCallback(async ({ code, phone }: { code: string; phone?: string }) => {
-    const targetPhoneNumber = phone ?? pendingPhoneNumber;
-    if (!targetPhoneNumber) {
-      throw new Error("Missing phone number for OTP verification");
-    }
-    const result = await verifyOtpService(targetPhoneNumber, code);
-    setPendingPhoneNumber(null);
-    return result;
-  }, [pendingPhoneNumber]);
+  const startOtp = useCallback(
+    async ({ phone }: { phone: string }) => {
+      try {
+        const response = await startOtpService(phone);
+        setPendingPhoneNumber(phone);
+        return response;
+      } catch (error) {
+        handleAuthFailure(error, true);
+        throw error;
+      }
+    },
+    [handleAuthFailure]
+  );
+
+  const verifyOtp = useCallback(
+    async ({ code, phone }: { code: string; phone?: string }) => {
+      const targetPhoneNumber = phone ?? pendingPhoneNumber;
+      if (!targetPhoneNumber) {
+        throw new Error("Missing phone number for OTP verification");
+      }
+      try {
+        const result = await verifyOtpService(targetPhoneNumber, code);
+        setPendingPhoneNumber(null);
+        return result;
+      } catch (error) {
+        handleAuthFailure(error, true);
+        throw error;
+      }
+    },
+    [handleAuthFailure, pendingPhoneNumber]
+  );
 
   const logout = useCallback(() => {
     void logoutService().catch((error) => {
