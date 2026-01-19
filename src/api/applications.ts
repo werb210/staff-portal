@@ -1,4 +1,4 @@
-import { apiClient, type ListResponse, type RequestOptions } from "./http";
+import { apiClient, type ListResponse, type RequestOptions } from "./httpClient";
 import type { ApplicationDetails, ApplicationAuditEvent } from "@/types/application.types";
 
 export type ApplicationSummary = {

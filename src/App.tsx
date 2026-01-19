@@ -14,7 +14,6 @@ import LendersPage from "./pages/lenders/LendersPage";
 import LenderProductsPage from "./pages/lenders/LenderProductsPage";
 import SettingsPage from "./pages/settings/SettingsPage";
 import TaskPane from "./pages/tasks/TaskPane";
-import { notifyRouteChange } from "./api/http";
 import { emitUiTelemetry } from "./utils/uiTelemetry";
 import GlobalErrorBoundary from "./components/errors/GlobalErrorBoundary";
 import { useApiHealthCheck } from "./hooks/useApiHealthCheck";
@@ -23,7 +22,6 @@ const RouteChangeObserver = () => {
   const location = useLocation();
 
   useEffect(() => {
-    notifyRouteChange();
     emitUiTelemetry("page_loaded");
   }, [location.key]);
 

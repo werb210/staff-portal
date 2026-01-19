@@ -1,4 +1,4 @@
-import { lenderApiClient } from "@/api/http";
+import { lenderApiClient } from "@/api/httpClient";
 
 export type LenderAddress = {
   line1?: string;

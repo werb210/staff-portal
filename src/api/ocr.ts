@@ -1,4 +1,4 @@
-import { apiClient, type RequestOptions } from "./http";
+import { apiClient, type RequestOptions } from "./httpClient";
 
 export type OcrConflict = { field: string; values: string[] };
 export type OcrSection = {

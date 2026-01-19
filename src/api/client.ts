@@ -1,4 +1,4 @@
-import axios, { AxiosRequestConfig } from "axios";
+import axios, { type AxiosRequestConfig } from "axios";
 import { getStoredAccessToken } from "@/services/token";
 
 const rawBaseURL = import.meta.env.VITE_API_BASE_URL;

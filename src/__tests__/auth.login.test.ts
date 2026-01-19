@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import apiClient from "@/api/http";
+import apiClient from "@/api/httpClient";
 import { otp } from "@/api/client";
 import { AuthProvider, useAuth } from "@/auth/AuthContext";
 import { verifyOtp } from "@/services/auth";

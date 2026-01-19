@@ -8,7 +8,7 @@ vi.mock("@/services/api", async () => {
   };
 });
 
-import apiClient from "./http";
+import apiClient from "./httpClient";
 import { buildApiUrl, redirectToLogin } from "@/services/api";
 import { registerAuthFailureHandler } from "@/auth/authEvents";
 import { ACCESS_TOKEN_KEY } from "@/services/token";

@@ -3,7 +3,7 @@
    ========================================================= */
 
 import { useQuery } from "@tanstack/react-query";
-import { apiClient } from "@/api/http";
+import { apiClient } from "@/api/httpClient";
 import { retryUnlessClientError } from "@/api/retryPolicy";
 import type { PipelineApplication } from "@/pages/applications/pipeline/pipeline.types";
 
