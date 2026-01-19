@@ -1,11 +1,18 @@
-import { Navigate } from "react-router-dom";
-import { getAuthToken, decodeJwt } from "@/auth/token";
+import { Navigate, useLocation } from "react-router-dom";
+import { getStoredAccessToken } from "@/services/token";
+import { decodeJwt } from "@/utils/jwt";
 
-export function AuthGuard({ children }: { children: JSX.Element }) {
-  const token = getAuthToken();
-  const decoded = decodeJwt(token);
+export default function AuthGuard({ children }: { children: JSX.Element }) {
+  const location = useLocation();
+  const token = getStoredAccessToken();
 
-  if (!token || !decoded) {
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+
+  try {
+    decodeJwt(token);
+  } catch {
     return <Navigate to="/login" replace />;
   }
 
