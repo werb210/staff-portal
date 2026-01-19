@@ -1,240 +1,48 @@
-import { FormEvent, useMemo, useRef, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import type { AxiosError } from "axios";
-import { ApiError } from "@/api/http";
+import { otp } from "@/api/client";
 import { useAuth } from "@/auth/AuthContext";
-import { normalizeToE164 } from "@/utils/phone";
-
-const parseOtpStartErrorMessage = (error: unknown): string => {
-  if (error instanceof ApiError) {
-    return error.message;
-  }
-  if (typeof error === "string") {
-    return error;
-  }
-  if (typeof error === "object" && error) {
-    const axiosError = error as AxiosError;
-    const responseData = axiosError?.response?.data;
-    if (typeof responseData === "string" && responseData.trim()) {
-      return responseData;
-    }
-    if (typeof responseData === "object" && responseData) {
-      const message = (responseData as { message?: unknown }).message;
-      if (typeof message === "string" && message.trim()) {
-        return message;
-      }
-    }
-    const fallbackMessage = (axiosError as { message?: unknown })?.message;
-    if (typeof fallbackMessage === "string" && fallbackMessage.trim()) {
-      return fallbackMessage;
-    }
-  }
-  return "OTP failed";
-};
 
 export default function LoginPage() {
-  const { startOtp, verifyOtp, setAuthenticated } = useAuth();
-  const navigate = useNavigate();
-  const [rawPhone, setRawPhone] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [errorRequestId, setErrorRequestId] = useState<string | null>(null);
-  const [submittedPhoneNumber, setSubmittedPhoneNumber] = useState("");
+  const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
-  const [step, setStep] = useState<"phone" | "otp">("phone");
-  const [isVerifying, setIsVerifying] = useState(false);
-  const lastVerifyAttempt = useRef<{ code: string; timestamp: number } | null>(null);
+  const [step, setStep] = useState<"phone" | "code">("phone");
+  const navigate = useNavigate();
+  const { setAuthenticated } = useAuth();
 
-  const setError = (message: string | null, requestId?: string | null) => {
-    setErrorMessage(message);
-    setErrorRequestId(requestId ?? null);
+  const startOtp = async () => {
+    await otp.post("/start", { phone });
+    setStep("code");
   };
 
-  const shouldShowGenericServerError = (error: ApiError) => {
-    if (error.status < 500) return false;
-    if (error.code) return false;
-    const details = error.details;
-    if (details && typeof details === "object") {
-      return false;
-    }
-    const message = error.message?.trim().toLowerCase();
-    if (!message) return true;
-    return (
-      message === "internal server error" ||
-      message === "request failed" ||
-      message === "request failed with status code 500"
-    );
-  };
-
-  const { normalizedPhone, normalizationError } = useMemo(() => {
-    if (!rawPhone.trim()) {
-      return { normalizedPhone: "", normalizationError: null };
-    }
-    try {
-      return { normalizedPhone: normalizeToE164(rawPhone), normalizationError: null };
-    } catch {
-      return {
-        normalizedPhone: "",
-        normalizationError: "Invalid phone number. Enter a valid phone number."
-      };
-    }
-  }, [rawPhone]);
-  const phoneError = useMemo(() => {
-    if (step !== "phone") return null;
-    if (!rawPhone.trim()) return null;
-    return normalizationError;
-  }, [normalizationError, rawPhone, step]);
-
-  const canSubmitCode = useMemo(() => code.trim().length === 6, [code]);
-
-  const handleStart = async (event: FormEvent) => {
-    event.preventDefault();
-    setError(null);
-
-    if (!normalizedPhone || normalizationError) {
-      return;
-    }
-
-    try {
-      setIsSubmitting(true);
-      await startOtp({ phone: normalizedPhone });
-      setSubmittedPhoneNumber(normalizedPhone);
-      setStep("otp");
-    } catch (err: unknown) {
-      const parsedMessage = parseOtpStartErrorMessage(err);
-      if (err instanceof ApiError) {
-        console.error("OTP start failed.", { requestId: err.requestId });
-        if (err.code?.toLowerCase().includes("expired") || err.status === 410) {
-          setError("Verification expired", err.requestId);
-        } else {
-          setError(parsedMessage, err.requestId);
-        }
-        return;
-      }
-      setError(parsedMessage);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleVerify = async (event: FormEvent) => {
-    event.preventDefault();
-    setError(null);
-
-    try {
-      if (isVerifying) {
-        return;
-      }
-      const phoneForVerification = submittedPhoneNumber;
-      if (!phoneForVerification) {
-        setError("Missing phone number. Please start again.");
-        return;
-      }
-      const trimmedCode = code.trim();
-      const now = Date.now();
-      if (
-        lastVerifyAttempt.current &&
-        lastVerifyAttempt.current.code === trimmedCode &&
-        now - lastVerifyAttempt.current.timestamp < 4000
-      ) {
-        setError("Please wait a few seconds before trying again.");
-        return;
-      }
-      lastVerifyAttempt.current = { code: trimmedCode, timestamp: now };
-      setIsVerifying(true);
-      await verifyOtp({ code: trimmedCode, phone: phoneForVerification });
-      setAuthenticated();
-      navigate("/");
-    } catch (err: unknown) {
-      if (err instanceof ApiError) {
-        if (err.code?.toLowerCase().includes("expired") || err.status === 410) {
-          setError("Verification expired", err.requestId);
-        } else if (shouldShowGenericServerError(err)) {
-          setError("Authentication failed. Try again.", err.requestId);
-        } else {
-          setError(err.message, err.requestId);
-        }
-        return;
-      }
-      setError(err instanceof Error ? err.message : "OTP failed");
-    } finally {
-      setIsVerifying(false);
-    }
+  const verifyOtp = async () => {
+    await otp.post("/verify", { phone, code });
+    setAuthenticated(true);
+    navigate("/");
   };
 
   return (
-    <div className="max-w-md mx-auto p-6 space-y-4">
-      <h1 className="text-2xl font-bold">Staff Login</h1>
-
-      {errorMessage && (
-        <div role="alert" className="text-sm text-red-700">
-          <div>{errorMessage}</div>
-          {errorRequestId && <div className="mt-1 text-xs text-red-700">Request ID: {errorRequestId}</div>}
-        </div>
+    <div>
+      {step === "phone" && (
+        <>
+          <input
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="Phone number"
+          />
+          <button onClick={startOtp}>Submit code</button>
+        </>
       )}
 
-      {step === "phone" ? (
-        <form className="space-y-4" onSubmit={handleStart}>
-          <div className="flex flex-col space-y-1">
-            <label htmlFor="phoneNumber">Phone number</label>
-            <input
-              id="phoneNumber"
-              name="phoneNumber"
-              type="tel"
-              inputMode="tel"
-              value={rawPhone}
-              onChange={(event) => {
-                setRawPhone(event.target.value);
-                setError(null);
-              }}
-              aria-invalid={phoneError ? "true" : "false"}
-              className="border rounded px-3 py-2"
-              placeholder="+15555550100"
-            />
-            {phoneError && <span className="text-xs text-red-700">{phoneError}</span>}
-          </div>
-
-          <button
-            type="submit"
-            className="w-full bg-blue-600 text-white rounded px-4 py-2 disabled:opacity-60"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? "Submitting..." : "Submit code"}
-          </button>
-        </form>
-      ) : (
-        <form className="space-y-4" onSubmit={handleVerify}>
-          <div className="rounded border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
-            Verification code has been submitted to <span className="font-semibold">{submittedPhoneNumber}</span>
-          </div>
-
-          <div className="flex flex-col space-y-1">
-            <label htmlFor="otp">Verification code</label>
-            <input
-              id="otp"
-              name="otp"
-              type="text"
-              inputMode="numeric"
-              pattern="[0-9]{6}"
-              maxLength={6}
-              value={code}
-              onChange={(event) => {
-                setCode(event.target.value.replace(/\D/g, ""));
-                setError(null);
-              }}
-              className="border rounded px-3 py-2"
-              required
-            />
-          </div>
-
-          <button
-            type="submit"
-            className="w-full bg-blue-600 text-white rounded px-4 py-2 disabled:opacity-60"
-            disabled={!canSubmitCode || isVerifying}
-          >
-            {isVerifying ? "Verifying..." : "Verify code"}
-          </button>
-        </form>
+      {step === "code" && (
+        <>
+          <input
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            placeholder="Verification code"
+          />
+          <button onClick={verifyOtp}>Verify code</button>
+        </>
       )}
     </div>
   );
