@@ -22,7 +22,7 @@ const renderLoginFlow = () =>
       <MemoryRouter initialEntries={["/login"]}>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/dashboard" element={<div>Dashboard</div>} />
+          <Route path="/" element={<div>Dashboard</div>} />
         </Routes>
       </MemoryRouter>
     </AuthProvider>
@@ -30,11 +30,8 @@ const renderLoginFlow = () =>
 
 describe("login flow", () => {
   it("navigates to dashboard after OTP verification", async () => {
-    mockedStartOtp.mockResolvedValue({ sessionId: "session-1" });
-    mockedVerifyOtp.mockResolvedValue({
-      token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock.payload.signature",
-      user: { id: "1", email: "demo@example.com", role: "Admin" }
-    });
+    mockedStartOtp.mockResolvedValue(undefined);
+    mockedVerifyOtp.mockResolvedValue(null);
 
     renderLoginFlow();
 

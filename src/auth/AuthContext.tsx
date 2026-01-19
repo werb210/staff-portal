@@ -32,6 +32,7 @@ export type AuthContextType = {
   startOtp: (payload: { phone: string }) => Promise<OtpStartResponse>;
   verifyOtp: (payload: { code: string; phone?: string }) => Promise<OtpVerifyResponse>;
   setAuth: (payload: { token: string; user?: AuthenticatedUser | null }) => void;
+  setAuthenticated: (payload?: { token?: string; user?: AuthenticatedUser | null }) => void;
   refreshUser: (accessToken?: string) => Promise<boolean>;
   logout: () => void;
 };
@@ -49,6 +50,7 @@ const fallbackAuthContext: AuthContextType = {
   startOtp: async () => undefined,
   verifyOtp: async () => ({ token: "test-token", user: { id: "test-user", email: "test@example.com", role: "Admin" as AuthenticatedUser["role"] } }),
   setAuth: () => undefined,
+  setAuthenticated: () => undefined,
   refreshUser: async () => true,
   logout: () => undefined
 };
@@ -130,6 +132,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setAuthReady(true);
   }, []);
 
+  const setAuthenticated = useCallback((payload?: { token?: string; user?: AuthenticatedUser | null }) => {
+    const storedToken = payload?.token ?? getStoredAccessToken();
+    const storedUser = payload?.user ?? getStoredUser<AuthenticatedUser>();
+    if (isValidAccessToken(storedToken)) {
+      setStoredAccessToken(storedToken);
+      if (storedUser) {
+        setStoredUser(storedUser);
+      }
+      setToken(storedToken);
+      setUser(storedUser ?? null);
+    } else {
+      setToken(null);
+      setUser(storedUser ?? null);
+    }
+    setStatus("authenticated");
+    setAuthReady(true);
+  }, []);
+
   const loadCurrentUser = useCallback(async (accessToken?: string): Promise<boolean> => {
     const existingToken = accessToken ?? getStoredAccessToken();
     if (!existingToken) {
@@ -197,13 +217,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       try {
         const result = await verifyOtpService(targetPhoneNumber, code);
         setPendingPhoneNumber(null);
+        setAuthenticated(result ?? undefined);
         return result;
       } catch (error) {
         handleAuthFailure(error, true);
         throw error;
       }
     },
-    [handleAuthFailure, pendingPhoneNumber]
+    [handleAuthFailure, pendingPhoneNumber, setAuth, setAuthenticated]
   );
 
   const logout = useCallback(() => {
@@ -232,10 +253,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       startOtp,
       verifyOtp,
       setAuth,
+      setAuthenticated,
       refreshUser: loadCurrentUser,
       logout
     }),
-    [authReady, loadCurrentUser, logout, pendingPhoneNumber, setAuth, startOtp, status, token, user, verifyOtp]
+    [authReady, loadCurrentUser, logout, pendingPhoneNumber, setAuth, setAuthenticated, startOtp, status, token, user, verifyOtp]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

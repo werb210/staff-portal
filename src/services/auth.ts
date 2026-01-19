@@ -14,7 +14,10 @@ export type LoginSuccess = {
   user: AuthenticatedUser;
 };
 
-export type OtpVerifyResponse = LoginSuccess;
+export type OtpVerifyResponse = {
+  token?: string;
+  user?: AuthenticatedUser;
+} | null;
 
 export type OtpStartResponse = void;
 
@@ -31,10 +34,13 @@ export async function startOtp(phone: string): Promise<void> {
 
 export async function verifyOtp(phone: string, code: string): Promise<OtpVerifyResponse> {
   const normalizedPhone = normalizeToE164(phone);
-  const res = await otp.post<OtpVerifyApiResponse>("/auth/otp/verify", { phone: normalizedPhone, code });
+  const res = await otp.post<OtpVerifyApiResponse | undefined>("/auth/otp/verify", { phone: normalizedPhone, code });
+  if (res.status === 204 || !res.data) {
+    return null;
+  }
   const accessToken = res.data.accessToken ?? res.data.token;
   if (!accessToken) {
-    throw new Error("Missing access token from OTP verification");
+    return null;
   }
   return {
     token: accessToken,

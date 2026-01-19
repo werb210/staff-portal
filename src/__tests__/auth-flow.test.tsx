@@ -41,15 +41,13 @@ const TestAuthRole = () => {
 };
 
 const TestVerifyAction = () => {
-  const { verifyOtp, setAuth } = useAuth();
+  const { verifyOtp, setAuthenticated } = useAuth();
   return createElement(
     "button",
     {
       type: "button",
       onClick: () =>
-        void verifyOtp({ code: "123456", phone: "+15555550100" }).then((response) =>
-          setAuth({ token: response.token, user: response.user })
-        )
+        void verifyOtp({ code: "123456", phone: "+15555550100" }).then(() => setAuthenticated())
     },
     "Verify"
   );

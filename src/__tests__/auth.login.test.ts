@@ -38,16 +38,14 @@ const TestAuthState = () => {
 };
 
 const TestVerifyAction = () => {
-  const { verifyOtp, setAuth } = useAuth();
+  const { verifyOtp, setAuthenticated } = useAuth();
 
   return createElement(
     "button",
     {
       type: "button",
       onClick: () =>
-        void verifyOtp({ code: "123456", phone: "+15555550100" }).then((response) =>
-          setAuth({ token: response.token, user: response.user })
-        )
+        void verifyOtp({ code: "123456", phone: "+15555550100" }).then(() => setAuthenticated())
     },
     "Verify"
   );
@@ -122,6 +120,18 @@ describe("auth login", () => {
 
     await waitFor(() => expect(getStoredAccessToken()).toBe("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock.payload.signature"));
     await waitFor(() => expect(getStoredUser<{ email: string }>()?.email).toBe("demo@example.com"));
+  });
+
+  it("treats 204 OTP verification responses as success", async () => {
+    vi.spyOn(otp, "post").mockResolvedValueOnce({
+      data: undefined,
+      status: 204,
+      statusText: "No Content",
+      headers: {},
+      config: {}
+    });
+
+    await expect(verifyOtp({ phone: "+15555550100", code: "123456" })).resolves.toBeNull();
   });
 
   it("restores session on reload", async () => {
