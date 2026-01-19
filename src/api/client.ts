@@ -1,8 +1,14 @@
 import axios from "axios";
 import { getAccessToken, clearAccessToken } from "../auth/auth.store";
 
+const rawBaseURL = import.meta.env.VITE_API_BASE_URL;
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,
+  baseURL: rawBaseURL,
+});
+
+export const otp = axios.create({
+  baseURL: rawBaseURL,
 });
 
 api.interceptors.request.use((config) => {
