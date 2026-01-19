@@ -33,7 +33,7 @@ const parseOtpStartErrorMessage = (error: unknown): string => {
 };
 
 export default function LoginPage() {
-  const { startOtp, verifyOtp, setAuth } = useAuth();
+  const { startOtp, verifyOtp, setAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [rawPhone, setRawPhone] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -142,9 +142,9 @@ export default function LoginPage() {
       }
       lastVerifyAttempt.current = { code: trimmedCode, timestamp: now };
       setIsVerifying(true);
-      const result = await verifyOtp({ code, phone: phoneForVerification });
-      setAuth({ token: result.token, user: result.user });
-      navigate("/dashboard");
+      await verifyOtp({ code: trimmedCode, phone: phoneForVerification });
+      setAuthenticated();
+      navigate("/");
     } catch (err: unknown) {
       if (err instanceof ApiError) {
         if (err.code?.toLowerCase().includes("expired") || err.status === 410) {
