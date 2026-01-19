@@ -9,7 +9,7 @@ import axios, {
   type AxiosResponse,
   type GenericAbortSignal
 } from "axios";
-import { buildApiUrl, redirectToLogin } from "@/services/api";
+import { buildApiUrl } from "@/services/api";
 import {
   clearStoredAuth,
   getStoredAccessToken,
@@ -145,6 +145,16 @@ const getAxiosClient = () => {
       config.withCredentials = true;
       return config;
     });
+    axiosClient.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        if (error.response?.status === 401 || error.response?.status === 403) {
+          return Promise.reject(error);
+        }
+
+        return Promise.reject(error);
+      }
+    );
   }
 
   return axiosClient;
@@ -406,7 +416,6 @@ const executeRequest = async <T>(path: string, config: RequestOptions & { method
     if (!config.suppressAuthFailure) {
       reportAuthFailure("missing-token");
     }
-    redirectToLogin();
     throw new ApiError({ status: 401, message: "Missing access token for /auth/me", isAuthError: true });
   }
 
@@ -414,7 +423,6 @@ const executeRequest = async <T>(path: string, config: RequestOptions & { method
     if (!config.suppressAuthFailure) {
       reportAuthFailure("missing-token");
     }
-    redirectToLogin();
     console.warn("Missing Authorization header for staff request.", { path, method: normalizedMethod });
     throw new ApiError({ status: 401, message: "Missing access token", isAuthError: true });
   }
@@ -507,7 +515,6 @@ const executeRequest = async <T>(path: string, config: RequestOptions & { method
       setLastApiRequest({ path, method: normalizedMethod, status: error.status, requestId: error.requestId, timestamp: Date.now() });
       if (error.status === 401) {
         setApiStatus("unauthorized");
-        redirectToLogin();
       } else if (error.status === 403) {
         setApiStatus("forbidden");
       } else if (error.status >= 500 || error.status === 0) {
@@ -534,7 +541,6 @@ const executeRequest = async <T>(path: string, config: RequestOptions & { method
     setLastApiRequest({ path, method: normalizedMethod, status: apiError.status, requestId: apiError.requestId, timestamp: Date.now() });
     if (apiError.status === 401) {
       setApiStatus("unauthorized");
-      redirectToLogin();
     } else if (apiError.status === 403) {
       setApiStatus("forbidden");
     } else if (apiError.status >= 500 || apiError.status === 0) {
