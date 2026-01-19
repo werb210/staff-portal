@@ -1,6 +1,8 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/auth/AuthContext";
+import { getStoredAccessToken, getStoredUser } from "@/services/token";
 import type { UserRole } from "@/utils/roles";
+import type { AuthenticatedUser } from "@/services/auth";
 
 type PrivateRouteProps = {
   children: JSX.Element;
@@ -9,6 +11,12 @@ type PrivateRouteProps = {
 
 export default function PrivateRoute({ children, allowedRoles }: PrivateRouteProps) {
   const { authReady, authenticated, status, user } = useAuth();
+  const storedToken = getStoredAccessToken();
+  const storedUser = getStoredUser<AuthenticatedUser>();
+
+  if (!storedToken) {
+    return <Navigate to="/login" replace />;
+  }
 
   if (!authReady) return null;
 
@@ -17,7 +25,7 @@ export default function PrivateRoute({ children, allowedRoles }: PrivateRoutePro
   }
 
   if (allowedRoles && allowedRoles.length > 0) {
-    const role = user?.role;
+    const role = user?.role ?? storedUser?.role;
     if (!role || !allowedRoles.includes(role)) {
       return <Navigate to="/login" replace />;
     }

@@ -10,12 +10,11 @@ import {
 import {
   clearStoredAuth,
   getStoredAccessToken,
+  getStoredUser,
   setStoredAccessToken,
   setStoredUser
 } from "@/services/token";
-import { registerAuthFailureHandler } from "@/auth/authEvents";
 import { redirectToLogin } from "@/services/api";
-import { setApiStatus } from "@/state/apiStatus";
 import { showApiToast } from "@/state/apiNotifications";
 import { isUserRole } from "@/utils/roles";
 
@@ -52,7 +51,7 @@ const fallbackAuthContext: AuthContextType = {
 };
 
 const isValidAccessToken = (token: string | null | undefined): token is string =>
-  typeof token === "string" && token.length > 50 && token.startsWith("eyJ");
+  typeof token === "string" && token.trim().length > 0;
 
 type JwtPayload = {
   sub?: string;
@@ -104,37 +103,19 @@ const buildUserFromToken = (token: string): AuthenticatedUser | null => {
 };
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<AuthenticatedUser | null>(null);
+  const [user, setUser] = useState<AuthenticatedUser | null>(() => getStoredUser<AuthenticatedUser>());
   const [token, setToken] = useState<string | null>(() => getStoredAccessToken());
   const [status, setStatus] = useState<AuthStatus>("unauthenticated");
   const [authReady, setAuthReady] = useState(false);
   const [pendingPhoneNumber, setPendingPhoneNumber] = useState<string | null>(null);
 
-  const forceLogout = useCallback((nextStatus: AuthStatus) => {
-    clearStoredAuth();
-    setUser(null);
-    setToken(null);
-    setStatus(nextStatus);
-    setAuthReady(true);
-    redirectToLogin();
-  }, []);
-
-  useEffect(() => {
-    return registerAuthFailureHandler(() => {
-      setApiStatus("unauthorized");
-      forceLogout("unauthenticated");
-    });
-  }, [forceLogout]);
-
   const setAuth = useCallback((payload: { token: string; user?: AuthenticatedUser | null }) => {
     if (!isValidAccessToken(payload.token)) {
-      clearStoredAuth();
       throw new Error("Invalid access token from OTP verification");
     }
 
     const resolvedUser = payload.user ?? buildUserFromToken(payload.token);
     if (!resolvedUser) {
-      clearStoredAuth();
       throw new Error("Unable to derive user from access token");
     }
 
@@ -151,33 +132,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     if (!existingToken) {
       setStatus("unauthenticated");
       setAuthReady(true);
-      redirectToLogin();
+      setUser(null);
+      setToken(null);
       return false;
     }
     if (!isValidAccessToken(existingToken)) {
-      clearStoredAuth();
       setUser(null);
       setToken(null);
       setStatus("unauthenticated");
       setAuthReady(true);
-      redirectToLogin();
       return false;
     }
 
-    const resolvedUser = buildUserFromToken(existingToken);
-    if (!resolvedUser) {
-      clearStoredAuth();
-      setUser(null);
-      setToken(null);
-      setStatus("unauthenticated");
-      setAuthReady(true);
-      redirectToLogin();
-      return false;
-    }
+    const resolvedUser = getStoredUser<AuthenticatedUser>() ?? buildUserFromToken(existingToken);
 
-    setStoredUser(resolvedUser);
     setToken(existingToken);
-    setUser(resolvedUser);
+    setUser(resolvedUser ?? null);
     setStatus("authenticated");
     setAuthReady(true);
     return true;
@@ -186,12 +156,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     const existingToken = getStoredAccessToken();
     if (!existingToken || !isValidAccessToken(existingToken)) {
-      if (existingToken) {
-        clearStoredAuth();
-      }
       setStatus("unauthenticated");
       setAuthReady(true);
-      redirectToLogin();
+      setUser(null);
+      setToken(null);
       return;
     }
     void loadCurrentUser(existingToken);
