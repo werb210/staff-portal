@@ -1,5 +1,5 @@
-import axios, { AxiosError, type AxiosRequestConfig } from "axios";
-import { getStoredAccessToken, clearStoredAuth } from "@/services/token";
+import axios, { type AxiosRequestConfig } from "axios";
+import { getStoredAccessToken } from "@/services/token";
 
 type ApiErrorOptions = {
   status: number;
@@ -77,22 +77,6 @@ api.interceptors.request.use(config => {
   return config;
 });
 
-api.interceptors.response.use(
-  res => res,
-  (err: AxiosError) => {
-    const status = err.response?.status;
-
-    // Only clear auth if token is missing or malformed
-    if (status === 401) {
-      const token = getStoredAccessToken();
-      if (!token) {
-        clearStoredAuth();
-      }
-    }
-
-    return Promise.reject(err);
-  }
-);
 
 export const lenderApiClient = axios.create({
   baseURL: apiBaseURL,
@@ -105,21 +89,11 @@ lenderApiClient.interceptors.request.use(config => {
   }
   const tokens = lenderApiConfig.tokenProvider?.() ?? null;
   if (tokens?.accessToken) {
+    config.headers = config.headers ?? {};
     config.headers.Authorization = `Bearer ${tokens.accessToken}`;
   }
   return config;
 });
-
-lenderApiClient.interceptors.response.use(
-  res => res,
-  (err: AxiosError) => {
-    const status = err.response?.status;
-    if (status === 401) {
-      lenderApiConfig.onUnauthorized?.();
-    }
-    return Promise.reject(err);
-  }
-);
 
 export default api;
 export const apiClient = api;
