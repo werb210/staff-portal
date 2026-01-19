@@ -1,47 +1,33 @@
-import axios, {
-  AxiosError,
-  AxiosInstance,
-  AxiosRequestConfig,
-  AxiosResponse,
-} from "axios";
-import { buildApiUrl } from "@/services/api";
-import {
-  getStoredAccessToken,
-  clearStoredAuth,
-} from "@/services/token";
-import { reportAuthFailure } from "@/auth/authEvents";
+import axios, { AxiosError } from "axios";
+import { getStoredAccessToken, clearStoredAuth } from "@/services/token";
 
-const api: AxiosInstance = axios.create({
-  baseURL: buildApiUrl(),
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE_URL,
   withCredentials: true,
 });
 
-api.interceptors.request.use((config: AxiosRequestConfig) => {
+api.interceptors.request.use(config => {
   const token = getStoredAccessToken();
   if (token) {
-    config.headers = config.headers ?? {};
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 });
 
 api.interceptors.response.use(
-  (response: AxiosResponse) => response,
-  (error: AxiosError) => {
-    const status = error.response?.status;
-    const token = getStoredAccessToken();
+  res => res,
+  (err: AxiosError) => {
+    const status = err.response?.status;
 
-    /**
-     * HARD RULE:
-     * - 401 does NOT mean redirect unless token is missing or invalid
-     * - Capability failures are NOT auth failures
-     */
-    if (status === 401 && !token) {
-      clearStoredAuth();
-      reportAuthFailure("missing_token");
+    // Only clear auth if token is missing or malformed
+    if (status === 401) {
+      const token = getStoredAccessToken();
+      if (!token) {
+        clearStoredAuth();
+      }
     }
 
-    return Promise.reject(error);
+    return Promise.reject(err);
   }
 );
 
