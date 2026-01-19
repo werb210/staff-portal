@@ -1,4 +1,4 @@
-import axios, { AxiosError } from "axios";
+import axios, { AxiosError, type AxiosRequestConfig } from "axios";
 import { getStoredAccessToken, clearStoredAuth } from "@/services/token";
 
 type ApiErrorOptions = {
@@ -122,5 +122,5 @@ lenderApiClient.interceptors.response.use(
 
 export default api;
 export const apiClient = api;
-export const otpStartRequestOptions = { withCredentials: true };
-export const otpVerifyRequestOptions = { withCredentials: true };
+export const otpStartRequestOptions: AxiosRequestConfig = { ...otpClient.defaults };
+export const otpVerifyRequestOptions: AxiosRequestConfig = { ...otpClient.defaults };
