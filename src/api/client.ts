@@ -45,21 +45,18 @@ export const configureLenderApiClient = (config: LenderApiConfig) => {
 
 export const notifyRouteChange = () => undefined;
 
-const rawBaseUrl = import.meta.env.VITE_API_BASE_URL;
+const rawBaseUrl = import.meta.env.VITE_API_BASE_URL
+  ?? (import.meta.env.MODE === "test" ? "http://localhost" : undefined);
 
-const baseURL =
-  rawBaseUrl ??
-  (import.meta.env.MODE === "test" ? "http://localhost" : undefined);
-
-if (!baseURL) {
+if (!rawBaseUrl) {
   throw new Error("VITE_API_BASE_URL is not defined");
 }
 
-const apiBaseURL = baseURL.endsWith("/api")
-  ? baseURL
-  : `${baseURL}/api`;
+const apiBaseURL = rawBaseUrl.endsWith("/api")
+  ? rawBaseUrl
+  : `${rawBaseUrl}/api`;
 
-const otpBaseURL = baseURL;
+const otpBaseURL = rawBaseUrl;
 
 const api = axios.create({
   baseURL: apiBaseURL,
