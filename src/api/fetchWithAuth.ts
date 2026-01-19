@@ -1,8 +1,10 @@
+import { getAccessToken } from "../auth/auth.store";
+
 export async function fetchWithAuth(
   input: RequestInfo,
   init: RequestInit = {}
 ): Promise<Response> {
-  const token = localStorage.getItem("accessToken");
+  const token = getAccessToken();
 
   const headers = new Headers(init.headers);
   if (token) {

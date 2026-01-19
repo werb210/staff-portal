@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
 import apiClient from "@/api/httpClient";
-import { otp } from "@/api/client";
+import api from "@/api/client";
 import { AuthProvider, useAuth } from "@/auth/AuthContext";
 import { verifyOtp } from "@/services/auth";
 import { getStoredAccessToken, getStoredUser, setStoredAccessToken } from "@/services/token";
@@ -70,7 +70,7 @@ describe("auth login", () => {
       config,
     }));
 
-    const response = await otp.post<{ sessionId?: string; requestId?: string }>(
+    const response = await api.post<{ sessionId?: string; requestId?: string }>(
       "/auth/otp/start",
       { phone: "+15555550100" },
       { adapter: startAdapter } as any
@@ -86,7 +86,7 @@ describe("auth login", () => {
   });
 
   it("OTP verification returns tokens from the service", async () => {
-    const apiPostSpy = vi.spyOn(otp, "post").mockResolvedValueOnce({
+    const apiPostSpy = vi.spyOn(api, "post").mockResolvedValueOnce({
       data: {
         token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock.payload.signature",
         user: { id: "1", email: "demo@example.com", role: "Admin" }
@@ -107,7 +107,7 @@ describe("auth login", () => {
   });
 
   it("stores tokens after a successful OTP verification", async () => {
-    vi.spyOn(otp, "post").mockResolvedValueOnce({
+    vi.spyOn(api, "post").mockResolvedValueOnce({
       data: {
         token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock.payload.signature",
         user: { id: "1", email: "demo@example.com", role: "Admin" }
@@ -123,7 +123,7 @@ describe("auth login", () => {
   });
 
   it("treats 204 OTP verification responses as success", async () => {
-    vi.spyOn(otp, "post").mockResolvedValueOnce({
+    vi.spyOn(api, "post").mockResolvedValueOnce({
       data: undefined,
       status: 204,
       statusText: "No Content",

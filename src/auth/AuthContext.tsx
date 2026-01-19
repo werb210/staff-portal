@@ -14,6 +14,7 @@ import {
   setStoredAccessToken,
   setStoredUser
 } from "@/services/token";
+import { setAccessToken } from "@/auth/auth.store";
 import { ApiError } from "@/api/http";
 import { redirectToLogin } from "@/services/api";
 import { showApiToast } from "@/state/apiNotifications";
@@ -217,6 +218,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       try {
         const result = await verifyOtpService(targetPhoneNumber, code);
         setPendingPhoneNumber(null);
+        if (result?.token) {
+          setAccessToken(result.token);
+        }
         setAuthenticated(result ?? undefined);
         return result;
       } catch (error) {

@@ -1,9 +1,9 @@
 import { Navigate, useLocation } from "react-router-dom";
-import { getStoredAccessToken } from "@/services/token";
+import { getAccessToken } from "@/auth/auth.store";
 
 export default function AuthGuard({ children }: { children: JSX.Element }) {
   const location = useLocation();
-  const token = getStoredAccessToken();
+  const token = getAccessToken();
 
   if (!token) {
     return <Navigate to="/login" replace state={{ from: location }} />;
