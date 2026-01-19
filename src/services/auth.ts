@@ -1,4 +1,4 @@
-import { api, otp } from "@/api/client";
+import api from "@/api/client";
 import type { UserRole } from "@/utils/roles";
 import { normalizeToE164 } from "@/utils/phone";
 
@@ -29,12 +29,12 @@ type OtpVerifyApiResponse = {
 
 export async function startOtp(phone: string): Promise<void> {
   const normalizedPhone = normalizeToE164(phone);
-  await otp.post("/auth/otp/start", { phone: normalizedPhone });
+  await api.post("/auth/otp/start", { phone: normalizedPhone });
 }
 
 export async function verifyOtp(phone: string, code: string): Promise<OtpVerifyResponse> {
   const normalizedPhone = normalizeToE164(phone);
-  const res = await otp.post<OtpVerifyApiResponse | undefined>("/auth/otp/verify", { phone: normalizedPhone, code });
+  const res = await api.post<OtpVerifyApiResponse | undefined>("/auth/otp/verify", { phone: normalizedPhone, code });
   if (res.status === 204 || !res.data) {
     return null;
   }

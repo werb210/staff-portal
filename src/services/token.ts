@@ -1,16 +1,18 @@
-export const ACCESS_TOKEN_KEY = "accessToken";
+import { ACCESS_TOKEN_KEY, clearAccessToken, getAccessToken, setAccessToken } from "@/auth/auth.store";
+
+export { ACCESS_TOKEN_KEY };
 export const USER_KEY = "user";
 
 export function getStoredAccessToken(): string | null {
-  return localStorage.getItem(ACCESS_TOKEN_KEY);
+  return getAccessToken();
 }
 
 export function setStoredAccessToken(token: string) {
-  localStorage.setItem(ACCESS_TOKEN_KEY, token);
+  setAccessToken(token);
 }
 
 export function clearStoredAuth() {
-  localStorage.removeItem(ACCESS_TOKEN_KEY);
+  clearAccessToken();
   localStorage.removeItem(USER_KEY);
 }
 

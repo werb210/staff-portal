@@ -1,30 +1,28 @@
-import axios, { type AxiosRequestConfig } from "axios";
-import { getStoredAccessToken } from "@/services/token";
+import axios from "axios";
+import { getAccessToken, clearAccessToken } from "../auth/auth.store";
 
-const rawBaseURL = import.meta.env.VITE_API_BASE_URL;
-if (!rawBaseURL) {
-  throw new Error("VITE_API_BASE_URL is not defined");
-}
-
-const apiBaseURL = rawBaseURL.endsWith("/api")
-  ? rawBaseURL
-  : `${rawBaseURL}/api`;
-
-export const api = axios.create({
-  baseURL: apiBaseURL,
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE_URL,
 });
 
-export const otp = axios.create({
-  baseURL: rawBaseURL,
-});
-
-api.interceptors.request.use((config: AxiosRequestConfig) => {
-  const token = getStoredAccessToken();
+api.interceptors.request.use((config) => {
+  const token = getAccessToken();
   if (token) {
-    config.headers = {
-      ...config.headers,
-      Authorization: `Bearer ${token}`,
-    };
+    config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 });
+
+api.interceptors.response.use(
+  (res) => res,
+  (err) => {
+    const status = err.response?.status;
+    if (status === 401 || status === 403) {
+      clearAccessToken();
+      window.location.href = "/login";
+    }
+    return Promise.reject(err);
+  }
+);
+
+export default api;
