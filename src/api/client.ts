@@ -45,14 +45,25 @@ export const configureLenderApiClient = (config: LenderApiConfig) => {
 
 export const notifyRouteChange = () => undefined;
 
+const rawBaseUrl = import.meta.env.VITE_API_BASE_URL;
+
+if (!rawBaseUrl) {
+  throw new Error("VITE_API_BASE_URL is not defined");
+}
+
+const baseURL = rawBaseUrl.endsWith("/api")
+  ? rawBaseUrl
+  : `${rawBaseUrl}/api`;
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,
+  baseURL,
   withCredentials: true,
 });
 
 api.interceptors.request.use(config => {
   const token = getStoredAccessToken();
   if (token) {
+    config.headers = config.headers ?? {};
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
@@ -69,14 +80,14 @@ api.interceptors.response.use(
       if (!token) {
         clearStoredAuth();
       }
-  }
+    }
 
-  return Promise.reject(err);
+    return Promise.reject(err);
   }
 );
 
 export const lenderApiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,
+  baseURL,
   withCredentials: true,
 });
 
