@@ -47,18 +47,22 @@ export const notifyRouteChange = () => undefined;
 
 const rawBaseUrl = import.meta.env.VITE_API_BASE_URL;
 
-if (!rawBaseUrl) {
+const baseURL =
+  rawBaseUrl ??
+  (import.meta.env.MODE === "test" ? "http://localhost" : undefined);
+
+if (!baseURL) {
   throw new Error("VITE_API_BASE_URL is not defined");
 }
 
-const baseURL = rawBaseUrl.endsWith("/api")
-  ? rawBaseUrl
-  : `${rawBaseUrl}/api`;
+const apiBaseURL = baseURL.endsWith("/api")
+  ? baseURL
+  : `${baseURL}/api`;
 
-const otpBaseURL = rawBaseUrl;
+const otpBaseURL = baseURL;
 
 const api = axios.create({
-  baseURL,
+  baseURL: apiBaseURL,
   withCredentials: true,
 });
 
@@ -94,7 +98,7 @@ api.interceptors.response.use(
 );
 
 export const lenderApiClient = axios.create({
-  baseURL,
+  baseURL: apiBaseURL,
   withCredentials: true,
 });
 
