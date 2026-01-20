@@ -18,6 +18,9 @@ export type OtpStartResult = {
 
 export async function startOtp(payload: { phone: string }): Promise<OtpStartResult | null> {
   const response = await api.post<OtpStartResponse>("/auth/otp/start", payload);
+  if (response.status === 204) {
+    return null;
+  }
   return {
     data: response.data ?? null,
     headers: response.headers ?? {}
@@ -35,6 +38,9 @@ export type OtpVerifyResponse =
 
 export async function verifyOtp(payload: { phone: string; code: string }): Promise<OtpVerifyResponse> {
   const response = await api.post<OtpVerifyResponse>("/auth/otp/verify", payload);
+  if (response.status === 204) {
+    return null;
+  }
   return response.data ?? null;
 }
 

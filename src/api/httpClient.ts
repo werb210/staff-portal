@@ -72,7 +72,10 @@ const lenderApi = axios.create({
 lenderApi.interceptors.request.use((config: AxiosRequestConfig) => attachRequestIdAndLog(config));
 lenderApi.interceptors.response.use(
   (response) => logResponse(response),
-  (error: AxiosError) => logError(error)
+  (error: AxiosError) => {
+    logError(error);
+    return Promise.reject(error);
+  }
 );
 
 const buildLenderConfig = (options?: RequestOptions): AxiosRequestConfig | undefined => {
