@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import PrivateRoute from "./router/PrivateRoute";
@@ -15,14 +15,26 @@ import LenderProductsPage from "./pages/lenders/LenderProductsPage";
 import SettingsPage from "./pages/settings/SettingsPage";
 import TaskPane from "./pages/tasks/TaskPane";
 import { emitUiTelemetry } from "./utils/uiTelemetry";
-import GlobalErrorBoundary from "./components/errors/GlobalErrorBoundary";
 import { useApiHealthCheck } from "./hooks/useApiHealthCheck";
+import UiFailureBanner from "./components/UiFailureBanner";
+import { getRequestId } from "./utils/requestId";
+import { setUiFailure } from "./utils/uiFailureStore";
 
 const RouteChangeObserver = () => {
   const location = useLocation();
+  const previousPath = useRef<string | null>(null);
 
   useEffect(() => {
     emitUiTelemetry("page_loaded");
+    const from = previousPath.current ?? "initial";
+    const to = location.pathname;
+    previousPath.current = to;
+    console.info("Route transition", {
+      from,
+      to,
+      requestId: getRequestId(),
+      timestamp: new Date().toISOString()
+    });
   }, [location.key]);
 
   return null;
@@ -47,35 +59,64 @@ export default function App() {
     []
   );
 
+  useEffect(() => {
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      const requestId = getRequestId();
+      console.error("Unhandled promise rejection", { requestId, reason: event.reason });
+      setUiFailure({
+        message: "A background task failed unexpectedly.",
+        details: `Request ID: ${requestId}`,
+        timestamp: Date.now()
+      });
+    };
+
+    const handleWindowError = (event: ErrorEvent) => {
+      const requestId = getRequestId();
+      console.error("Window error", { requestId, error: event.error, message: event.message });
+      setUiFailure({
+        message: "An unexpected error occurred.",
+        details: `Request ID: ${requestId}`,
+        timestamp: Date.now()
+      });
+    };
+
+    window.addEventListener("unhandledrejection", handleUnhandledRejection);
+    window.addEventListener("error", handleWindowError);
+
+    return () => {
+      window.removeEventListener("unhandledrejection", handleUnhandledRejection);
+      window.removeEventListener("error", handleWindowError);
+    };
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
-      <GlobalErrorBoundary>
-        <BrowserRouter>
-          <RouteChangeObserver />
-          <Routes>
-            <Route path="/login" element={<LoginPage />} />
-            <Route element={<ProtectedApp />}>
-              <Route path="/" element={<DashboardPage />} />
-              <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="/applications" element={<ApplicationsPage />} />
-              <Route path="/crm" element={<CRMPage />} />
-              <Route path="/communications" element={<CommunicationsPage />} />
-              <Route path="/comms" element={<CommunicationsPage />} />
-              <Route path="/calendar" element={<CalendarPage />} />
-              <Route path="/tasks" element={<TaskPane />} />
-              <Route path="/marketing" element={<MarketingPage />} />
-              <Route path="/lenders" element={<LendersPage />} />
-              <Route path="/lenders/new" element={<LendersPage />} />
-              <Route path="/lenders/:lenderId/edit" element={<LendersPage />} />
-              <Route path="/lender-products" element={<LenderProductsPage />} />
-              <Route path="/lender-products/new" element={<LenderProductsPage />} />
-              <Route path="/lender-products/:productId/edit" element={<LenderProductsPage />} />
-              <Route path="/lenders/products" element={<LenderProductsPage />} />
-              <Route path="/settings" element={<SettingsPage />} />
-            </Route>
-          </Routes>
-        </BrowserRouter>
-      </GlobalErrorBoundary>
+      <UiFailureBanner />
+      <BrowserRouter>
+        <RouteChangeObserver />
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route element={<ProtectedApp />}>
+            <Route path="/" element={<DashboardPage />} />
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/applications" element={<ApplicationsPage />} />
+            <Route path="/crm" element={<CRMPage />} />
+            <Route path="/communications" element={<CommunicationsPage />} />
+            <Route path="/comms" element={<CommunicationsPage />} />
+            <Route path="/calendar" element={<CalendarPage />} />
+            <Route path="/tasks" element={<TaskPane />} />
+            <Route path="/marketing" element={<MarketingPage />} />
+            <Route path="/lenders" element={<LendersPage />} />
+            <Route path="/lenders/new" element={<LendersPage />} />
+            <Route path="/lenders/:lenderId/edit" element={<LendersPage />} />
+            <Route path="/lender-products" element={<LenderProductsPage />} />
+            <Route path="/lender-products/new" element={<LenderProductsPage />} />
+            <Route path="/lender-products/:productId/edit" element={<LenderProductsPage />} />
+            <Route path="/lenders/products" element={<LenderProductsPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
     </QueryClientProvider>
   );
 }

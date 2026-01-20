@@ -1,5 +1,6 @@
 import axios, { AxiosError, type AxiosRequestConfig } from "axios";
 import { getStoredAccessToken } from "@/services/token";
+import { attachRequestIdAndLog, logError, logResponse } from "@/utils/apiLogging";
 
 export type ApiErrorOptions = {
   status: number;
@@ -47,12 +48,13 @@ api.interceptors.request.use((config: AxiosRequestConfig) => {
       Authorization: `Bearer ${token}`,
     };
   }
-  return config;
+  return attachRequestIdAndLog(config);
 });
 
 api.interceptors.response.use(
-  r => r,
+  (response) => logResponse(response),
   (error: AxiosError) => {
+    logError(error);
     const status = error.response?.status ?? 500;
     throw new ApiError({
       status,

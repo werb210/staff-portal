@@ -1,5 +1,6 @@
 import axios, { AxiosError, type AxiosRequestConfig } from "axios";
 import { ApiError, api } from "@/api/http";
+import { attachRequestIdAndLog, logError, logResponse } from "@/utils/apiLogging";
 
 export type RequestOptions = AxiosRequestConfig & {
   skipAuth?: boolean;
@@ -67,6 +68,12 @@ const lenderApiBaseURL = api.defaults.baseURL;
 const lenderApi = axios.create({
   baseURL: lenderApiBaseURL
 });
+
+lenderApi.interceptors.request.use((config: AxiosRequestConfig) => attachRequestIdAndLog(config));
+lenderApi.interceptors.response.use(
+  (response) => logResponse(response),
+  (error: AxiosError) => logError(error)
+);
 
 const buildLenderConfig = (options?: RequestOptions): AxiosRequestConfig | undefined => {
   if (!options) {
