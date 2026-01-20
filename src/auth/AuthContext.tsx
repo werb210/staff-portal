@@ -3,10 +3,10 @@ import React, {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useState,
   type PropsWithChildren
 } from "react";
-import { useNavigate } from "react-router-dom";
 
 import type { AuthenticatedUser } from "@/services/auth";
 import {
@@ -22,14 +22,7 @@ import {
   setStoredUser
 } from "@/services/token";
 
-export type AuthStatus =
-  | "idle"
-  | "sending"
-  | "code_required"
-  | "verifying"
-  | "authenticated"
-  | "unauthenticated"
-  | "expired";
+export type AuthStatus = "loading" | "authenticated" | "unauthenticated";
 
 interface SetAuthPayload {
   token: string;
@@ -46,12 +39,12 @@ interface VerifyOtpPayload {
 }
 
 export interface AuthContextValue {
+  status: AuthStatus;
   user: AuthenticatedUser | null;
   token: string | null;
+  error: string | null;
   authenticated: boolean;
   authReady: boolean;
-  status: AuthStatus;
-  error: string | null;
   pendingPhoneNumber: string | null;
   startOtp: (payload: StartOtpPayload) => Promise<void>;
   verifyOtp: (payload: VerifyOtpPayload | string, code?: string) => Promise<void>;
@@ -61,207 +54,271 @@ export interface AuthContextValue {
   logout: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+export type AuthContextType = AuthContextValue;
 
-function decodeJwtPayload(jwt: string): any | null {
+const defaultAuthContext: AuthContextValue = {
+  status: "loading",
+  user: null,
+  token: null,
+  error: null,
+  authenticated: false,
+  authReady: false,
+  pendingPhoneNumber: null,
+  startOtp: async () => undefined,
+  verifyOtp: async () => undefined,
+  setAuth: () => undefined,
+  setAuthenticated: () => undefined,
+  refreshUser: async () => false,
+  logout: async () => undefined
+};
+
+export const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+
+function decodeJwtPayload(jwt: string): AuthenticatedUser | null {
   try {
     const [, payload] = jwt.split(".");
     if (!payload) return null;
     const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
     const json = atob(base64);
-    return JSON.parse(json);
+    return JSON.parse(json) as AuthenticatedUser;
   } catch {
     return null;
   }
 }
 
+const resolveStoredAuth = (): { token: string | null; user: AuthenticatedUser | null } => {
+  try {
+    return {
+      token: getStoredAccessToken(),
+      user: getStoredUser<AuthenticatedUser>()
+    };
+  } catch (error) {
+    console.error("Failed to read stored auth", error);
+    return { token: null, user: null };
+  }
+};
+
 export function AuthProvider({ children }: PropsWithChildren<{}>) {
-  const navigate = useNavigate();
+  const [status, setStatus] = useState<AuthStatus>("loading");
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<AuthenticatedUser | null>(null);
-  const [authenticated, setAuthenticatedState] = useState(false);
-  const [authReady, setAuthReady] = useState(false);
-  const [status, setStatus] = useState<AuthStatus>("idle");
   const [error, setError] = useState<string | null>(null);
   const [pendingPhoneNumber, setPendingPhoneNumber] = useState<string | null>(null);
 
-  const setAuth = useCallback(
-    ({ token: newToken, user: newUser }: SetAuthPayload) => {
-      setStoredAccessToken(newToken);
-      setToken(newToken);
-      const resolvedUser = newUser ?? (decodeJwtPayload(newToken) as AuthenticatedUser | null);
-      if (resolvedUser) {
-        setStoredUser(resolvedUser);
-      }
-      setUser(resolvedUser ?? null);
-      setAuthenticatedState(true);
-      setStatus("authenticated");
-      console.log("AUTH STATE UPDATE", {
-        token: newToken,
-        user: resolvedUser ?? null,
-        isAuthenticated: true
-      });
-    },
-    []
-  );
-
-  const setAuthenticatedFn = useCallback(() => {
-    setAuthenticatedState(true);
+  const setAuth = useCallback(({ token: newToken, user: newUser }: SetAuthPayload) => {
+    const resolvedUser = newUser ?? decodeJwtPayload(newToken);
+    setToken(newToken);
+    setUser(resolvedUser ?? null);
     setStatus("authenticated");
+    setError(null);
+
+    try {
+      setStoredAccessToken(newToken);
+    } catch (storageError) {
+      console.error("Failed to persist access token", storageError);
+    }
+
+    if (resolvedUser) {
+      try {
+        setStoredUser(resolvedUser);
+      } catch (storageError) {
+        console.error("Failed to persist user", storageError);
+      }
+    }
+  }, []);
+
+  const setAuthenticated = useCallback(() => {
+    setStatus("authenticated");
+    setError(null);
   }, []);
 
   const refreshUser = useCallback(
     async (accessToken?: string): Promise<boolean> => {
-      const storedToken = accessToken ?? getStoredAccessToken();
+      let storedToken = accessToken ?? null;
       if (!storedToken) {
-        setAuthReady(true);
+        storedToken = resolveStoredAuth().token;
+      }
+
+      if (!storedToken) {
+        setToken(null);
+        setUser(null);
+        setStatus("unauthenticated");
         return false;
       }
-      const payload = decodeJwtPayload(storedToken);
-      if (payload) {
+
+      const decoded = decodeJwtPayload(storedToken);
+      if (decoded) {
         setToken(storedToken);
-        setUser(payload as AuthenticatedUser);
-        setStoredAccessToken(storedToken);
-        setStoredUser(payload);
-        setAuthenticatedState(true);
+        setUser(decoded);
         setStatus("authenticated");
-        setAuthReady(true);
+        try {
+          setStoredAccessToken(storedToken);
+          setStoredUser(decoded);
+        } catch (storageError) {
+          console.error("Failed to update stored auth", storageError);
+        }
         return true;
       }
-      clearStoredAuth();
+
+      try {
+        clearStoredAuth();
+      } catch (storageError) {
+        console.error("Failed to clear stored auth", storageError);
+      }
       setToken(null);
       setUser(null);
-      setAuthenticatedState(false);
       setStatus("unauthenticated");
-      setAuthReady(true);
       return false;
     },
     []
   );
 
   useEffect(() => {
-    (async () => {
-      const storedToken = getStoredAccessToken();
-      const storedUser = getStoredUser<AuthenticatedUser>();
+    let isMounted = true;
+
+    const initializeAuth = () => {
+      setStatus("loading");
+      const { token: storedToken, user: storedUser } = resolveStoredAuth();
+      if (!isMounted) return;
+
       if (storedToken) {
+        const resolvedUser = storedUser ?? decodeJwtPayload(storedToken);
         setToken(storedToken);
-        if (storedUser) {
-          setUser(storedUser);
-        } else {
-          const decoded = decodeJwtPayload(storedToken) as AuthenticatedUser | null;
-          setUser(decoded ?? null);
-        }
-        setAuthenticatedState(true);
+        setUser(resolvedUser ?? null);
         setStatus("authenticated");
+        if (resolvedUser) {
+          try {
+            setStoredUser(resolvedUser);
+          } catch (storageError) {
+            console.error("Failed to persist decoded user", storageError);
+          }
+        }
       } else {
+        setToken(null);
+        setUser(null);
         setStatus("unauthenticated");
       }
-      setAuthReady(true);
-    })();
+    };
+
+    initializeAuth();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  const startOtp = useCallback(
-    async ({ phone }: StartOtpPayload): Promise<void> => {
-      setError(null);
-      setStatus("sending");
-      try {
-        await startOtpService({ phone });
-        setPendingPhoneNumber(phone);
-        setStatus("code_required");
-      } catch (err: any) {
-        const message = (err?.message as string) ?? "OTP failed";
-        setError(message);
-        setStatus("unauthenticated");
+  const startOtp = useCallback(async ({ phone }: StartOtpPayload): Promise<void> => {
+    setError(null);
+    try {
+      const result = await startOtpService({ phone });
+      if (result === null) {
+        // HTTP 204 is treated as success with no body.
       }
-    },
-    []
-  );
+      setPendingPhoneNumber(phone);
+    } catch (err: any) {
+      const message = (err?.message as string) ?? "OTP failed";
+      setError(message);
+      setStatus("unauthenticated");
+      throw err;
+    }
+  }, []);
 
   const verifyOtp = useCallback(
     async (payload: VerifyOtpPayload | string, codeArg?: string): Promise<void> => {
       setError(null);
-      setStatus("verifying");
       const resolvedPayload =
         typeof payload === "string" ? { phone: payload, code: codeArg ?? "" } : payload;
       const phoneNumber = resolvedPayload.phone ?? pendingPhoneNumber ?? "";
+
       try {
         const result = await verifyOtpService({ phone: phoneNumber, code: resolvedPayload.code });
-        console.log("VERIFY RESPONSE", result);
         if (result) {
           const refreshToken =
             (result as { refreshToken?: string; refresh_token?: string }).refreshToken ??
             (result as { refreshToken?: string; refresh_token?: string }).refresh_token ??
             null;
           if (refreshToken) {
-            localStorage.setItem("refresh_token", refreshToken);
+            try {
+              localStorage.setItem("refresh_token", refreshToken);
+            } catch (storageError) {
+              console.error("Failed to persist refresh token", storageError);
+            }
           }
-          const { token: newToken, user: newUser } = result;
-          setAuth({ token: newToken, user: newUser ?? null });
-          navigate("/dashboard");
-        } else {
-          const persisted = getStoredAccessToken();
-          if (persisted) {
-            const decoded = decodeJwtPayload(persisted) as AuthenticatedUser | null;
-            setToken(persisted);
-            setUser(decoded ?? null);
-            setAuthenticatedState(true);
-            setStatus("authenticated");
-            console.log("AUTH STATE UPDATE", {
-              token: persisted,
-              user: decoded ?? null,
-              isAuthenticated: true
-            });
-            navigate("/dashboard");
+
+          if (result.token) {
+            setAuth({ token: result.token, user: result.user ?? null });
           } else {
-            setStatus("unauthenticated");
+            setAuthenticated();
+          }
+        } else {
+          const refreshed = await refreshUser();
+          if (!refreshed) {
+            setAuthenticated();
           }
         }
       } catch (err: any) {
         const message = (err?.message as string) ?? "OTP verification failed";
         setError(message);
-        setStatus("code_required");
+        setStatus("unauthenticated");
+        throw err;
       } finally {
         setPendingPhoneNumber(null);
       }
     },
-    [navigate, pendingPhoneNumber, setAuth]
+    [pendingPhoneNumber, refreshUser, setAuth, setAuthenticated]
   );
 
   const logout = useCallback(async (): Promise<void> => {
     try {
       await logoutService();
-    } catch {}
-    clearStoredAuth();
+    } catch (error) {
+      console.error("Logout failed", error);
+    }
+    try {
+      clearStoredAuth();
+    } catch (storageError) {
+      console.error("Failed to clear stored auth", storageError);
+    }
     setToken(null);
     setUser(null);
-    setAuthenticatedState(false);
     setStatus("unauthenticated");
-    setAuthReady(true);
   }, []);
 
-  const contextValue: AuthContextValue = {
-    user,
-    token,
-    authenticated,
-    authReady,
-    status,
-    error,
-    pendingPhoneNumber,
-    startOtp,
-    verifyOtp,
-    setAuth,
-    setAuthenticated: setAuthenticatedFn,
-    refreshUser,
-    logout
-  };
+  const contextValue = useMemo<AuthContextValue>(
+    () => ({
+      status,
+      user,
+      token,
+      error,
+      authenticated: status === "authenticated",
+      authReady: status !== "loading",
+      pendingPhoneNumber,
+      startOtp,
+      verifyOtp,
+      setAuth,
+      setAuthenticated,
+      refreshUser,
+      logout
+    }),
+    [
+      status,
+      user,
+      token,
+      error,
+      pendingPhoneNumber,
+      startOtp,
+      verifyOtp,
+      setAuth,
+      setAuthenticated,
+      refreshUser,
+      logout
+    ]
+  );
 
   return <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth(): AuthContextValue {
   const ctx = useContext(AuthContext);
-  if (!ctx) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return ctx;
+  return ctx ?? defaultAuthContext;
 }

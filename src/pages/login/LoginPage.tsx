@@ -1,7 +1,8 @@
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import type { AxiosError } from "axios";
+import { useNavigate } from "react-router-dom";
 import { ApiError } from "@/api/http";
-import { useAuth } from "@/auth/AuthContext";
+import { useAuth } from "@/hooks/useAuth";
 import { normalizeToE164 } from "@/utils/phone";
 
 const parseOtpErrorMessage = (error: unknown): string => {
@@ -18,12 +19,15 @@ const parseOtpErrorMessage = (error: unknown): string => {
 
 export default function LoginPage() {
   const { startOtp, verifyOtp, status, error: authError } = useAuth();
+  const navigate = useNavigate();
 
   const [rawPhone, setRawPhone] = useState("");
   const [submittedPhoneNumber, setSubmittedPhoneNumber] = useState("");
   const [code, setCode] = useState("");
   const [hasRequestedCode, setHasRequestedCode] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
+  const [isSending, setIsSending] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
 
   const { normalizedPhone, normalizationError } = useMemo(() => {
     if (!rawPhone.trim()) return { normalizedPhone: "", normalizationError: null };
@@ -34,8 +38,12 @@ export default function LoginPage() {
     }
   }, [rawPhone]);
 
-  const isSending = status === "sending";
-  const isVerifying = status === "verifying";
+  useEffect(() => {
+    if (status === "authenticated") {
+      navigate("/");
+    }
+  }, [navigate, status]);
+
   const showCodeStep = hasRequestedCode;
   const errorMessage = localError ?? authError;
 
@@ -44,12 +52,15 @@ export default function LoginPage() {
     setLocalError(null);
     if (!normalizedPhone || normalizationError) return;
 
+    setIsSending(true);
     try {
       await startOtp({ phone: normalizedPhone });
       setSubmittedPhoneNumber(normalizedPhone);
       setHasRequestedCode(true);
     } catch (err) {
       setLocalError(parseOtpErrorMessage(err));
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -57,10 +68,16 @@ export default function LoginPage() {
     e.preventDefault();
     setLocalError(null);
     const trimmed = code.trim();
-    if (!trimmed) return;
     const phone = submittedPhoneNumber || normalizedPhone || rawPhone;
     console.log("VERIFY SUBMIT", { phone, code: trimmed });
-    await verifyOtp(phone, trimmed);
+    setIsVerifying(true);
+    try {
+      await verifyOtp({ phone, code: trimmed });
+    } catch (err) {
+      setLocalError(parseOtpErrorMessage(err));
+    } finally {
+      setIsVerifying(false);
+    }
   };
 
   const handleResend = async () => {
@@ -70,12 +87,15 @@ export default function LoginPage() {
       setLocalError("Enter a valid phone number to resend the code.");
       return;
     }
+    setIsSending(true);
     try {
       await startOtp({ phone });
       setSubmittedPhoneNumber(phone);
       setHasRequestedCode(true);
     } catch (err) {
       setLocalError(parseOtpErrorMessage(err));
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -122,10 +142,7 @@ export default function LoginPage() {
             value={code}
             onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
           />
-          <button
-            type="submit"
-            className="w-full bg-blue-600 text-white rounded px-4 py-2"
-          >
+          <button type="submit" className="w-full bg-blue-600 text-white rounded px-4 py-2">
             {isVerifying ? "Verifying..." : "Verify code"}
           </button>
           <button

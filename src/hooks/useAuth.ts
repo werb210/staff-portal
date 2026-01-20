@@ -1,6 +1,6 @@
-import { useCallback, useMemo } from "react";
+import { useMemo } from "react";
 import { useAuth as useAuthContext } from "@/auth/AuthContext";
-import type { AuthenticatedUser, OtpStartResponse } from "@/services/auth";
+import type { AuthenticatedUser } from "@/services/auth";
 
 export type StaffUser = AuthenticatedUser & {
   role?: string;
@@ -15,8 +15,8 @@ export type AuthValue = {
   isLoading: boolean;
   status: string;
   error: string | null;
-  startOtp: (payload: { phone: string }) => Promise<OtpStartResponse>;
-  verifyOtp: (payload: { code: string; phone?: string }) => Promise<void>;
+  startOtp: (payload: { phone: string }) => Promise<void>;
+  verifyOtp: (payload: { code: string; phone?: string } | string, code?: string) => Promise<void>;
   setAuth: (payload: { token: string; user: StaffUser | null }) => void;
   setAuthenticated: () => void;
   refreshUser: (accessToken?: string) => Promise<boolean>;
@@ -27,8 +27,6 @@ export const useAuth = (): AuthValue => {
   const {
     user,
     token,
-    authenticated,
-    authReady,
     status,
     error,
     startOtp,
@@ -39,28 +37,19 @@ export const useAuth = (): AuthValue => {
     logout
   } = useAuthContext();
 
-  const handleStartOtp: AuthValue["startOtp"] = useCallback(
-    async (payload) => startOtp(payload),
-    [startOtp]
-  );
-
-  const handleVerifyOtp: AuthValue["verifyOtp"] = useCallback(
-    async (payload) => {
-      await verifyOtp(payload);
-    },
-    [verifyOtp]
-  );
+  const isLoading = status === "loading";
+  const isAuthenticated = status === "authenticated";
 
   return useMemo(
     () => ({
       user: user as StaffUser | null,
       tokens: token ? { token } : null,
-      isAuthenticated: authenticated,
-      isLoading: !authReady,
+      isAuthenticated,
+      isLoading,
       status,
       error,
-      startOtp: handleStartOtp,
-      verifyOtp: handleVerifyOtp,
+      startOtp,
+      verifyOtp,
       setAuth,
       setAuthenticated,
       refreshUser,
@@ -69,12 +58,12 @@ export const useAuth = (): AuthValue => {
     [
       user,
       token,
-      authenticated,
-      authReady,
+      isAuthenticated,
+      isLoading,
       status,
       error,
-      handleStartOtp,
-      handleVerifyOtp,
+      startOtp,
+      verifyOtp,
       setAuth,
       setAuthenticated,
       refreshUser,
