@@ -19,6 +19,7 @@ import { useApiHealthCheck } from "./hooks/useApiHealthCheck";
 import UiFailureBanner from "./components/UiFailureBanner";
 import { getRequestId } from "./utils/requestId";
 import { setUiFailure } from "./utils/uiFailureStore";
+import { runRouteAudit } from "./utils/routeAudit";
 
 const RouteChangeObserver = () => {
   const location = useLocation();
@@ -82,6 +83,8 @@ export default function App() {
 
     window.addEventListener("unhandledrejection", handleUnhandledRejection);
     window.addEventListener("error", handleWindowError);
+
+    void runRouteAudit();
 
     return () => {
       window.removeEventListener("unhandledrejection", handleUnhandledRejection);

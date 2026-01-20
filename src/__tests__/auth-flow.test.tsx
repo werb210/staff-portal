@@ -30,6 +30,21 @@ const mockedStartOtp = vi.mocked(startOtpService);
 const mockedVerifyOtp = vi.mocked(verifyOtpService);
 const mockedLogout = vi.mocked(logoutService);
 
+const createValidToken = (overrides?: Record<string, unknown>) => {
+  const now = Math.floor(Date.now() / 1000);
+  const payload = {
+    sub: "1",
+    role: "Admin",
+    exp: now + 3600,
+    iat: now,
+    ...overrides
+  };
+  const payloadEncoded = btoa(JSON.stringify(payload))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+  return `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${payloadEncoded}.signature`;
+};
 const TestAuthState = () => {
   const { status } = useAuth();
   return createElement("span", { "data-testid": "status" }, status);
@@ -75,8 +90,9 @@ describe("auth flow", () => {
   });
 
   it("verifies OTP successfully", async () => {
+    const token = createValidToken({ email: "demo@example.com" });
     mockedVerifyOtp.mockResolvedValue({
-      token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock.payload.signature",
+      token,
       user: { id: "1", email: "demo@example.com", role: "Admin" }
     });
 
@@ -92,12 +108,13 @@ describe("auth flow", () => {
 
     await waitFor(() => expect(screen.getByTestId("status")).toHaveTextContent("authenticated"));
     expect(screen.getByTestId("role")).toHaveTextContent("Admin");
-    expect(localStorage.getItem(ACCESS_TOKEN_KEY)).toBe("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock.payload.signature");
+    expect(localStorage.getItem(ACCESS_TOKEN_KEY)).toBe(token);
   });
 
   it("does not call session endpoint during OTP verification", async () => {
+    const token = createValidToken({ email: "demo@example.com" });
     mockedVerifyOtp.mockResolvedValue({
-      token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock.payload.signature",
+      token,
       user: { id: "1", email: "demo@example.com", role: "Admin" }
     });
     const apiGetSpy = vi.spyOn(apiClient, "get");
@@ -245,7 +262,7 @@ describe("auth flow", () => {
   });
 
   it("clears session on manual logout", async () => {
-    localStorage.setItem(ACCESS_TOKEN_KEY, "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock.payload.signature");
+    localStorage.setItem(ACCESS_TOKEN_KEY, createValidToken());
     localStorage.setItem(REFRESH_TOKEN_KEY, "refresh-123");
 
     render(

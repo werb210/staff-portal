@@ -15,6 +15,7 @@ import {
 } from "@/api/lenders";
 import AppLoading from "@/components/layout/AppLoading";
 import { getErrorMessage } from "@/utils/errors";
+import { getRequestId } from "@/utils/requestId";
 import RequireRole from "@/components/auth/RequireRole";
 import { emitUiTelemetry } from "@/utils/uiTelemetry";
 import { SUBMISSION_METHODS, type SubmissionMethod } from "@/types/lenderManagement.types";
@@ -269,7 +270,7 @@ const LendersContent = () => {
 
   useEffect(() => {
     if (error) {
-      console.error("Failed to load lenders", error);
+      console.error("Failed to load lenders", { requestId: getRequestId(), error });
     }
   }, [error]);
 

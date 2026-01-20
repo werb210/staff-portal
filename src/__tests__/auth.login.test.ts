@@ -9,6 +9,22 @@ import { render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createElement } from "react";
 
+const createValidToken = (overrides?: Record<string, unknown>) => {
+  const now = Math.floor(Date.now() / 1000);
+  const payload = {
+    sub: "1",
+    role: "Admin",
+    exp: now + 3600,
+    iat: now,
+    ...overrides
+  };
+  const payloadEncoded = btoa(JSON.stringify(payload))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+  return `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${payloadEncoded}.signature`;
+};
+
 vi.mock("@/services/api", async () => {
   const actual = await vi.importActual<typeof import("@/services/api")>("@/services/api");
   return {
@@ -86,15 +102,16 @@ describe("auth login", () => {
   });
 
   it("OTP verification returns tokens from the service", async () => {
+    const token = createValidToken({ email: "demo@example.com" });
     const apiPostSpy = vi.spyOn(api, "post").mockResolvedValueOnce({
       data: {
-        token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock.payload.signature",
+        token,
         user: { id: "1", email: "demo@example.com", role: "Admin" }
       }
     } as any);
 
     await expect(verifyOtp({ phone: "+15555550100", code: "123456" })).resolves.toMatchObject({
-      token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock.payload.signature"
+      token
     });
 
     expect(apiPostSpy).toHaveBeenCalledWith("/auth/otp/verify", { phone: "+15555550100", code: "123456" });
@@ -107,9 +124,10 @@ describe("auth login", () => {
   });
 
   it("stores tokens after a successful OTP verification", async () => {
+    const token = createValidToken({ email: "demo@example.com" });
     vi.spyOn(api, "post").mockResolvedValueOnce({
       data: {
-        token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock.payload.signature",
+        token,
         user: { id: "1", email: "demo@example.com", role: "Admin" }
       }
     });
@@ -118,7 +136,7 @@ describe("auth login", () => {
 
     screen.getByRole("button", { name: "Verify" }).click();
 
-    await waitFor(() => expect(getStoredAccessToken()).toBe("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock.payload.signature"));
+    await waitFor(() => expect(getStoredAccessToken()).toBe(token));
     await waitFor(() => expect(getStoredUser<{ email: string }>()?.email).toBe("demo@example.com"));
   });
 
@@ -135,17 +153,13 @@ describe("auth login", () => {
   });
 
   it("restores session on reload", async () => {
-    const payload = { sub: "1", email: "restored@example.com", role: "Admin" };
-    const payloadEncoded = btoa(JSON.stringify(payload))
-      .replace(/\+/g, "-")
-      .replace(/\//g, "_")
-      .replace(/=+$/, "");
-    setStoredAccessToken(`eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${payloadEncoded}.signature`);
+    const token = createValidToken({ email: "restored@example.com" });
+    setStoredAccessToken(token);
 
     render(createElement(AuthProvider, null, createElement(TestAuthState)));
 
     await waitFor(() => expect(screen.getByTestId("status")).toHaveTextContent("authenticated"));
-    expect(screen.getByTestId("token")).toHaveTextContent(`eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${payloadEncoded}.signature`);
+    expect(screen.getByTestId("token")).toHaveTextContent(token);
     expect(screen.getByTestId("user")).toHaveTextContent("restored@example.com");
   });
 });

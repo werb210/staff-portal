@@ -12,6 +12,7 @@ import { fetchContacts } from "@/api/crm";
 import type { Contact } from "@/api/crm";
 import { useCrmStore } from "@/state/crm.store";
 import { getErrorMessage } from "@/utils/errors";
+import { getRequestId } from "@/utils/requestId";
 import { emitUiTelemetry } from "@/utils/uiTelemetry";
 
 const owners = ["Alex", "Taylor"];
@@ -31,7 +32,7 @@ const ContactsPage = () => {
 
   useEffect(() => {
     if (error) {
-      console.error("Failed to load contacts", error);
+      console.error("Failed to load contacts", { requestId: getRequestId(), error });
     }
   }, [error]);
 

@@ -4,6 +4,7 @@ import React, {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type PropsWithChildren
 } from "react";
@@ -21,6 +22,10 @@ import {
   setStoredAccessToken,
   setStoredUser
 } from "@/services/token";
+import { assertToken, type TokenPayload } from "@/utils/assertToken";
+import { getRequestId } from "@/utils/requestId";
+import { fetchCurrentUser } from "@/api/auth";
+import { setUiFailure } from "@/utils/uiFailureStore";
 
 export type AuthStatus = "loading" | "authenticated" | "unauthenticated";
 
@@ -86,6 +91,36 @@ function decodeJwtPayload(jwt: string): AuthenticatedUser | null {
   }
 }
 
+const formatTokenExpiry = (payload?: { exp?: number } | null) => {
+  if (!payload?.exp) return null;
+  return new Date(payload.exp * 1000).toISOString();
+};
+
+const buildAuthLogContext = (payload?: TokenPayload | null, user?: AuthenticatedUser | null) => ({
+  requestId: getRequestId(),
+  userId: (user as { id?: string } | null)?.id ?? payload?.sub ?? null,
+  role: (user as { role?: string } | null)?.role ?? payload?.role ?? null,
+  tokenExpiry: formatTokenExpiry(payload)
+});
+
+const logAuthInfo = (
+  message: string,
+  payload?: TokenPayload | null,
+  user?: AuthenticatedUser | null,
+  extra?: Record<string, unknown>
+) => {
+  console.info(message, { ...buildAuthLogContext(payload, user), ...extra });
+};
+
+const logAuthError = (
+  message: string,
+  payload?: TokenPayload | null,
+  user?: AuthenticatedUser | null,
+  extra?: Record<string, unknown>
+) => {
+  console.error(message, { ...buildAuthLogContext(payload, user), ...extra });
+};
+
 const resolveStoredAuth = (): { token: string | null; user: AuthenticatedUser | null } => {
   try {
     return {
@@ -93,7 +128,7 @@ const resolveStoredAuth = (): { token: string | null; user: AuthenticatedUser | 
       user: getStoredUser<AuthenticatedUser>()
     };
   } catch (error) {
-    console.error("Failed to read stored auth", error);
+    logAuthError("Failed to read stored auth", null, null, { error });
     return { token: null, user: null };
   }
 };
@@ -104,8 +139,20 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
   const [user, setUser] = useState<AuthenticatedUser | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pendingPhoneNumber, setPendingPhoneNumber] = useState<string | null>(null);
+  const previousStatus = useRef<AuthStatus | null>(null);
 
   const setAuth = useCallback(({ token: newToken, user: newUser }: SetAuthPayload) => {
+    let tokenPayload: TokenPayload | null = null;
+    try {
+      tokenPayload = assertToken(newToken);
+    } catch (tokenError) {
+      const message =
+        tokenError instanceof Error && tokenError.message.toLowerCase().includes("role")
+          ? "Role missing or invalid"
+          : "Token validation failed";
+      logAuthError(message, null, newUser, { error: tokenError });
+      throw tokenError;
+    }
     const resolvedUser = newUser ?? decodeJwtPayload(newToken);
     setToken(newToken);
     setUser(resolvedUser ?? null);
@@ -114,17 +161,29 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
 
     try {
       setStoredAccessToken(newToken);
+      logAuthInfo("Token stored", tokenPayload, resolvedUser, {
+        storage: "auth.store",
+        mechanism: "localStorage"
+      });
     } catch (storageError) {
-      console.error("Failed to persist access token", storageError);
+      logAuthError("Failed to persist access token", tokenPayload, resolvedUser, {
+        error: storageError
+      });
     }
 
     if (resolvedUser) {
       try {
         setStoredUser(resolvedUser);
+        logAuthInfo("User stored", tokenPayload, resolvedUser, {
+          storage: "localStorage",
+          key: "user"
+        });
       } catch (storageError) {
-        console.error("Failed to persist user", storageError);
+        logAuthError("Failed to persist user", tokenPayload, resolvedUser, { error: storageError });
       }
     }
+
+    logAuthInfo("Token received", tokenPayload, resolvedUser);
   }, []);
 
   const setAuthenticated = useCallback(() => {
@@ -146,24 +205,57 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
         return false;
       }
 
-      const decoded = decodeJwtPayload(storedToken);
-      if (decoded) {
+      let payload: TokenPayload | null = null;
+      try {
+        payload = assertToken(storedToken);
+      } catch (tokenError) {
+        const message =
+          tokenError instanceof Error && tokenError.message.toLowerCase().includes("role")
+            ? "Role missing or invalid"
+            : "Stored token invalid";
+        logAuthError(message, null, null, { error: tokenError });
+        setToken(null);
+        setUser(null);
+        setStatus("unauthenticated");
+        return false;
+      }
+
+      try {
+        const profile = await fetchCurrentUser();
         setToken(storedToken);
-        setUser(decoded);
+        setUser(profile ?? null);
         setStatus("authenticated");
         try {
           setStoredAccessToken(storedToken);
-          setStoredUser(decoded);
+          setStoredUser(profile ?? payload);
         } catch (storageError) {
-          console.error("Failed to update stored auth", storageError);
+          logAuthError("Failed to update stored auth", payload, profile ?? null, {
+            error: storageError
+          });
         }
         return true;
+      } catch (fetchError) {
+        logAuthError("Token exists but /auth/me failed", payload, null, { error: fetchError });
+        try {
+          clearStoredAuth();
+        } catch (storageError) {
+          logAuthError("Failed to clear stored auth", payload, null, { error: storageError });
+        }
+        setToken(null);
+        setUser(null);
+        setStatus("unauthenticated");
+        setUiFailure({
+          message: "Authentication failed while validating the session.",
+          details: `Request ID: ${getRequestId()}`,
+          timestamp: Date.now()
+        });
+        throw fetchError;
       }
 
       try {
         clearStoredAuth();
       } catch (storageError) {
-        console.error("Failed to clear stored auth", storageError);
+        logAuthError("Failed to clear stored auth", payload, null, { error: storageError });
       }
       setToken(null);
       setUser(null);
@@ -182,6 +274,20 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
       if (!isMounted) return;
 
       if (storedToken) {
+        try {
+          assertToken(storedToken);
+        } catch (tokenError) {
+          const message =
+            tokenError instanceof Error && tokenError.message.toLowerCase().includes("role")
+              ? "Role missing or invalid"
+              : "Stored token invalid";
+          logAuthError(message, null, storedUser ?? null, { error: tokenError });
+          setToken(null);
+          setUser(null);
+          setStatus("unauthenticated");
+          return;
+        }
+
         const resolvedUser = storedUser ?? decodeJwtPayload(storedToken);
         setToken(storedToken);
         setUser(resolvedUser ?? null);
@@ -190,7 +296,9 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
           try {
             setStoredUser(resolvedUser);
           } catch (storageError) {
-            console.error("Failed to persist decoded user", storageError);
+            logAuthError("Failed to persist decoded user", null, resolvedUser, {
+              error: storageError
+            });
           }
         }
       } else {
@@ -207,13 +315,51 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
     };
   }, []);
 
+  useEffect(() => {
+    if (!previousStatus.current) {
+      previousStatus.current = status;
+      return;
+    }
+
+    const prior = previousStatus.current;
+    if (prior !== status) {
+      let payload: TokenPayload | null = null;
+      if (token) {
+        try {
+          payload = assertToken(token);
+        } catch (tokenError) {
+          logAuthError("Role missing or invalid", null, user, { error: tokenError });
+        }
+      }
+      if (prior === "unauthenticated" && status === "authenticated") {
+        logAuthInfo("Auth transition unauthenticated → authenticated", payload, user);
+      }
+      if (prior === "authenticated" && status === "unauthenticated") {
+        logAuthInfo("Auth transition authenticated → unauthenticated", payload, user);
+      }
+    }
+    previousStatus.current = status;
+  }, [status, token, user]);
+
   const startOtp = useCallback(async ({ phone }: StartOtpPayload): Promise<void> => {
     setError(null);
     try {
+      logAuthInfo("OTP start request fired", null, user, { phone });
       const result = await startOtpService({ phone });
       if (result === null) {
         // HTTP 204 is treated as success with no body.
       }
+      const twilioSid =
+        (result as { data?: { twilioSid?: string; sid?: string } } | null)?.data?.twilioSid ??
+        (result as { data?: { twilioSid?: string; sid?: string } } | null)?.data?.sid ??
+        (result as { headers?: Record<string, string> } | null)?.headers?.["x-twilio-sid"] ??
+        (result as { headers?: Record<string, string> } | null)?.headers?.["x-twilio-message-sid"] ??
+        null;
+      if (!twilioSid) {
+        logAuthError("OTP start missing Twilio SID", null, user, { phone });
+        throw new Error("OTP start missing Twilio SID");
+      }
+      logAuthInfo("OTP start confirmed Twilio SID", null, user, { twilioSid });
       setPendingPhoneNumber(phone);
     } catch (err: any) {
       const message = (err?.message as string) ?? "OTP failed";
@@ -221,7 +367,7 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
       setStatus("unauthenticated");
       throw err;
     }
-  }, []);
+  }, [user]);
 
   const verifyOtp = useCallback(
     async (payload: VerifyOtpPayload | string, codeArg?: string): Promise<void> => {
@@ -231,6 +377,7 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
       const phoneNumber = resolvedPayload.phone ?? pendingPhoneNumber ?? "";
 
       try {
+        logAuthInfo("OTP verify request fired", null, user, { phone: phoneNumber });
         const result = await verifyOtpService({ phone: phoneNumber, code: resolvedPayload.code });
         if (result) {
           const refreshToken =
@@ -241,14 +388,27 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
             try {
               localStorage.setItem("refresh_token", refreshToken);
             } catch (storageError) {
-              console.error("Failed to persist refresh token", storageError);
+              logAuthError("Failed to persist refresh token", null, user, { error: storageError });
             }
           }
 
           if (result.token) {
+            try {
+              assertToken(result.token);
+            } catch (tokenError) {
+              const message =
+                tokenError instanceof Error && tokenError.message.toLowerCase().includes("role")
+                  ? "Role missing or invalid"
+                  : "Token validation failed";
+              logAuthError(message, null, result.user ?? null, { error: tokenError });
+              throw tokenError;
+            }
             setAuth({ token: result.token, user: result.user ?? null });
           } else {
-            setAuthenticated();
+            logAuthError("OTP verify returned success but token missing", null, result.user ?? null, {
+              phone: phoneNumber
+            });
+            throw new Error("OTP verify succeeded but token missing");
           }
         } else {
           const refreshed = await refreshUser();
@@ -265,19 +425,19 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
         setPendingPhoneNumber(null);
       }
     },
-    [pendingPhoneNumber, refreshUser, setAuth, setAuthenticated]
+    [pendingPhoneNumber, refreshUser, setAuth, setAuthenticated, user]
   );
 
   const logout = useCallback(async (): Promise<void> => {
     try {
       await logoutService();
     } catch (error) {
-      console.error("Logout failed", error);
+      logAuthError("Logout failed", null, user, { error });
     }
     try {
       clearStoredAuth();
     } catch (storageError) {
-      console.error("Failed to clear stored auth", storageError);
+      logAuthError("Failed to clear stored auth", null, user, { error: storageError });
     }
     setToken(null);
     setUser(null);

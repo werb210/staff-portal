@@ -5,8 +5,14 @@ import "./styles/globals.css";
 import { SiloProvider } from "./context/SiloContext";
 import { AuthProvider } from "./auth/AuthContext";
 import ErrorBoundary from "./components/ErrorBoundary";
+import { enforceRequestIdOnConsoleError } from "./utils/consoleGuard";
+import { startUiHeartbeat } from "./utils/uiHeartbeat";
 
-ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
+const rootElement = document.getElementById("root") as HTMLElement;
+enforceRequestIdOnConsoleError();
+startUiHeartbeat(rootElement);
+
+ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
     <SiloProvider>
       <AuthProvider>
