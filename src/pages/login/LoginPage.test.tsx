@@ -109,7 +109,7 @@ describe("LoginPage", () => {
     consoleSpy.mockRestore();
   });
 
-  test("shows CORS guidance when OTP start fails with a network error", async () => {
+  test("shows network error when OTP start fails with a network error", async () => {
     const networkError = Object.assign(new Error("Network Error"), {
       code: "ERR_NETWORK",
       isAxiosError: true
@@ -120,8 +120,8 @@ describe("LoginPage", () => {
     fireEvent.change(screen.getByLabelText(/Phone number/i), { target: { value: "+15555550100" } });
     fireEvent.click(screen.getByRole("button", { name: /Send code/i }));
 
-    expect(screen.getByRole("button", { name: /Send code/i })).toBeDisabled();
-    expect(await screen.findByText(/Request blocked by browser \(CORS\)/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Sending/i })).toBeDisabled();
+    expect(await screen.findByText(/Network error/i)).toBeInTheDocument();
     expect(screen.getByText(/Request ID:/i)).toBeInTheDocument();
     expect(screen.getByText(/Endpoint: \/auth\/otp\/start/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Send code/i })).toBeEnabled();

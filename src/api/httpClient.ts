@@ -1,5 +1,8 @@
 import axios, { AxiosError, type AxiosRequestConfig } from "axios";
 import { ApiError, api } from "@/api/http";
+import { reportAuthFailure } from "@/auth/authEvents";
+import { redirectToLogin } from "@/services/api";
+import { getStoredAccessToken } from "@/services/token";
 import { attachRequestIdAndLog, logError, logResponse } from "@/utils/apiLogging";
 
 export type RequestOptions = AxiosRequestConfig & {
@@ -16,30 +19,108 @@ const stripAuthOptions = (options?: RequestOptions): AxiosRequestConfig | undefi
   return config;
 };
 
+const generateIdempotencyKey = () => {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+  return `idempotency_${Math.random().toString(36).slice(2, 10)}`;
+};
+
+const requireAccessToken = (options?: RequestOptions) => {
+  if (options?.skipAuth) return null;
+  const token = getStoredAccessToken();
+  if (!token) {
+    reportAuthFailure("missing-token");
+    redirectToLogin();
+    throw new Error("Missing access token");
+  }
+  return token;
+};
+
+const buildAuthConfig = (
+  options?: RequestOptions,
+  { idempotent = false }: { idempotent?: boolean } = {}
+): AxiosRequestConfig | undefined => {
+  const token = requireAccessToken(options);
+  const config = stripAuthOptions(options) ?? {};
+  if (!token) return config;
+  const headers = {
+    ...(config.headers ?? {}),
+    Authorization: `Bearer ${token}`
+  } as Record<string, string>;
+  if (idempotent) {
+    headers["Idempotency-Key"] = generateIdempotencyKey();
+    headers["Content-Type"] = "application/json";
+  }
+  return {
+    ...config,
+    headers
+  };
+};
+
+const handleApiError = (error: unknown) => {
+  if (error instanceof ApiError) {
+    if (error.status === 401) {
+      reportAuthFailure("unauthorized");
+    } else if (error.status === 403) {
+      reportAuthFailure("forbidden");
+    }
+  }
+  throw error;
+};
+
 export const apiClient = {
   get: async <T>(path: string, options?: RequestOptions) => {
-    const response = await api.get<T>(path, stripAuthOptions(options));
-    return response.data;
+    try {
+      const response = await api.get<T>(path, buildAuthConfig(options));
+      return response.data;
+    } catch (error) {
+      handleApiError(error);
+    }
   },
   post: async <T>(path: string, data?: unknown, options?: RequestOptions) => {
-    const response = await api.post<T>(path, data, stripAuthOptions(options));
-    return response.data;
+    try {
+      const response = await api.post<T>(path, data, buildAuthConfig(options, { idempotent: true }));
+      return response.data;
+    } catch (error) {
+      handleApiError(error);
+    }
   },
   put: async <T>(path: string, data?: unknown, options?: RequestOptions) => {
-    const response = await api.put<T>(path, data, stripAuthOptions(options));
-    return response.data;
+    try {
+      const response = await api.put<T>(path, data, buildAuthConfig(options, { idempotent: true }));
+      return response.data;
+    } catch (error) {
+      handleApiError(error);
+    }
   },
   patch: async <T>(path: string, data?: unknown, options?: RequestOptions) => {
-    const response = await api.patch<T>(path, data, stripAuthOptions(options));
-    return response.data;
+    try {
+      const response = await api.patch<T>(
+        path,
+        data,
+        buildAuthConfig(options, { idempotent: true })
+      );
+      return response.data;
+    } catch (error) {
+      handleApiError(error);
+    }
   },
   delete: async <T>(path: string, options?: RequestOptions) => {
-    const response = await api.delete<T>(path, stripAuthOptions(options));
-    return response.data;
+    try {
+      const response = await api.delete<T>(path, buildAuthConfig(options, { idempotent: true }));
+      return response.data;
+    } catch (error) {
+      handleApiError(error);
+    }
   },
   getList: async <T>(path: string, options?: RequestOptions): Promise<ListResponse<T>> => {
-    const response = await api.get<ListResponse<T>>(path, stripAuthOptions(options));
-    return response.data;
+    try {
+      const response = await api.get<ListResponse<T>>(path, buildAuthConfig(options));
+      return response.data;
+    } catch (error) {
+      handleApiError(error);
+    }
   }
 };
 

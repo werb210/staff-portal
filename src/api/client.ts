@@ -69,4 +69,9 @@ export const otpStart = (payload: OtpStartPayload) =>
 export const otpVerify = (payload: OtpVerifyPayload) =>
   api.post<OtpVerifyResponse>("/auth/otp/verify", payload);
 
+export const otp = {
+  start: otpStart,
+  verify: otpVerify
+};
+
 export default api;

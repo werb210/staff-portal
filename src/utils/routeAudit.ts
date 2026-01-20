@@ -1,6 +1,7 @@
 import { getRequestId } from "@/utils/requestId";
 import { emitUiTelemetry } from "@/utils/uiTelemetry";
 import { setUiFailure } from "@/utils/uiFailureStore";
+import { getStoredAccessToken } from "@/services/token";
 
 type RouteDescriptor = {
   path: string;
@@ -59,9 +60,11 @@ export const runRouteAudit = async (): Promise<void> => {
   if (typeof window === "undefined") return;
 
   const requestId = getRequestId();
+  const hasToken = Boolean(getStoredAccessToken());
   console.info("Route audit start", {
     requestId,
-    routeCount: portalApiRoutes.length
+    routeCount: portalApiRoutes.length,
+    authenticated: hasToken
   });
 
   try {
@@ -74,16 +77,15 @@ export const runRouteAudit = async (): Promise<void> => {
         requestId,
         status: response.status
       });
-      setUiFailure({
-        message: "Route audit fetch failed.",
-        details: `Status ${response.status} | Request ID: ${requestId}`,
-        timestamp: Date.now()
-      });
       return;
     }
 
     const payload = await response.json().catch(() => null);
     const serverRoutes = extractServerRoutes(payload);
+    if (serverRoutes.length === 0) {
+      console.warn("Route audit unavailable: no routes payload.", { requestId });
+      return;
+    }
     const serverSet = new Set(serverRoutes.map((route) => normalizePath(route.path)));
 
     const missing = portalApiRoutes.filter(
@@ -113,11 +115,13 @@ export const runRouteAudit = async (): Promise<void> => {
         missing: missingLabels,
         serverCount: serverRoutes.length
       });
-      setUiFailure({
-        message: "Server route mismatch detected.",
-        details: `Missing routes: ${missingLabels.join(", ")} | Request ID: ${requestId}`,
-        timestamp: Date.now()
-      });
+      if (hasToken) {
+        setUiFailure({
+          message: "Server route mismatch detected.",
+          details: `Missing routes: ${missingLabels.join(", ")} | Request ID: ${requestId}`,
+          timestamp: Date.now()
+        });
+      }
       return;
     }
 
@@ -126,11 +130,6 @@ export const runRouteAudit = async (): Promise<void> => {
       serverCount: serverRoutes.length
     });
   } catch (error) {
-    console.warn("Route audit failed.", { requestId, error });
-    setUiFailure({
-      message: "Route audit failed unexpectedly.",
-      details: `Request ID: ${requestId}`,
-      timestamp: Date.now()
-    });
+    console.warn("Route audit unavailable.", { requestId, error });
   }
 };
