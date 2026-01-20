@@ -34,7 +34,7 @@ export type OtpVerifyResponse =
   | null;
 
 export async function verifyOtp(payload: { phone: string; code: string }): Promise<OtpVerifyResponse> {
-  const response = await api.post<OtpVerifyResponse>("/api/auth/otp/verify", payload);
+  const response = await api.post<OtpVerifyResponse>("/auth/otp/verify", payload);
   return response.data ?? null;
 }
 

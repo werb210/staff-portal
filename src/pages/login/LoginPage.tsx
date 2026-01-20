@@ -1,20 +1,49 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import type { AxiosError } from "axios";
+import { isAxiosError, type AxiosError } from "axios";
 import { useNavigate } from "react-router-dom";
 import { ApiError } from "@/api/http";
 import { useAuth } from "@/hooks/useAuth";
 import { normalizeToE164 } from "@/utils/phone";
+import { getRequestId } from "@/utils/requestId";
 
-const parseOtpErrorMessage = (error: unknown): string => {
-  if (error instanceof ApiError) return error.message;
-  if (typeof error === "string") return error;
-  if (typeof error === "object" && error) {
-    const axiosError = error as AxiosError;
-    const data = axiosError?.response?.data as any;
-    if (typeof data?.message === "string") return data.message;
-    if (typeof axiosError.message === "string") return axiosError.message;
+type OtpErrorDetails = {
+  message: string;
+  requestId: string;
+  endpoint: string;
+};
+
+const CORS_BLOCKED_MESSAGE =
+  "Request blocked by browser (CORS). Server must allow header x-request-id.";
+
+const buildOtpErrorDetails = (error: unknown, endpoint: string): OtpErrorDetails => {
+  const fallbackRequestId = getRequestId();
+  let message = "OTP failed";
+  let requestId = fallbackRequestId;
+
+  if (error instanceof ApiError) {
+    message = error.message;
+    requestId = error.requestId ?? fallbackRequestId;
+  } else if (typeof error === "string") {
+    message = error;
+  } else if (typeof error === "object" && error) {
+    if (isAxiosError(error)) {
+      const axiosError = error as AxiosError;
+      if (axiosError.code === "ERR_NETWORK" || !axiosError.response) {
+        message = CORS_BLOCKED_MESSAGE;
+      } else {
+        const data = axiosError.response?.data as { message?: string } | undefined;
+        if (typeof data?.message === "string") {
+          message = data.message;
+        } else if (typeof axiosError.message === "string") {
+          message = axiosError.message;
+        }
+      }
+    } else if ("message" in error && typeof (error as { message?: string }).message === "string") {
+      message = (error as { message?: string }).message ?? message;
+    }
   }
-  return "OTP failed";
+
+  return { message, requestId, endpoint };
 };
 
 export default function LoginPage() {
@@ -25,7 +54,7 @@ export default function LoginPage() {
   const [submittedPhoneNumber, setSubmittedPhoneNumber] = useState("");
   const [code, setCode] = useState("");
   const [hasRequestedCode, setHasRequestedCode] = useState(false);
-  const [localError, setLocalError] = useState<string | null>(null);
+  const [localError, setLocalError] = useState<OtpErrorDetails | null>(null);
   const [isSending, setIsSending] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
 
@@ -45,7 +74,7 @@ export default function LoginPage() {
   }, [navigate, status]);
 
   const showCodeStep = hasRequestedCode;
-  const errorMessage = localError ?? authError;
+  const errorMessage = localError?.message ?? authError;
 
   const handleStart = async (e: FormEvent) => {
     e.preventDefault();
@@ -58,7 +87,9 @@ export default function LoginPage() {
       setSubmittedPhoneNumber(normalizedPhone);
       setHasRequestedCode(true);
     } catch (err) {
-      setLocalError(parseOtpErrorMessage(err));
+      const details = buildOtpErrorDetails(err, "/auth/otp/start");
+      console.error("OTP start failed.", { ...details, error: err });
+      setLocalError(details);
     } finally {
       setIsSending(false);
     }
@@ -74,7 +105,9 @@ export default function LoginPage() {
     try {
       await verifyOtp({ phone, code: trimmed });
     } catch (err) {
-      setLocalError(parseOtpErrorMessage(err));
+      const details = buildOtpErrorDetails(err, "/auth/otp/verify");
+      console.error("OTP verify failed.", { ...details, error: err });
+      setLocalError(details);
     } finally {
       setIsVerifying(false);
     }
@@ -84,7 +117,11 @@ export default function LoginPage() {
     setLocalError(null);
     const phone = submittedPhoneNumber || normalizedPhone;
     if (!phone) {
-      setLocalError("Enter a valid phone number to resend the code.");
+      setLocalError({
+        message: "Enter a valid phone number to resend the code.",
+        requestId: getRequestId(),
+        endpoint: "/auth/otp/start"
+      });
       return;
     }
     setIsSending(true);
@@ -93,7 +130,9 @@ export default function LoginPage() {
       setSubmittedPhoneNumber(phone);
       setHasRequestedCode(true);
     } catch (err) {
-      setLocalError(parseOtpErrorMessage(err));
+      const details = buildOtpErrorDetails(err, "/auth/otp/start");
+      console.error("OTP resend failed.", { ...details, error: err });
+      setLocalError(details);
     } finally {
       setIsSending(false);
     }
@@ -106,6 +145,12 @@ export default function LoginPage() {
       {errorMessage && (
         <div role="alert" className="text-sm text-red-700">
           {errorMessage}
+          {localError?.requestId && (
+            <div className="mt-1 text-xs text-red-700">Request ID: {localError.requestId}</div>
+          )}
+          {localError?.endpoint && (
+            <div className="text-xs text-red-700">Endpoint: {localError.endpoint}</div>
+          )}
         </div>
       )}
 
@@ -134,14 +179,17 @@ export default function LoginPage() {
           <div className="text-sm">
             Verification code sent to <b>{submittedPhoneNumber}</b>
           </div>
-          <input
-            type="text"
-            inputMode="numeric"
-            maxLength={6}
-            className="border rounded px-3 py-2 w-full"
-            value={code}
-            onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-          />
+          <label className="block">
+            Verification code
+            <input
+              type="text"
+              inputMode="numeric"
+              maxLength={6}
+              className="border rounded px-3 py-2 w-full"
+              value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+            />
+          </label>
           <button type="submit" className="w-full bg-blue-600 text-white rounded px-4 py-2">
             {isVerifying ? "Verifying..." : "Verify code"}
           </button>
