@@ -133,10 +133,36 @@ const resolveStoredAuth = (): { token: string | null; user: AuthenticatedUser | 
   }
 };
 
+const resolveInitialAuthState = (): {
+  status: AuthStatus;
+  token: string | null;
+  user: AuthenticatedUser | null;
+} => {
+  const { token: storedToken, user: storedUser } = resolveStoredAuth();
+  if (!storedToken) {
+    return { status: "unauthenticated", token: null, user: null };
+  }
+
+  try {
+    assertToken(storedToken);
+  } catch (tokenError) {
+    const message =
+      tokenError instanceof Error && tokenError.message.toLowerCase().includes("role")
+        ? "Role missing or invalid"
+        : "Stored token invalid";
+    logAuthError(message, null, storedUser ?? null, { error: tokenError });
+    return { status: "unauthenticated", token: null, user: null };
+  }
+
+  const resolvedUser = storedUser ?? decodeJwtPayload(storedToken);
+  return { status: "authenticated", token: storedToken, user: resolvedUser ?? null };
+};
+
 export function AuthProvider({ children }: PropsWithChildren<{}>) {
-  const [status, setStatus] = useState<AuthStatus>("loading");
-  const [token, setToken] = useState<string | null>(null);
-  const [user, setUser] = useState<AuthenticatedUser | null>(null);
+  const initialAuth = useMemo(() => resolveInitialAuthState(), []);
+  const [status, setStatus] = useState<AuthStatus>(initialAuth.status);
+  const [token, setToken] = useState<string | null>(initialAuth.token);
+  const [user, setUser] = useState<AuthenticatedUser | null>(initialAuth.user);
   const [error, setError] = useState<string | null>(null);
   const [pendingPhoneNumber, setPendingPhoneNumber] = useState<string | null>(null);
   const previousStatus = useRef<AuthStatus | null>(null);
@@ -269,7 +295,6 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
     let isMounted = true;
 
     const initializeAuth = () => {
-      setStatus("loading");
       const { token: storedToken, user: storedUser } = resolveStoredAuth();
       if (!isMounted) return;
 
