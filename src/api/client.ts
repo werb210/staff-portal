@@ -3,6 +3,33 @@ import { getStoredAccessToken, clearStoredAuth } from "@/services/token";
 import { redirectToLogin } from "@/services/api";
 import { attachRequestIdAndLog, logError, logResponse } from "@/utils/apiLogging";
 
+export type OtpStartPayload = {
+  phone: string;
+};
+
+export type OtpStartResponse =
+  | {
+      sessionId?: string;
+      requestId?: string;
+      twilioSid?: string;
+      sid?: string;
+    }
+  | null;
+
+export type OtpVerifyPayload = {
+  phone: string;
+  code: string;
+};
+
+export type OtpVerifyResponse =
+  | {
+      token: string;
+      user?: Record<string, unknown> | null;
+      refreshToken?: string;
+      refresh_token?: string;
+    }
+  | null;
+
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
   withCredentials: true
@@ -35,5 +62,11 @@ api.interceptors.response.use(
     return Promise.reject(err);
   }
 );
+
+export const otpStart = (payload: OtpStartPayload) =>
+  api.post<OtpStartResponse>("/auth/otp/start", payload);
+
+export const otpVerify = (payload: OtpVerifyPayload) =>
+  api.post<OtpVerifyResponse>("/auth/otp/verify", payload);
 
 export default api;
