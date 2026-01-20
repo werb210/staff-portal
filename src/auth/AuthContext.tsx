@@ -18,6 +18,10 @@ import {
 import { getRequestId } from "@/utils/requestId";
 import { fetchCurrentUser } from "@/api/auth";
 import { setUiFailure } from "@/utils/uiFailureStore";
+import { clearStoredAuth, setStoredAccessToken, setStoredUser } from "@/services/token";
+import { getAccessToken } from "@/auth/auth.store";
+import { registerAuthFailureHandler } from "@/auth/authEvents";
+import { redirectToLogin } from "@/services/api";
 
 export type AuthStatus = "loading" | "authenticated" | "unauthenticated";
 
@@ -37,12 +41,15 @@ interface VerifyOtpPayload {
 export interface AuthContextValue {
   status: AuthStatus;
   user: AuthenticatedUser | null;
+  accessToken: string | null;
   error: string | null;
   authenticated: boolean;
+  isAuthenticated: boolean;
   authReady: boolean;
   pendingPhoneNumber: string | null;
   startOtp: (payload: StartOtpPayload) => Promise<void>;
   verifyOtp: (payload: VerifyOtpPayload | string, code?: string) => Promise<void>;
+  login: (token: string) => Promise<void>;
   setAuth: (payload: SetAuthPayload) => void;
   setAuthenticated: () => void;
   refreshUser: () => Promise<boolean>;
@@ -54,12 +61,15 @@ export type AuthContextType = AuthContextValue;
 const defaultAuthContext: AuthContextValue = {
   status: "loading",
   user: null,
+  accessToken: null,
   error: null,
   authenticated: false,
+  isAuthenticated: false,
   authReady: false,
   pendingPhoneNumber: null,
   startOtp: async () => undefined,
   verifyOtp: async () => undefined,
+  login: async () => undefined,
   setAuth: () => undefined,
   setAuthenticated: () => undefined,
   refreshUser: async () => false,
@@ -93,15 +103,41 @@ const logAuthError = (
 export function AuthProvider({ children }: PropsWithChildren<{}>) {
   const [status, setStatus] = useState<AuthStatus>("loading");
   const [user, setUser] = useState<AuthenticatedUser | null>(null);
+  const [accessToken, setAccessToken] = useState<string | null>(() => getAccessToken());
   const [error, setError] = useState<string | null>(null);
   const [pendingPhoneNumber, setPendingPhoneNumber] = useState<string | null>(null);
   const previousStatus = useRef<AuthStatus | null>(null);
 
-  const setAuth = useCallback(({ user: newUser }: SetAuthPayload) => {
-    setUser(newUser ?? null);
-    setStatus(newUser ? "authenticated" : "unauthenticated");
+  const clearAuthState = useCallback(() => {
+    clearStoredAuth();
+    setAccessToken(null);
+    setUser(null);
+    setStatus("unauthenticated");
     setError(null);
   }, []);
+
+  const forceLogout = useCallback(
+    async (reason: string) => {
+      logAuthInfo("Auth forced logout", user, { reason });
+      clearAuthState();
+      redirectToLogin();
+    },
+    [clearAuthState, user]
+  );
+
+  const setAuth = useCallback(
+    ({ user: newUser }: SetAuthPayload) => {
+      if (newUser && !getAccessToken()) {
+        void forceLogout("missing-token");
+        return;
+      }
+      setUser(newUser ?? null);
+      setStoredUser(newUser ?? null);
+      setStatus(newUser ? "authenticated" : "unauthenticated");
+      setError(null);
+    },
+    [forceLogout]
+  );
 
   const setAuthenticated = useCallback(() => {
     setStatus("authenticated");
@@ -109,15 +145,19 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
   }, []);
 
   const refreshUser = useCallback(async (): Promise<boolean> => {
+    if (!getAccessToken()) {
+      await forceLogout("missing-token");
+      return false;
+    }
     try {
       const profile = await fetchCurrentUser();
       setUser(profile.data ?? null);
+      setStoredUser(profile.data ?? null);
       setStatus(profile.data ? "authenticated" : "unauthenticated");
       return Boolean(profile.data);
     } catch (fetchError) {
       logAuthError("/api/auth/me failed", user, { error: fetchError });
-      setUser(null);
-      setStatus("unauthenticated");
+      await forceLogout("auth-me-failed");
       setUiFailure({
         message: "Authentication failed while validating the session.",
         details: `Request ID: ${getRequestId()}`,
@@ -125,21 +165,52 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
       });
       return false;
     }
-  }, [user]);
+  }, [forceLogout, user]);
+
+  const login = useCallback(
+    async (token: string): Promise<void> => {
+      setStoredAccessToken(token);
+      setAccessToken(token);
+      setStatus("loading");
+      try {
+        const profile = await fetchCurrentUser();
+        setUser(profile.data ?? null);
+        setStoredUser(profile.data ?? null);
+        setStatus(profile.data ? "authenticated" : "unauthenticated");
+        if (!profile.data) {
+          await forceLogout("missing-user-profile");
+        }
+      } catch (fetchError) {
+        logAuthError("/api/auth/me failed after login", user, { error: fetchError });
+        await forceLogout("auth-me-failed");
+      }
+    },
+    [forceLogout, user]
+  );
 
   useEffect(() => {
     let isMounted = true;
 
     const initializeAuth = async () => {
+      const token = getAccessToken();
+      if (!token) {
+        if (!isMounted) return;
+        await forceLogout("missing-token");
+        return;
+      }
+      setAccessToken(token);
       try {
         const profile = await fetchCurrentUser();
         if (!isMounted) return;
         setUser(profile.data ?? null);
+        setStoredUser(profile.data ?? null);
         setStatus(profile.data ? "authenticated" : "unauthenticated");
+        if (!profile.data) {
+          await forceLogout("missing-user-profile");
+        }
       } catch (fetchError) {
         if (!isMounted) return;
-        setUser(null);
-        setStatus("unauthenticated");
+        await forceLogout("auth-me-failed");
       }
     };
 
@@ -148,7 +219,16 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [clearAuthState, forceLogout]);
+
+  useEffect(() => {
+    const unregister = registerAuthFailureHandler((reason) => {
+      void forceLogout(reason);
+    });
+    return () => {
+      unregister();
+    };
+  }, [forceLogout]);
 
   useEffect(() => {
     if (!previousStatus.current) {
@@ -212,10 +292,11 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
 
       try {
         logAuthInfo("OTP verify request fired", user, { phone: phoneNumber });
-        await verifyOtpService({ phone: phoneNumber, code: resolvedPayload.code });
-        const me = await fetchCurrentUser();
-        setUser(me.data ?? null);
-        setStatus(me.data ? "authenticated" : "unauthenticated");
+        const response = await verifyOtpService({ phone: phoneNumber, code: resolvedPayload.code });
+        if (!response?.accessToken) {
+          throw new Error("OTP verification missing access token");
+        }
+        await login(response.accessToken);
       } catch (err: any) {
         const message = (err?.message as string) ?? "OTP verification failed";
         setError(message);
@@ -225,7 +306,7 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
         setPendingPhoneNumber(null);
       }
     },
-    [pendingPhoneNumber, user]
+    [login, pendingPhoneNumber, user]
   );
 
   const logout = useCallback(async (): Promise<void> => {
@@ -234,20 +315,25 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
     } catch (error) {
       logAuthError("Logout failed", user, { error });
     }
-    setUser(null);
-    setStatus("unauthenticated");
-  }, [user]);
+    clearAuthState();
+    redirectToLogin();
+  }, [clearAuthState, user]);
+
+  const isAuthenticated = status === "authenticated";
 
   const contextValue = useMemo<AuthContextValue>(
     () => ({
       status,
       user,
+      accessToken,
       error,
-      authenticated: status === "authenticated",
+      authenticated: isAuthenticated,
+      isAuthenticated,
       authReady: status !== "loading",
       pendingPhoneNumber,
       startOtp,
       verifyOtp,
+      login,
       setAuth,
       setAuthenticated,
       refreshUser,
@@ -256,10 +342,13 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
     [
       status,
       user,
+      accessToken,
       error,
+      isAuthenticated,
       pendingPhoneNumber,
       startOtp,
       verifyOtp,
+      login,
       setAuth,
       setAuthenticated,
       refreshUser,

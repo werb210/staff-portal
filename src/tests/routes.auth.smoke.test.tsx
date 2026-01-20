@@ -9,6 +9,7 @@ import App from "@/App";
 import { AuthProvider, useAuth } from "@/auth/AuthContext";
 import { portalApiRoutes } from "@/utils/routeAudit";
 import { SiloProvider } from "@/context/SiloContext";
+import { clearStoredAuth, setStoredAccessToken } from "@/services/token";
 
 const server = setupServer(
   http.get("http://localhost/api/health", () => HttpResponse.json({ status: "ok" })),
@@ -21,7 +22,9 @@ const server = setupServer(
       }
     })
   ),
-  http.post("http://localhost/api/auth/otp/verify", () => new HttpResponse(null, { status: 200 })),
+  http.post("http://localhost/api/auth/otp/verify", () =>
+    HttpResponse.json({ accessToken: "access-token", refreshToken: "refresh-token" })
+  ),
   http.get("http://localhost/api/lenders", () => HttpResponse.json({ items: [] }))
 );
 
@@ -49,7 +52,7 @@ describe("portal auth routing smoke tests", () => {
 
   afterEach(() => {
     server.resetHandlers();
-    localStorage.clear();
+    clearStoredAuth();
     cleanup();
     vi.restoreAllMocks();
   });
@@ -73,6 +76,7 @@ describe("portal auth routing smoke tests", () => {
   });
 
   it("allows authenticated users to access protected routes", async () => {
+    setStoredAccessToken("test-token");
     server.use(
       http.get("http://localhost/api/auth/me", () =>
         HttpResponse.json({ id: "u1", role: "Staff" })
@@ -119,6 +123,7 @@ describe("portal auth routing smoke tests", () => {
   it("keeps authenticated users on /lenders after a hard refresh", async () => {
     const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
 
+    setStoredAccessToken("test-token");
     server.use(
       http.get("http://localhost/api/auth/me", () =>
         HttpResponse.json({ id: "u1", role: "Staff" })

@@ -38,13 +38,16 @@ export const renderWithProviders = (ui: ReactElement, options?: StaffRenderOptio
   const silo = options?.silo ?? "BF";
   const authValue: AuthContextType = {
     user: { id: "1", email: "test@example.com", role: "Admin" },
+    accessToken: "test-token",
     status: "authenticated",
     error: null,
     authenticated: true,
+    isAuthenticated: true,
     authReady: true,
     pendingPhoneNumber: null,
     startOtp: async (_payload) => undefined,
     verifyOtp: async (_payload) => undefined,
+    login: async () => undefined,
     setAuth: () => undefined,
     setAuthenticated: () => undefined,
     refreshUser: async () => true,

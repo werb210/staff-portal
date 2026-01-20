@@ -16,6 +16,11 @@ export type OtpStartResult = {
   headers: Record<string, string>;
 };
 
+export type OtpVerifyResponse = {
+  accessToken: string;
+  refreshToken: string;
+};
+
 export async function startOtp(payload: { phone: string }): Promise<OtpStartResult | null> {
   const response = await api.post<OtpStartResponse>("/auth/otp/start", payload);
   if (response.status === 204) {
@@ -27,8 +32,9 @@ export async function startOtp(payload: { phone: string }): Promise<OtpStartResu
   };
 }
 
-export async function verifyOtp(payload: { phone: string; code: string }): Promise<void> {
-  await api.post<void>("/auth/otp/verify", payload);
+export async function verifyOtp(payload: { phone: string; code: string }): Promise<OtpVerifyResponse> {
+  const response = await api.post<OtpVerifyResponse>("/auth/otp/verify", payload);
+  return response.data;
 }
 
 export async function logout(): Promise<void> {

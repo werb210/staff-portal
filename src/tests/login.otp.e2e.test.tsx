@@ -7,6 +7,7 @@ import { setupServer } from "msw/node";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/auth/AuthContext";
 import LoginPage from "@/pages/login/LoginPage";
+import { clearStoredAuth } from "@/services/token";
 
 const startOtpSpy = vi.fn();
 const verifyOtpSpy = vi.fn();
@@ -24,7 +25,7 @@ const server = setupServer(
   }),
   http.post("http://localhost/api/auth/otp/verify", async ({ request }) => {
     verifyOtpSpy(await request.json());
-    return new HttpResponse(null, { status: 200 });
+    return HttpResponse.json({ accessToken: "access-token", refreshToken: "refresh-token" });
   }),
   http.get("http://localhost/api/auth/me", () => {
     meSpy();
@@ -75,7 +76,7 @@ describe("OTP login flow end-to-end", () => {
     expect(consoleErrorSpy).not.toHaveBeenCalled();
     consoleErrorSpy.mockRestore();
     server.resetHandlers();
-    localStorage.clear();
+    clearStoredAuth();
     startOtpSpy.mockClear();
     verifyOtpSpy.mockClear();
     meSpy.mockClear();

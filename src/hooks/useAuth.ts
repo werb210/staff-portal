@@ -10,12 +10,14 @@ export type StaffUser = AuthenticatedUser & {
 
 export type AuthValue = {
   user: StaffUser | null;
+  accessToken: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   status: string;
   error: string | null;
   startOtp: (payload: { phone: string }) => Promise<void>;
   verifyOtp: (payload: { code: string; phone?: string } | string, code?: string) => Promise<void>;
+  login: (token: string) => Promise<void>;
   setAuth: (payload: { user: StaffUser | null }) => void;
   setAuthenticated: () => void;
   refreshUser: () => Promise<boolean>;
@@ -26,9 +28,11 @@ export const useAuth = (): AuthValue => {
   const {
     user,
     status,
+    accessToken,
     error,
     startOtp,
     verifyOtp,
+    login,
     setAuth,
     setAuthenticated,
     refreshUser,
@@ -41,12 +45,14 @@ export const useAuth = (): AuthValue => {
   return useMemo(
     () => ({
       user: user as StaffUser | null,
+      accessToken,
       isAuthenticated,
       isLoading,
       status,
       error,
       startOtp,
       verifyOtp,
+      login,
       setAuth,
       setAuthenticated,
       refreshUser,
@@ -54,12 +60,14 @@ export const useAuth = (): AuthValue => {
     }),
     [
       user,
+      accessToken,
       isAuthenticated,
       isLoading,
       status,
       error,
       startOtp,
       verifyOtp,
+      login,
       setAuth,
       setAuthenticated,
       refreshUser,

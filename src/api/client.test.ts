@@ -11,6 +11,7 @@ vi.mock("@/services/api", async () => {
 import apiClient from "./httpClient";
 import { buildApiUrl, redirectToLogin } from "@/services/api";
 import { registerAuthFailureHandler } from "@/auth/authEvents";
+import { clearStoredAuth, setStoredAccessToken } from "@/services/token";
 
 let failureHandler: ReturnType<typeof vi.fn>;
 
@@ -24,22 +25,32 @@ const adapter = vi.fn(async (config) => ({
 
 describe("apiClient auth", () => {
   beforeEach(() => {
-    localStorage.clear();
+    clearStoredAuth();
     adapter.mockClear();
     failureHandler = vi.fn();
     registerAuthFailureHandler(failureHandler);
   });
 
-  it("sends requests without auth headers", async () => {
+  it("attaches auth headers when token exists", async () => {
+    setStoredAccessToken("test-token");
+
     await apiClient.get("/example", { adapter } as any);
 
     expect(adapter).toHaveBeenCalledOnce();
     const passedConfig = adapter.mock.calls[0][0];
-    expect(passedConfig?.headers?.Authorization).toBeUndefined();
+    expect(passedConfig?.headers?.Authorization).toBe("Bearer test-token");
     expect(passedConfig?.url).toBe(buildApiUrl("/example"));
   });
 
+  it("redirects when token is missing", async () => {
+    await expect(apiClient.get("/secure", { adapter } as any)).rejects.toBeDefined();
+
+    expect(failureHandler).toHaveBeenCalledWith("missing-token");
+    expect(redirectToLogin).toHaveBeenCalled();
+  });
+
   it("redirects on 401 responses", async () => {
+    setStoredAccessToken("test-token");
     const unauthorizedAdapter = vi.fn(async (config) => ({
       data: {},
       status: 401,
@@ -55,6 +66,8 @@ describe("apiClient auth", () => {
   });
 
   it("adds idempotency and content type headers for mutating requests", async () => {
+    setStoredAccessToken("test-token");
+
     await apiClient.post("/example", { name: "Atlas" }, { adapter } as any);
 
     expect(adapter).toHaveBeenCalledOnce();

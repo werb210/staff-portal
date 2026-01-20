@@ -1,9 +1,7 @@
+import { getAccessToken } from "@/auth/auth.store";
+
 export function getAuthToken(): string | null {
-  return (
-    localStorage.getItem("boreal.accessToken") ||
-    localStorage.getItem("bf.access") ||
-    localStorage.getItem("staff_auth_token")
-  );
+  return getAccessToken();
 }
 
 export function decodeJwt(token?: string): any | null {

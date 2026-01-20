@@ -10,6 +10,7 @@ import { startOtp as startOtpService, verifyOtp as verifyOtpService, logout as l
 import LoginPage from "@/pages/login/LoginPage";
 import { fetchCurrentUser } from "@/api/auth";
 import { ApiError } from "@/api/http";
+import { clearStoredAuth, setStoredAccessToken } from "@/services/token";
 
 vi.mock("@/services/auth", () => ({
   startOtp: vi.fn(),
@@ -72,13 +73,13 @@ describe("auth flow", () => {
   });
 
   beforeEach(() => {
-    localStorage.clear();
+    clearStoredAuth();
     vi.clearAllMocks();
     mockedLogout.mockResolvedValue(undefined);
   });
 
   it("verifies OTP successfully", async () => {
-    mockedVerifyOtp.mockResolvedValue(undefined);
+    mockedVerifyOtp.mockResolvedValue({ accessToken: "access", refreshToken: "refresh" });
     mockedFetchCurrentUser.mockResolvedValue({ data: { id: "1", role: "Admin" } } as any);
 
     render(
@@ -97,6 +98,7 @@ describe("auth flow", () => {
   });
 
   it("hydrates user on refresh", async () => {
+    setStoredAccessToken("test-token");
     mockedFetchCurrentUser.mockResolvedValue({
       data: { id: "1", role: "Admin", email: "demo@example.com" }
     } as any);
@@ -143,6 +145,7 @@ describe("auth flow", () => {
   });
 
   it("clears session on manual logout", async () => {
+    setStoredAccessToken("test-token");
     mockedFetchCurrentUser.mockResolvedValue({
       data: { id: "1", role: "Admin", email: "demo@example.com" }
     } as any);

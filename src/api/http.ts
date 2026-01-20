@@ -1,5 +1,6 @@
 import axios, { AxiosError, type AxiosRequestConfig } from "axios";
 import { attachRequestIdAndLog, logError, logResponse } from "@/utils/apiLogging";
+import { getAccessToken } from "@/auth/auth.store";
 
 export type ApiErrorOptions = {
   status: number;
@@ -34,11 +35,20 @@ if (!rawBaseURL) {
 const apiBaseURL = rawBaseURL.endsWith("/api") ? rawBaseURL : `${rawBaseURL}/api`;
 
 export const api = axios.create({
-  baseURL: apiBaseURL,
-  withCredentials: true
+  baseURL: apiBaseURL
 });
 
-api.interceptors.request.use((config: AxiosRequestConfig) => attachRequestIdAndLog(config));
+api.interceptors.request.use((config: AxiosRequestConfig) => {
+  const skipAuth = (config as { skipAuth?: boolean }).skipAuth;
+  const token = getAccessToken();
+  if (token && !skipAuth) {
+    config.headers = {
+      ...(config.headers ?? {}),
+      Authorization: `Bearer ${token}`
+    };
+  }
+  return attachRequestIdAndLog(config);
+});
 
 api.interceptors.response.use(
   (response) => logResponse(response),

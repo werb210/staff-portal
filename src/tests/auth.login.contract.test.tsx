@@ -6,6 +6,7 @@ import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
 import { AuthProvider, useAuth } from "@/auth/AuthContext";
 import LoginPage from "@/pages/login/LoginPage";
+import { clearStoredAuth } from "@/services/token";
 
 const navigateSpy = vi.fn();
 
@@ -33,7 +34,7 @@ const server = setupServer(
   }),
   http.post("http://localhost/api/auth/otp/verify", async ({ request }) => {
     verifyOtpSpy(await request.json());
-    return new HttpResponse(null, { status: 200 });
+    return HttpResponse.json({ accessToken: "access-token", refreshToken: "refresh-token" });
   }),
   http.get("http://localhost/api/auth/me", () => {
     meSpy();
@@ -59,7 +60,7 @@ describe("login contract flow", () => {
 
   afterEach(() => {
     server.resetHandlers();
-    localStorage.clear();
+    clearStoredAuth();
     navigateSpy.mockClear();
     startOtpSpy.mockClear();
     verifyOtpSpy.mockClear();

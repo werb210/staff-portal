@@ -10,6 +10,7 @@ import { AuthContext, type AuthContextValue, AuthProvider } from "@/auth/AuthCon
 import LoginPage from "@/pages/login/LoginPage";
 import RequireAuth from "@/routes/RequireAuth";
 import api from "@/api/client";
+import { clearStoredAuth, setStoredAccessToken } from "@/services/token";
 
 const LocationProbe = () => {
   const location = useLocation();
@@ -25,7 +26,7 @@ describe("auth routing contract", () => {
 
   afterEach(() => {
     server.resetHandlers();
-    localStorage.clear();
+    clearStoredAuth();
     cleanup();
     vi.restoreAllMocks();
   });
@@ -35,6 +36,7 @@ describe("auth routing contract", () => {
   });
 
   it("redirects authenticated users away from /login", async () => {
+    setStoredAccessToken("test-token");
     server.use(
       http.get("http://localhost/api/auth/me", () =>
         HttpResponse.json({ id: "u1", role: "Staff" }, { status: 200 })
@@ -107,12 +109,15 @@ describe("auth routing contract", () => {
     const authValue: AuthContextValue = {
       status: "loading",
       user: null,
+      accessToken: null,
       error: null,
       authenticated: false,
+      isAuthenticated: false,
       authReady: false,
       pendingPhoneNumber: null,
       startOtp: async () => undefined,
       verifyOtp: async () => undefined,
+      login: async () => undefined,
       setAuth: () => undefined,
       setAuthenticated: () => undefined,
       refreshUser: async () => false,
@@ -142,6 +147,7 @@ describe("auth routing contract", () => {
   });
 
   it("redirects to /login after a 401 response", async () => {
+    setStoredAccessToken("test-token");
     let callCount = 0;
     server.use(
       http.get("http://localhost/api/auth/me", () =>

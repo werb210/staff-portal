@@ -1,7 +1,10 @@
 import { ACCESS_TOKEN_KEY, clearAccessToken, getAccessToken, setAccessToken } from "@/auth/auth.store";
 
 export { ACCESS_TOKEN_KEY };
-export const USER_KEY = "user";
+export const USER_KEY = "staff-portal.user";
+
+const canUseSessionStorage = () =>
+  typeof window !== "undefined" && typeof window.sessionStorage !== "undefined";
 
 export function getStoredAccessToken(): string | null {
   return getAccessToken();
@@ -13,13 +16,19 @@ export function setStoredAccessToken(token: string) {
 
 export function clearStoredAuth() {
   clearAccessToken();
-  localStorage.removeItem(USER_KEY);
+  if (!canUseSessionStorage()) return;
+  try {
+    window.sessionStorage.removeItem(USER_KEY);
+  } catch {
+    // ignore storage errors
+  }
 }
 
 export function getStoredUser<T = unknown>(): T | null {
-  const stored = localStorage.getItem(USER_KEY);
-  if (!stored) return null;
+  if (!canUseSessionStorage()) return null;
   try {
+    const stored = window.sessionStorage.getItem(USER_KEY);
+    if (!stored) return null;
     return JSON.parse(stored) as T;
   } catch {
     return null;
@@ -27,5 +36,10 @@ export function getStoredUser<T = unknown>(): T | null {
 }
 
 export function setStoredUser(user: unknown) {
-  localStorage.setItem(USER_KEY, JSON.stringify(user));
+  if (!canUseSessionStorage()) return;
+  try {
+    window.sessionStorage.setItem(USER_KEY, JSON.stringify(user));
+  } catch {
+    // ignore storage errors
+  }
 }
