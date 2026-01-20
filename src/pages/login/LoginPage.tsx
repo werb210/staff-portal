@@ -1,5 +1,4 @@
-import { FormEvent, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { FormEvent, useMemo, useState } from "react";
 import type { AxiosError } from "axios";
 import { ApiError } from "@/api/http";
 import { useAuth } from "@/auth/AuthContext";
@@ -19,15 +18,12 @@ const parseOtpErrorMessage = (error: unknown): string => {
 
 export default function LoginPage() {
   const { startOtp, verifyOtp, status, error: authError } = useAuth();
-  const navigate = useNavigate();
 
   const [rawPhone, setRawPhone] = useState("");
   const [submittedPhoneNumber, setSubmittedPhoneNumber] = useState("");
   const [code, setCode] = useState("");
   const [hasRequestedCode, setHasRequestedCode] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
-
-  const lastVerifyAttempt = useRef<{ code: string; ts: number } | null>(null);
 
   const { normalizedPhone, normalizationError } = useMemo(() => {
     if (!rawPhone.trim()) return { normalizedPhone: "", normalizationError: null };
@@ -38,7 +34,6 @@ export default function LoginPage() {
     }
   }, [rawPhone]);
 
-  const canSubmitCode = useMemo(() => code.trim().length === 6, [code]);
   const isSending = status === "sending";
   const isVerifying = status === "verifying";
   const showCodeStep = hasRequestedCode;
@@ -61,29 +56,11 @@ export default function LoginPage() {
   const handleVerify = async (e: FormEvent) => {
     e.preventDefault();
     setLocalError(null);
-    if (!submittedPhoneNumber) {
-      setLocalError("Missing phone number. Please start again.");
-      return;
-    }
-
     const trimmed = code.trim();
-    const now = Date.now();
-    if (
-      lastVerifyAttempt.current &&
-      lastVerifyAttempt.current.code === trimmed &&
-      now - lastVerifyAttempt.current.ts < 4000
-    ) {
-      setLocalError("Please wait before retrying.");
-      return;
-    }
-    lastVerifyAttempt.current = { code: trimmed, ts: now };
-
-    try {
-      await verifyOtp({ phone: submittedPhoneNumber, code: trimmed });
-      navigate("/");
-    } catch (err: any) {
-      setLocalError(parseOtpErrorMessage(err));
-    }
+    if (!trimmed) return;
+    const phone = submittedPhoneNumber || normalizedPhone || rawPhone;
+    console.log("VERIFY SUBMIT", { phone, code: trimmed });
+    await verifyOtp(phone, trimmed);
   };
 
   const handleResend = async () => {
@@ -148,7 +125,6 @@ export default function LoginPage() {
           <button
             type="submit"
             className="w-full bg-blue-600 text-white rounded px-4 py-2"
-            disabled={!canSubmitCode || isVerifying}
           >
             {isVerifying ? "Verifying..." : "Verify code"}
           </button>

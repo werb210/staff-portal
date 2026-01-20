@@ -6,6 +6,7 @@ import React, {
   useState,
   type PropsWithChildren
 } from "react";
+import { useNavigate } from "react-router-dom";
 
 import type { AuthenticatedUser } from "@/services/auth";
 import {
@@ -53,7 +54,7 @@ export interface AuthContextValue {
   error: string | null;
   pendingPhoneNumber: string | null;
   startOtp: (payload: StartOtpPayload) => Promise<void>;
-  verifyOtp: (payload: VerifyOtpPayload) => Promise<void>;
+  verifyOtp: (payload: VerifyOtpPayload | string, code?: string) => Promise<void>;
   setAuth: (payload: SetAuthPayload) => void;
   setAuthenticated: () => void;
   refreshUser: (accessToken?: string) => Promise<boolean>;
@@ -75,6 +76,7 @@ function decodeJwtPayload(jwt: string): any | null {
 }
 
 export function AuthProvider({ children }: PropsWithChildren<{}>) {
+  const navigate = useNavigate();
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<AuthenticatedUser | null>(null);
   const [authenticated, setAuthenticatedState] = useState(false);
@@ -94,6 +96,11 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
       setUser(resolvedUser ?? null);
       setAuthenticatedState(true);
       setStatus("authenticated");
+      console.log("AUTH STATE UPDATE", {
+        token: newToken,
+        user: resolvedUser ?? null,
+        isAuthenticated: true
+      });
     },
     []
   );
@@ -171,20 +178,26 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
   );
 
   const verifyOtp = useCallback(
-    async ({ phone, code }: VerifyOtpPayload): Promise<void> => {
+    async (payload: VerifyOtpPayload | string, codeArg?: string): Promise<void> => {
       setError(null);
       setStatus("verifying");
-      const phoneNumber = phone ?? pendingPhoneNumber;
-      if (!phoneNumber) {
-        setError("Missing phone number");
-        setStatus("code_required");
-        return;
-      }
+      const resolvedPayload =
+        typeof payload === "string" ? { phone: payload, code: codeArg ?? "" } : payload;
+      const phoneNumber = resolvedPayload.phone ?? pendingPhoneNumber ?? "";
       try {
-        const result = await verifyOtpService({ phone: phoneNumber, code });
+        const result = await verifyOtpService({ phone: phoneNumber, code: resolvedPayload.code });
+        console.log("VERIFY RESPONSE", result);
         if (result) {
+          const refreshToken =
+            (result as { refreshToken?: string; refresh_token?: string }).refreshToken ??
+            (result as { refreshToken?: string; refresh_token?: string }).refresh_token ??
+            null;
+          if (refreshToken) {
+            localStorage.setItem("refresh_token", refreshToken);
+          }
           const { token: newToken, user: newUser } = result;
           setAuth({ token: newToken, user: newUser ?? null });
+          navigate("/dashboard");
         } else {
           const persisted = getStoredAccessToken();
           if (persisted) {
@@ -193,6 +206,12 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
             setUser(decoded ?? null);
             setAuthenticatedState(true);
             setStatus("authenticated");
+            console.log("AUTH STATE UPDATE", {
+              token: persisted,
+              user: decoded ?? null,
+              isAuthenticated: true
+            });
+            navigate("/dashboard");
           } else {
             setStatus("unauthenticated");
           }
@@ -205,7 +224,7 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
         setPendingPhoneNumber(null);
       }
     },
-    [pendingPhoneNumber, setAuth]
+    [navigate, pendingPhoneNumber, setAuth]
   );
 
   const logout = useCallback(async (): Promise<void> => {
