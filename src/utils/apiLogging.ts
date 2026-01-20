@@ -135,5 +135,5 @@ export const logError = (error: AxiosError) => {
     timestamp: Date.now()
   });
 
-  return Promise.reject(error);
+  return error;
 };

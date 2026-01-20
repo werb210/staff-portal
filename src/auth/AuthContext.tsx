@@ -373,6 +373,8 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
       const result = await startOtpService({ phone });
       if (result === null) {
         // HTTP 204 is treated as success with no body.
+        setPendingPhoneNumber(phone);
+        return;
       }
       const twilioSid =
         (result as { data?: { twilioSid?: string; sid?: string } } | null)?.data?.twilioSid ??
@@ -384,7 +386,7 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
         logAuthError("OTP start missing Twilio SID", null, user, { phone });
         throw new Error("OTP start missing Twilio SID");
       }
-      logAuthInfo("OTP start confirmed Twilio SID", null, user, { twilioSid });
+        logAuthInfo("OTP start confirmed Twilio SID", null, user, { twilioSid });
       setPendingPhoneNumber(phone);
     } catch (err: any) {
       const message = (err?.message as string) ?? "OTP failed";
@@ -436,10 +438,12 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
             throw new Error("OTP verify succeeded but token missing");
           }
         } else {
-          const refreshed = await refreshUser();
-          if (!refreshed) {
-            setAuthenticated();
+          const { token: storedToken, user: storedUser } = resolveStoredAuth();
+          if (!storedToken) {
+            throw new Error("OTP verify succeeded but token missing");
           }
+          const resolvedUser = storedUser ?? decodeJwtPayload(storedToken);
+          setAuth({ token: storedToken, user: resolvedUser ?? null });
         }
       } catch (err: any) {
         const message = (err?.message as string) ?? "OTP verification failed";
@@ -450,7 +454,7 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
         setPendingPhoneNumber(null);
       }
     },
-    [pendingPhoneNumber, refreshUser, setAuth, setAuthenticated, user]
+    [pendingPhoneNumber, setAuth, user]
   );
 
   const logout = useCallback(async (): Promise<void> => {
