@@ -1,6 +1,8 @@
 import axios, { type AxiosError, AxiosRequestConfig, AxiosResponse } from "axios";
 import { redirectToLogin } from "@/services/api";
 import { attachRequestIdAndLog, logError, logResponse } from "@/utils/apiLogging";
+import { getAccessToken } from "@/auth/auth.store";
+import { reportAuthFailure } from "@/auth/authEvents";
 
 export type OtpStartPayload = {
   phone: string;
@@ -20,17 +22,28 @@ export type OtpVerifyPayload = {
   code: string;
 };
 
-export type OtpVerifyResponse = null | Record<string, unknown>;
+export type OtpVerifyResponse = {
+  accessToken: string;
+  refreshToken: string;
+};
 
 const rawBaseURL = import.meta.env.VITE_API_BASE_URL;
 const apiBaseURL = rawBaseURL?.endsWith("/api") ? rawBaseURL : `${rawBaseURL}/api`;
 
 const api = axios.create({
-  baseURL: apiBaseURL,
-  withCredentials: true
+  baseURL: apiBaseURL
 });
 
-api.interceptors.request.use((config: AxiosRequestConfig) => attachRequestIdAndLog(config));
+api.interceptors.request.use((config: AxiosRequestConfig) => {
+  const token = getAccessToken();
+  if (token) {
+    config.headers = {
+      ...(config.headers ?? {}),
+      Authorization: `Bearer ${token}`
+    };
+  }
+  return attachRequestIdAndLog(config);
+});
 
 api.interceptors.response.use(
   (res: AxiosResponse) => logResponse(res),
@@ -38,6 +51,7 @@ api.interceptors.response.use(
     logError(err as AxiosError);
     const status = err?.response?.status;
     if (status === 401 || status === 403) {
+      reportAuthFailure(status === 401 ? "unauthorized" : "forbidden");
       if (typeof window !== "undefined") {
         const isOnLogin = window.location.pathname.startsWith("/login");
         if (!isOnLogin) {

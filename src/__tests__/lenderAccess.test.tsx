@@ -6,6 +6,7 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import PrivateRoute from "@/router/PrivateRoute";
 import { AuthProvider } from "@/auth/AuthContext";
 import { fetchCurrentUser } from "@/api/auth";
+import { clearStoredAuth, setStoredAccessToken } from "@/services/token";
 
 vi.mock("@/api/auth", () => ({
   fetchCurrentUser: vi.fn()
@@ -33,11 +34,11 @@ const renderRoutes = (initialEntry: string) =>
   );
 
 beforeEach(() => {
-  localStorage.clear();
+  clearStoredAuth();
 });
 
 afterEach(() => {
-  localStorage.clear();
+  clearStoredAuth();
 });
 
 describe("lender route access", () => {
@@ -50,6 +51,7 @@ describe("lender route access", () => {
   });
 
   it("allows authenticated users onto lender routes", async () => {
+    setStoredAccessToken("test-token");
     mockedFetchCurrentUser.mockResolvedValueOnce({ data: { id: "1", role: "Admin" } } as any);
 
     renderRoutes("/lenders");

@@ -7,6 +7,7 @@ import { verifyOtp } from "@/services/auth";
 import { render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createElement } from "react";
+import { clearStoredAuth, setStoredAccessToken } from "@/services/token";
 
 vi.mock("@/services/api", async () => {
   const actual = await vi.importActual<typeof import("@/services/api")>("@/services/api");
@@ -51,7 +52,7 @@ const TestVerifyAction = () => {
 describe("auth login", () => {
   beforeEach(() => {
     adapter.mockClear();
-    localStorage.clear();
+    clearStoredAuth();
     vi.restoreAllMocks();
   });
 
@@ -82,16 +83,19 @@ describe("auth login", () => {
     expect(response.data.requestId).toBe("req-1");
   });
 
-  it("OTP verification posts without token parsing", async () => {
+  it("OTP verification returns tokens", async () => {
     const apiPostSpy = vi.spyOn(api, "post").mockResolvedValueOnce({
-      data: {},
+      data: { accessToken: "access", refreshToken: "refresh" },
       status: 200,
       statusText: "OK",
       headers: {},
       config: {}
     } as any);
 
-    await expect(verifyOtp({ phone: "+15555550100", code: "123456" })).resolves.toBeUndefined();
+    await expect(verifyOtp({ phone: "+15555550100", code: "123456" })).resolves.toEqual({
+      accessToken: "access",
+      refreshToken: "refresh"
+    });
 
     expect(apiPostSpy).toHaveBeenCalledWith("/auth/otp/verify", {
       phone: "+15555550100",
@@ -106,6 +110,7 @@ describe("auth login", () => {
   });
 
   it("hydrates user from /api/auth/me on reload", async () => {
+    setStoredAccessToken("test-token");
     vi.spyOn(api, "get").mockResolvedValueOnce({
       data: { id: "1", email: "restored@example.com", role: "Admin" }
     } as any);
@@ -118,7 +123,7 @@ describe("auth login", () => {
 
   it("verifyOtp triggers /api/auth/me and updates status", async () => {
     const postSpy = vi.spyOn(api, "post").mockResolvedValueOnce({
-      data: {},
+      data: { accessToken: "access", refreshToken: "refresh" },
       status: 200,
       statusText: "OK",
       headers: {},

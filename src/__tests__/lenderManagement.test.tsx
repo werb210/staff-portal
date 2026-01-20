@@ -19,6 +19,7 @@ import {
   fetchLenders,
   updateLender
 } from "@/api/lenders";
+import { clearStoredAuth, setStoredAccessToken } from "@/services/token";
 
 vi.mock("@/api/lenders", () => ({
   fetchLenders: vi.fn(),
@@ -132,10 +133,13 @@ const baseProduct: LenderProduct = {
 
 describe("lender management flows", () => {
   beforeEach(() => {
+    clearStoredAuth();
+    setStoredAccessToken("test-token");
     mockedFetchCurrentUser.mockResolvedValue({ data: { id: "u1", role: "Admin" } } as any);
   });
 
   afterEach(() => {
+    clearStoredAuth();
     vi.clearAllMocks();
   });
 

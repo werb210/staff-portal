@@ -2,9 +2,10 @@
 import "@testing-library/jest-dom/vitest";
 import { createElement } from "react";
 import { render, screen, waitFor } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AuthProvider, useAuth } from "@/auth/AuthContext";
 import { fetchCurrentUser } from "@/api/auth";
+import { clearStoredAuth, setStoredAccessToken } from "@/services/token";
 
 vi.mock("@/api/auth", () => ({
   fetchCurrentUser: vi.fn()
@@ -37,8 +38,14 @@ const TestSetAuth = () => {
   );
 };
 
-describe("cookie auth", () => {
+describe("token auth", () => {
+  beforeEach(() => {
+    clearStoredAuth();
+  });
+
   it("stores user after OTP verification flow", async () => {
+    setStoredAccessToken("test-token");
+
     render(
       <AuthProvider>
         <TestSetAuth />
@@ -53,6 +60,7 @@ describe("cookie auth", () => {
   });
 
   it("hydrates auth state from /api/auth/me", async () => {
+    setStoredAccessToken("test-token");
     mockedFetchCurrentUser.mockResolvedValueOnce({
       data: { id: "2", email: "restored@example.com", role: "Staff" }
     } as any);

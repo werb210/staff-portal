@@ -1,4 +1,6 @@
 import { getAccessToken } from "../auth/auth.store";
+import { reportAuthFailure } from "@/auth/authEvents";
+import { redirectToLogin } from "@/services/api";
 
 export async function fetchWithAuth(
   input: RequestInfo,
@@ -9,16 +11,20 @@ export async function fetchWithAuth(
   const headers = new Headers(init.headers);
   if (token) {
     headers.set("Authorization", `Bearer ${token}`);
+  } else {
+    reportAuthFailure("missing-token");
+    redirectToLogin();
   }
 
   const response = await fetch(input, {
     ...init,
-    headers,
-    credentials: "include",
+    headers
   });
 
-  // IMPORTANT:
-  // Do NOT redirect on 401 here.
-  // Let pages/components decide how to handle it.
+  if (response.status === 401) {
+    reportAuthFailure("unauthorized");
+    redirectToLogin();
+  }
+
   return response;
 }

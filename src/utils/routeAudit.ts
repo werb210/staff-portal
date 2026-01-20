@@ -1,6 +1,8 @@
 import { getRequestId } from "@/utils/requestId";
 import { emitUiTelemetry } from "@/utils/uiTelemetry";
 import { setUiFailure } from "@/utils/uiFailureStore";
+import { getAccessToken } from "@/auth/auth.store";
+import { reportAuthFailure } from "@/auth/authEvents";
 
 type RouteDescriptor = {
   path: string;
@@ -56,11 +58,18 @@ const isAuthBootstrapRoute = (route: RouteDescriptor) =>
   AUTH_ROUTE_PREFIXES.some((prefix) => normalizePath(route.path).startsWith(prefix));
 
 const resolveSessionState = async (requestId: string): Promise<boolean> => {
+  const token = getAccessToken();
+  if (!token) return false;
   try {
     const response = await fetch("/api/auth/me", {
-      credentials: "include",
-      headers: { "X-Request-Id": requestId }
+      headers: {
+        "X-Request-Id": requestId,
+        Authorization: `Bearer ${token}`
+      }
     });
+    if (response.status === 401) {
+      reportAuthFailure("unauthorized");
+    }
     return response.ok;
   } catch {
     return false;

@@ -3,6 +3,7 @@ import { ApiError, api } from "@/api/http";
 import { reportAuthFailure } from "@/auth/authEvents";
 import { redirectToLogin } from "@/services/api";
 import { attachRequestIdAndLog, logError, logResponse } from "@/utils/apiLogging";
+import { getAccessToken } from "@/auth/auth.store";
 
 export type RequestOptions = AxiosRequestConfig & {
   skipAuth?: boolean;
@@ -11,12 +12,6 @@ export type RequestOptions = AxiosRequestConfig & {
 export type ListResponse<T> = {
   items: T[];
 } & Record<string, unknown>;
-
-const stripAuthOptions = (options?: RequestOptions): AxiosRequestConfig | undefined => {
-  if (!options) return undefined;
-  const { skipAuth, ...config } = options;
-  return config;
-};
 
 const generateIdempotencyKey = () => {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
@@ -28,9 +23,9 @@ const generateIdempotencyKey = () => {
 const buildConfig = (
   options?: RequestOptions,
   { idempotent = false }: { idempotent?: boolean } = {}
-): AxiosRequestConfig | undefined => {
-  const config = stripAuthOptions(options) ?? {};
-  if (options?.skipAuth || !idempotent) return config;
+): RequestOptions | undefined => {
+  const config = options ?? {};
+  if (config.skipAuth || !idempotent) return config;
   const headers = {
     ...(config.headers ?? {}),
     "Idempotency-Key": generateIdempotencyKey(),
@@ -40,6 +35,20 @@ const buildConfig = (
     ...config,
     headers
   };
+};
+
+const ensureAccessToken = (options?: RequestOptions) => {
+  if (options?.skipAuth) return;
+  const token = getAccessToken();
+  if (!token) {
+    reportAuthFailure("missing-token");
+    redirectToLogin();
+    throw new ApiError({
+      status: 401,
+      message: "Missing auth token",
+      details: { reason: "missing-token" }
+    });
+  }
 };
 
 const handleApiError = (error: unknown) => {
@@ -58,6 +67,7 @@ const handleApiError = (error: unknown) => {
 export const apiClient = {
   get: async <T>(path: string, options?: RequestOptions) => {
     try {
+      ensureAccessToken(options);
       const response = await api.get<T>(path, buildConfig(options));
       return response.data;
     } catch (error) {
@@ -66,6 +76,7 @@ export const apiClient = {
   },
   post: async <T>(path: string, data?: unknown, options?: RequestOptions) => {
     try {
+      ensureAccessToken(options);
       const response = await api.post<T>(path, data, buildConfig(options, { idempotent: true }));
       return response.data;
     } catch (error) {
@@ -74,6 +85,7 @@ export const apiClient = {
   },
   put: async <T>(path: string, data?: unknown, options?: RequestOptions) => {
     try {
+      ensureAccessToken(options);
       const response = await api.put<T>(path, data, buildConfig(options, { idempotent: true }));
       return response.data;
     } catch (error) {
@@ -82,6 +94,7 @@ export const apiClient = {
   },
   patch: async <T>(path: string, data?: unknown, options?: RequestOptions) => {
     try {
+      ensureAccessToken(options);
       const response = await api.patch<T>(path, data, buildConfig(options, { idempotent: true }));
       return response.data;
     } catch (error) {
@@ -90,6 +103,7 @@ export const apiClient = {
   },
   delete: async <T>(path: string, options?: RequestOptions) => {
     try {
+      ensureAccessToken(options);
       const response = await api.delete<T>(path, buildConfig(options, { idempotent: true }));
       return response.data;
     } catch (error) {
@@ -98,6 +112,7 @@ export const apiClient = {
   },
   getList: async <T>(path: string, options?: RequestOptions): Promise<ListResponse<T>> => {
     try {
+      ensureAccessToken(options);
       const response = await api.get<ListResponse<T>>(path, buildConfig(options));
       return response.data;
     } catch (error) {

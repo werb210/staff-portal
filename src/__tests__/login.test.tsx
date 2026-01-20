@@ -6,6 +6,7 @@ import { describe, expect, it, vi } from "vitest";
 import { AuthProvider } from "@/auth/AuthContext";
 import LoginPage from "@/pages/login/LoginPage";
 import { verifyOtp as verifyOtpService, startOtp as startOtpService } from "@/services/auth";
+import { fetchCurrentUser } from "@/api/auth";
 
 vi.mock("@/services/auth", () => ({
   startOtp: vi.fn(),
@@ -13,8 +14,13 @@ vi.mock("@/services/auth", () => ({
   logout: vi.fn()
 }));
 
+vi.mock("@/api/auth", () => ({
+  fetchCurrentUser: vi.fn()
+}));
+
 const mockedStartOtp = vi.mocked(startOtpService);
 const mockedVerifyOtp = vi.mocked(verifyOtpService);
+const mockedFetchCurrentUser = vi.mocked(fetchCurrentUser);
 
 const renderLoginFlow = () =>
   render(
@@ -31,7 +37,8 @@ const renderLoginFlow = () =>
 describe("login flow", () => {
   it("navigates to dashboard after OTP verification", async () => {
     mockedStartOtp.mockResolvedValue(undefined);
-    mockedVerifyOtp.mockResolvedValue(null);
+    mockedVerifyOtp.mockResolvedValue({ accessToken: "access", refreshToken: "refresh" });
+    mockedFetchCurrentUser.mockResolvedValue({ data: { id: "1", role: "Staff" } } as any);
 
     renderLoginFlow();
 
