@@ -19,6 +19,7 @@ import RetargetingAudienceList from "./Retargeting/RetargetingAudienceList";
 import BrandLibrary from "./Assets/BrandLibrary";
 import MarketingToDoList from "./ToDo/MarketingToDoList";
 import { getErrorMessage } from "@/utils/errors";
+import { getRequestId } from "@/utils/requestId";
 import { emitUiTelemetry } from "@/utils/uiTelemetry";
 
 const MarketingDashboard = () => {
@@ -38,19 +39,19 @@ const MarketingDashboard = () => {
 
   useEffect(() => {
     if (attributionError) {
-      console.error("Failed to load attribution", attributionError);
+      console.error("Failed to load attribution", { requestId: getRequestId(), error: attributionError });
     }
   }, [attributionError]);
 
   useEffect(() => {
     if (adsError) {
-      console.error("Failed to load ads", adsError);
+      console.error("Failed to load ads", { requestId: getRequestId(), error: adsError });
     }
   }, [adsError]);
 
   useEffect(() => {
     if (assetsError) {
-      console.error("Failed to load assets", assetsError);
+      console.error("Failed to load assets", { requestId: getRequestId(), error: assetsError });
     }
   }, [assetsError]);
 

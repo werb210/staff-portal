@@ -6,12 +6,22 @@ export type OtpStartResponse =
   | {
       sessionId?: string;
       requestId?: string;
+      twilioSid?: string;
+      sid?: string;
     }
   | null;
 
-export async function startOtp(payload: { phone: string }): Promise<OtpStartResponse> {
+export type OtpStartResult = {
+  data: OtpStartResponse;
+  headers: Record<string, string>;
+};
+
+export async function startOtp(payload: { phone: string }): Promise<OtpStartResult | null> {
   const response = await api.post<OtpStartResponse>("/auth/otp/start", payload);
-  return response.data ?? null;
+  return {
+    data: response.data ?? null,
+    headers: response.headers ?? {}
+  };
 }
 
 export type OtpVerifyResponse =

@@ -7,6 +7,7 @@ import ConversationViewer from "./ConversationViewer";
 import { useCommunicationsStore } from "@/state/communications.store";
 import { fetchCommunicationThreads, type CommunicationConversation } from "@/api/communications";
 import { getErrorMessage } from "@/utils/errors";
+import { getRequestId } from "@/utils/requestId";
 import RequireRole from "@/components/auth/RequireRole";
 import { emitUiTelemetry } from "@/utils/uiTelemetry";
 
@@ -37,7 +38,7 @@ const CommunicationsContent = () => {
 
   useEffect(() => {
     if (error) {
-      console.error("Failed to load communications", error);
+      console.error("Failed to load communications", { requestId: getRequestId(), error });
     }
   }, [error]);
 

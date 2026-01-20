@@ -30,7 +30,14 @@ vi.mock("@/api/lenders", () => ({
 }));
 
 const makeJwt = (payload: Record<string, unknown>) => {
-  const encoded = btoa(JSON.stringify(payload))
+  const now = Math.floor(Date.now() / 1000);
+  const encoded = btoa(
+    JSON.stringify({
+      exp: now + 3600,
+      iat: now,
+      ...payload
+    })
+  )
     .replace(/\+/g, "-")
     .replace(/\//g, "_")
     .replace(/=+$/, "");

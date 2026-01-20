@@ -12,6 +12,7 @@ import { fetchCompanies } from "@/api/crm";
 import type { Company } from "@/api/crm";
 import { useCrmStore } from "@/state/crm.store";
 import { getErrorMessage } from "@/utils/errors";
+import { getRequestId } from "@/utils/requestId";
 import { emitUiTelemetry } from "@/utils/uiTelemetry";
 
 const CompaniesPage = () => {
@@ -30,7 +31,7 @@ const CompaniesPage = () => {
 
   useEffect(() => {
     if (error) {
-      console.error("Failed to load companies", error);
+      console.error("Failed to load companies", { requestId: getRequestId(), error });
     }
   }, [error]);
 
