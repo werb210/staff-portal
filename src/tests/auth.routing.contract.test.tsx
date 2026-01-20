@@ -10,23 +10,6 @@ import { AuthContext, type AuthContextValue, AuthProvider } from "@/auth/AuthCon
 import LoginPage from "@/pages/login/LoginPage";
 import RequireAuth from "@/routes/RequireAuth";
 import api from "@/api/client";
-import { ACCESS_TOKEN_KEY } from "@/services/token";
-
-const createValidToken = (overrides?: Record<string, unknown>) => {
-  const now = Math.floor(Date.now() / 1000);
-  const payload = {
-    sub: "u1",
-    role: "Staff",
-    exp: now + 3600,
-    iat: now,
-    ...overrides
-  };
-  const payloadEncoded = btoa(JSON.stringify(payload))
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
-  return `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${payloadEncoded}.signature`;
-};
 
 const LocationProbe = () => {
   const location = useLocation();
@@ -52,14 +35,18 @@ describe("auth routing contract", () => {
   });
 
   it("redirects authenticated users away from /login", async () => {
-    localStorage.setItem(ACCESS_TOKEN_KEY, createValidToken());
+    server.use(
+      http.get("http://localhost/api/auth/me", () =>
+        HttpResponse.json({ id: "u1", role: "Staff" }, { status: 200 })
+      )
+    );
 
     render(
       <AuthProvider>
         <MemoryRouter initialEntries={["/login"]}>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
-            <Route path="/" element={<div>Dashboard</div>} />
+            <Route path="/dashboard" element={<div>Dashboard</div>} />
           </Routes>
           <LocationProbe />
         </MemoryRouter>
@@ -67,7 +54,7 @@ describe("auth routing contract", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByTestId("location")).toHaveTextContent("/");
+      expect(screen.getByTestId("location")).toHaveTextContent("/dashboard");
     });
 
     expect(screen.queryByRole("heading", { name: /staff login/i })).not.toBeInTheDocument();
@@ -76,6 +63,7 @@ describe("auth routing contract", () => {
   it("blocks unauthenticated users from private routes without firing API calls", async () => {
     const lendersSpy = vi.fn();
     server.use(
+      http.get("http://localhost/api/auth/me", () => new HttpResponse(null, { status: 401 })),
       http.get("http://localhost/api/lenders", () => {
         lendersSpy();
         return HttpResponse.json({ items: [] });
@@ -119,7 +107,6 @@ describe("auth routing contract", () => {
     const authValue: AuthContextValue = {
       status: "loading",
       user: null,
-      token: null,
       error: null,
       authenticated: false,
       authReady: false,
@@ -154,9 +141,12 @@ describe("auth routing contract", () => {
     expect(screen.getByTestId("location")).toHaveTextContent("/");
   });
 
-  it("clears tokens and redirects to /login after a 401 response", async () => {
+  it("redirects to /login after a 401 response", async () => {
     let callCount = 0;
     server.use(
+      http.get("http://localhost/api/auth/me", () =>
+        HttpResponse.json({ id: "u1", role: "Staff" }, { status: 200 })
+      ),
       http.get("http://localhost/api/secure", () => {
         callCount += 1;
         if (callCount === 1) {
@@ -166,7 +156,6 @@ describe("auth routing contract", () => {
       })
     );
 
-    localStorage.setItem(ACCESS_TOKEN_KEY, createValidToken());
     window.history.pushState({}, "", "/lenders");
 
     await expect(api.get("/secure")).rejects.toBeTruthy();
@@ -174,7 +163,6 @@ describe("auth routing contract", () => {
     await waitFor(() => {
       expect(window.location.pathname).toBe("/login");
     });
-    expect(localStorage.getItem(ACCESS_TOKEN_KEY)).toBeNull();
 
     await expect(api.get("/secure")).resolves.toBeTruthy();
     expect(window.location.pathname).toBe("/login");

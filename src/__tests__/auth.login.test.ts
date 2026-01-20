@@ -4,26 +4,9 @@ import apiClient from "@/api/httpClient";
 import api from "@/api/client";
 import { AuthProvider, useAuth } from "@/auth/AuthContext";
 import { verifyOtp } from "@/services/auth";
-import { getStoredAccessToken, getStoredUser, setStoredAccessToken } from "@/services/token";
 import { render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createElement } from "react";
-
-const createValidToken = (overrides?: Record<string, unknown>) => {
-  const now = Math.floor(Date.now() / 1000);
-  const payload = {
-    sub: "1",
-    role: "Admin",
-    exp: now + 3600,
-    iat: now,
-    ...overrides
-  };
-  const payloadEncoded = btoa(JSON.stringify(payload))
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
-  return `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${payloadEncoded}.signature`;
-};
 
 vi.mock("@/services/api", async () => {
   const actual = await vi.importActual<typeof import("@/services/api")>("@/services/api");
@@ -39,29 +22,27 @@ const adapter = vi.fn(async (config) => ({
   status: 200,
   statusText: "OK",
   headers: {},
-  config,
+  config
 }));
 
 const TestAuthState = () => {
-  const { status, user, token } = useAuth();
+  const { status, user } = useAuth();
   return createElement(
     "div",
     null,
     createElement("span", { "data-testid": "status" }, status),
-    createElement("span", { "data-testid": "token" }, token ?? ""),
     createElement("span", { "data-testid": "user" }, user?.email ?? "")
   );
 };
 
 const TestVerifyAction = () => {
-  const { verifyOtp, setAuthenticated } = useAuth();
+  const { verifyOtp } = useAuth();
 
   return createElement(
     "button",
     {
       type: "button",
-      onClick: () =>
-        void verifyOtp({ code: "123456", phone: "+15555550100" }).then(() => setAuthenticated())
+      onClick: () => void verifyOtp({ code: "123456", phone: "+15555550100" })
     },
     "Verify"
   );
@@ -83,7 +64,7 @@ describe("auth login", () => {
       status: 200,
       statusText: "OK",
       headers: {},
-      config,
+      config
     }));
 
     const response = await api.post<{ sessionId?: string; requestId?: string }>(
@@ -101,20 +82,21 @@ describe("auth login", () => {
     expect(response.data.requestId).toBe("req-1");
   });
 
-  it("OTP verification returns tokens from the service", async () => {
-    const token = createValidToken({ email: "demo@example.com" });
+  it("OTP verification posts without token parsing", async () => {
     const apiPostSpy = vi.spyOn(api, "post").mockResolvedValueOnce({
-      data: {
-        token,
-        user: { id: "1", email: "demo@example.com", role: "Admin" }
-      }
+      data: {},
+      status: 200,
+      statusText: "OK",
+      headers: {},
+      config: {}
     } as any);
 
-    await expect(verifyOtp({ phone: "+15555550100", code: "123456" })).resolves.toMatchObject({
-      token
-    });
+    await expect(verifyOtp({ phone: "+15555550100", code: "123456" })).resolves.toBeUndefined();
 
-    expect(apiPostSpy).toHaveBeenCalledWith("/auth/otp/verify", { phone: "+15555550100", code: "123456" });
+    expect(apiPostSpy).toHaveBeenCalledWith("/auth/otp/verify", {
+      phone: "+15555550100",
+      code: "123456"
+    });
     apiPostSpy.mockRestore();
   });
 
@@ -123,43 +105,35 @@ describe("auth login", () => {
     expect(adapter).toHaveBeenCalledOnce();
   });
 
-  it("stores tokens after a successful OTP verification", async () => {
-    const token = createValidToken({ email: "demo@example.com" });
-    vi.spyOn(api, "post").mockResolvedValueOnce({
-      data: {
-        token,
-        user: { id: "1", email: "demo@example.com", role: "Admin" }
-      }
-    });
-
-    render(createElement(AuthProvider, null, createElement(TestVerifyAction)));
-
-    screen.getByRole("button", { name: "Verify" }).click();
-
-    await waitFor(() => expect(getStoredAccessToken()).toBe(token));
-    await waitFor(() => expect(getStoredUser<{ email: string }>()?.email).toBe("demo@example.com"));
-  });
-
-  it("treats 204 OTP verification responses as success", async () => {
-    vi.spyOn(api, "post").mockResolvedValueOnce({
-      data: undefined,
-      status: 204,
-      statusText: "No Content",
-      headers: {},
-      config: {}
-    });
-
-    await expect(verifyOtp({ phone: "+15555550100", code: "123456" })).resolves.toBeNull();
-  });
-
-  it("restores session on reload", async () => {
-    const token = createValidToken({ email: "restored@example.com" });
-    setStoredAccessToken(token);
+  it("hydrates user from /api/auth/me on reload", async () => {
+    vi.spyOn(api, "get").mockResolvedValueOnce({
+      data: { id: "1", email: "restored@example.com", role: "Admin" }
+    } as any);
 
     render(createElement(AuthProvider, null, createElement(TestAuthState)));
 
     await waitFor(() => expect(screen.getByTestId("status")).toHaveTextContent("authenticated"));
-    expect(screen.getByTestId("token")).toHaveTextContent(token);
     expect(screen.getByTestId("user")).toHaveTextContent("restored@example.com");
+  });
+
+  it("verifyOtp triggers /api/auth/me and updates status", async () => {
+    const postSpy = vi.spyOn(api, "post").mockResolvedValueOnce({
+      data: {},
+      status: 200,
+      statusText: "OK",
+      headers: {},
+      config: {}
+    } as any);
+    const getSpy = vi.spyOn(api, "get").mockResolvedValueOnce({
+      data: { id: "1", email: "demo@example.com", role: "Admin" }
+    } as any);
+
+    render(createElement(AuthProvider, null, createElement(TestVerifyAction), createElement(TestAuthState)));
+
+    screen.getByRole("button", { name: "Verify" }).click();
+
+    await waitFor(() => expect(postSpy).toHaveBeenCalled());
+    await waitFor(() => expect(getSpy).toHaveBeenCalledWith("/auth/me"));
+    await waitFor(() => expect(screen.getByTestId("status")).toHaveTextContent("authenticated"));
   });
 });

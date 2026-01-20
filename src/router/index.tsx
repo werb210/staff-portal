@@ -29,7 +29,8 @@ const AppRouter = () => (
             </PrivateRoute>
           }
         >
-          <Route index element={<DashboardPage />} />
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={<DashboardPage />} />
           <Route path="applications" element={<ApplicationsPage />} />
           <Route path="crm/*" element={<CRMPage />} />
           <Route path="communications" element={<CommunicationsPage />} />

@@ -1,7 +1,7 @@
 import { render } from "@testing-library/react";
 import type { ReactElement, ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { AuthContext, type AuthContextType, AuthProvider } from "@/auth/AuthContext";
+import { AuthContext, type AuthContextType } from "@/auth/AuthContext";
 import SiloContext, { type Silo } from "@/context/SiloContext";
 import LenderAuthContext, { type LenderAuthContextValue } from "@/lender/auth/LenderAuthContext";
 
@@ -13,7 +13,13 @@ const createTestQueryClient = () =>
   });
 
 const defaultLenderAuth: LenderAuthContextValue = {
-  user: { id: "l1", name: "Lender User", email: "lender@example.com", role: "Lender", companyName: "Lender Co" },
+  user: {
+    id: "l1",
+    name: "Lender User",
+    email: "lender@example.com",
+    role: "Lender",
+    companyName: "Lender Co"
+  },
   tokens: { accessToken: "lender-token", refreshToken: "lender-refresh" },
   isAuthenticated: true,
   isLoading: false,
@@ -27,26 +33,23 @@ const defaultLenderAuth: LenderAuthContextValue = {
 
 type StaffRenderOptions = { silo?: Silo; auth?: Partial<AuthContextType> };
 
-export const renderWithProviders = (
-  ui: ReactElement,
-  options?: StaffRenderOptions
-) => {
+export const renderWithProviders = (ui: ReactElement, options?: StaffRenderOptions) => {
   const queryClient = createTestQueryClient();
   const silo = options?.silo ?? "BF";
   const authValue: AuthContextType = {
     user: { id: "1", email: "test@example.com", role: "Admin" },
-    token: "test-token",
     status: "authenticated",
+    error: null,
     authenticated: true,
     authReady: true,
     pendingPhoneNumber: null,
     startOtp: async (_payload) => undefined,
-    verifyOtp: async (_payload) => null,
+    verifyOtp: async (_payload) => undefined,
     setAuth: () => undefined,
     setAuthenticated: () => undefined,
-    refreshUser: async (_accessToken) => true,
+    refreshUser: async () => true,
     logout: () => undefined,
-    ...options?.auth,
+    ...options?.auth
   };
 
   const wrapper = ({ children }: { children: ReactNode }) => (

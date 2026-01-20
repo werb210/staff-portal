@@ -1,7 +1,6 @@
 import { getRequestId } from "@/utils/requestId";
 import { emitUiTelemetry } from "@/utils/uiTelemetry";
 import { setUiFailure } from "@/utils/uiFailureStore";
-import { getStoredAccessToken } from "@/services/token";
 
 type RouteDescriptor = {
   path: string;
@@ -56,15 +55,27 @@ const routeLabel = (route: RouteDescriptor) =>
 const isAuthBootstrapRoute = (route: RouteDescriptor) =>
   AUTH_ROUTE_PREFIXES.some((prefix) => normalizePath(route.path).startsWith(prefix));
 
+const resolveSessionState = async (requestId: string): Promise<boolean> => {
+  try {
+    const response = await fetch("/api/auth/me", {
+      credentials: "include",
+      headers: { "X-Request-Id": requestId }
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+};
+
 export const runRouteAudit = async (): Promise<void> => {
   if (typeof window === "undefined") return;
 
   const requestId = getRequestId();
-  const hasToken = Boolean(getStoredAccessToken());
+  const hasSession = await resolveSessionState(requestId);
   console.info("Route audit start", {
     requestId,
     routeCount: portalApiRoutes.length,
-    authenticated: hasToken
+    authenticated: hasSession
   });
 
   try {
@@ -115,7 +126,7 @@ export const runRouteAudit = async (): Promise<void> => {
         missing: missingLabels,
         serverCount: serverRoutes.length
       });
-      if (hasToken) {
+      if (hasSession) {
         setUiFailure({
           message: "Server route mismatch detected.",
           details: `Missing routes: ${missingLabels.join(", ")} | Request ID: ${requestId}`,

@@ -1,5 +1,4 @@
 import axios, { type AxiosError, AxiosRequestConfig, AxiosResponse } from "axios";
-import { getStoredAccessToken, clearStoredAuth } from "@/services/token";
 import { redirectToLogin } from "@/services/api";
 import { attachRequestIdAndLog, logError, logResponse } from "@/utils/apiLogging";
 
@@ -21,29 +20,17 @@ export type OtpVerifyPayload = {
   code: string;
 };
 
-export type OtpVerifyResponse =
-  | {
-      token: string;
-      user?: Record<string, unknown> | null;
-      refreshToken?: string;
-      refresh_token?: string;
-    }
-  | null;
+export type OtpVerifyResponse = null | Record<string, unknown>;
+
+const rawBaseURL = import.meta.env.VITE_API_BASE_URL;
+const apiBaseURL = rawBaseURL?.endsWith("/api") ? rawBaseURL : `${rawBaseURL}/api`;
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,
+  baseURL: apiBaseURL,
   withCredentials: true
 });
 
-api.interceptors.request.use((config: AxiosRequestConfig) => {
-  const token = getStoredAccessToken();
-  const skipAuth = (config as any)?.skipAuth;
-  if (token && !skipAuth) {
-    config.headers = config.headers || {};
-    (config.headers as Record<string, string>).Authorization = `Bearer ${token}`;
-  }
-  return attachRequestIdAndLog(config);
-});
+api.interceptors.request.use((config: AxiosRequestConfig) => attachRequestIdAndLog(config));
 
 api.interceptors.response.use(
   (res: AxiosResponse) => logResponse(res),
@@ -51,7 +38,6 @@ api.interceptors.response.use(
     logError(err as AxiosError);
     const status = err?.response?.status;
     if (status === 401 || status === 403) {
-      clearStoredAuth();
       if (typeof window !== "undefined") {
         const isOnLogin = window.location.pathname.startsWith("/login");
         if (!isOnLogin) {

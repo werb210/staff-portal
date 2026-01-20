@@ -7,28 +7,10 @@ import { setupServer } from "msw/node";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/auth/AuthContext";
 import LoginPage from "@/pages/login/LoginPage";
-import { ACCESS_TOKEN_KEY } from "@/services/token";
 
 const startOtpSpy = vi.fn();
 const verifyOtpSpy = vi.fn();
-
-const createValidToken = (overrides?: Record<string, unknown>) => {
-  const now = Math.floor(Date.now() / 1000);
-  const payload = {
-    sub: "u1",
-    role: "Staff",
-    exp: now + 3600,
-    iat: now,
-    ...overrides
-  };
-  const payloadEncoded = btoa(JSON.stringify(payload))
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
-  return `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${payloadEncoded}.signature`;
-};
-
-const fakeToken = createValidToken();
+const meSpy = vi.fn();
 
 const server = setupServer(
   http.post("http://localhost/api/auth/otp/start", async ({ request }) => {
@@ -42,13 +24,11 @@ const server = setupServer(
   }),
   http.post("http://localhost/api/auth/otp/verify", async ({ request }) => {
     verifyOtpSpy(await request.json());
-    return HttpResponse.json(
-      {
-        token: fakeToken,
-        user: { id: "u1", role: "Staff" }
-      },
-      { status: 200 }
-    );
+    return new HttpResponse(null, { status: 200 });
+  }),
+  http.get("http://localhost/api/auth/me", () => {
+    meSpy();
+    return HttpResponse.json({ id: "u1", role: "Staff" }, { status: 200 });
   })
 );
 
@@ -69,7 +49,7 @@ const TestApp = ({ initialEntries = ["/login"] }: { initialEntries?: string[] })
       <AuthProbe />
       <Routes>
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/" element={<h2>Dashboard Overview</h2>} />
+        <Route path="/dashboard" element={<h2>Dashboard Overview</h2>} />
       </Routes>
     </MemoryRouter>
   </AuthProvider>
@@ -98,6 +78,7 @@ describe("OTP login flow end-to-end", () => {
     localStorage.clear();
     startOtpSpy.mockClear();
     verifyOtpSpy.mockClear();
+    meSpy.mockClear();
   });
 
   afterAll(() => {
@@ -143,7 +124,7 @@ describe("OTP login flow end-to-end", () => {
     });
 
     await waitFor(() => {
-      expect(localStorage.getItem(ACCESS_TOKEN_KEY)).toBe(fakeToken);
+      expect(meSpy).toHaveBeenCalledTimes(1);
     });
 
     await waitFor(() => {
@@ -163,11 +144,10 @@ describe("OTP login flow end-to-end", () => {
     await user.click(screen.getByRole("button", { name: /verify code/i }));
 
     await waitFor(() => {
-      expect(screen.getByTestId("location-path")).not.toHaveTextContent("/login");
+      expect(screen.getByTestId("location-path")).toHaveTextContent("/dashboard");
     });
 
     await waitFor(() => {
-      expect(screen.getByTestId("location-path")).toHaveTextContent("/");
       expect(screen.getByRole("heading", { name: /dashboard overview/i })).toBeVisible();
     });
   });
