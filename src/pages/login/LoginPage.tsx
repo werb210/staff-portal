@@ -12,8 +12,7 @@ type OtpErrorDetails = {
   endpoint: string;
 };
 
-const CORS_BLOCKED_MESSAGE =
-  "Request blocked by browser (CORS). Server must allow header x-request-id.";
+const CORS_BLOCKED_MESSAGE = "Network error. Please try again.";
 
 const buildOtpErrorDetails = (error: unknown, endpoint: string): OtpErrorDetails => {
   const fallbackRequestId = getRequestId();
