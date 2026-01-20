@@ -1,6 +1,7 @@
-import axios, { AxiosRequestConfig, AxiosResponse } from "axios";
+import axios, { type AxiosError, AxiosRequestConfig, AxiosResponse } from "axios";
 import { getStoredAccessToken, clearStoredAuth } from "@/services/token";
 import { redirectToLogin } from "@/services/api";
+import { attachRequestIdAndLog, logError, logResponse } from "@/utils/apiLogging";
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
@@ -14,12 +15,13 @@ api.interceptors.request.use((config: AxiosRequestConfig) => {
     config.headers = config.headers || {};
     (config.headers as Record<string, string>).Authorization = `Bearer ${token}`;
   }
-  return config;
+  return attachRequestIdAndLog(config);
 });
 
 api.interceptors.response.use(
-  (res: AxiosResponse) => res,
+  (res: AxiosResponse) => logResponse(res),
   (err) => {
+    logError(err as AxiosError);
     const status = err?.response?.status;
     if (status === 401 || status === 403) {
       clearStoredAuth();
