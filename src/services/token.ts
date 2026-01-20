@@ -18,9 +18,7 @@ export function clearStoredAuth() {
 
 export function getStoredUser<T = unknown>(): T | null {
   const stored = localStorage.getItem(USER_KEY);
-  if (!stored) {
-    return null;
-  }
+  if (!stored) return null;
   try {
     return JSON.parse(stored) as T;
   } catch {

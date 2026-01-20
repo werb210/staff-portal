@@ -1,18 +1,31 @@
 import api from "@/api/client";
 
-type VerifyOtpResponse = {
-  accessToken: string;
-};
+export type AuthenticatedUser = Record<string, any>;
 
-export async function startOtp(payload: { phone: string }) {
-  await api.post("/auth/otp/start", payload);
+export type OtpStartResponse =
+  | {
+      sessionId?: string;
+      requestId?: string;
+    }
+  | null;
+
+export async function startOtp(payload: { phone: string }): Promise<OtpStartResponse> {
+  const response = await api.post<OtpStartResponse>("/auth/otp/start", payload);
+  return response.data ?? null;
 }
 
-export async function verifyOtp(payload: { phone: string; code: string }) {
-  const { data } = await api.post<VerifyOtpResponse>("/auth/otp/verify", payload);
-  return data;
+export type OtpVerifyResponse =
+  | {
+      token: string;
+      user?: AuthenticatedUser | null;
+    }
+  | null;
+
+export async function verifyOtp(payload: { phone: string; code: string }): Promise<OtpVerifyResponse> {
+  const response = await api.post<OtpVerifyResponse>("/auth/otp/verify", payload);
+  return response.data ?? null;
 }
 
-export async function logout() {
+export async function logout(): Promise<void> {
   await api.post("/auth/logout");
 }
