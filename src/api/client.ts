@@ -23,8 +23,11 @@ api.interceptors.response.use(
     const status = err?.response?.status;
     if (status === 401 || status === 403) {
       clearStoredAuth();
-      if (typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
-        redirectToLogin();
+      if (typeof window !== "undefined") {
+        const isOnLogin = window.location.pathname.startsWith("/login");
+        if (!isOnLogin) {
+          redirectToLogin();
+        }
       }
     }
     return Promise.reject(err);
