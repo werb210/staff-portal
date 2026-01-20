@@ -1,5 +1,4 @@
 import axios, { AxiosError, type AxiosRequestConfig } from "axios";
-import { getStoredAccessToken } from "@/services/token";
 import { attachRequestIdAndLog, logError, logResponse } from "@/utils/apiLogging";
 
 export type ApiErrorOptions = {
@@ -32,24 +31,14 @@ if (!rawBaseURL) {
   throw new Error("VITE_API_BASE_URL is not defined");
 }
 
-const apiBaseURL = rawBaseURL.endsWith("/api")
-  ? rawBaseURL
-  : `${rawBaseURL}/api`;
+const apiBaseURL = rawBaseURL.endsWith("/api") ? rawBaseURL : `${rawBaseURL}/api`;
 
 export const api = axios.create({
   baseURL: apiBaseURL,
+  withCredentials: true
 });
 
-api.interceptors.request.use((config: AxiosRequestConfig) => {
-  const token = getStoredAccessToken();
-  if (token) {
-    config.headers = {
-      ...config.headers,
-      Authorization: `Bearer ${token}`,
-    };
-  }
-  return attachRequestIdAndLog(config);
-});
+api.interceptors.request.use((config: AxiosRequestConfig) => attachRequestIdAndLog(config));
 
 api.interceptors.response.use(
   (response) => logResponse(response),
@@ -59,9 +48,9 @@ api.interceptors.response.use(
     throw new ApiError({
       status,
       message: error.message,
-      code: (error.response?.data as any)?.code,
+      code: (error.response?.data as { code?: string })?.code,
       requestId: error.response?.headers?.["x-request-id"],
-      details: error.response?.data,
+      details: error.response?.data
     });
   }
 );

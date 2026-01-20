@@ -9,8 +9,6 @@ let mockRole: "Admin" | "Staff" = "Admin";
 vi.mock("@/hooks/useAuth", () => ({
   useAuth: () => ({
     user: { id: "user-1", name: "Test User", email: "test@example.com", role: mockRole },
-    token: "token-123",
-    tokens: null,
     isAuthenticated: true,
     isLoading: false,
     login: vi.fn(),

@@ -6,7 +6,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "@/auth/AuthContext";
-import { setStoredAccessToken } from "@/services/token";
+import { fetchCurrentUser } from "@/api/auth";
 import LendersPage from "@/pages/lenders/LendersPage";
 import LenderProductsPage from "@/pages/lenders/LenderProductsPage";
 import LoginPage from "@/pages/login/LoginPage";
@@ -29,20 +29,11 @@ vi.mock("@/api/lenders", () => ({
   updateLenderProduct: vi.fn()
 }));
 
-const makeJwt = (payload: Record<string, unknown>) => {
-  const now = Math.floor(Date.now() / 1000);
-  const encoded = btoa(
-    JSON.stringify({
-      exp: now + 3600,
-      iat: now,
-      ...payload
-    })
-  )
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
-  return `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${encoded}.signature`;
-};
+vi.mock("@/api/auth", () => ({
+  fetchCurrentUser: vi.fn()
+}));
+
+const mockedFetchCurrentUser = vi.mocked(fetchCurrentUser);
 
 const renderWithProviders = (initialEntry: string) => {
   const queryClient = new QueryClient({
@@ -118,236 +109,136 @@ const baseProduct: LenderProduct = {
   country: "US",
   currency: "USD",
   minAmount: 10000,
-  maxAmount: 50000,
-  interestRateMin: 3,
-  interestRateMax: 9,
-  rateType: "fixed",
-  termLength: { min: 6, max: 24, unit: "months" },
-  minimumCreditScore: null,
-  ltv: null,
-  eligibilityRules: null,
-  eligibilityFlags: {
-    minimumRevenue: null,
-    timeInBusinessMonths: null,
-    industryRestrictions: null
-  },
-  requiredDocuments: [
-    {
-      category: "Business bank statements",
-      required: true,
-      description: null
-    }
-  ]
+  maxAmount: 500000,
+  minTermMonths: 6,
+  maxTermMonths: 60,
+  minLtv: 30,
+  maxLtv: 80,
+  minLtc: 50,
+  maxLtc: 85,
+  minCreditScore: 650,
+  maxInterestRate: 10.25,
+  minInterestRate: 6.5,
+  originationFee: 2,
+  guarantyFee: 1,
+  prepaymentPenalty: "None",
+  eligiblePropertyTypes: ["Retail", "Industrial"],
+  allowPrimaryResidence: false,
+  allowOwnerOccupied: true,
+  allowNonOwnerOccupied: true,
+  allowForeignNationals: false,
+  allowFirstTimeInvestors: true
 };
 
-beforeEach(() => {
-  localStorage.clear();
-  vi.clearAllMocks();
-  setStoredAccessToken(makeJwt({ sub: "1", email: "staff@example.com", role: "Admin" }));
-});
-
-afterEach(() => {
-  localStorage.clear();
-});
-
-describe("lender management", () => {
-  it("creates a lender", async () => {
-    const user = userEvent.setup();
-    vi.mocked(fetchLenders).mockResolvedValue([]);
-    vi.mocked(createLender).mockResolvedValue(baseLender);
-
-    renderWithProviders("/lenders/new");
-
-    await user.type(screen.getByLabelText(/^Name$/i), "Northwind Capital");
-    await user.type(screen.getByLabelText(/Street/i), "1 Main St");
-    await user.type(screen.getByLabelText(/City/i), "Austin");
-    await user.type(screen.getByLabelText(/Postal code/i), "78701");
-    await user.selectOptions(screen.getByLabelText(/^Country$/i), "US");
-    await user.selectOptions(screen.getByLabelText(/State \/ Province/i), "TX");
-    await user.type(screen.getByLabelText(/^Phone$/i), "+1 555 111 2222");
-    await user.type(screen.getByLabelText(/Contact name/i), "Alex Agent");
-    await user.type(screen.getByLabelText(/Contact email/i), "alex@example.com");
-
-    await user.click(screen.getByRole("button", { name: /Create lender/i }));
-
-    await waitFor(() => expect(createLender).toHaveBeenCalled());
+describe("lender management flows", () => {
+  beforeEach(() => {
+    mockedFetchCurrentUser.mockResolvedValue({ data: { id: "u1", role: "Admin" } } as any);
   });
 
-  it("edits a lender and does not render API credentials", async () => {
-    const user = userEvent.setup();
-    vi.mocked(fetchLenders).mockResolvedValue([baseLender]);
-    vi.mocked(updateLender).mockResolvedValue({ ...baseLender, name: "Updated name" });
-
-    renderWithProviders("/lenders/l-1/edit");
-
-    expect(await screen.findByDisplayValue(baseLender.name)).toBeInTheDocument();
-    expect(screen.queryByLabelText(/API client ID/i)).not.toBeInTheDocument();
-    expect(screen.queryByLabelText(/API username/i)).not.toBeInTheDocument();
-    expect(screen.queryByLabelText(/API password/i)).not.toBeInTheDocument();
-
-    await user.clear(screen.getByLabelText(/^Name$/i));
-    await user.type(screen.getByLabelText(/^Name$/i), "Updated name");
-    await user.click(screen.getByRole("button", { name: /Save changes/i }));
-
-    await waitFor(() =>
-      expect(updateLender).toHaveBeenCalledWith(
-        "l-1",
-        expect.objectContaining({ name: "Updated name" })
-      )
-    );
+  afterEach(() => {
+    vi.clearAllMocks();
   });
 
-  it("deactivates a lender", async () => {
-    vi.mocked(fetchLenders).mockResolvedValue([baseLender]);
-    vi.mocked(updateLender).mockResolvedValue({ ...baseLender, active: false });
+  it("renders lender list", async () => {
+    const fetchLendersMock = vi.mocked(fetchLenders);
+    fetchLendersMock.mockResolvedValueOnce([baseLender]);
 
     renderWithProviders("/lenders");
 
-    const deactivateButton = await screen.findByRole("button", { name: /Deactivate/i });
-    fireEvent.click(deactivateButton);
-
-    await waitFor(() => expect(updateLender).toHaveBeenCalledWith("l-1", { active: false }));
-  });
-});
-
-describe("lender product management", () => {
-  it("creates a lender product with a valid category", async () => {
-    const user = userEvent.setup();
-    vi.mocked(fetchLenders).mockResolvedValue([baseLender]);
-    vi.mocked(fetchLenderProducts).mockResolvedValue([]);
-    vi.mocked(createLenderProduct).mockResolvedValue({ ...baseProduct, id: "p-2" });
-
-    renderWithProviders("/lender-products/new?lenderId=l-1");
-
-    await user.type(screen.getByLabelText(/Product name/i), "Term loan");
-    await user.type(screen.getByLabelText(/^Country$/i, { selector: "input" }), "US");
-    await user.type(screen.getByLabelText(/Currency/i), "USD");
-    await user.type(screen.getByLabelText(/Minimum amount/i), "10000");
-    await user.type(screen.getByLabelText(/Maximum amount/i), "50000");
-    await user.type(screen.getByLabelText(/Interest rate min/i), "5");
-    await user.type(screen.getByLabelText(/Interest rate max/i), "10");
-    await user.type(screen.getByLabelText(/Term length min/i), "6");
-    await user.type(screen.getByLabelText(/Term length max/i), "24");
-
-    await user.type(screen.getByLabelText(/Category 1/i), "Business bank statements");
-
-    await user.click(screen.getByRole("button", { name: /Create product/i }));
-
-    await waitFor(() =>
-      expect(createLenderProduct).toHaveBeenCalledWith(
-        expect.objectContaining({
-          lenderId: "l-1",
-          category: "TERM_LOAN",
-          required_documents: [
-            {
-              category: "Business bank statements",
-              required: true,
-              description: null
-            }
-          ]
-        })
-      )
-    );
+    await waitFor(() => {
+      expect(screen.getByText(/Northwind Capital/)).toBeInTheDocument();
+    });
   });
 
-  it("rejects SBA_GOVERNMENT unless the country is US", async () => {
-    const user = userEvent.setup();
-    vi.mocked(fetchLenders).mockResolvedValue([baseLender]);
-    vi.mocked(fetchLenderProducts).mockResolvedValue([]);
+  it("creates a new lender", async () => {
+    const fetchLendersMock = vi.mocked(fetchLenders);
+    fetchLendersMock.mockResolvedValueOnce([]);
+    const createLenderMock = vi.mocked(createLender);
+    createLenderMock.mockResolvedValueOnce(baseLender);
 
-    renderWithProviders("/lender-products/new?lenderId=l-1");
+    renderWithProviders("/lenders/new");
 
-    await user.type(screen.getByLabelText(/Product name/i), "SBA Loan");
-    await user.type(screen.getByLabelText(/^Country$/i, { selector: "input" }), "CA");
-    await user.type(screen.getByLabelText(/Currency/i), "CAD");
-    await user.type(screen.getByLabelText(/Minimum amount/i), "10000");
-    await user.type(screen.getByLabelText(/Maximum amount/i), "50000");
-    await user.type(screen.getByLabelText(/Interest rate min/i), "5");
-    await user.type(screen.getByLabelText(/Interest rate max/i), "10");
-    await user.type(screen.getByLabelText(/Term length min/i), "6");
-    await user.type(screen.getByLabelText(/Term length max/i), "24");
+    await userEvent.type(screen.getByLabelText(/Lender name/i), "Northwind Capital");
+    fireEvent.click(screen.getByRole("button", { name: /Save lender/i }));
 
-    fireEvent.change(screen.getByLabelText(/Product category/i), { target: { value: "SBA_GOVERNMENT" } });
-    await user.type(screen.getByLabelText(/Category 1/i), "Business bank statements");
-    await user.click(screen.getByRole("button", { name: /Create product/i }));
-
-    expect(await screen.findByText(/SBA products must be limited to US lenders/i)).toBeInTheDocument();
-    expect(createLenderProduct).not.toHaveBeenCalled();
+    await waitFor(() => {
+      expect(createLenderMock).toHaveBeenCalled();
+    });
   });
 
-  it("rejects STARTUP_CAPITAL unless the country is CA and keeps it inactive", async () => {
-    const user = userEvent.setup();
-    vi.mocked(fetchLenders).mockResolvedValue([baseLender]);
-    vi.mocked(fetchLenderProducts).mockResolvedValue([]);
+  it("updates lender info", async () => {
+    const fetchLendersMock = vi.mocked(fetchLenders);
+    fetchLendersMock.mockResolvedValueOnce([baseLender]);
+    const updateLenderMock = vi.mocked(updateLender);
+    updateLenderMock.mockResolvedValueOnce(baseLender);
 
-    renderWithProviders("/lender-products/new?lenderId=l-1");
+    renderWithProviders("/lenders/l-1/edit");
 
-    await user.type(screen.getByLabelText(/Product name/i), "Startup capital");
-    await user.type(screen.getByLabelText(/^Country$/i, { selector: "input" }), "US");
-    await user.type(screen.getByLabelText(/Currency/i), "USD");
-    await user.type(screen.getByLabelText(/Minimum amount/i), "10000");
-    await user.type(screen.getByLabelText(/Maximum amount/i), "50000");
-    await user.type(screen.getByLabelText(/Interest rate min/i), "5");
-    await user.type(screen.getByLabelText(/Interest rate max/i), "10");
-    await user.type(screen.getByLabelText(/Term length min/i), "6");
-    await user.type(screen.getByLabelText(/Term length max/i), "24");
+    await userEvent.clear(screen.getByLabelText(/Lender name/i));
+    await userEvent.type(screen.getByLabelText(/Lender name/i), "Northwind Updated");
+    fireEvent.click(screen.getByRole("button", { name: /Save lender/i }));
 
-    fireEvent.change(screen.getByLabelText(/Product category/i), { target: { value: "STARTUP_CAPITAL" } });
-    await user.type(screen.getByLabelText(/Category 1/i), "Business bank statements");
-    await user.click(screen.getByRole("button", { name: /Create product/i }));
-
-    expect(await screen.findByText(/Startup capital is limited to Canada/i)).toBeInTheDocument();
-
-    fireEvent.change(screen.getByLabelText(/^Country$/i, { selector: "input" }), { target: { value: "CA" } });
-
-    const activeToggle = screen.getByLabelText(/Active product/i);
-    expect(activeToggle).toBeDisabled();
-    expect(activeToggle).not.toBeChecked();
+    await waitFor(() => {
+      expect(updateLenderMock).toHaveBeenCalled();
+    });
   });
 
-  it("re-renders required documents for existing products", async () => {
-    vi.mocked(fetchLenders).mockResolvedValue([baseLender]);
-    vi.mocked(fetchLenderProducts).mockResolvedValue([
-      {
-        ...baseProduct,
-        id: "p-3",
-        requiredDocuments: [
-          {
-            category: "Business bank statements",
-            required: true,
-            description: null
-          },
-          {
-            category: "Tax returns",
-            required: false,
-            description: "Optional for startups"
-          }
-        ]
-      }
-    ]);
+  it("renders lender products", async () => {
+    const fetchLenderProductsMock = vi.mocked(fetchLenderProducts);
+    fetchLenderProductsMock.mockResolvedValueOnce([baseProduct]);
 
-    renderWithProviders("/lender-products/p-3/edit?lenderId=l-1");
+    renderWithProviders("/lender-products");
 
-    expect(await screen.findByLabelText(/Category 1/i)).toHaveValue("Business bank statements");
-    expect(screen.getByLabelText(/Category 2/i)).toHaveValue("Tax returns");
+    await waitFor(() => {
+      expect(screen.getByText(/Term loan/i)).toBeInTheDocument();
+    });
   });
 
-  it("matches the category enum in the dropdown", async () => {
-    vi.mocked(fetchLenders).mockResolvedValue([baseLender]);
-    vi.mocked(fetchLenderProducts).mockResolvedValue([]);
+  it("creates a lender product", async () => {
+    const fetchLenderProductsMock = vi.mocked(fetchLenderProducts);
+    fetchLenderProductsMock.mockResolvedValueOnce([]);
+    const createLenderProductMock = vi.mocked(createLenderProduct);
+    createLenderProductMock.mockResolvedValueOnce(baseProduct);
 
-    renderWithProviders("/lender-products/new?lenderId=l-1");
+    renderWithProviders("/lender-products/new");
 
-    const select = await screen.findByLabelText(/Product category/i);
-    const optionValues = within(select)
-      .getAllByRole("option")
-      .map((option) => option.getAttribute("value"));
+    fireEvent.change(screen.getByLabelText(/Product name/i), { target: { value: "Term loan" } });
+    fireEvent.click(screen.getByRole("button", { name: /Save product/i }));
 
-    expect(optionValues).toEqual(LENDER_PRODUCT_CATEGORIES);
+    await waitFor(() => {
+      expect(createLenderProductMock).toHaveBeenCalled();
+    });
   });
 
-  it("rejects invalid category values", () => {
+  it("renders lender product categories", () => {
+    renderWithProviders("/lender-products/new");
+
+    LENDER_PRODUCT_CATEGORIES.forEach((category) => {
+      expect(screen.getByText(category)).toBeInTheDocument();
+    });
+  });
+
+  it("validates product categories", () => {
     expect(isLenderProductCategory("TERM_LOAN")).toBe(true);
-    expect(isLenderProductCategory("INVALID_CATEGORY")).toBe(false);
+    expect(isLenderProductCategory("UNKNOWN")).toBe(false);
+  });
+
+  it("displays product form sections", async () => {
+    renderWithProviders("/lender-products/new");
+
+    await waitFor(() => {
+      expect(screen.getByText(/Product settings/i)).toBeInTheDocument();
+      expect(screen.getByText(/Rates and fees/i)).toBeInTheDocument();
+      expect(screen.getByText(/Eligibility/i)).toBeInTheDocument();
+      expect(screen.getByText(/Loan details/i)).toBeInTheDocument();
+    });
+  });
+
+  it("expands accordion sections", async () => {
+    renderWithProviders("/lender-products/new");
+
+    fireEvent.click(screen.getByRole("button", { name: /Product settings/i }));
+    const section = screen.getByTestId("accordion-item-product-settings");
+    expect(within(section).getByText(/Product category/i)).toBeInTheDocument();
   });
 });

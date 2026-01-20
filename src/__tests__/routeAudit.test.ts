@@ -1,10 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@/services/token", () => ({
-  getStoredAccessToken: vi.fn(() => null)
-}));
-
 import { clearUiFailure, getUiFailure } from "@/utils/uiFailureStore";
 import { runRouteAudit } from "@/utils/routeAudit";
 
@@ -22,7 +18,12 @@ describe("route audit", () => {
   });
 
   it("does not throw or set ui failure when audit fetch fails", async () => {
-    fetchMock.mockRejectedValue(new Error("network down"));
+    fetchMock.mockImplementation((input: RequestInfo | URL) => {
+      if (String(input).includes("/api/auth/me")) {
+        return Promise.resolve(new Response(null, { status: 401 }));
+      }
+      return Promise.reject(new Error("network down"));
+    });
 
     await expect(runRouteAudit()).resolves.toBeUndefined();
 

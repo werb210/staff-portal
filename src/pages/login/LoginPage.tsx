@@ -68,7 +68,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (status === "authenticated") {
-      navigate("/");
+      navigate("/dashboard");
     }
   }, [navigate, status]);
 
@@ -99,10 +99,10 @@ export default function LoginPage() {
     setLocalError(null);
     const trimmed = code.trim();
     const phone = submittedPhoneNumber || normalizedPhone || rawPhone;
-    console.log("VERIFY SUBMIT", { phone, code: trimmed });
     setIsVerifying(true);
     try {
       await verifyOtp({ phone, code: trimmed });
+      navigate("/dashboard");
     } catch (err) {
       const details = buildOtpErrorDetails(err, "/auth/otp/verify");
       console.error("OTP verify failed.", { ...details, error: err });

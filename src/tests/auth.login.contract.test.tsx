@@ -6,7 +6,6 @@ import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
 import { AuthProvider, useAuth } from "@/auth/AuthContext";
 import LoginPage from "@/pages/login/LoginPage";
-import { ACCESS_TOKEN_KEY } from "@/services/token";
 
 const navigateSpy = vi.fn();
 
@@ -20,24 +19,7 @@ vi.mock("react-router-dom", async () => {
 
 const startOtpSpy = vi.fn();
 const verifyOtpSpy = vi.fn();
-
-const createValidToken = (overrides?: Record<string, unknown>) => {
-  const now = Math.floor(Date.now() / 1000);
-  const payload = {
-    sub: "u1",
-    role: "Staff",
-    exp: now + 3600,
-    iat: now,
-    ...overrides
-  };
-  const payloadEncoded = btoa(JSON.stringify(payload))
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
-  return `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${payloadEncoded}.signature`;
-};
-
-const fakeToken = createValidToken();
+const meSpy = vi.fn();
 
 const server = setupServer(
   http.post("http://localhost/api/auth/otp/start", async ({ request }) => {
@@ -51,23 +33,21 @@ const server = setupServer(
   }),
   http.post("http://localhost/api/auth/otp/verify", async ({ request }) => {
     verifyOtpSpy(await request.json());
-    return HttpResponse.json(
-      {
-        token: fakeToken,
-        user: { id: "u1", role: "Staff" }
-      },
-      { status: 200 }
-    );
+    return new HttpResponse(null, { status: 200 });
+  }),
+  http.get("http://localhost/api/auth/me", () => {
+    meSpy();
+    return HttpResponse.json({ id: "u1", role: "Staff" }, { status: 200 });
   })
 );
 
 const AuthProbe = () => {
-  const { authenticated, status, token } = useAuth();
+  const { authenticated, status, user } = useAuth();
   return (
     <div>
       <span data-testid="auth-status">{String(authenticated)}</span>
       <span data-testid="auth-state">{status}</span>
-      <span data-testid="auth-token">{token ?? ""}</span>
+      <span data-testid="auth-user">{user ? JSON.stringify(user) : ""}</span>
     </div>
   );
 };
@@ -83,6 +63,7 @@ describe("login contract flow", () => {
     navigateSpy.mockClear();
     startOtpSpy.mockClear();
     verifyOtpSpy.mockClear();
+    meSpy.mockClear();
   });
 
   afterAll(() => {
@@ -118,16 +99,17 @@ describe("login contract flow", () => {
     });
 
     await waitFor(() => {
+      expect(meSpy).toHaveBeenCalledTimes(1);
+    });
+
+    await waitFor(() => {
       expect(screen.getByTestId("auth-status")).toHaveTextContent("true");
       expect(screen.getByTestId("auth-state")).toHaveTextContent("authenticated");
+      expect(screen.getByTestId("auth-user")).toHaveTextContent("\"role\":\"Staff\"");
     });
 
     await waitFor(() => {
-      expect(localStorage.getItem(ACCESS_TOKEN_KEY)).toBe(fakeToken);
-    });
-
-    await waitFor(() => {
-      expect(navigateSpy).toHaveBeenCalledWith("/");
+      expect(navigateSpy).toHaveBeenCalledWith("/dashboard");
     });
   });
 });

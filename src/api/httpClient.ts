@@ -2,7 +2,6 @@ import axios, { AxiosError, type AxiosRequestConfig } from "axios";
 import { ApiError, api } from "@/api/http";
 import { reportAuthFailure } from "@/auth/authEvents";
 import { redirectToLogin } from "@/services/api";
-import { getStoredAccessToken } from "@/services/token";
 import { attachRequestIdAndLog, logError, logResponse } from "@/utils/apiLogging";
 
 export type RequestOptions = AxiosRequestConfig & {
@@ -26,32 +25,17 @@ const generateIdempotencyKey = () => {
   return `idempotency_${Math.random().toString(36).slice(2, 10)}`;
 };
 
-const requireAccessToken = (options?: RequestOptions) => {
-  if (options?.skipAuth) return null;
-  const token = getStoredAccessToken();
-  if (!token) {
-    reportAuthFailure("missing-token");
-    redirectToLogin();
-    throw new Error("Missing access token");
-  }
-  return token;
-};
-
-const buildAuthConfig = (
+const buildConfig = (
   options?: RequestOptions,
   { idempotent = false }: { idempotent?: boolean } = {}
 ): AxiosRequestConfig | undefined => {
-  const token = requireAccessToken(options);
   const config = stripAuthOptions(options) ?? {};
-  if (!token) return config;
+  if (options?.skipAuth || !idempotent) return config;
   const headers = {
     ...(config.headers ?? {}),
-    Authorization: `Bearer ${token}`
+    "Idempotency-Key": generateIdempotencyKey(),
+    "Content-Type": "application/json"
   } as Record<string, string>;
-  if (idempotent) {
-    headers["Idempotency-Key"] = generateIdempotencyKey();
-    headers["Content-Type"] = "application/json";
-  }
   return {
     ...config,
     headers
@@ -62,8 +46,10 @@ const handleApiError = (error: unknown) => {
   if (error instanceof ApiError) {
     if (error.status === 401) {
       reportAuthFailure("unauthorized");
+      redirectToLogin();
     } else if (error.status === 403) {
       reportAuthFailure("forbidden");
+      redirectToLogin();
     }
   }
   throw error;
@@ -72,7 +58,7 @@ const handleApiError = (error: unknown) => {
 export const apiClient = {
   get: async <T>(path: string, options?: RequestOptions) => {
     try {
-      const response = await api.get<T>(path, buildAuthConfig(options));
+      const response = await api.get<T>(path, buildConfig(options));
       return response.data;
     } catch (error) {
       handleApiError(error);
@@ -80,7 +66,7 @@ export const apiClient = {
   },
   post: async <T>(path: string, data?: unknown, options?: RequestOptions) => {
     try {
-      const response = await api.post<T>(path, data, buildAuthConfig(options, { idempotent: true }));
+      const response = await api.post<T>(path, data, buildConfig(options, { idempotent: true }));
       return response.data;
     } catch (error) {
       handleApiError(error);
@@ -88,7 +74,7 @@ export const apiClient = {
   },
   put: async <T>(path: string, data?: unknown, options?: RequestOptions) => {
     try {
-      const response = await api.put<T>(path, data, buildAuthConfig(options, { idempotent: true }));
+      const response = await api.put<T>(path, data, buildConfig(options, { idempotent: true }));
       return response.data;
     } catch (error) {
       handleApiError(error);
@@ -96,11 +82,7 @@ export const apiClient = {
   },
   patch: async <T>(path: string, data?: unknown, options?: RequestOptions) => {
     try {
-      const response = await api.patch<T>(
-        path,
-        data,
-        buildAuthConfig(options, { idempotent: true })
-      );
+      const response = await api.patch<T>(path, data, buildConfig(options, { idempotent: true }));
       return response.data;
     } catch (error) {
       handleApiError(error);
@@ -108,7 +90,7 @@ export const apiClient = {
   },
   delete: async <T>(path: string, options?: RequestOptions) => {
     try {
-      const response = await api.delete<T>(path, buildAuthConfig(options, { idempotent: true }));
+      const response = await api.delete<T>(path, buildConfig(options, { idempotent: true }));
       return response.data;
     } catch (error) {
       handleApiError(error);
@@ -116,7 +98,7 @@ export const apiClient = {
   },
   getList: async <T>(path: string, options?: RequestOptions): Promise<ListResponse<T>> => {
     try {
-      const response = await api.get<ListResponse<T>>(path, buildAuthConfig(options));
+      const response = await api.get<ListResponse<T>>(path, buildConfig(options));
       return response.data;
     } catch (error) {
       handleApiError(error);
@@ -245,17 +227,6 @@ export const lenderApiClient = {
   delete: async <T>(path: string, options?: RequestOptions) => {
     try {
       const response = await lenderApi.delete<T>(path, buildLenderConfig(options));
-      return response.data;
-    } catch (error) {
-      if (error instanceof AxiosError) {
-        handleLenderError(error);
-      }
-      throw error;
-    }
-  },
-  getList: async <T>(path: string, options?: RequestOptions): Promise<ListResponse<T>> => {
-    try {
-      const response = await lenderApi.get<ListResponse<T>>(path, buildLenderConfig(options));
       return response.data;
     } catch (error) {
       if (error instanceof AxiosError) {

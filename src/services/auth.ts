@@ -27,21 +27,8 @@ export async function startOtp(payload: { phone: string }): Promise<OtpStartResu
   };
 }
 
-export type OtpVerifyResponse =
-  | {
-      token: string;
-      user?: AuthenticatedUser | null;
-      refreshToken?: string;
-      refresh_token?: string;
-    }
-  | null;
-
-export async function verifyOtp(payload: { phone: string; code: string }): Promise<OtpVerifyResponse> {
-  const response = await api.post<OtpVerifyResponse>("/auth/otp/verify", payload);
-  if (response.status === 204) {
-    return null;
-  }
-  return response.data ?? null;
+export async function verifyOtp(payload: { phone: string; code: string }): Promise<void> {
+  await api.post<void>("/auth/otp/verify", payload);
 }
 
 export async function logout(): Promise<void> {

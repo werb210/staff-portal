@@ -3,19 +3,22 @@ import "@testing-library/jest-dom/vitest";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { createElement } from "react";
-import { MemoryRouter } from "react-router-dom";
-import axios from "axios";
-import apiClient from "@/api/httpClient";
-import { ApiError } from "@/api/http";
+import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/auth/AuthContext";
+import RequireAuth from "@/routes/RequireAuth";
 import { startOtp as startOtpService, verifyOtp as verifyOtpService, logout as logoutService } from "@/services/auth";
 import LoginPage from "@/pages/login/LoginPage";
-import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from "@/services/token";
+import { fetchCurrentUser } from "@/api/auth";
+import { ApiError } from "@/api/http";
 
 vi.mock("@/services/auth", () => ({
   startOtp: vi.fn(),
   verifyOtp: vi.fn(),
   logout: vi.fn()
+}));
+
+vi.mock("@/api/auth", () => ({
+  fetchCurrentUser: vi.fn()
 }));
 
 vi.mock("@/services/api", async () => {
@@ -29,22 +32,8 @@ vi.mock("@/services/api", async () => {
 const mockedStartOtp = vi.mocked(startOtpService);
 const mockedVerifyOtp = vi.mocked(verifyOtpService);
 const mockedLogout = vi.mocked(logoutService);
+const mockedFetchCurrentUser = vi.mocked(fetchCurrentUser);
 
-const createValidToken = (overrides?: Record<string, unknown>) => {
-  const now = Math.floor(Date.now() / 1000);
-  const payload = {
-    sub: "1",
-    role: "Admin",
-    exp: now + 3600,
-    iat: now,
-    ...overrides
-  };
-  const payloadEncoded = btoa(JSON.stringify(payload))
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
-  return `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${payloadEncoded}.signature`;
-};
 const TestAuthState = () => {
   const { status } = useAuth();
   return createElement("span", { "data-testid": "status" }, status);
@@ -56,13 +45,12 @@ const TestAuthRole = () => {
 };
 
 const TestVerifyAction = () => {
-  const { verifyOtp, setAuthenticated } = useAuth();
+  const { verifyOtp } = useAuth();
   return createElement(
     "button",
     {
       type: "button",
-      onClick: () =>
-        void verifyOtp({ code: "123456", phone: "+15555550100" }).then(() => setAuthenticated())
+      onClick: () => void verifyOtp({ code: "123456", phone: "+15555550100" })
     },
     "Verify"
   );
@@ -70,17 +58,17 @@ const TestVerifyAction = () => {
 
 const TestLogoutAction = () => {
   const { logout } = useAuth();
-  return createElement(
-    "button",
-    { type: "button", onClick: () => logout() },
-    "Logout"
-  );
+  return createElement("button", { type: "button", onClick: () => logout() }, "Logout");
+};
+
+const LocationProbe = () => {
+  const location = useLocation();
+  return <span data-testid="location">{location.pathname}</span>;
 };
 
 describe("auth flow", () => {
   afterEach(() => {
     cleanup();
-    axios.defaults.adapter = undefined;
   });
 
   beforeEach(() => {
@@ -90,11 +78,8 @@ describe("auth flow", () => {
   });
 
   it("verifies OTP successfully", async () => {
-    const token = createValidToken({ email: "demo@example.com" });
-    mockedVerifyOtp.mockResolvedValue({
-      token,
-      user: { id: "1", email: "demo@example.com", role: "Admin" }
-    });
+    mockedVerifyOtp.mockResolvedValue(undefined);
+    mockedFetchCurrentUser.mockResolvedValue({ data: { id: "1", role: "Admin" } } as any);
 
     render(
       <AuthProvider>
@@ -108,28 +93,23 @@ describe("auth flow", () => {
 
     await waitFor(() => expect(screen.getByTestId("status")).toHaveTextContent("authenticated"));
     expect(screen.getByTestId("role")).toHaveTextContent("Admin");
-    expect(localStorage.getItem(ACCESS_TOKEN_KEY)).toBe(token);
+    expect(mockedFetchCurrentUser).toHaveBeenCalled();
   });
 
-  it("does not call session endpoint during OTP verification", async () => {
-    const token = createValidToken({ email: "demo@example.com" });
-    mockedVerifyOtp.mockResolvedValue({
-      token,
-      user: { id: "1", email: "demo@example.com", role: "Admin" }
-    });
-    const apiGetSpy = vi.spyOn(apiClient, "get");
+  it("hydrates user on refresh", async () => {
+    mockedFetchCurrentUser.mockResolvedValue({
+      data: { id: "1", role: "Admin", email: "demo@example.com" }
+    } as any);
 
     render(
       <AuthProvider>
-        <TestVerifyAction />
         <TestAuthState />
+        <TestAuthRole />
       </AuthProvider>
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Verify" }));
-
     await waitFor(() => expect(screen.getByTestId("status")).toHaveTextContent("authenticated"));
-    expect(apiGetSpy).not.toHaveBeenCalledWith("/api/auth/session", expect.anything());
+    expect(screen.getByTestId("role")).toHaveTextContent("Admin");
   });
 
   it.each([
@@ -162,120 +142,39 @@ describe("auth flow", () => {
     await waitFor(() => expect(screen.getByText(/failed/i)).toBeInTheDocument());
   });
 
-  it.skip("refreshes tokens after mid-session expiry", async () => {
-    localStorage.setItem(ACCESS_TOKEN_KEY, "expired-token");
-    localStorage.setItem(REFRESH_TOKEN_KEY, "refresh-token");
-
-    let secureCalls = 0;
-    const adapter = vi.fn(async (config) => {
-      if (String(config.url).includes("/auth/refresh")) {
-        return {
-          data: { accessToken: "new-token", refreshToken: "refresh-token" },
-          status: 200,
-          statusText: "OK",
-          headers: {},
-          config
-        };
-      }
-
-      if (String(config.url).includes("/secure")) {
-        secureCalls += 1;
-        if (secureCalls === 1) {
-          return {
-            data: {},
-            status: 401,
-            statusText: "Unauthorized",
-            headers: {},
-            config
-          };
-        }
-        return {
-          data: { ok: true },
-          status: 200,
-          statusText: "OK",
-          headers: {},
-          config
-        };
-      }
-
-      return {
-        data: {},
-        status: 200,
-        statusText: "OK",
-        headers: {},
-        config
-      };
-    });
-
-    axios.defaults.adapter = adapter;
-    setAxiosAdapterForTests(adapter);
-    await apiClient.get("/secure", { adapter } as any);
-
-    expect(localStorage.getItem(ACCESS_TOKEN_KEY)).toBe("new-token");
-  });
-
-  it.skip("forces logout on refresh failure", async () => {
-    localStorage.setItem(ACCESS_TOKEN_KEY, "expired-token");
-    localStorage.setItem(REFRESH_TOKEN_KEY, "refresh-token");
-
-    const adapter = vi.fn(async (config) => {
-      if (String(config.url).includes("/auth/refresh")) {
-        return {
-          data: {},
-          status: 401,
-          statusText: "Unauthorized",
-          headers: {},
-          config
-        };
-      }
-
-      if (String(config.url).includes("/secure")) {
-        return {
-          data: {},
-          status: 401,
-          statusText: "Unauthorized",
-          headers: {},
-          config
-        };
-      }
-
-      return {
-        data: {},
-        status: 200,
-        statusText: "OK",
-        headers: {},
-        config
-      };
-    });
-
-    axios.defaults.adapter = adapter;
-    setAxiosAdapterForTests(adapter);
-    render(
-      <AuthProvider>
-        <TestAuthState />
-      </AuthProvider>
-    );
-
-    await expect(apiClient.get("/secure", { adapter } as any)).rejects.toBeInstanceOf(ApiError);
-
-    await waitFor(() => expect(screen.getByTestId("status")).toHaveTextContent("expired"));
-  });
-
   it("clears session on manual logout", async () => {
-    localStorage.setItem(ACCESS_TOKEN_KEY, createValidToken());
-    localStorage.setItem(REFRESH_TOKEN_KEY, "refresh-123");
+    mockedFetchCurrentUser.mockResolvedValue({
+      data: { id: "1", role: "Admin", email: "demo@example.com" }
+    } as any);
 
     render(
-      <AuthProvider>
-        <TestLogoutAction />
-        <TestAuthState />
-      </AuthProvider>
+      <MemoryRouter initialEntries={["/dashboard"]}>
+        <AuthProvider>
+          <Routes>
+            <Route
+              path="/dashboard"
+              element={
+                <RequireAuth>
+                  <div>
+                    <TestLogoutAction />
+                    <TestAuthState />
+                    <LocationProbe />
+                  </div>
+                </RequireAuth>
+              }
+            />
+            <Route path="/login" element={<div>Login</div>} />
+          </Routes>
+        </AuthProvider>
+      </MemoryRouter>
     );
+
+    await waitFor(() => expect(screen.getByTestId("status")).toHaveTextContent("authenticated"));
 
     fireEvent.click(screen.getByRole("button", { name: "Logout" }));
 
-    expect(mockedLogout).toHaveBeenCalled();
-    expect(localStorage.getItem(ACCESS_TOKEN_KEY)).toBeNull();
-    expect(screen.getByTestId("status")).toHaveTextContent("unauthenticated");
+    await waitFor(() => expect(mockedLogout).toHaveBeenCalled());
+    await waitFor(() => expect(screen.getByTestId("status")).toHaveTextContent("unauthenticated"));
+    await waitFor(() => expect(screen.getByTestId("location")).toHaveTextContent("/login"));
   });
 });

@@ -1,26 +1,17 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
 import { render, screen, waitFor } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import PrivateRoute from "@/router/PrivateRoute";
 import { AuthProvider } from "@/auth/AuthContext";
-import { setStoredAccessToken } from "@/services/token";
+import { fetchCurrentUser } from "@/api/auth";
 
-const makeJwt = (payload: Record<string, unknown>) => {
-  const now = Math.floor(Date.now() / 1000);
-  const encoded = btoa(
-    JSON.stringify({
-      exp: now + 3600,
-      iat: now,
-      ...payload
-    })
-  )
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
-  return `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${encoded}.signature`;
-};
+vi.mock("@/api/auth", () => ({
+  fetchCurrentUser: vi.fn()
+}));
+
+const mockedFetchCurrentUser = vi.mocked(fetchCurrentUser);
 
 const renderRoutes = (initialEntry: string) =>
   render(
@@ -51,13 +42,15 @@ afterEach(() => {
 
 describe("lender route access", () => {
   it("redirects unauthenticated users to login", async () => {
+    mockedFetchCurrentUser.mockRejectedValueOnce(new Error("Unauthorized"));
+
     renderRoutes("/lenders");
 
     await waitFor(() => expect(screen.getByText("Login")).toBeInTheDocument());
   });
 
   it("allows authenticated users onto lender routes", async () => {
-    setStoredAccessToken(makeJwt({ sub: "1", email: "staff@example.com", role: "Admin" }));
+    mockedFetchCurrentUser.mockResolvedValueOnce({ data: { id: "1", role: "Admin" } } as any);
 
     renderRoutes("/lenders");
 

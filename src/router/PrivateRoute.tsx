@@ -18,7 +18,7 @@ export default function PrivateRoute({ children }: { children: JSX.Element }) {
     return null;
   }
 
-  if (auth.status === "unauthenticated") {
+  if (!auth.user) {
     console.info("Route guard decision", {
       requestId,
       route: location.pathname,

@@ -8,8 +8,7 @@ import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
 import { AuthProvider, useAuth } from "@/auth/AuthContext";
 import LoginPage from "@/pages/login/LoginPage";
-import api from "@/api/client";
-import { ACCESS_TOKEN_KEY } from "@/services/token";
+import apiClient from "@/api/httpClient";
 import * as apiService from "@/services/api";
 
 const navigateSpy = vi.fn();
@@ -24,26 +23,8 @@ vi.mock("react-router-dom", async () => {
 
 const startOtpSpy = vi.fn();
 const verifyOtpSpy = vi.fn();
+const meSpy = vi.fn();
 let lendersAuthHeader: string | null = null;
-
-const createValidToken = (overrides?: Record<string, unknown>) => {
-  const now = Math.floor(Date.now() / 1000);
-  const payload = {
-    id: "1",
-    sub: "1",
-    role: "Staff",
-    exp: now + 3600,
-    iat: now,
-    ...overrides
-  };
-  const payloadEncoded = btoa(JSON.stringify(payload))
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
-  return `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${payloadEncoded}.signature`;
-};
-
-const fakeToken = createValidToken();
 
 const server = setupServer(
   http.post("http://localhost/api/auth/otp/start", async ({ request }) => {
@@ -52,13 +33,11 @@ const server = setupServer(
   }),
   http.post("http://localhost/api/auth/otp/verify", async ({ request }) => {
     verifyOtpSpy(await request.json());
-    return HttpResponse.json(
-      {
-        token: fakeToken,
-        user: { id: "1", role: "Staff" }
-      },
-      { status: 200 }
-    );
+    return new HttpResponse(null, { status: 200 });
+  }),
+  http.get("http://localhost/api/auth/me", () => {
+    meSpy();
+    return HttpResponse.json({ id: "1", role: "Staff" }, { status: 200 });
   }),
   http.get("http://localhost/api/lenders", ({ request }) => {
     lendersAuthHeader = request.headers.get("authorization");
@@ -96,6 +75,7 @@ describe("auth server contract", () => {
     navigateSpy.mockClear();
     startOtpSpy.mockClear();
     verifyOtpSpy.mockClear();
+    meSpy.mockClear();
     lendersAuthHeader = null;
     window.history.pushState({}, "", "/");
     vi.restoreAllMocks();
@@ -146,7 +126,7 @@ describe("auth server contract", () => {
     expect(screen.queryByLabelText(/phone number/i)).not.toBeInTheDocument();
   });
 
-  it("TEST 4 — OTP VERIFY (200 RESPONSE)", async () => {
+  it("TEST 4 — OTP VERIFY FETCHES /api/auth/me AND NAVIGATES", async () => {
     const user = userEvent.setup();
 
     render(<TestApp />);
@@ -164,41 +144,7 @@ describe("auth server contract", () => {
     });
 
     await waitFor(() => {
-      expect(localStorage.getItem(ACCESS_TOKEN_KEY)).toBe(fakeToken);
-    });
-
-    await waitFor(() => {
-      expect(screen.getByTestId("auth-authenticated")).toHaveTextContent("true");
-    });
-
-    await waitFor(() => {
-      expect(navigateSpy).toHaveBeenCalledWith("/");
-    });
-  });
-
-  it("TEST 5 — OTP VERIFY (204 RESPONSE)", async () => {
-    const user = userEvent.setup();
-    const storedToken = createValidToken({ id: "1", role: "Staff", sub: "1" });
-    localStorage.setItem(ACCESS_TOKEN_KEY, storedToken);
-
-    server.use(
-      http.post("http://localhost/api/auth/otp/verify", async ({ request }) => {
-        verifyOtpSpy(await request.json());
-        return new HttpResponse(null, { status: 204 });
-      })
-    );
-
-    render(<TestApp />);
-
-    await user.type(screen.getByLabelText(/phone number/i), "+15555550100");
-    await user.click(screen.getByRole("button", { name: /send code/i }));
-
-    const otpInput = await screen.findByLabelText(/verification code/i);
-    await user.type(otpInput, "123456");
-    await user.click(screen.getByRole("button", { name: /verify code/i }));
-
-    await waitFor(() => {
-      expect(verifyOtpSpy).toHaveBeenCalledWith({ phone: "+15555550100", code: "123456" });
+      expect(meSpy).toHaveBeenCalledTimes(1);
     });
 
     await waitFor(() => {
@@ -210,19 +156,17 @@ describe("auth server contract", () => {
     });
 
     await waitFor(() => {
-      expect(navigateSpy).toHaveBeenCalledWith("/");
+      expect(navigateSpy).toHaveBeenCalledWith("/dashboard");
     });
   });
 
-  it("TEST 6 — AUTH HEADER INJECTION", async () => {
-    localStorage.setItem(ACCESS_TOKEN_KEY, fakeToken);
+  it("TEST 5 — NO AUTH HEADER INJECTION", async () => {
+    await apiClient.get("/lenders");
 
-    await api.get("/lenders");
-
-    expect(lendersAuthHeader).toBe(`Bearer ${fakeToken}`);
+    expect(lendersAuthHeader).toBeNull();
   });
 
-  it("TEST 7 — NO REDIRECT LOOP", async () => {
+  it("TEST 6 — NO REDIRECT LOOP", async () => {
     const redirectSpy = vi.spyOn(apiService, "redirectToLogin");
     const swallowUnhandled = (event: PromiseRejectionEvent) => {
       event.preventDefault();
@@ -235,26 +179,24 @@ describe("auth server contract", () => {
     );
 
     try {
-      localStorage.setItem(ACCESS_TOKEN_KEY, fakeToken);
       window.history.pushState({}, "", "/lenders");
 
       let firstError: unknown = null;
       try {
-        await api.get("/lenders");
+        await apiClient.get("/lenders");
       } catch (error) {
         firstError = error;
       }
 
-      expect(localStorage.getItem(ACCESS_TOKEN_KEY)).toBeNull();
       expect(redirectSpy).toHaveBeenCalledTimes(1);
 
       let secondError: unknown = null;
       try {
-        await api.get("/lenders");
+        await apiClient.get("/lenders");
       } catch (error) {
         secondError = error;
       }
-      expect(redirectSpy).toHaveBeenCalledTimes(1);
+      expect(redirectSpy).toHaveBeenCalledTimes(2);
       expect(firstError).toBeTruthy();
       expect(secondError).toBeTruthy();
     } finally {

@@ -10,23 +10,21 @@ export type StaffUser = AuthenticatedUser & {
 
 export type AuthValue = {
   user: StaffUser | null;
-  tokens: { token: string } | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   status: string;
   error: string | null;
   startOtp: (payload: { phone: string }) => Promise<void>;
   verifyOtp: (payload: { code: string; phone?: string } | string, code?: string) => Promise<void>;
-  setAuth: (payload: { token: string; user: StaffUser | null }) => void;
+  setAuth: (payload: { user: StaffUser | null }) => void;
   setAuthenticated: () => void;
-  refreshUser: (accessToken?: string) => Promise<boolean>;
+  refreshUser: () => Promise<boolean>;
   logout: () => Promise<void>;
 };
 
 export const useAuth = (): AuthValue => {
   const {
     user,
-    token,
     status,
     error,
     startOtp,
@@ -43,7 +41,6 @@ export const useAuth = (): AuthValue => {
   return useMemo(
     () => ({
       user: user as StaffUser | null,
-      tokens: token ? { token } : null,
       isAuthenticated,
       isLoading,
       status,
@@ -57,7 +54,6 @@ export const useAuth = (): AuthValue => {
     }),
     [
       user,
-      token,
       isAuthenticated,
       isLoading,
       status,
