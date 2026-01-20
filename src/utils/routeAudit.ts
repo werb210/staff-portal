@@ -1,4 +1,5 @@
 import { getRequestId } from "@/utils/requestId";
+import { emitUiTelemetry } from "@/utils/uiTelemetry";
 import { setUiFailure } from "@/utils/uiFailureStore";
 
 type RouteDescriptor = {
@@ -13,6 +14,8 @@ export const portalApiRoutes: RouteDescriptor[] = [
   { method: "POST", path: "/auth/logout" },
   { method: "GET", path: "/api/_int/routes" }
 ];
+
+const AUTH_ROUTE_PREFIXES = ["/auth/otp", "/auth/me", "/auth/logout"];
 
 const normalizePath = (path: string) =>
   path
@@ -49,6 +52,9 @@ const extractServerRoutes = (payload: unknown): RouteDescriptor[] => {
 const routeLabel = (route: RouteDescriptor) =>
   `${route.method ? `${route.method} ` : ""}${route.path}`;
 
+const isAuthBootstrapRoute = (route: RouteDescriptor) =>
+  AUTH_ROUTE_PREFIXES.some((prefix) => normalizePath(route.path).startsWith(prefix));
+
 export const runRouteAudit = async (): Promise<void> => {
   if (typeof window === "undefined") return;
 
@@ -84,8 +90,24 @@ export const runRouteAudit = async (): Promise<void> => {
       (route) => !serverSet.has(normalizePath(route.path))
     );
 
-    if (missing.length > 0) {
-      const missingLabels = missing.map(routeLabel);
+    const missingAuthRoutes = missing.filter(isAuthBootstrapRoute);
+    const missingNonAuthRoutes = missing.filter((route) => !isAuthBootstrapRoute(route));
+
+    if (missingAuthRoutes.length > 0) {
+      const missingLabels = missingAuthRoutes.map(routeLabel);
+      console.warn("Route audit bypassed for auth bootstrap route", {
+        requestId,
+        missing: missingLabels
+      });
+      emitUiTelemetry("api_error", {
+        requestId,
+        missing: missingLabels,
+        reason: "route_audit_auth_bypass"
+      });
+    }
+
+    if (missingNonAuthRoutes.length > 0) {
+      const missingLabels = missingNonAuthRoutes.map(routeLabel);
       console.warn("Route audit mismatch", {
         requestId,
         missing: missingLabels,
