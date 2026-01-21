@@ -1,6 +1,6 @@
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
 import { isAxiosError, type AxiosError } from "axios";
-import { useNavigate } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import { ApiError } from "@/api/http";
 import { useAuth } from "@/hooks/useAuth";
 import { normalizeToE164 } from "@/utils/phone";
@@ -69,8 +69,7 @@ const buildOtpErrorDetails = (error: unknown, endpoint: string): OtpErrorDetails
 };
 
 export default function LoginPage() {
-  const { startOtp, verifyOtp, status, error: authError } = useAuth();
-  const navigate = useNavigate();
+  const { startOtp, verifyOtp, authStatus, error: authError } = useAuth();
 
   const [rawPhone, setRawPhone] = useState("");
   const [submittedPhoneNumber, setSubmittedPhoneNumber] = useState("");
@@ -89,14 +88,12 @@ export default function LoginPage() {
     }
   }, [rawPhone]);
 
-  useEffect(() => {
-    if (status === "authenticated") {
-      navigate("/dashboard");
-    }
-  }, [navigate, status]);
-
   const showCodeStep = hasRequestedCode;
   const errorMessage = localError?.message ?? authError;
+
+  if (authStatus === "authenticated") {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   const handleStart = async (e: FormEvent) => {
     e.preventDefault();

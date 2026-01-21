@@ -32,7 +32,7 @@ describe("Staff private route", () => {
         router={router}
         future={{ v7_startTransition: true }}
       />,
-      { auth: { status: "unauthenticated", authenticated: false } }
+      { auth: { authStatus: "unauthenticated", rolesStatus: "idle", authenticated: false } }
     );
 
     expect(screen.getByText("Login")).toBeInTheDocument();

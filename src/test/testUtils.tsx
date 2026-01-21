@@ -39,7 +39,8 @@ export const renderWithProviders = (ui: ReactElement, options?: StaffRenderOptio
   const authValue: AuthContextType = {
     user: { id: "1", email: "test@example.com", role: "Admin" },
     accessToken: "test-token",
-    status: "authenticated",
+    authStatus: "authenticated",
+    rolesStatus: "loaded",
     error: null,
     authenticated: true,
     isAuthenticated: true,

@@ -27,11 +27,11 @@ const adapter = vi.fn(async (config) => ({
 }));
 
 const TestAuthState = () => {
-  const { status, user } = useAuth();
+  const { authStatus, user, rolesStatus } = useAuth();
   return createElement(
     "div",
     null,
-    createElement("span", { "data-testid": "status" }, status),
+    createElement("span", { "data-testid": "status" }, `${authStatus}:${rolesStatus}`),
     createElement("span", { "data-testid": "user" }, user?.email ?? "")
   );
 };
@@ -115,7 +115,9 @@ describe("auth login", () => {
 
     render(createElement(AuthProvider, null, createElement(TestAuthState)));
 
-    await waitFor(() => expect(screen.getByTestId("status")).toHaveTextContent("authenticated"));
+    await waitFor(() =>
+      expect(screen.getByTestId("status")).toHaveTextContent("authenticated:loaded")
+    );
     expect(screen.getByTestId("user")).toHaveTextContent("restored@example.com");
   });
 
@@ -137,6 +139,8 @@ describe("auth login", () => {
 
     await waitFor(() => expect(postSpy).toHaveBeenCalled());
     await waitFor(() => expect(getSpy).toHaveBeenCalledWith("/auth/me"));
-    await waitFor(() => expect(screen.getByTestId("status")).toHaveTextContent("authenticated"));
+    await waitFor(() =>
+      expect(screen.getByTestId("status")).toHaveTextContent("authenticated:loaded")
+    );
   });
 });
