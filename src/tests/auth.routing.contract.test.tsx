@@ -105,15 +105,16 @@ describe("auth routing contract", () => {
     expect(lendersSpy).not.toHaveBeenCalled();
   });
 
-  it("shows a loader while auth is not ready and avoids redirects", () => {
+  it("renders protected routes while roles are loading and avoids redirects", () => {
     const authValue: AuthContextValue = {
-      status: "loading",
+      authStatus: "authenticated",
+      rolesStatus: "loading",
       user: null,
       accessToken: null,
       error: null,
-      authenticated: false,
-      isAuthenticated: false,
-      authReady: false,
+      authenticated: true,
+      isAuthenticated: true,
+      authReady: true,
       pendingPhoneNumber: null,
       startOtp: async () => undefined,
       verifyOtp: async () => undefined,
@@ -142,7 +143,7 @@ describe("auth routing contract", () => {
       </AuthContext.Provider>
     );
 
-    expect(screen.getByText("Loading experience...")).toBeInTheDocument();
+    expect(screen.getByText("Home")).toBeInTheDocument();
     expect(screen.getByTestId("location")).toHaveTextContent("/");
   });
 

@@ -12,7 +12,8 @@ const LocationProbe = () => {
 };
 
 const buildAuthValue = (overrides: Partial<AuthContextValue>): AuthContextValue => ({
-  status: "authenticated",
+  authStatus: "authenticated",
+  rolesStatus: "loaded",
   user: { id: "user-1" },
   accessToken: "token",
   error: null,
@@ -31,10 +32,11 @@ const buildAuthValue = (overrides: Partial<AuthContextValue>): AuthContextValue 
 });
 
 describe("route guard role handling", () => {
-  it("does not redirect when authenticated but roles are unresolved", () => {
+  it("renders the dashboard shell while roles are loading", () => {
     const authValue = buildAuthValue({
       user: { id: "user-1" },
-      status: "authenticated"
+      authStatus: "authenticated",
+      rolesStatus: "loading"
     });
 
     render(
@@ -56,13 +58,15 @@ describe("route guard role handling", () => {
       </AuthContext.Provider>
     );
 
+    expect(screen.getByText("Dashboard")).toBeInTheDocument();
     expect(screen.getByTestId("location")).toHaveTextContent("/dashboard");
     expect(screen.queryByText("Login")).not.toBeInTheDocument();
   });
 
   it("shows AccessRestricted for authenticated users missing roles without redirecting", () => {
     const authValue = buildAuthValue({
-      user: { id: "user-2", role: "Referrer" }
+      user: { id: "user-2", role: "Referrer" },
+      rolesStatus: "loaded"
     });
 
     render(
@@ -90,7 +94,8 @@ describe("route guard role handling", () => {
 
   it("redirects unauthenticated users to /login", async () => {
     const authValue = buildAuthValue({
-      status: "unauthenticated",
+      authStatus: "unauthenticated",
+      rolesStatus: "idle",
       authenticated: false,
       isAuthenticated: false,
       user: null,

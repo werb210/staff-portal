@@ -13,7 +13,7 @@ vi.mock("@/auth/AuthContext", () => ({
   useAuth: () => ({
     startOtp: (...args: Parameters<typeof startOtpMock>) => startOtpMock(...args),
     verifyOtp: (...args: Parameters<typeof verifyOtpMock>) => verifyOtpMock(...args),
-    status: "unauthenticated",
+    authStatus: "unauthenticated",
     error: null
   })
 }));

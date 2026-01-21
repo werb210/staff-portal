@@ -22,7 +22,8 @@ const renderAsAdmin = () =>
     {
       auth: {
         user: { id: "u-1", name: "Admin User", email: "admin@example.com", role: "Admin" },
-        status: "authenticated",
+        authStatus: "authenticated",
+        rolesStatus: "loaded",
         authenticated: true,
         authReady: true
       }
