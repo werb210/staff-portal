@@ -1,22 +1,34 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/auth/AuthContext";
 
 export default function LoginPage() {
   const auth = useAuth();
+  const navigate = useNavigate();
+
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
   const otpInputRef = useRef<HTMLInputElement | null>(null);
+
+  // 🚨 CRITICAL: redirect immediately once authenticated
+  useEffect(() => {
+    if (auth.authStatus === "authenticated") {
+      navigate("/", { replace: true });
+    }
+  }, [auth.authStatus, navigate]);
 
   const handleSendCode = async () => {
     setLoading(true);
     setError(null);
+
     try {
       const ok = await auth.startOtp(phone);
       if (!ok) {
         setError(auth.error ?? "Failed to send code");
       }
-    } catch (e) {
+    } catch {
       setError("Failed to send code");
     } finally {
       setLoading(false);
@@ -25,20 +37,24 @@ export default function LoginPage() {
 
   const handleVerifyCode = async () => {
     const code = otpInputRef.current?.value?.trim() ?? "";
+
     if (!code) {
       setError("Please enter the verification code.");
       return;
     }
+
     const targetPhone = auth.pendingPhoneNumber ?? phone;
+
     setLoading(true);
     setError(null);
+
     try {
       const ok = await auth.verifyOtp(targetPhone, code);
       if (!ok) {
-        setError(auth.error ?? "Invalid OTP");
+        setError(auth.error ?? "Invalid verification code");
       }
-    } catch (e) {
-      setError("Invalid OTP");
+    } catch {
+      setError("Invalid verification code");
     } finally {
       setLoading(false);
     }
@@ -76,11 +92,12 @@ export default function LoginPage() {
               Verification code
               <input
                 type="text"
-                placeholder="Enter OTP"
                 ref={otpInputRef}
+                placeholder="Enter OTP"
                 className="border rounded px-3 py-2 w-full"
               />
             </label>
+
             <button
               type="button"
               className="mt-3 w-full bg-blue-600 text-white rounded px-4 py-2"
