@@ -5,14 +5,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import PrivateRoute from "@/router/PrivateRoute";
 import { AuthProvider } from "@/auth/AuthContext";
-import { fetchCurrentUser } from "@/api/auth";
 import { clearStoredAuth, setStoredAccessToken } from "@/services/token";
 
-vi.mock("@/api/auth", () => ({
-  fetchCurrentUser: vi.fn()
-}));
-
-const mockedFetchCurrentUser = vi.mocked(fetchCurrentUser);
+const createJsonResponse = (data: unknown, status = 200) =>
+  new Response(JSON.stringify(data), {
+    status,
+    headers: { "content-type": "application/json" }
+  });
 
 const renderRoutes = (initialEntry: string) =>
   render(
@@ -39,11 +38,13 @@ beforeEach(() => {
 
 afterEach(() => {
   clearStoredAuth();
+  vi.unstubAllGlobals();
 });
 
 describe("lender route access", () => {
   it("redirects unauthenticated users to login", async () => {
-    mockedFetchCurrentUser.mockRejectedValueOnce(new Error("Unauthorized"));
+    const fetchSpy = vi.fn().mockResolvedValue(new Response(null, { status: 401 }));
+    vi.stubGlobal("fetch", fetchSpy);
 
     renderRoutes("/lenders");
 
@@ -52,7 +53,8 @@ describe("lender route access", () => {
 
   it("allows authenticated users onto lender routes", async () => {
     setStoredAccessToken("test-token");
-    mockedFetchCurrentUser.mockResolvedValueOnce({ data: { id: "1", role: "Admin" } } as any);
+    const fetchSpy = vi.fn().mockResolvedValue(createJsonResponse({ id: "1", role: "Admin" }));
+    vi.stubGlobal("fetch", fetchSpy);
 
     renderRoutes("/lenders");
 

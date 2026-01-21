@@ -7,6 +7,7 @@ import { AuthContext, type AuthContextValue } from "@/auth/AuthContext";
 import { ProtectedRoute } from "@/routes/ProtectedRoute";
 
 const buildAuthValue = (overrides: Partial<AuthContextValue>): AuthContextValue => ({
+  authState: "authenticated",
   authStatus: "authenticated",
   rolesStatus: "loading",
   user: { id: "user-1" },
@@ -16,11 +17,14 @@ const buildAuthValue = (overrides: Partial<AuthContextValue>): AuthContextValue 
   isAuthenticated: true,
   authReady: true,
   pendingPhoneNumber: null,
-  startOtp: async () => undefined,
-  verifyOtp: async () => undefined,
+  startOtp: async () => true,
+  verifyOtp: async () => true,
   login: async () => undefined,
   setAuth: () => undefined,
+  setUser: () => undefined,
   setAuthenticated: () => undefined,
+  setAuthState: () => undefined,
+  clearAuth: () => undefined,
   refreshUser: async () => false,
   logout: async () => undefined,
   ...overrides
@@ -29,6 +33,7 @@ const buildAuthValue = (overrides: Partial<AuthContextValue>): AuthContextValue 
 describe("auth guard", () => {
   it("allows rendering while roles are loading for authenticated users", () => {
     const authValue = buildAuthValue({
+      authState: "authenticated",
       authStatus: "authenticated",
       rolesStatus: "loading"
     });

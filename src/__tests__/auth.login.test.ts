@@ -26,6 +26,12 @@ const adapter = vi.fn(async (config) => ({
   config
 }));
 
+const createJsonResponse = (data: unknown) =>
+  new Response(JSON.stringify(data), {
+    status: 200,
+    headers: { "content-type": "application/json" }
+  });
+
 const TestAuthState = () => {
   const { authStatus, user, rolesStatus } = useAuth();
   return createElement(
@@ -54,6 +60,7 @@ describe("auth login", () => {
     adapter.mockClear();
     clearStoredAuth();
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
   });
 
   it("OTP start omits Idempotency-Key", async () => {
@@ -109,9 +116,12 @@ describe("auth login", () => {
 
   it("hydrates user from /api/auth/me on reload", async () => {
     setStoredAccessToken("test-token");
-    vi.spyOn(api, "get").mockResolvedValueOnce({
-      data: { id: "1", email: "restored@example.com", role: "Admin" }
-    } as any);
+    const fetchSpy = vi.fn().mockResolvedValue(createJsonResponse({
+      id: "1",
+      email: "restored@example.com",
+      role: "Admin"
+    }));
+    vi.stubGlobal("fetch", fetchSpy);
 
     render(createElement(AuthProvider, null, createElement(TestAuthState)));
 
@@ -129,16 +139,19 @@ describe("auth login", () => {
       headers: {},
       config: {}
     } as any);
-    const getSpy = vi.spyOn(api, "get").mockResolvedValueOnce({
-      data: { id: "1", email: "demo@example.com", role: "Admin" }
-    } as any);
+    const fetchSpy = vi.fn().mockResolvedValue(createJsonResponse({
+      id: "1",
+      email: "demo@example.com",
+      role: "Admin"
+    }));
+    vi.stubGlobal("fetch", fetchSpy);
 
     render(createElement(AuthProvider, null, createElement(TestVerifyAction), createElement(TestAuthState)));
 
     screen.getByRole("button", { name: "Verify" }).click();
 
     await waitFor(() => expect(postSpy).toHaveBeenCalled());
-    await waitFor(() => expect(getSpy).toHaveBeenCalledWith("/auth/me"));
+    await waitFor(() => expect(fetchSpy).toHaveBeenCalledWith("/api/auth/me", { credentials: "include" }));
     await waitFor(() =>
       expect(screen.getByTestId("status")).toHaveTextContent("authenticated:resolved")
     );

@@ -2,11 +2,10 @@
 import "@testing-library/jest-dom/vitest";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { AuthProvider } from "@/auth/AuthContext";
 import LoginPage from "@/pages/login/LoginPage";
 import { verifyOtp as verifyOtpService, startOtp as startOtpService } from "@/services/auth";
-import { fetchCurrentUser } from "@/api/auth";
 
 vi.mock("@/services/auth", () => ({
   startOtp: vi.fn(),
@@ -14,13 +13,8 @@ vi.mock("@/services/auth", () => ({
   logout: vi.fn()
 }));
 
-vi.mock("@/api/auth", () => ({
-  fetchCurrentUser: vi.fn()
-}));
-
 const mockedStartOtp = vi.mocked(startOtpService);
 const mockedVerifyOtp = vi.mocked(verifyOtpService);
-const mockedFetchCurrentUser = vi.mocked(fetchCurrentUser);
 
 const renderLoginFlow = () =>
   render(
@@ -35,10 +29,22 @@ const renderLoginFlow = () =>
   );
 
 describe("login flow", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   it("navigates to dashboard after OTP verification", async () => {
     mockedStartOtp.mockResolvedValue(null);
     mockedVerifyOtp.mockResolvedValue({ accessToken: "access", refreshToken: "refresh" });
-    mockedFetchCurrentUser.mockResolvedValue({ data: { id: "1", role: "Staff" } } as any);
+    const fetchSpy = vi
+      .fn()
+      .mockResolvedValue(
+        new Response(JSON.stringify({ id: "1", role: "Staff" }), {
+          status: 200,
+          headers: { "content-type": "application/json" }
+        })
+      );
+    vi.stubGlobal("fetch", fetchSpy);
 
     renderLoginFlow();
 

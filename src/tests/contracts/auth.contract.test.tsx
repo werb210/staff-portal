@@ -26,7 +26,7 @@ const server = setupServer(
     verifyOtpSpy(await request.json());
     return HttpResponse.json({ accessToken: "access-token", refreshToken: "refresh-token" });
   }),
-  http.get("http://localhost/api/auth/me", () => {
+  http.get("*/api/auth/me", () => {
     meSpy();
     return HttpResponse.json({ id: "1", role: "Staff" }, { status: 200 });
   }),
