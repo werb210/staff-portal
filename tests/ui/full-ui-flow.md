@@ -25,7 +25,7 @@
 
 ### Login & MFA Validation
 1. Validate login form input rules and disabled state until required fields populated.
-2. Confirm MFA challenge delivered (email/SMS/app) and acceptance updates session token.
+2. Confirm MFA challenge delivered (email/SMS/app) and acceptance updates auth token.
 3. Verify lockout after consecutive failed attempts and audit log entry creation.
 
 ### Silo Switching (BF / BI / SLF)

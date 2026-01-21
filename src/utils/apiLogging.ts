@@ -7,8 +7,6 @@ type Redactable = Record<string, unknown> | unknown[] | string | number | boolea
 
 const SENSITIVE_KEYS = [
   "authorization",
-  "cookie",
-  "set-cookie",
   "password",
   "token",
   "refresh",

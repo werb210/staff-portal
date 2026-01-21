@@ -19,7 +19,7 @@ import { getRequestId } from "@/utils/requestId";
 import { fetchCurrentUser } from "@/api/auth";
 import { setUiFailure } from "@/utils/uiFailureStore";
 import { clearStoredAuth, setStoredAccessToken, setStoredUser } from "@/services/token";
-import { getAccessToken } from "@/auth/auth.store";
+import { getAccessToken } from "@/lib/authToken";
 import { registerAuthFailureHandler } from "@/auth/authEvents";
 import { redirectToLogin } from "@/services/api";
 
@@ -159,7 +159,7 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
       logAuthError("/api/auth/me failed", user, { error: fetchError });
       await forceLogout("auth-me-failed");
       setUiFailure({
-        message: "Authentication failed while validating the session.",
+        message: "Authentication failed while validating credentials.",
         details: `Request ID: ${getRequestId()}`,
         timestamp: Date.now()
       });

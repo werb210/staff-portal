@@ -59,7 +59,6 @@ describe("auth login", () => {
   it("OTP start omits Idempotency-Key", async () => {
     const startAdapter = vi.fn(async (config) => ({
       data: {
-        sessionId: "session-1",
         requestId: "req-1"
       },
       status: 200,
@@ -68,7 +67,7 @@ describe("auth login", () => {
       config
     }));
 
-    const response = await api.post<{ sessionId?: string; requestId?: string }>(
+    const response = await api.post<{ requestId?: string }>(
       "/auth/otp/start",
       { phone: "+15555550100" },
       { adapter: startAdapter } as any
@@ -79,7 +78,6 @@ describe("auth login", () => {
     const idempotencyKey =
       passedConfig?.headers?.["Idempotency-Key"] ?? passedConfig?.headers?.get?.("Idempotency-Key");
     expect(idempotencyKey).toBeUndefined();
-    expect(response.data.sessionId).toBe("session-1");
     expect(response.data.requestId).toBe("req-1");
   });
 

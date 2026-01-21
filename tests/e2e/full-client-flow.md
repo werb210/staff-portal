@@ -68,7 +68,7 @@
 
 ### Token Corruption Recovery
 1. Corrupt stored token; confirm app prompts re-authentication and preserves unsaved data.
-2. Validate new token refreshes session without duplicating submissions.
+2. Validate new token refreshes authentication state without duplicating submissions.
 
 ### Double Submission Prevention
 1. Attempt rapid consecutive submissions; expect idempotency response and single record creation.

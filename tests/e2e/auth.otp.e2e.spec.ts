@@ -65,24 +65,12 @@ test("real otp login works end-to-end", async ({ page }) => {
 
   await page.waitForURL((url) => !url.pathname.endsWith("/login"), { timeout: 15_000 });
 
-  const storedToken = await page.evaluate(
-    () =>
-      localStorage.getItem("access_token") ||
-      localStorage.getItem("boreal.accessToken") ||
-      localStorage.getItem("bf.access") ||
-      localStorage.getItem("staff_auth_token")
-  );
+  const storedToken = await page.evaluate(() => localStorage.getItem("staff_access_token"));
+  expect(storedToken).toBeTruthy();
 
-  const cookies = await page.context().cookies();
-  const cookieToken = cookies.find(
-    (cookie) => /token|access/i.test(cookie.name) && Boolean(cookie.value)
-  );
-  const token = storedToken || cookieToken?.value;
-  expect(token).toBeTruthy();
-
-  const lendersResponse = token
+  const lendersResponse = storedToken
     ? await page.request.get("/api/lenders", {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${storedToken}` }
       })
     : await page.request.get("/api/lenders");
 
