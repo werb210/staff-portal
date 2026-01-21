@@ -42,9 +42,7 @@ describe("auth failure safeguards", () => {
   });
 
   it("OTP success but no token -> fail", async () => {
-    mockedVerifyOtp.mockResolvedValue({
-      user: { id: "1", email: "demo@example.com", role: "Admin" }
-    } as any);
+    mockedVerifyOtp.mockResolvedValue({ user: { id: "1", email: "demo@example.com", role: "Admin" } } as any);
 
     let authRef: ReturnType<typeof useAuth> | null = null;
     render(
@@ -54,9 +52,9 @@ describe("auth failure safeguards", () => {
     );
 
     await waitFor(() => expect(authRef).not.toBeNull());
-    await expect(authRef!.verifyOtp({ phone: "+15555550100", code: "123456" })).rejects.toThrow(
-      /token/i
-    );
+    const result = await authRef!.verifyOtp({ phone: "+15555550100", code: "123456" });
+    expect(result).toBe(false);
+    expect(authRef!.error).toMatch(/access token/i);
   });
 
   it("Token with invalid role -> fail", () => {
@@ -102,6 +100,8 @@ describe("auth failure safeguards", () => {
     );
 
     await waitFor(() => expect(authRef).not.toBeNull());
-    await expect(authRef!.startOtp({ phone: "+15555550100" })).rejects.toThrow(/twilio/i);
+    const result = await authRef!.startOtp({ phone: "+15555550100" });
+    expect(result).toBe(false);
+    expect(authRef!.error).toMatch(/otp pending/i);
   });
 });

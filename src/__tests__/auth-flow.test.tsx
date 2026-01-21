@@ -9,7 +9,6 @@ import RequireAuth from "@/routes/RequireAuth";
 import { startOtp as startOtpService, verifyOtp as verifyOtpService, logout as logoutService } from "@/services/auth";
 import LoginPage from "@/pages/login/LoginPage";
 import PrivateRoute from "@/router/PrivateRoute";
-import { fetchCurrentUser } from "@/api/auth";
 import { ApiError } from "@/api/http";
 import { clearStoredAuth, setStoredAccessToken } from "@/services/token";
 
@@ -17,10 +16,6 @@ vi.mock("@/services/auth", () => ({
   startOtp: vi.fn(),
   verifyOtp: vi.fn(),
   logout: vi.fn()
-}));
-
-vi.mock("@/api/auth", () => ({
-  fetchCurrentUser: vi.fn()
 }));
 
 vi.mock("@/services/api", async () => {
@@ -34,7 +29,12 @@ vi.mock("@/services/api", async () => {
 const mockedStartOtp = vi.mocked(startOtpService);
 const mockedVerifyOtp = vi.mocked(verifyOtpService);
 const mockedLogout = vi.mocked(logoutService);
-const mockedFetchCurrentUser = vi.mocked(fetchCurrentUser);
+
+const createJsonResponse = (data: unknown, status = 200) =>
+  new Response(JSON.stringify(data), {
+    status,
+    headers: { "content-type": "application/json" }
+  });
 
 const TestAuthState = () => {
   const { authStatus, rolesStatus } = useAuth();
@@ -71,6 +71,7 @@ const LocationProbe = () => {
 describe("auth flow", () => {
   afterEach(() => {
     cleanup();
+    vi.unstubAllGlobals();
   });
 
   beforeEach(() => {
@@ -80,8 +81,9 @@ describe("auth flow", () => {
   });
 
   it("verifies OTP successfully", async () => {
+    const fetchSpy = vi.fn().mockResolvedValue(createJsonResponse({ id: "1", role: "Admin" }));
+    vi.stubGlobal("fetch", fetchSpy);
     mockedVerifyOtp.mockResolvedValue({ accessToken: "access", refreshToken: "refresh" });
-    mockedFetchCurrentUser.mockResolvedValue({ data: { id: "1", role: "Admin" } } as any);
 
     render(
       <AuthProvider>
@@ -97,17 +99,19 @@ describe("auth flow", () => {
       expect(screen.getByTestId("status")).toHaveTextContent("authenticated:resolved")
     );
     expect(screen.getByTestId("role")).toHaveTextContent("Admin");
-    expect(mockedFetchCurrentUser).toHaveBeenCalled();
+    expect(fetchSpy).toHaveBeenCalledWith("/api/auth/me", { credentials: "include" });
   });
 
-  it("does not redirect after OTP verification while roles are still loading", async () => {
+  it("does not redirect during auth hydration after OTP verification", async () => {
     mockedStartOtp.mockResolvedValue(null);
     mockedVerifyOtp.mockResolvedValue({ accessToken: "access", refreshToken: "refresh" });
-    let resolveUser: ((value: any) => void) | undefined;
-    const pendingUser = new Promise((resolve) => {
-      resolveUser = resolve;
+
+    let resolveFetch: (value: Response) => void = () => undefined;
+    const pendingFetch = new Promise<Response>((resolve) => {
+      resolveFetch = resolve;
     });
-    mockedFetchCurrentUser.mockReturnValue(pendingUser as any);
+    const fetchSpy = vi.fn().mockReturnValue(pendingFetch);
+    vi.stubGlobal("fetch", fetchSpy);
 
     render(
       <MemoryRouter initialEntries={["/login"]}>
@@ -136,19 +140,21 @@ describe("auth flow", () => {
     fireEvent.click(screen.getByRole("button", { name: /Verify code/i }));
 
     await waitFor(() => {
-      expect(screen.getByTestId("location")).toHaveTextContent("/dashboard");
+      expect(screen.getByTestId("location")).toHaveTextContent("/login");
     });
 
-    expect(screen.queryByRole("heading", { name: /staff login/i })).not.toBeInTheDocument();
-    expect(screen.queryByText("Access restricted")).not.toBeInTheDocument();
-    expect(screen.getByText("Dashboard")).toBeInTheDocument();
+    resolveFetch(createJsonResponse({ id: "1", role: "Staff" }));
 
-    resolveUser?.({ data: { id: "1", role: "Staff" } });
+    await waitFor(() => {
+      expect(screen.getByTestId("location")).toHaveTextContent("/dashboard");
+    });
+    expect(screen.getByText("Dashboard")).toBeInTheDocument();
   });
 
   it("renders protected routes after /api/auth/me succeeds", async () => {
     setStoredAccessToken("test-token");
-    mockedFetchCurrentUser.mockResolvedValue({ data: { id: "1", role: "Staff" } } as any);
+    const fetchSpy = vi.fn().mockResolvedValue(createJsonResponse({ id: "1", role: "Staff" }));
+    vi.stubGlobal("fetch", fetchSpy);
 
     render(
       <MemoryRouter initialEntries={["/dashboard"]}>
@@ -174,9 +180,10 @@ describe("auth flow", () => {
 
   it("hydrates user on refresh", async () => {
     setStoredAccessToken("test-token");
-    mockedFetchCurrentUser.mockResolvedValue({
-      data: { id: "1", role: "Admin", email: "demo@example.com" }
-    } as any);
+    const fetchSpy = vi
+      .fn()
+      .mockResolvedValue(createJsonResponse({ id: "1", role: "Admin", email: "demo@example.com" }));
+    vi.stubGlobal("fetch", fetchSpy);
 
     render(
       <AuthProvider>
@@ -223,9 +230,10 @@ describe("auth flow", () => {
 
   it("clears token on manual logout", async () => {
     setStoredAccessToken("test-token");
-    mockedFetchCurrentUser.mockResolvedValue({
-      data: { id: "1", role: "Admin", email: "demo@example.com" }
-    } as any);
+    const fetchSpy = vi
+      .fn()
+      .mockResolvedValue(createJsonResponse({ id: "1", role: "Admin", email: "demo@example.com" }));
+    vi.stubGlobal("fetch", fetchSpy);
 
     render(
       <MemoryRouter initialEntries={["/dashboard"]}>

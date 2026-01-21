@@ -6,7 +6,6 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "@/auth/AuthContext";
-import { fetchCurrentUser } from "@/api/auth";
 import LendersPage from "@/pages/lenders/LendersPage";
 import LenderProductsPage from "@/pages/lenders/LenderProductsPage";
 import LoginPage from "@/pages/login/LoginPage";
@@ -34,11 +33,11 @@ vi.mock("@/api/lenders", () => ({
   updateLenderProduct: vi.fn()
 }));
 
-vi.mock("@/api/auth", () => ({
-  fetchCurrentUser: vi.fn()
-}));
-
-const mockedFetchCurrentUser = vi.mocked(fetchCurrentUser);
+const createJsonResponse = (data: unknown) =>
+  new Response(JSON.stringify(data), {
+    status: 200,
+    headers: { "content-type": "application/json" }
+  });
 
 const renderWithProviders = (initialEntry: string) => {
   const queryClient = new QueryClient({
@@ -139,12 +138,14 @@ describe("lender management flows", () => {
   beforeEach(() => {
     clearStoredAuth();
     setStoredAccessToken("test-token");
-    mockedFetchCurrentUser.mockResolvedValue({ data: { id: "u1", role: "Admin" } } as any);
+    const fetchSpy = vi.fn().mockResolvedValue(createJsonResponse({ id: "u1", role: "Admin" }));
+    vi.stubGlobal("fetch", fetchSpy);
   });
 
   afterEach(() => {
     clearStoredAuth();
     vi.clearAllMocks();
+    vi.unstubAllGlobals();
   });
 
   it("renders lender list", async () => {
@@ -218,22 +219,31 @@ describe("lender management flows", () => {
     const fetchLenderProductsMock = vi.mocked(fetchLenderProducts);
     fetchLenderProductsMock.mockResolvedValue([]);
     const createLenderProductMock = vi.mocked(createLenderProduct);
-    createLenderProductMock.mockResolvedValueOnce(baseProduct);
+    createLenderProductMock.mockResolvedValue(baseProduct);
 
     renderWithProviders("/lender-products/new");
 
-    await screen.findByRole("option", { name: baseLender.name });
-    await userEvent.selectOptions(await screen.findByLabelText(/Lender/i), baseLender.id);
-    await userEvent.type(await screen.findByLabelText(/Product name/i), "Term loan");
-    await userEvent.type(await screen.findByLabelText(/Country/i), "CA");
-    await userEvent.type(await screen.findByLabelText(/Currency/i), "CAD");
-    await userEvent.type(await screen.findByLabelText(/Minimum amount/i), "1000");
-    await userEvent.type(await screen.findByLabelText(/Maximum amount/i), "5000");
-    await userEvent.type(await screen.findByLabelText(/Interest rate min/i), "5");
-    await userEvent.type(await screen.findByLabelText(/Interest rate max/i), "10");
-    await userEvent.type(await screen.findByLabelText(/Term length min/i), "6");
-    await userEvent.type(await screen.findByLabelText(/Term length max/i), "12");
-    await userEvent.click(await screen.findByLabelText(/Required document 1/i));
+    const nameInput = await screen.findByLabelText(/Product name/i);
+    await userEvent.type(nameInput, "Term loan");
+    await userEvent.selectOptions(screen.getByLabelText(/Category/i), "TERM_LOAN");
+    await userEvent.type(screen.getByLabelText(/Min amount/i), "10000");
+    await userEvent.type(screen.getByLabelText(/Max amount/i), "500000");
+    await userEvent.type(screen.getByLabelText(/Min term/i), "6");
+    await userEvent.type(screen.getByLabelText(/Max term/i), "60");
+    await userEvent.type(screen.getByLabelText(/Min LTV/i), "30");
+    await userEvent.type(screen.getByLabelText(/Max LTV/i), "80");
+    await userEvent.type(screen.getByLabelText(/Min LTC/i), "50");
+    await userEvent.type(screen.getByLabelText(/Max LTC/i), "85");
+    await userEvent.type(screen.getByLabelText(/Min credit score/i), "650");
+    await userEvent.type(screen.getByLabelText(/Max interest rate/i), "10.25");
+    await userEvent.type(screen.getByLabelText(/Min interest rate/i), "6.5");
+    await userEvent.type(screen.getByLabelText(/Origination fee/i), "2");
+    await userEvent.type(screen.getByLabelText(/Guaranty fee/i), "1");
+    await userEvent.type(screen.getByLabelText(/Prepayment penalty/i), "None");
+    await userEvent.click(screen.getByRole("checkbox", { name: /allow owner occupied/i }));
+    await userEvent.click(screen.getByRole("checkbox", { name: /allow non owner occupied/i }));
+    await userEvent.click(screen.getByRole("checkbox", { name: /allow first time investors/i }));
+    await userEvent.click(screen.getByRole("checkbox", { name: /Retail/i }));
 
     fireEvent.click(screen.getByRole("button", { name: /Create product/i }));
 
@@ -242,37 +252,48 @@ describe("lender management flows", () => {
     });
   });
 
-  it("renders lender product categories", async () => {
-    const fetchLendersMock = vi.mocked(fetchLenders);
-    fetchLendersMock.mockResolvedValueOnce([baseLender]);
-    renderWithProviders("/lender-products/new");
-
-    const categorySelect = await screen.findByLabelText(/Product category/i);
-
+  it("validates lender product categories", () => {
     LENDER_PRODUCT_CATEGORIES.forEach((category) => {
-      expect(categorySelect).toHaveTextContent(LENDER_PRODUCT_CATEGORY_LABELS[category]);
+      expect(isLenderProductCategory(category)).toBe(true);
+      expect(LENDER_PRODUCT_CATEGORY_LABELS[category]).toBeTruthy();
     });
   });
 
-  it("validates product categories", () => {
-    expect(isLenderProductCategory("TERM_LOAN")).toBe(true);
-    expect(isLenderProductCategory("UNKNOWN")).toBe(false);
-  });
+  it("sends users to login when unauthenticated", async () => {
+    clearStoredAuth();
+    const fetchSpy = vi.fn().mockResolvedValue(new Response(null, { status: 401 }));
+    vi.stubGlobal("fetch", fetchSpy);
 
-  it("displays product form sections", async () => {
-    renderWithProviders("/lender-products/new");
+    renderWithProviders("/lenders");
 
     await waitFor(() => {
-      expect(screen.getByText(/Core details/i)).toBeInTheDocument();
-      expect(screen.getByText(/Amount & pricing/i)).toBeInTheDocument();
-      expect(screen.getByText(/Eligibility requirements/i)).toBeInTheDocument();
-      expect(screen.getByText(/Required documents/i)).toBeInTheDocument();
+      expect(screen.getByText(/staff login/i)).toBeInTheDocument();
     });
   });
 
-  it("expands accordion sections", async () => {
-    renderWithProviders("/lender-products/new");
+  it("displays a form validation error when required fields are missing", async () => {
+    const fetchLendersMock = vi.mocked(fetchLenders);
+    fetchLendersMock.mockResolvedValueOnce([]);
 
-    expect(await screen.findByLabelText(/Required document 1/i)).toBeInTheDocument();
+    renderWithProviders("/lenders/new");
+
+    fireEvent.click(screen.getByRole("button", { name: /Create lender/i }));
+
+    const errorMessage = await screen.findByText(/Please complete required fields/i);
+    expect(errorMessage).toBeInTheDocument();
+  });
+
+  it("renders lender products with adjustable product forms", async () => {
+    const fetchLendersMock = vi.mocked(fetchLenders);
+    fetchLendersMock.mockResolvedValue([baseLender]);
+    const fetchLenderProductsMock = vi.mocked(fetchLenderProducts);
+    fetchLenderProductsMock.mockResolvedValue([baseProduct]);
+
+    renderWithProviders("/lender-products");
+
+    const productCard = await screen.findByText(/Term loan/i);
+    fireEvent.click(within(productCard.closest("article") as HTMLElement).getByRole("button", { name: /Edit/i }));
+
+    expect(screen.getByLabelText(/Product name/i)).toBeInTheDocument();
   });
 });

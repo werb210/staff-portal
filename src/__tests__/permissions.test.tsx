@@ -17,6 +17,7 @@ describe("permission-aware rendering", () => {
     renderWithProviders(<MarketingPage />, {
       auth: {
         user: { id: "u-1", name: "Staff User", email: "staff@example.com", role: "Staff" },
+        authState: "authenticated",
         authStatus: "authenticated",
         rolesStatus: "resolved",
         authenticated: true,
@@ -39,6 +40,7 @@ describe("permission-aware rendering", () => {
       {
         auth: {
           user: { id: "u-2", name: "Lender User", email: "lender@example.com", role: "Lender" },
+          authState: "authenticated",
           authStatus: "authenticated",
           rolesStatus: "resolved",
           authenticated: true,
@@ -68,6 +70,7 @@ describe("permission-aware rendering", () => {
       {
         auth: {
           user: { id: "u-3", name: "Referrer User", email: "referrer@example.com", role: "Referrer" },
+          authState: "authenticated",
           authStatus: "authenticated",
           rolesStatus: "resolved",
           authenticated: true,

@@ -38,7 +38,7 @@ describe("auth routing contract", () => {
   it("redirects authenticated users away from /login", async () => {
     setStoredAccessToken("test-token");
     server.use(
-      http.get("http://localhost/api/auth/me", () =>
+      http.get("*/api/auth/me", () =>
         HttpResponse.json({ id: "u1", role: "Staff" }, { status: 200 })
       )
     );
@@ -65,7 +65,7 @@ describe("auth routing contract", () => {
   it("blocks unauthenticated users from private routes without firing API calls", async () => {
     const lendersSpy = vi.fn();
     server.use(
-      http.get("http://localhost/api/auth/me", () => new HttpResponse(null, { status: 401 })),
+      http.get("*/api/auth/me", () => new HttpResponse(null, { status: 401 })),
       http.get("http://localhost/api/lenders", () => {
         lendersSpy();
         return HttpResponse.json({ items: [] });
@@ -107,6 +107,7 @@ describe("auth routing contract", () => {
 
   it("renders protected routes while roles are loading and avoids redirects", () => {
     const authValue: AuthContextValue = {
+      authState: "authenticated",
       authStatus: "authenticated",
       rolesStatus: "loading",
       user: null,
@@ -116,11 +117,14 @@ describe("auth routing contract", () => {
       isAuthenticated: true,
       authReady: true,
       pendingPhoneNumber: null,
-      startOtp: async () => undefined,
-      verifyOtp: async () => undefined,
+      startOtp: async () => true,
+      verifyOtp: async () => true,
       login: async () => undefined,
       setAuth: () => undefined,
+      setUser: () => undefined,
       setAuthenticated: () => undefined,
+      setAuthState: () => undefined,
+      clearAuth: () => undefined,
       refreshUser: async () => false,
       logout: async () => undefined
     };
@@ -151,7 +155,7 @@ describe("auth routing contract", () => {
     setStoredAccessToken("test-token");
     let callCount = 0;
     server.use(
-      http.get("http://localhost/api/auth/me", () =>
+      http.get("*/api/auth/me", () =>
         HttpResponse.json({ id: "u1", role: "Staff" }, { status: 200 })
       ),
       http.get("http://localhost/api/secure", () => {

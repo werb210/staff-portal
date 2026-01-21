@@ -11,10 +11,26 @@ let verifyOtpMock = vi.fn();
 
 vi.mock("@/auth/AuthContext", () => ({
   useAuth: () => ({
+    authState: "unauthenticated",
+    authStatus: "unauthenticated",
+    rolesStatus: "resolved",
+    user: null,
+    accessToken: null,
+    error: null,
+    authenticated: false,
+    isAuthenticated: false,
+    authReady: true,
+    pendingPhoneNumber: null,
     startOtp: (...args: Parameters<typeof startOtpMock>) => startOtpMock(...args),
     verifyOtp: (...args: Parameters<typeof verifyOtpMock>) => verifyOtpMock(...args),
-    authStatus: "unauthenticated",
-    error: null
+    login: async () => undefined,
+    setAuth: () => undefined,
+    setUser: () => undefined,
+    setAuthenticated: () => undefined,
+    setAuthState: () => undefined,
+    clearAuth: () => undefined,
+    refreshUser: async () => false,
+    logout: async () => undefined
   })
 }));
 
@@ -35,8 +51,8 @@ describe("LoginPage", () => {
   };
 
   test("submits phone number and verifies OTP", async () => {
-    const startOtp = vi.fn().mockResolvedValue(undefined);
-    const verifyOtp = vi.fn().mockResolvedValue(undefined);
+    const startOtp = vi.fn().mockResolvedValue(true);
+    const verifyOtp = vi.fn().mockResolvedValue(true);
     renderLogin(startOtp, verifyOtp);
 
     fireEvent.change(screen.getByLabelText(/Phone number/i), { target: { value: "+1 (555) 555-0100" } });
@@ -51,8 +67,8 @@ describe("LoginPage", () => {
   });
 
   test("does not show an error when OTP verification succeeds", async () => {
-    const startOtp = vi.fn().mockResolvedValue(undefined);
-    const verifyOtp = vi.fn().mockResolvedValue(undefined);
+    const startOtp = vi.fn().mockResolvedValue(true);
+    const verifyOtp = vi.fn().mockResolvedValue(true);
     renderLogin(startOtp, verifyOtp);
 
     fireEvent.change(screen.getByLabelText(/Phone number/i), { target: { value: "+1 (555) 555-0100" } });
@@ -68,7 +84,7 @@ describe("LoginPage", () => {
   });
 
   test("shows an error when OTP verification fails", async () => {
-    const startOtp = vi.fn().mockResolvedValue(undefined);
+    const startOtp = vi.fn().mockResolvedValue(true);
     const verifyOtp = vi
       .fn()
       .mockRejectedValue(new ApiError({ status: 401, message: "Invalid code", requestId: "req-401" }));

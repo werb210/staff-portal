@@ -69,7 +69,7 @@ const buildOtpErrorDetails = (error: unknown, endpoint: string): OtpErrorDetails
 };
 
 export default function LoginPage() {
-  const { startOtp, verifyOtp, authStatus, error: authError } = useAuth();
+  const { startOtp, verifyOtp, authState, error: authError } = useAuth();
 
   const [rawPhone, setRawPhone] = useState("");
   const [submittedPhoneNumber, setSubmittedPhoneNumber] = useState("");
@@ -91,7 +91,7 @@ export default function LoginPage() {
   const showCodeStep = hasRequestedCode;
   const errorMessage = localError?.message ?? authError;
 
-  if (authStatus === "authenticated") {
+  if (authState === "authenticated") {
     return <Navigate to="/dashboard" replace />;
   }
 
@@ -102,7 +102,10 @@ export default function LoginPage() {
 
     setIsSending(true);
     try {
-      await startOtp({ phone: normalizedPhone });
+      const started = await startOtp({ phone: normalizedPhone });
+      if (!started) {
+        return;
+      }
       setSubmittedPhoneNumber(normalizedPhone);
       setHasRequestedCode(true);
       setCode("");
@@ -122,7 +125,10 @@ export default function LoginPage() {
     const phone = submittedPhoneNumber || normalizedPhone || rawPhone;
     setIsVerifying(true);
     try {
-      await verifyOtp({ phone, code: trimmed });
+      const verified = await verifyOtp({ phone, code: trimmed });
+      if (!verified) {
+        return;
+      }
     } catch (err) {
       const details = buildOtpErrorDetails(err, "/auth/otp/verify");
       console.error("OTP verify failed.", { ...details, error: err });
@@ -145,7 +151,10 @@ export default function LoginPage() {
     }
     setIsSending(true);
     try {
-      await startOtp({ phone });
+      const started = await startOtp({ phone });
+      if (!started) {
+        return;
+      }
       setSubmittedPhoneNumber(phone);
       setHasRequestedCode(true);
       setCode("");

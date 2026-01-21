@@ -16,7 +16,6 @@ import {
   logout as logoutService
 } from "@/services/auth";
 import { getRequestId } from "@/utils/requestId";
-import { fetchCurrentUser } from "@/api/auth";
 import { setUiFailure } from "@/utils/uiFailureStore";
 import {
   clearStoredAuth,
@@ -25,10 +24,10 @@ import {
   setStoredUser
 } from "@/services/token";
 import { getAccessToken } from "@/lib/authToken";
-import { ApiError } from "@/lib/api";
 import { registerAuthFailureHandler } from "@/auth/authEvents";
 
-export type AuthStatus = "loading" | "authenticated" | "unauthenticated";
+export type AuthState = "unauthenticated" | "authenticated_pending" | "authenticated";
+export type AuthStatus = AuthState;
 export type RolesStatus = "loading" | "resolved";
 
 interface SetAuthPayload {
@@ -45,6 +44,7 @@ interface VerifyOtpPayload {
 }
 
 export interface AuthContextValue {
+  authState: AuthState;
   authStatus: AuthStatus;
   rolesStatus: RolesStatus;
   user: AuthenticatedUser | null;
@@ -54,32 +54,43 @@ export interface AuthContextValue {
   isAuthenticated: boolean;
   authReady: boolean;
   pendingPhoneNumber: string | null;
-  startOtp: (payload: StartOtpPayload) => Promise<void>;
-  verifyOtp: (payload: VerifyOtpPayload | string, code?: string) => Promise<void>;
+  startOtp: (payload: StartOtpPayload) => Promise<boolean>;
+  verifyOtp: (payload: VerifyOtpPayload | string, code?: string) => Promise<boolean>;
   login: (token: string) => Promise<void>;
   setAuth: (payload: SetAuthPayload) => void;
+  setUser: (user: AuthenticatedUser | null) => void;
   setAuthenticated: () => void;
+  setAuthState: (state: AuthState) => void;
+  clearAuth: () => void;
   refreshUser: () => Promise<boolean>;
   logout: () => Promise<void>;
 }
 
 export type AuthContextType = AuthContextValue;
 
+const fallbackAccessToken = getAccessToken();
+const fallbackAuthState: AuthState = fallbackAccessToken ? "authenticated_pending" : "unauthenticated";
+const fallbackRolesStatus: RolesStatus = fallbackAccessToken ? "loading" : "resolved";
+
 const defaultAuthContext: AuthContextValue = {
-  authStatus: "unauthenticated",
-  rolesStatus: "resolved",
+  authState: fallbackAuthState,
+  authStatus: fallbackAuthState,
+  rolesStatus: fallbackRolesStatus,
   user: null,
-  accessToken: null,
+  accessToken: fallbackAccessToken,
   error: null,
-  authenticated: false,
-  isAuthenticated: false,
-  authReady: false,
+  authenticated: fallbackAuthState === "authenticated",
+  isAuthenticated: fallbackAuthState === "authenticated",
+  authReady: fallbackAuthState !== "authenticated_pending",
   pendingPhoneNumber: null,
-  startOtp: async () => undefined,
-  verifyOtp: async () => undefined,
+  startOtp: async () => false,
+  verifyOtp: async () => false,
   login: async () => undefined,
   setAuth: () => undefined,
+  setUser: () => undefined,
   setAuthenticated: () => undefined,
+  setAuthState: () => undefined,
+  clearAuth: () => undefined,
   refreshUser: async () => false,
   logout: async () => undefined
 };
@@ -109,29 +120,39 @@ const logAuthError = (
 };
 
 export function AuthProvider({ children }: PropsWithChildren<{}>) {
-  const hasAccessToken = Boolean(getAccessToken());
-  const [authStatus, setAuthStatus] = useState<AuthStatus>(() =>
-    hasAccessToken ? "authenticated" : "unauthenticated"
+  const storedAccessToken = getAccessToken();
+  const hasAccessToken = Boolean(storedAccessToken);
+  const [authState, setAuthState] = useState<AuthState>(() =>
+    hasAccessToken ? "authenticated_pending" : "unauthenticated"
   );
   const [rolesStatus, setRolesStatus] = useState<RolesStatus>(() =>
     hasAccessToken ? "loading" : "resolved"
   );
-  const [user, setUser] = useState<AuthenticatedUser | null>(() =>
+  const [user, setUserState] = useState<AuthenticatedUser | null>(() =>
     getStoredUser<AuthenticatedUser>()
   );
-  const [accessToken, setAccessTokenState] = useState<string | null>(() => getAccessToken());
+  const [accessToken, setAccessTokenState] = useState<string | null>(() => storedAccessToken);
   const [error, setError] = useState<string | null>(null);
   const [pendingPhoneNumber, setPendingPhoneNumber] = useState<string | null>(null);
-  const previousStatus = useRef<AuthStatus | null>(null);
+  const previousStatus = useRef<AuthState | null>(null);
+
+  const setUser = useCallback((nextUser: AuthenticatedUser | null) => {
+    setUserState(nextUser ?? null);
+    setStoredUser(nextUser ?? null);
+  }, []);
 
   const clearAuthState = useCallback(() => {
     clearStoredAuth();
     setAccessTokenState(null);
-    setUser(null);
-    setAuthStatus("unauthenticated");
+    setUserState(null);
+    setAuthState("unauthenticated");
     setRolesStatus("resolved");
     setError(null);
   }, []);
+
+  const clearAuth = useCallback(() => {
+    clearAuthState();
+  }, [clearAuthState]);
 
   const forceLogout = useCallback(
     async (reason: string) => {
@@ -141,59 +162,61 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
     [clearAuthState, user]
   );
 
-  const setAuth = useCallback(({ user: newUser }: SetAuthPayload) => {
-    setUser(newUser ?? null);
-    setStoredUser(newUser ?? null);
-    const nextAuthStatus = getAccessToken() ? "authenticated" : "unauthenticated";
-    setAuthStatus(nextAuthStatus);
-    setRolesStatus("resolved");
-    setError(null);
-  }, []);
+  const setAuth = useCallback(
+    ({ user: newUser }: SetAuthPayload) => {
+      setUser(newUser ?? null);
+      if (!getAccessToken()) {
+        setAuthState("unauthenticated");
+      } else if (newUser) {
+        setAuthState("authenticated");
+      } else {
+        setAuthState("authenticated_pending");
+      }
+      setRolesStatus("resolved");
+      setError(null);
+    },
+    [setUser]
+  );
 
   const setAuthenticated = useCallback(() => {
-    setAuthStatus("authenticated");
-    setRolesStatus((current) => (current === "resolved" ? current : "loading"));
+    setAuthState("authenticated");
     setError(null);
   }, []);
 
   const refreshUser = useCallback(async (): Promise<boolean> => {
     if (!getAccessToken()) {
-      setUser(null);
-      setAuthStatus("unauthenticated");
-      setRolesStatus("resolved");
+      clearAuthState();
       return false;
     }
-    setAuthStatus("authenticated");
+    setAuthState("authenticated_pending");
     setRolesStatus("loading");
     try {
-      const profile = await fetchCurrentUser();
-      setUser(profile.data ?? null);
-      setStoredUser(profile.data ?? null);
-      setRolesStatus("resolved");
-      return Boolean(profile.data);
-    } catch (fetchError) {
-      if (
-        fetchError instanceof ApiError &&
-        (fetchError.status === 401 || fetchError.status === 403)
-      ) {
-        clearStoredAuth();
-        setUser(null);
-        setAuthStatus("unauthenticated");
-        setRolesStatus("resolved");
-        setError(null);
+      const res = await fetch("/api/auth/me", { credentials: "include" });
+      if (!res.ok) {
+        clearAuthState();
         return false;
       }
-      logAuthError("/api/auth/me failed", user, { error: fetchError });
-      setError("Unable to refresh user profile.");
+      const ct = res.headers.get("content-type");
+      if (!ct || !ct.includes("application/json")) {
+        clearAuthState();
+        return false;
+      }
+      const data = (await res.json()) as AuthenticatedUser;
+      setUser(data ?? null);
+      setAuthState("authenticated");
       setRolesStatus("resolved");
+      return true;
+    } catch (fetchError) {
+      logAuthError("/api/auth/me failed", user, { error: fetchError });
+      clearAuthState();
       return false;
     }
-  }, [user]);
+  }, [clearAuthState, setUser, user]);
 
   const login = useCallback(async (token: string): Promise<void> => {
     setStoredAccessToken(token);
     setAccessTokenState(token);
-    setAuthStatus("authenticated");
+    setAuthState("authenticated_pending");
     setRolesStatus("loading");
     setError(null);
   }, []);
@@ -204,42 +227,39 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
     const initializeAuth = async () => {
       if (!accessToken) {
         if (!isMounted) return;
-        setUser(null);
-        setAuthStatus("unauthenticated");
+        setUserState(null);
+        setAuthState("unauthenticated");
         setRolesStatus("resolved");
         setError(null);
         return;
       }
-      setAuthStatus("authenticated");
+      if (!isMounted) return;
+      setAuthState("authenticated_pending");
       setRolesStatus("loading");
       const storedUser = getStoredUser<AuthenticatedUser>();
       if (storedUser) {
-        setUser(storedUser);
+        setUserState(storedUser);
       }
       try {
-        const profile = await fetchCurrentUser();
+        const res = await fetch("/api/auth/me", { credentials: "include" });
         if (!isMounted) return;
-        if (profile.data) {
-          setUser(profile.data ?? null);
-          setStoredUser(profile.data ?? null);
+        if (!res.ok) {
+          clearAuthState();
+          return;
         }
+        const ct = res.headers.get("content-type");
+        if (!ct || !ct.includes("application/json")) {
+          clearAuthState();
+          return;
+        }
+        const data = (await res.json()) as AuthenticatedUser;
+        setUser(data ?? null);
+        setAuthState("authenticated");
         setRolesStatus("resolved");
       } catch (fetchError) {
         if (!isMounted) return;
-        if (
-          fetchError instanceof ApiError &&
-          (fetchError.status === 401 || fetchError.status === 403)
-        ) {
-          clearStoredAuth();
-          setUser(null);
-          setAuthStatus("unauthenticated");
-          setRolesStatus("resolved");
-          setError(null);
-          return;
-        }
         logAuthError("/api/auth/me failed", null, { error: fetchError });
-        setError("Unable to refresh user profile.");
-        setRolesStatus("resolved");
+        clearAuthState();
         setUiFailure({
           message: "Authentication failed while validating credentials.",
           details: `Request ID: ${getRequestId()}`,
@@ -253,7 +273,7 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
     return () => {
       isMounted = false;
     };
-  }, [accessToken]);
+  }, [accessToken, clearAuthState, setUser]);
 
   useEffect(() => {
     const unregister = registerAuthFailureHandler((reason) => {
@@ -266,24 +286,24 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
 
   useEffect(() => {
     if (!previousStatus.current) {
-      previousStatus.current = authStatus;
+      previousStatus.current = authState;
       return;
     }
 
     const prior = previousStatus.current;
-    if (prior !== authStatus) {
-      if (prior === "unauthenticated" && authStatus === "authenticated") {
+    if (prior !== authState) {
+      if (prior === "unauthenticated" && authState === "authenticated") {
         logAuthInfo("Auth transition unauthenticated → authenticated", user);
       }
-      if (prior === "authenticated" && authStatus === "unauthenticated") {
+      if (prior === "authenticated" && authState === "unauthenticated") {
         logAuthInfo("Auth transition authenticated → unauthenticated", user);
       }
     }
-    previousStatus.current = authStatus;
-  }, [authStatus, user]);
+    previousStatus.current = authState;
+  }, [authState, user]);
 
   const startOtp = useCallback(
-    async ({ phone }: StartOtpPayload): Promise<void> => {
+    async ({ phone }: StartOtpPayload): Promise<boolean> => {
       setError(null);
       try {
         logAuthInfo("OTP start request fired", user, { phone });
@@ -291,7 +311,7 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
         // HTTP 204 is treated as success with no body.
         if (result === null) {
           setPendingPhoneNumber(phone);
-          return;
+          return true;
         }
         const headers = result.headers ?? {};
         const headerKey = Object.keys(headers).find((key) => key.toLowerCase() === "x-twilio-sid");
@@ -300,22 +320,22 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
           result.data?.sid ??
           (headerKey ? headers[headerKey] : undefined);
         if (!twilioSid) {
-          throw new Error("Twilio SID missing from OTP response");
+          setError("OTP pending. Please retry.");
+          return false;
         }
         setPendingPhoneNumber(phone);
+        return true;
       } catch (err: any) {
         const message = (err?.message as string) ?? "OTP failed";
         setError(message);
-        setAuthStatus("unauthenticated");
-        setRolesStatus("resolved");
-        throw err;
+        return false;
       }
     },
     [user]
   );
 
   const verifyOtp = useCallback(
-    async (payload: VerifyOtpPayload | string, codeArg?: string): Promise<void> => {
+    async (payload: VerifyOtpPayload | string, codeArg?: string): Promise<boolean> => {
       setError(null);
       const resolvedPayload =
         typeof payload === "string" ? { phone: payload, code: codeArg ?? "" } : payload;
@@ -325,15 +345,15 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
         logAuthInfo("OTP verify request fired", user, { phone: phoneNumber });
         const response = await verifyOtpService({ phone: phoneNumber, code: resolvedPayload.code });
         if (!response?.accessToken) {
-          throw new Error("OTP verification missing access token");
+          setError("OTP verification missing access token");
+          return false;
         }
         await login(response.accessToken);
+        return true;
       } catch (err: any) {
         const message = (err?.message as string) ?? "OTP verification failed";
         setError(message);
-        setAuthStatus("unauthenticated");
-        setRolesStatus("resolved");
-        throw err;
+        return false;
       } finally {
         setPendingPhoneNumber(null);
       }
@@ -350,29 +370,33 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
     clearAuthState();
   }, [clearAuthState, user]);
 
-  const isAuthenticated = authStatus === "authenticated";
+  const isAuthenticated = authState === "authenticated";
 
   const contextValue = useMemo<AuthContextValue>(
     () => ({
-      authStatus,
+      authState,
+      authStatus: authState,
       rolesStatus,
       user,
       accessToken,
       error,
       authenticated: isAuthenticated,
       isAuthenticated,
-      authReady: true,
+      authReady: authState !== "authenticated_pending",
       pendingPhoneNumber,
       startOtp,
       verifyOtp,
       login,
       setAuth,
+      setUser,
       setAuthenticated,
+      setAuthState,
+      clearAuth,
       refreshUser,
       logout
     }),
     [
-      authStatus,
+      authState,
       rolesStatus,
       user,
       accessToken,
@@ -383,7 +407,10 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
       verifyOtp,
       login,
       setAuth,
+      setUser,
       setAuthenticated,
+      setAuthState,
+      clearAuth,
       refreshUser,
       logout
     ]

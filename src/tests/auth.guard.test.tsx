@@ -12,6 +12,7 @@ const LocationProbe = () => {
 };
 
 const buildAuthValue = (overrides: Partial<AuthContextValue>): AuthContextValue => ({
+  authState: "authenticated",
   authStatus: "authenticated",
   rolesStatus: "resolved",
   user: { id: "user-1" },
@@ -21,11 +22,14 @@ const buildAuthValue = (overrides: Partial<AuthContextValue>): AuthContextValue 
   isAuthenticated: true,
   authReady: true,
   pendingPhoneNumber: null,
-  startOtp: async () => undefined,
-  verifyOtp: async () => undefined,
+  startOtp: async () => true,
+  verifyOtp: async () => true,
   login: async () => undefined,
   setAuth: () => undefined,
+  setUser: () => undefined,
   setAuthenticated: () => undefined,
+  setAuthState: () => undefined,
+  clearAuth: () => undefined,
   refreshUser: async () => false,
   logout: async () => undefined,
   ...overrides
@@ -35,6 +39,7 @@ describe("route guard role handling", () => {
   it("renders the dashboard shell while roles are loading", () => {
     const authValue = buildAuthValue({
       user: { id: "user-1" },
+      authState: "authenticated",
       authStatus: "authenticated",
       rolesStatus: "loading"
     });
@@ -94,6 +99,7 @@ describe("route guard role handling", () => {
 
   it("redirects unauthenticated users to /login", async () => {
     const authValue = buildAuthValue({
+      authState: "unauthenticated",
       authStatus: "unauthenticated",
       rolesStatus: "resolved",
       authenticated: false,

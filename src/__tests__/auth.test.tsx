@@ -2,16 +2,21 @@
 import "@testing-library/jest-dom/vitest";
 import { createElement } from "react";
 import { render, screen, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AuthProvider, useAuth } from "@/auth/AuthContext";
-import { fetchCurrentUser } from "@/api/auth";
 import { clearStoredAuth, setStoredAccessToken } from "@/services/token";
 
-vi.mock("@/api/auth", () => ({
-  fetchCurrentUser: vi.fn()
-}));
-
-const mockedFetchCurrentUser = vi.mocked(fetchCurrentUser);
+const mockFetchJson = (data: unknown) => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue(
+      new Response(JSON.stringify(data), {
+        status: 200,
+        headers: { "content-type": "application/json" }
+      })
+    )
+  );
+};
 
 const TestAuthState = () => {
   const { authStatus, user, rolesStatus } = useAuth();
@@ -43,8 +48,15 @@ describe("token auth", () => {
     clearStoredAuth();
   });
 
+  afterEach(() => {
+    clearStoredAuth();
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
   it("stores user after OTP verification flow", async () => {
     setStoredAccessToken("test-token");
+    mockFetchJson({ id: "1", email: "demo@example.com", role: "Admin" });
 
     render(
       <AuthProvider>
@@ -63,9 +75,7 @@ describe("token auth", () => {
 
   it("hydrates auth state from /api/auth/me", async () => {
     setStoredAccessToken("test-token");
-    mockedFetchCurrentUser.mockResolvedValueOnce({
-      data: { id: "2", email: "restored@example.com", role: "Staff" }
-    } as any);
+    mockFetchJson({ id: "2", email: "restored@example.com", role: "Staff" });
 
     render(
       <AuthProvider>
