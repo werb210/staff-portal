@@ -1,4 +1,4 @@
-import axios, { AxiosError, type AxiosRequestConfig } from "axios";
+import axios, { AxiosError, type AxiosRequestConfig, type AxiosResponse } from "axios";
 import { ApiError, api } from "@/api/http";
 import { reportAuthFailure } from "@/auth/authEvents";
 import { attachRequestIdAndLog, logError, logResponse } from "@/utils/apiLogging";
@@ -60,12 +60,23 @@ const handleApiError = (error: unknown) => {
   throw error;
 };
 
+const ensureSuccess = <T>(response: AxiosResponse<T>) => {
+  if (response.status >= 400) {
+    throw new ApiError({
+      status: response.status,
+      message: response.statusText || "Request failed",
+      details: response.data
+    });
+  }
+  return response;
+};
+
 export const apiClient = {
   get: async <T>(path: string, options?: RequestOptions) => {
     try {
       ensureAccessToken(options);
       const response = await api.get<T>(path, buildConfig(options));
-      return response.data;
+      return ensureSuccess(response).data;
     } catch (error) {
       handleApiError(error);
     }
@@ -74,7 +85,7 @@ export const apiClient = {
     try {
       ensureAccessToken(options);
       const response = await api.post<T>(path, data, buildConfig(options, { idempotent: true }));
-      return response.data;
+      return ensureSuccess(response).data;
     } catch (error) {
       handleApiError(error);
     }
@@ -83,7 +94,7 @@ export const apiClient = {
     try {
       ensureAccessToken(options);
       const response = await api.put<T>(path, data, buildConfig(options, { idempotent: true }));
-      return response.data;
+      return ensureSuccess(response).data;
     } catch (error) {
       handleApiError(error);
     }
@@ -92,7 +103,7 @@ export const apiClient = {
     try {
       ensureAccessToken(options);
       const response = await api.patch<T>(path, data, buildConfig(options, { idempotent: true }));
-      return response.data;
+      return ensureSuccess(response).data;
     } catch (error) {
       handleApiError(error);
     }
@@ -101,7 +112,7 @@ export const apiClient = {
     try {
       ensureAccessToken(options);
       const response = await api.delete<T>(path, buildConfig(options, { idempotent: true }));
-      return response.data;
+      return ensureSuccess(response).data;
     } catch (error) {
       handleApiError(error);
     }
@@ -110,7 +121,7 @@ export const apiClient = {
     try {
       ensureAccessToken(options);
       const response = await api.get<ListResponse<T>>(path, buildConfig(options));
-      return response.data;
+      return ensureSuccess(response).data;
     } catch (error) {
       handleApiError(error);
     }

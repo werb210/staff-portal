@@ -40,7 +40,7 @@ export const renderWithProviders = (ui: ReactElement, options?: StaffRenderOptio
     user: { id: "1", email: "test@example.com", role: "Admin" },
     accessToken: "test-token",
     authStatus: "authenticated",
-    rolesStatus: "loaded",
+    rolesStatus: "resolved",
     error: null,
     authenticated: true,
     isAuthenticated: true,

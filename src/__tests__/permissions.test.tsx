@@ -5,6 +5,7 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { renderWithProviders } from "@/test/testUtils";
 import LendersPage from "@/pages/lenders/LendersPage";
 import MarketingPage from "@/pages/marketing/MarketingPage";
+import PrivateRoute from "@/router/PrivateRoute";
 import { fetchLenders } from "@/api/lenders";
 
 vi.mock("@/api/lenders", () => ({
@@ -17,7 +18,7 @@ describe("permission-aware rendering", () => {
       auth: {
         user: { id: "u-1", name: "Staff User", email: "staff@example.com", role: "Staff" },
         authStatus: "authenticated",
-        rolesStatus: "loaded",
+        rolesStatus: "resolved",
         authenticated: true,
         authReady: true
       }
@@ -39,7 +40,7 @@ describe("permission-aware rendering", () => {
         auth: {
           user: { id: "u-2", name: "Lender User", email: "lender@example.com", role: "Lender" },
           authStatus: "authenticated",
-          rolesStatus: "loaded",
+          rolesStatus: "resolved",
           authenticated: true,
           authReady: true
         }
@@ -48,5 +49,33 @@ describe("permission-aware rendering", () => {
 
     expect(screen.getByText("Access restricted")).toBeInTheDocument();
     expect(fetchLendersMock).not.toHaveBeenCalled();
+  });
+
+  it("renders AccessRestricted when resolved roles lack Admin/Staff", () => {
+    renderWithProviders(
+      <MemoryRouter initialEntries={["/dashboard"]}>
+        <Routes>
+          <Route
+            path="/dashboard"
+            element={
+              <PrivateRoute allowedRoles={["Admin", "Staff"]}>
+                <div>Dashboard</div>
+              </PrivateRoute>
+            }
+          />
+        </Routes>
+      </MemoryRouter>,
+      {
+        auth: {
+          user: { id: "u-3", name: "Referrer User", email: "referrer@example.com", role: "Referrer" },
+          authStatus: "authenticated",
+          rolesStatus: "resolved",
+          authenticated: true,
+          authReady: true
+        }
+      }
+    );
+
+    expect(screen.getByText("Access restricted")).toBeInTheDocument();
   });
 });

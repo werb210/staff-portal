@@ -105,7 +105,7 @@ describe("login contract flow", () => {
     await waitFor(() => {
       expect(screen.getByTestId("auth-status")).toHaveTextContent("true");
       expect(screen.getByTestId("auth-state")).toHaveTextContent("authenticated");
-      expect(screen.getByTestId("roles-state")).toHaveTextContent("loaded");
+      expect(screen.getByTestId("roles-state")).toHaveTextContent("resolved");
       expect(screen.getByTestId("auth-user")).toHaveTextContent("\"role\":\"Staff\"");
     });
 

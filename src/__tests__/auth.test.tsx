@@ -56,7 +56,7 @@ describe("token auth", () => {
     screen.getByRole("button", { name: "Set Auth" }).click();
 
     await waitFor(() =>
-      expect(screen.getByTestId("status")).toHaveTextContent("authenticated:loaded")
+      expect(screen.getByTestId("status")).toHaveTextContent("authenticated:resolved")
     );
     expect(screen.getByTestId("email")).toHaveTextContent("demo@example.com");
   });
@@ -74,7 +74,7 @@ describe("token auth", () => {
     );
 
     await waitFor(() =>
-      expect(screen.getByTestId("status")).toHaveTextContent("authenticated:loaded")
+      expect(screen.getByTestId("status")).toHaveTextContent("authenticated:resolved")
     );
     expect(screen.getByTestId("email")).toHaveTextContent("restored@example.com");
   });

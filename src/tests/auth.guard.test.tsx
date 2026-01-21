@@ -13,7 +13,7 @@ const LocationProbe = () => {
 
 const buildAuthValue = (overrides: Partial<AuthContextValue>): AuthContextValue => ({
   authStatus: "authenticated",
-  rolesStatus: "loaded",
+  rolesStatus: "resolved",
   user: { id: "user-1" },
   accessToken: "token",
   error: null,
@@ -66,7 +66,7 @@ describe("route guard role handling", () => {
   it("shows AccessRestricted for authenticated users missing roles without redirecting", () => {
     const authValue = buildAuthValue({
       user: { id: "user-2", role: "Referrer" },
-      rolesStatus: "loaded"
+      rolesStatus: "resolved"
     });
 
     render(
@@ -95,7 +95,7 @@ describe("route guard role handling", () => {
   it("redirects unauthenticated users to /login", async () => {
     const authValue = buildAuthValue({
       authStatus: "unauthenticated",
-      rolesStatus: "idle",
+      rolesStatus: "resolved",
       authenticated: false,
       isAuthenticated: false,
       user: null,

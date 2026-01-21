@@ -28,7 +28,7 @@ const renderLoginFlow = () =>
       <MemoryRouter initialEntries={["/login"]}>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/" element={<div>Dashboard</div>} />
+          <Route path="/dashboard" element={<div>Dashboard</div>} />
         </Routes>
       </MemoryRouter>
     </AuthProvider>
@@ -36,14 +36,14 @@ const renderLoginFlow = () =>
 
 describe("login flow", () => {
   it("navigates to dashboard after OTP verification", async () => {
-    mockedStartOtp.mockResolvedValue(undefined);
+    mockedStartOtp.mockResolvedValue(null);
     mockedVerifyOtp.mockResolvedValue({ accessToken: "access", refreshToken: "refresh" });
     mockedFetchCurrentUser.mockResolvedValue({ data: { id: "1", role: "Staff" } } as any);
 
     renderLoginFlow();
 
     fireEvent.change(screen.getByLabelText(/Phone number/i), { target: { value: "+1 (555) 555-0100" } });
-    fireEvent.click(screen.getByRole("button", { name: /Submit code/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Send code/i }));
 
     await waitFor(() => expect(mockedStartOtp).toHaveBeenCalled());
 

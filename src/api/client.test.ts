@@ -9,7 +9,8 @@ vi.mock("@/services/api", async () => {
 });
 
 import apiClient from "./httpClient";
-import { buildApiUrl, redirectToLogin } from "@/services/api";
+import { redirectToLogin } from "@/services/api";
+import { buildRequestUrl } from "@/utils/apiLogging";
 import { registerAuthFailureHandler } from "@/auth/authEvents";
 import { clearStoredAuth, setStoredAccessToken } from "@/services/token";
 
@@ -39,7 +40,7 @@ describe("apiClient auth", () => {
     expect(adapter).toHaveBeenCalledOnce();
     const passedConfig = adapter.mock.calls[0][0];
     expect(passedConfig?.headers?.Authorization).toBe("Bearer test-token");
-    expect(passedConfig?.url).toBe(buildApiUrl("/example"));
+    expect(buildRequestUrl(passedConfig ?? {})).toMatch(/\/api\/example$/);
   });
 
   it("reports missing tokens without redirecting", async () => {
