@@ -34,6 +34,10 @@ if (!rawBaseUrl) {
 
 const apiBaseUrl = rawBaseUrl.endsWith("/api") ? rawBaseUrl : `${rawBaseUrl}/api`;
 
+export type AuthRequestConfig = AxiosRequestConfig & {
+  skipAuth?: boolean;
+};
+
 export const api = axios.create({
   baseURL: apiBaseUrl
 });
@@ -43,13 +47,15 @@ const shouldBypassAuthRedirect = (url?: string | null) => {
   return ["/auth/otp/start", "/auth/otp/verify"].some((path) => url.includes(path));
 };
 
-api.interceptors.request.use((config: AxiosRequestConfig) => {
-  const token = getAccessToken();
-  if (token) {
-    config.headers = {
-      ...(config.headers ?? {}),
-      Authorization: `Bearer ${token}`
-    };
+api.interceptors.request.use((config: AuthRequestConfig) => {
+  if (!config.skipAuth && !shouldBypassAuthRedirect(config.url)) {
+    const token = getAccessToken();
+    if (token) {
+      config.headers = {
+        ...(config.headers ?? {}),
+        Authorization: `Bearer ${token}`
+      };
+    }
   }
   return attachRequestIdAndLog(config);
 });

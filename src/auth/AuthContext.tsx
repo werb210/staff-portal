@@ -150,6 +150,7 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
     setAuthState("unauthenticated");
     setRolesStatus("resolved");
     setError(null);
+    setPendingPhoneNumber(null);
   }, []);
 
   const clearAuth = useCallback(() => {
