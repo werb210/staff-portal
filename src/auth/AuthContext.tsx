@@ -254,24 +254,11 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
       try {
         logAuthInfo("OTP start request fired", user, { phone });
         const result = await startOtpService({ phone });
+        // HTTP 204 is treated as success with no body.
         if (result === null) {
-          // HTTP 204 is treated as success with no body.
           setPendingPhoneNumber(phone);
           return;
         }
-        const twilioSid =
-          (result as { data?: { twilioSid?: string; sid?: string } } | null)?.data?.twilioSid ??
-          (result as { data?: { twilioSid?: string; sid?: string } } | null)?.data?.sid ??
-          (result as { headers?: Record<string, string> } | null)?.headers?.["x-twilio-sid"] ??
-          (result as { headers?: Record<string, string> } | null)?.headers?.[
-            "x-twilio-message-sid"
-          ] ??
-          null;
-        if (!twilioSid) {
-          logAuthError("OTP start missing Twilio SID", user, { phone });
-          throw new Error("OTP start missing Twilio SID");
-        }
-        logAuthInfo("OTP start confirmed Twilio SID", user, { twilioSid });
         setPendingPhoneNumber(phone);
       } catch (err: any) {
         const message = (err?.message as string) ?? "OTP failed";
