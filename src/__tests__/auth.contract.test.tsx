@@ -5,22 +5,19 @@ import { render, screen, waitFor } from "@testing-library/react";
 import { createElement } from "react";
 import { AuthProvider, useAuth } from "@/auth/AuthContext";
 import { clearStoredAuth, setStoredAccessToken } from "@/services/token";
+import api from "@/lib/api";
 
 type DeferredResponse = {
-  promise: Promise<Response>;
-  resolve: (value: Response) => void;
+  promise: Promise<unknown>;
+  resolve: (value: { id: string; role: string }) => void;
 };
 
 const createDeferredResponse = (): DeferredResponse => {
-  let resolve: (value: Response) => void = () => undefined;
-  const promise = new Promise<Response>((resolver) => {
+  let resolve: (value: { id: string; role: string }) => void = () => undefined;
+  const promise = new Promise<{ id: string; role: string }>((resolver) => {
     resolve = resolver;
   });
   return { promise, resolve };
-};
-
-const mockFetch = (response: Promise<Response>) => {
-  vi.stubGlobal("fetch", vi.fn().mockReturnValue(response));
 };
 
 const AuthStatusProbe = () => {
@@ -29,10 +26,13 @@ const AuthStatusProbe = () => {
 };
 
 describe("auth contract", () => {
+  const originalAdapter = api.defaults.adapter;
+
   afterEach(() => {
     clearStoredAuth();
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
+    api.defaults.adapter = originalAdapter;
   });
 
   it("sets authenticated immediately and resolves roles after /api/auth/me", async () => {
@@ -40,7 +40,16 @@ describe("auth contract", () => {
     setStoredAccessToken("token");
 
     const deferred = createDeferredResponse();
-    mockFetch(deferred.promise);
+    const adapter = vi.fn((config) =>
+      deferred.promise.then((payload) => ({
+        data: payload,
+        status: 200,
+        statusText: "OK",
+        headers: {},
+        config
+      }))
+    );
+    api.defaults.adapter = adapter;
 
     render(
       <AuthProvider>
@@ -50,12 +59,7 @@ describe("auth contract", () => {
 
     expect(screen.getByTestId("status")).toHaveTextContent("authenticated_pending:loading");
 
-    deferred.resolve(
-      new Response(JSON.stringify({ id: "1", role: "Staff" }), {
-        status: 200,
-        headers: { "content-type": "application/json" }
-      })
-    );
+    deferred.resolve({ id: "1", role: "Staff" });
 
     await waitFor(() => {
       expect(screen.getByTestId("status")).toHaveTextContent("authenticated:resolved");

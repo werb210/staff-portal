@@ -29,10 +29,11 @@ export default function LoginPage() {
       setError("Please enter the verification code.");
       return;
     }
+    const targetPhone = auth.pendingPhoneNumber ?? phone;
     setLoading(true);
     setError(null);
     try {
-      const ok = await auth.verifyOtp(code);
+      const ok = await auth.verifyOtp(targetPhone, code);
       if (!ok) {
         setError(auth.error ?? "Invalid OTP");
       }
@@ -71,12 +72,15 @@ export default function LoginPage() {
 
         {showOtpInput && (
           <div>
-            <input
-              type="text"
-              placeholder="Enter OTP"
-              ref={otpInputRef}
-              className="border rounded px-3 py-2 w-full"
-            />
+            <label className="block">
+              Verification code
+              <input
+                type="text"
+                placeholder="Enter OTP"
+                ref={otpInputRef}
+                className="border rounded px-3 py-2 w-full"
+              />
+            </label>
             <button
               type="button"
               className="mt-3 w-full bg-blue-600 text-white rounded px-4 py-2"

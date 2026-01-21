@@ -11,6 +11,7 @@ import LoginPage from "@/pages/login/LoginPage";
 import PrivateRoute from "@/router/PrivateRoute";
 import { ApiError } from "@/api/http";
 import { clearStoredAuth, setStoredAccessToken } from "@/services/token";
+import api from "@/lib/api";
 
 vi.mock("@/services/auth", () => ({
   startOtp: vi.fn(),
@@ -30,11 +31,14 @@ const mockedStartOtp = vi.mocked(startOtpService);
 const mockedVerifyOtp = vi.mocked(verifyOtpService);
 const mockedLogout = vi.mocked(logoutService);
 
-const createJsonResponse = (data: unknown, status = 200) =>
-  new Response(JSON.stringify(data), {
+const createAuthAdapter = (data: unknown, status = 200) =>
+  vi.fn(async (config) => ({
+    data,
     status,
-    headers: { "content-type": "application/json" }
-  });
+    statusText: status === 200 ? "OK" : "Error",
+    headers: {},
+    config
+  }));
 
 const TestAuthState = () => {
   const { authStatus, rolesStatus } = useAuth();
@@ -69,9 +73,12 @@ const LocationProbe = () => {
 };
 
 describe("auth flow", () => {
+  const originalAdapter = api.defaults.adapter;
+
   afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();
+    api.defaults.adapter = originalAdapter;
   });
 
   beforeEach(() => {
@@ -81,8 +88,8 @@ describe("auth flow", () => {
   });
 
   it("verifies OTP successfully", async () => {
-    const fetchSpy = vi.fn().mockResolvedValue(createJsonResponse({ id: "1", role: "Admin" }));
-    vi.stubGlobal("fetch", fetchSpy);
+    const adapter = createAuthAdapter({ id: "1", role: "Admin" });
+    api.defaults.adapter = adapter;
     mockedVerifyOtp.mockResolvedValue({ accessToken: "access", refreshToken: "refresh" });
 
     render(
@@ -99,19 +106,31 @@ describe("auth flow", () => {
       expect(screen.getByTestId("status")).toHaveTextContent("authenticated:resolved")
     );
     expect(screen.getByTestId("role")).toHaveTextContent("Admin");
-    expect(fetchSpy).toHaveBeenCalledWith("/api/auth/me", { credentials: "include" });
+    expect(adapter).toHaveBeenCalled();
+    const passedConfig = adapter.mock.calls[0][0];
+    expect(passedConfig.headers?.Authorization).toBe("Bearer access");
+    expect(passedConfig.withCredentials).not.toBe(true);
   });
 
   it("does not redirect during auth hydration after OTP verification", async () => {
     mockedStartOtp.mockResolvedValue(null);
     mockedVerifyOtp.mockResolvedValue({ accessToken: "access", refreshToken: "refresh" });
 
-    let resolveFetch: (value: Response) => void = () => undefined;
-    const pendingFetch = new Promise<Response>((resolve) => {
-      resolveFetch = resolve;
-    });
-    const fetchSpy = vi.fn().mockReturnValue(pendingFetch);
-    vi.stubGlobal("fetch", fetchSpy);
+    let resolveRequest: (payload: { id: string; role: string }) => void = () => undefined;
+    const pendingAdapter = vi.fn(
+      (config) =>
+        new Promise((resolve) => {
+          resolveRequest = (payload) =>
+            resolve({
+              data: payload,
+              status: 200,
+              statusText: "OK",
+              headers: {},
+              config
+            });
+        })
+    );
+    api.defaults.adapter = pendingAdapter;
 
     render(
       <MemoryRouter initialEntries={["/login"]}>
@@ -143,7 +162,7 @@ describe("auth flow", () => {
       expect(screen.getByTestId("location")).toHaveTextContent("/login");
     });
 
-    resolveFetch(createJsonResponse({ id: "1", role: "Staff" }));
+    resolveRequest({ id: "1", role: "Staff" });
 
     await waitFor(() => {
       expect(screen.getByTestId("location")).toHaveTextContent("/dashboard");
@@ -153,8 +172,7 @@ describe("auth flow", () => {
 
   it("renders protected routes after /api/auth/me succeeds", async () => {
     setStoredAccessToken("test-token");
-    const fetchSpy = vi.fn().mockResolvedValue(createJsonResponse({ id: "1", role: "Staff" }));
-    vi.stubGlobal("fetch", fetchSpy);
+    api.defaults.adapter = createAuthAdapter({ id: "1", role: "Staff" });
 
     render(
       <MemoryRouter initialEntries={["/dashboard"]}>
@@ -180,10 +198,7 @@ describe("auth flow", () => {
 
   it("hydrates user on refresh", async () => {
     setStoredAccessToken("test-token");
-    const fetchSpy = vi
-      .fn()
-      .mockResolvedValue(createJsonResponse({ id: "1", role: "Admin", email: "demo@example.com" }));
-    vi.stubGlobal("fetch", fetchSpy);
+    api.defaults.adapter = createAuthAdapter({ id: "1", role: "Admin", email: "demo@example.com" });
 
     render(
       <AuthProvider>
@@ -230,10 +245,7 @@ describe("auth flow", () => {
 
   it("clears token on manual logout", async () => {
     setStoredAccessToken("test-token");
-    const fetchSpy = vi
-      .fn()
-      .mockResolvedValue(createJsonResponse({ id: "1", role: "Admin", email: "demo@example.com" }));
-    vi.stubGlobal("fetch", fetchSpy);
+    api.defaults.adapter = createAuthAdapter({ id: "1", role: "Admin", email: "demo@example.com" });
 
     render(
       <MemoryRouter initialEntries={["/dashboard"]}>

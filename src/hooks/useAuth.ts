@@ -1,6 +1,7 @@
 import { useCallback, useMemo } from "react";
 import { useAuth as useAuthContext, type AuthState } from "@/auth/AuthContext";
 import type { AuthenticatedUser } from "@/services/auth";
+import api from "@/lib/api";
 
 export type StaffUser = AuthenticatedUser & {
   role?: string;
@@ -45,23 +46,15 @@ export const useAuth = (): AuthValue => {
   } = useAuthContext();
 
   const refreshUser = useCallback(async (): Promise<boolean> => {
-    const res = await fetch("/api/auth/me", { credentials: "include" });
-
-    if (!res.ok) {
+    try {
+      const response = await api.get<AuthenticatedUser>("/auth/me");
+      setUser(response.data ?? null);
+      setAuthState("authenticated");
+      return true;
+    } catch {
       clearAuth();
       return false;
     }
-
-    const ct = res.headers.get("content-type");
-    if (!ct || !ct.includes("application/json")) {
-      clearAuth();
-      return false;
-    }
-
-    const data = (await res.json()) as AuthenticatedUser;
-    setUser(data);
-    setAuthState("authenticated");
-    return true;
   }, [clearAuth, setAuthState, setUser]);
 
   const isLoading =

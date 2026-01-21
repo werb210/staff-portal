@@ -2,6 +2,7 @@
 import "@testing-library/jest-dom/vitest";
 import apiClient from "@/api/httpClient";
 import api from "@/api/client";
+import authApi from "@/lib/api";
 import { AuthProvider, useAuth } from "@/auth/AuthContext";
 import { verifyOtp } from "@/services/auth";
 import { render, screen, waitFor } from "@testing-library/react";
@@ -25,12 +26,6 @@ const adapter = vi.fn(async (config) => ({
   headers: {},
   config
 }));
-
-const createJsonResponse = (data: unknown) =>
-  new Response(JSON.stringify(data), {
-    status: 200,
-    headers: { "content-type": "application/json" }
-  });
 
 const TestAuthState = () => {
   const { authStatus, user, rolesStatus } = useAuth();
@@ -56,11 +51,17 @@ const TestVerifyAction = () => {
 };
 
 describe("auth login", () => {
+  const originalAdapter = authApi.defaults.adapter;
+
   beforeEach(() => {
     adapter.mockClear();
     clearStoredAuth();
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
+  });
+
+  afterEach(() => {
+    authApi.defaults.adapter = originalAdapter;
   });
 
   it("OTP start omits Idempotency-Key", async () => {
@@ -102,10 +103,14 @@ describe("auth login", () => {
       refreshToken: "refresh"
     });
 
-    expect(apiPostSpy).toHaveBeenCalledWith("/auth/otp/verify", {
-      phone: "+15555550100",
-      code: "123456"
-    });
+    expect(apiPostSpy).toHaveBeenCalledWith(
+      "/auth/otp/verify",
+      {
+        phone: "+15555550100",
+        code: "123456"
+      },
+      { skipAuth: true }
+    );
     apiPostSpy.mockRestore();
   });
 
@@ -116,12 +121,18 @@ describe("auth login", () => {
 
   it("hydrates user from /api/auth/me on reload", async () => {
     setStoredAccessToken("test-token");
-    const fetchSpy = vi.fn().mockResolvedValue(createJsonResponse({
-      id: "1",
-      email: "restored@example.com",
-      role: "Admin"
+    const adapter = vi.fn(async (config) => ({
+      data: {
+        id: "1",
+        email: "restored@example.com",
+        role: "Admin"
+      },
+      status: 200,
+      statusText: "OK",
+      headers: {},
+      config
     }));
-    vi.stubGlobal("fetch", fetchSpy);
+    authApi.defaults.adapter = adapter;
 
     render(createElement(AuthProvider, null, createElement(TestAuthState)));
 
@@ -129,6 +140,10 @@ describe("auth login", () => {
       expect(screen.getByTestId("status")).toHaveTextContent("authenticated:resolved")
     );
     expect(screen.getByTestId("user")).toHaveTextContent("restored@example.com");
+    expect(adapter).toHaveBeenCalled();
+    const passedConfig = adapter.mock.calls[0][0];
+    expect(passedConfig.headers?.Authorization).toBe("Bearer test-token");
+    expect(passedConfig.withCredentials).not.toBe(true);
   });
 
   it("verifyOtp triggers /api/auth/me and updates status", async () => {
@@ -139,19 +154,24 @@ describe("auth login", () => {
       headers: {},
       config: {}
     } as any);
-    const fetchSpy = vi.fn().mockResolvedValue(createJsonResponse({
-      id: "1",
-      email: "demo@example.com",
-      role: "Admin"
+    const adapter = vi.fn(async (config) => ({
+      data: { id: "1", email: "demo@example.com", role: "Admin" },
+      status: 200,
+      statusText: "OK",
+      headers: {},
+      config
     }));
-    vi.stubGlobal("fetch", fetchSpy);
+    authApi.defaults.adapter = adapter;
 
     render(createElement(AuthProvider, null, createElement(TestVerifyAction), createElement(TestAuthState)));
 
     screen.getByRole("button", { name: "Verify" }).click();
 
     await waitFor(() => expect(postSpy).toHaveBeenCalled());
-    await waitFor(() => expect(fetchSpy).toHaveBeenCalledWith("/api/auth/me", { credentials: "include" }));
+    await waitFor(() => expect(adapter).toHaveBeenCalled());
+    const passedConfig = adapter.mock.calls[0][0];
+    expect(passedConfig.headers?.Authorization).toBe("Bearer access");
+    expect(passedConfig.withCredentials).not.toBe(true);
     await waitFor(() =>
       expect(screen.getByTestId("status")).toHaveTextContent("authenticated:resolved")
     );

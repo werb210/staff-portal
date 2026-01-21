@@ -86,7 +86,7 @@ describe("auth failure safeguards", () => {
     await expect(runRouteAudit()).resolves.toBeUndefined();
   });
 
-  it("Twilio not called -> fail", async () => {
+  it("OTP start succeeds without Twilio SID", async () => {
     mockedStartOtp.mockResolvedValue({
       data: { requestId: "req-1" },
       headers: {}
@@ -101,7 +101,8 @@ describe("auth failure safeguards", () => {
 
     await waitFor(() => expect(authRef).not.toBeNull());
     const result = await authRef!.startOtp({ phone: "+15555550100" });
-    expect(result).toBe(false);
-    expect(authRef!.error).toMatch(/otp pending/i);
+    expect(result).toBe(true);
+    expect(authRef!.pendingPhoneNumber).toBe("+15555550100");
+    expect(authRef!.error).toBeNull();
   });
 });

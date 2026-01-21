@@ -5,18 +5,16 @@ import { render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AuthProvider, useAuth } from "@/auth/AuthContext";
 import { clearStoredAuth, setStoredAccessToken } from "@/services/token";
+import api from "@/lib/api";
 
-const mockFetchJson = (data: unknown) => {
-  vi.stubGlobal(
-    "fetch",
-    vi.fn().mockResolvedValue(
-      new Response(JSON.stringify(data), {
-        status: 200,
-        headers: { "content-type": "application/json" }
-      })
-    )
-  );
-};
+const createAuthAdapter = (data: unknown) =>
+  vi.fn(async (config) => ({
+    data,
+    status: 200,
+    statusText: "OK",
+    headers: {},
+    config
+  }));
 
 const TestAuthState = () => {
   const { authStatus, user, rolesStatus } = useAuth();
@@ -44,6 +42,8 @@ const TestSetAuth = () => {
 };
 
 describe("token auth", () => {
+  const originalAdapter = api.defaults.adapter;
+
   beforeEach(() => {
     clearStoredAuth();
   });
@@ -52,11 +52,12 @@ describe("token auth", () => {
     clearStoredAuth();
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
+    api.defaults.adapter = originalAdapter;
   });
 
   it("stores user after OTP verification flow", async () => {
     setStoredAccessToken("test-token");
-    mockFetchJson({ id: "1", email: "demo@example.com", role: "Admin" });
+    api.defaults.adapter = createAuthAdapter({ id: "1", email: "demo@example.com", role: "Admin" });
 
     render(
       <AuthProvider>
@@ -75,7 +76,7 @@ describe("token auth", () => {
 
   it("hydrates auth state from /api/auth/me", async () => {
     setStoredAccessToken("test-token");
-    mockFetchJson({ id: "2", email: "restored@example.com", role: "Staff" });
+    api.defaults.adapter = createAuthAdapter({ id: "2", email: "restored@example.com", role: "Staff" });
 
     render(
       <AuthProvider>

@@ -1,4 +1,4 @@
-import api from "@/lib/api";
+import api, { type AuthRequestConfig } from "@/lib/api";
 
 export type OtpStartPayload = {
   phone: string;
@@ -23,10 +23,10 @@ export type OtpVerifyResponse = {
 };
 
 export const otpStart = (payload: OtpStartPayload) =>
-  api.post<OtpStartResponse>("/auth/otp/start", payload);
+  api.post<OtpStartResponse>("/auth/otp/start", payload, { skipAuth: true } as AuthRequestConfig);
 
 export const otpVerify = (payload: OtpVerifyPayload) =>
-  api.post<OtpVerifyResponse>("/auth/otp/verify", payload);
+  api.post<OtpVerifyResponse>("/auth/otp/verify", payload, { skipAuth: true } as AuthRequestConfig);
 
 export const otp = {
   start: otpStart,
