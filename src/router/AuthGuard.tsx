@@ -1,15 +1,11 @@
 import { Navigate, useLocation } from "react-router-dom";
-import { useAuth } from "@/auth/AuthContext";
+import { getAccessToken } from "@/lib/authToken";
 
 export default function AuthGuard({ children }: { children: JSX.Element }) {
   const location = useLocation();
-  const auth = useAuth();
+  const token = getAccessToken();
 
-  if (!auth.authReady) {
-    return null;
-  }
-
-  if (!auth.isAuthenticated) {
+  if (!token) {
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
 

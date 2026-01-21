@@ -15,7 +15,7 @@ export type LenderLoginPayload = {
 };
 
 export type LenderLoginResponse = {
-  sessionId: string;
+  otpRequestId: string;
   requiresOtp: boolean;
 };
 
@@ -28,7 +28,7 @@ export const sendLenderOtp = (email: string) =>
 export type VerifyOtpPayload = {
   email: string;
   code: string;
-  sessionId?: string;
+  otpRequestId?: string;
 };
 
 export type VerifyOtpResponse = {

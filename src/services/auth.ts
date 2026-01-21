@@ -4,7 +4,6 @@ export type AuthenticatedUser = Record<string, any>;
 
 export type OtpStartResponse =
   | {
-      sessionId?: string;
       requestId?: string;
       twilioSid?: string;
       sid?: string;

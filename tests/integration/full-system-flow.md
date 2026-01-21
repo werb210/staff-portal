@@ -89,9 +89,9 @@
 
 ### Talk-to-Human Routing
 1. Send chatbot message requesting human; expect handoff event and agent assignment.
-2. Confirm communication center opens session and timeline entry records agent join.
+2. Confirm communication center opens state and timeline entry records agent join.
 
 ### Report-an-Issue Routing
 1. Submit issue via chatbot; expect ticket creation with severity and reproduction steps captured.
 2. Validate issue visible in staff portal with linkage to application and requester.
-3. Confirm status updates propagate back to chatbot session.
+3. Confirm status updates propagate back to chatbot state.

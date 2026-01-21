@@ -144,7 +144,7 @@ describe("auth flow", () => {
     await waitFor(() => expect(screen.getByText(/failed/i)).toBeInTheDocument());
   });
 
-  it("clears session on manual logout", async () => {
+  it("clears token on manual logout", async () => {
     setStoredAccessToken("test-token");
     mockedFetchCurrentUser.mockResolvedValue({
       data: { id: "1", role: "Admin", email: "demo@example.com" }

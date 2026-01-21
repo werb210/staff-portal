@@ -90,7 +90,7 @@ describe("auth failure safeguards", () => {
 
   it("Twilio not called -> fail", async () => {
     mockedStartOtp.mockResolvedValue({
-      data: { sessionId: "session-1" },
+      data: { requestId: "req-1" },
       headers: {}
     } as any);
 

@@ -1,4 +1,4 @@
-import { getAccessToken } from "@/auth/auth.store";
+import { getAccessToken } from "@/lib/authToken";
 
 export function getAuthToken(): string | null {
   return getAccessToken();

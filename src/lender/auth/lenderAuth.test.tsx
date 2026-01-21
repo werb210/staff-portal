@@ -42,11 +42,14 @@ const renderLenderRouter = () => {
 describe("Lender authentication flow", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    sessionStorage.clear();
+    localStorage.clear();
   });
 
   it("handles login and OTP verification with isolated storage", async () => {
-    (lenderLogin as MockedFunction<typeof lenderLogin>).mockResolvedValue({ sessionId: "sess-1", requiresOtp: true });
+    (lenderLogin as MockedFunction<typeof lenderLogin>).mockResolvedValue({
+      otpRequestId: "otp-1",
+      requiresOtp: true
+    });
     (sendLenderOtp as MockedFunction<typeof sendLenderOtp>).mockResolvedValue({ sent: true });
     (verifyLenderOtp as MockedFunction<typeof verifyLenderOtp>).mockResolvedValue({
       accessToken: "lender-access",
@@ -61,7 +64,9 @@ describe("Lender authentication flow", () => {
     await user.type(screen.getByLabelText(/Password/i), "password123");
     await user.click(screen.getByRole("button", { name: /login/i }));
 
-    await waitFor(() => expect(lenderLogin).toHaveBeenCalledWith({ email: "lender@example.com", password: "password123" }));
+    await waitFor(() =>
+      expect(lenderLogin).toHaveBeenCalledWith({ email: "lender@example.com", password: "password123" })
+    );
     expect(sendLenderOtp).toHaveBeenCalledWith("lender@example.com");
 
     await waitFor(() => expect(screen.getByText(/verification code/i)).toBeInTheDocument());
@@ -69,11 +74,15 @@ describe("Lender authentication flow", () => {
     await user.click(screen.getByRole("button", { name: /verify/i }));
 
     await waitFor(() =>
-      expect(verifyLenderOtp).toHaveBeenCalledWith({ email: "lender@example.com", code: "123456", sessionId: "sess-1" })
+      expect(verifyLenderOtp).toHaveBeenCalledWith({
+        email: "lender@example.com",
+        code: "123456",
+        otpRequestId: "otp-1"
+      })
     );
 
-    const stored = JSON.parse(sessionStorage.getItem("lender-portal.auth") ?? "{}");
+    const stored = JSON.parse(localStorage.getItem("lender-portal.auth") ?? "{}");
     expect(stored.tokens.accessToken).toBe("lender-access");
-    expect(sessionStorage.getItem("staff-portal.auth")).toBeNull();
+    expect(localStorage.getItem("staff-portal.auth")).toBeNull();
   });
 });

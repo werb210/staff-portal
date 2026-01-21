@@ -3,7 +3,7 @@ import { ApiError, api } from "@/api/http";
 import { reportAuthFailure } from "@/auth/authEvents";
 import { redirectToLogin } from "@/services/api";
 import { attachRequestIdAndLog, logError, logResponse } from "@/utils/apiLogging";
-import { getAccessToken } from "@/auth/auth.store";
+import { getAccessToken } from "@/lib/authToken";
 
 export type RequestOptions = AxiosRequestConfig & {
   skipAuth?: boolean;

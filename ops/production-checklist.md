@@ -33,7 +33,7 @@
 
 ## CLIENT APP FLOW
 - All steps (1 → 6) verified
-- Resume session works
+- Resume auth state works
 - Required docs logic verified
 - AI chat safe + functional
 - Talk-to-human routing to CRM
