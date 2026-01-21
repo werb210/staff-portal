@@ -8,6 +8,7 @@ import { AuthProvider, useAuth } from "@/auth/AuthContext";
 import RequireAuth from "@/routes/RequireAuth";
 import { startOtp as startOtpService, verifyOtp as verifyOtpService, logout as logoutService } from "@/services/auth";
 import LoginPage from "@/pages/login/LoginPage";
+import PrivateRoute from "@/router/PrivateRoute";
 import { fetchCurrentUser } from "@/api/auth";
 import { ApiError } from "@/api/http";
 import { clearStoredAuth, setStoredAccessToken } from "@/services/token";
@@ -97,6 +98,45 @@ describe("auth flow", () => {
     expect(mockedFetchCurrentUser).toHaveBeenCalled();
   });
 
+  it("does not redirect after OTP verification while roles are still loading", async () => {
+    mockedStartOtp.mockResolvedValue(null);
+    mockedVerifyOtp.mockResolvedValue({ accessToken: "access", refreshToken: "refresh" });
+    mockedFetchCurrentUser.mockResolvedValue({ data: { id: "1" } } as any);
+
+    render(
+      <MemoryRouter initialEntries={["/login"]}>
+        <AuthProvider>
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
+            <Route
+              path="/dashboard"
+              element={
+                <PrivateRoute allowedRoles={["Admin", "Staff"]}>
+                  <div>Dashboard</div>
+                </PrivateRoute>
+              }
+            />
+          </Routes>
+          <LocationProbe />
+        </AuthProvider>
+      </MemoryRouter>
+    );
+
+    fireEvent.change(screen.getByLabelText(/Phone number/i), { target: { value: "+1 555 555 0100" } });
+    fireEvent.click(screen.getByRole("button", { name: /Send code/i }));
+
+    const otpInput = await screen.findByLabelText(/verification code/i);
+    fireEvent.change(otpInput, { target: { value: "123456" } });
+    fireEvent.click(screen.getByRole("button", { name: /Verify code/i }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("location")).toHaveTextContent("/dashboard");
+    });
+
+    expect(screen.queryByRole("heading", { name: /staff login/i })).not.toBeInTheDocument();
+    expect(screen.queryByText("Access restricted")).not.toBeInTheDocument();
+  });
+
   it("hydrates user on refresh", async () => {
     setStoredAccessToken("test-token");
     mockedFetchCurrentUser.mockResolvedValue({
@@ -133,7 +173,7 @@ describe("auth flow", () => {
     );
 
     fireEvent.change(screen.getByLabelText(/Phone number/i), { target: { value: "+1 555 555 0100" } });
-    fireEvent.click(screen.getByRole("button", { name: /Submit code/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Send code/i }));
 
     if (code !== "missing_idempotency_key") {
       await waitFor(() => expect(mockedStartOtp).toHaveBeenCalled());
@@ -153,6 +193,7 @@ describe("auth flow", () => {
     render(
       <MemoryRouter initialEntries={["/dashboard"]}>
         <AuthProvider>
+          <TestAuthState />
           <Routes>
             <Route
               path="/dashboard"
@@ -160,14 +201,13 @@ describe("auth flow", () => {
                 <RequireAuth>
                   <div>
                     <TestLogoutAction />
-                    <TestAuthState />
-                    <LocationProbe />
                   </div>
                 </RequireAuth>
               }
             />
             <Route path="/login" element={<div>Login</div>} />
           </Routes>
+          <LocationProbe />
         </AuthProvider>
       </MemoryRouter>
     );

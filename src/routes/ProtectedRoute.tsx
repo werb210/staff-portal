@@ -7,13 +7,14 @@ export function ProtectedRoute({ children }: { children: JSX.Element }) {
   const auth = useAuth();
   const location = useLocation();
   const requestId = getRequestId();
+  const isRolePending = auth.status === "authenticated" && auth.user?.role === undefined;
 
-  if (auth.status === "loading") {
+  if (auth.status === "loading" || isRolePending) {
     console.info("Route guard decision", {
       requestId,
       route: location.pathname,
       authState: auth.status,
-      reason: "auth_loading"
+      reason: isRolePending ? "roles_loading" : "auth_loading"
     });
     return null; // wait for hydration
   }

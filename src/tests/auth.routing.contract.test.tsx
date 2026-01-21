@@ -146,7 +146,7 @@ describe("auth routing contract", () => {
     expect(screen.getByTestId("location")).toHaveTextContent("/");
   });
 
-  it("redirects to /login after a 401 response", async () => {
+  it("does not redirect to /login after a 401 response", async () => {
     setStoredAccessToken("test-token");
     let callCount = 0;
     server.use(
@@ -167,10 +167,10 @@ describe("auth routing contract", () => {
     await expect(api.get("/secure")).rejects.toBeTruthy();
 
     await waitFor(() => {
-      expect(window.location.pathname).toBe("/login");
+      expect(window.location.pathname).toBe("/lenders");
     });
 
     await expect(api.get("/secure")).resolves.toBeTruthy();
-    expect(window.location.pathname).toBe("/login");
+    expect(window.location.pathname).toBe("/lenders");
   });
 });

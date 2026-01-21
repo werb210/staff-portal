@@ -126,7 +126,6 @@ export default function LoginPage() {
     setIsVerifying(true);
     try {
       await verifyOtp({ phone, code: trimmed });
-      navigate("/dashboard");
     } catch (err) {
       const details = buildOtpErrorDetails(err, "/auth/otp/verify");
       console.error("OTP verify failed.", { ...details, error: err });

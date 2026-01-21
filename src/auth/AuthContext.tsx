@@ -27,7 +27,6 @@ import {
 import { getAccessToken } from "@/lib/authToken";
 import { ApiError } from "@/lib/api";
 import { registerAuthFailureHandler } from "@/auth/authEvents";
-import { redirectToLogin } from "@/services/api";
 
 export type AuthStatus = "loading" | "authenticated" | "unauthenticated";
 
@@ -128,7 +127,6 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
     async (reason: string) => {
       logAuthInfo("Auth forced logout", user, { reason });
       clearAuthState();
-      redirectToLogin();
     },
     [clearAuthState, user]
   );
@@ -151,35 +149,34 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
       setStatus("unauthenticated");
       return false;
     }
+    setStatus("loading");
     try {
       const profile = await fetchCurrentUser();
       setUser(profile.data ?? null);
       setStoredUser(profile.data ?? null);
+      setStatus("authenticated");
       return Boolean(profile.data);
     } catch (fetchError) {
+      if (fetchError instanceof ApiError && fetchError.status === 401) {
+        clearStoredAuth();
+        setUser(null);
+        setStatus("unauthenticated");
+        setError(null);
+        return false;
+      }
       logAuthError("/api/auth/me failed", user, { error: fetchError });
       setError("Unable to refresh user profile.");
+      setStatus("authenticated");
       return false;
     }
   }, [user]);
 
-  const login = useCallback(
-    async (token: string): Promise<void> => {
-      setStoredAccessToken(token);
-      setAccessTokenState(token);
-      setStatus("authenticated");
-      setError(null);
-      try {
-        const profile = await fetchCurrentUser();
-        setUser(profile.data ?? null);
-        setStoredUser(profile.data ?? null);
-      } catch (fetchError) {
-        logAuthError("/api/auth/me failed after login", user, { error: fetchError });
-        setError("Login succeeded, but we could not load your profile yet.");
-      }
-    },
-    [user]
-  );
+  const login = useCallback(async (token: string): Promise<void> => {
+    setStoredAccessToken(token);
+    setAccessTokenState(token);
+    setStatus("loading");
+    setError(null);
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -192,7 +189,7 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
         setError(null);
         return;
       }
-      setStatus("authenticated");
+      setStatus("loading");
       const storedUser = getStoredUser<AuthenticatedUser>();
       if (storedUser) {
         setUser(storedUser);
@@ -204,6 +201,7 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
           setUser(profile.data ?? null);
           setStoredUser(profile.data ?? null);
         }
+        setStatus("authenticated");
       } catch (fetchError) {
         if (!isMounted) return;
         if (fetchError instanceof ApiError && fetchError.status === 401) {
@@ -215,6 +213,7 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
         }
         logAuthError("/api/auth/me failed", null, { error: fetchError });
         setError("Unable to refresh user profile.");
+        setStatus("authenticated");
         setUiFailure({
           message: "Authentication failed while validating credentials.",
           details: `Request ID: ${getRequestId()}`,
@@ -312,7 +311,6 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
       logAuthError("Logout failed", user, { error });
     }
     clearAuthState();
-    redirectToLogin();
   }, [clearAuthState, user]);
 
   const isAuthenticated = status === "authenticated";

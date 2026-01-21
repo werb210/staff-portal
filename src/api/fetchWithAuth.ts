@@ -1,6 +1,5 @@
 import { clearAccessToken, getAccessToken } from "@/lib/authToken";
 import { reportAuthFailure } from "@/auth/authEvents";
-import { redirectToLogin } from "@/services/api";
 
 export async function fetchWithAuth(
   input: RequestInfo,
@@ -13,7 +12,6 @@ export async function fetchWithAuth(
     headers.set("Authorization", `Bearer ${token}`);
   } else {
     reportAuthFailure("missing-token");
-    redirectToLogin();
   }
 
   const response = await fetch(input, {
@@ -24,7 +22,6 @@ export async function fetchWithAuth(
   if (response.status === 401) {
     clearAccessToken();
     reportAuthFailure("unauthorized");
-    redirectToLogin();
   }
 
   return response;
