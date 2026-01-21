@@ -23,7 +23,7 @@ export function ProtectedRoute({ children }: { children: JSX.Element }) {
     requestId,
     route: location.pathname,
     authState: auth.authStatus,
-    reason: auth.rolesStatus === "loaded" ? "authenticated" : "roles_loading"
+    reason: auth.rolesStatus === "resolved" ? "authenticated" : "roles_loading"
   });
   return children;
 }

@@ -1,6 +1,5 @@
 import { useEffect, useRef } from "react";
 import type { PropsWithChildren, ReactNode } from "react";
-import AppLoading from "@/components/layout/AppLoading";
 import AccessRestricted from "@/components/auth/AccessRestricted";
 import { useAuth } from "@/hooks/useAuth";
 import { emitUiTelemetry } from "@/utils/uiTelemetry";
@@ -20,17 +19,22 @@ const RequireRole = ({ roles, children, fallback, message = defaultMessage }: Re
   const emittedRef = useRef(false);
 
   useEffect(() => {
-    if (rolesStatus === "loaded" && !hasAccess && authStatus === "authenticated" && !emittedRef.current) {
+    if (
+      rolesStatus === "resolved" &&
+      !hasAccess &&
+      authStatus === "authenticated" &&
+      !emittedRef.current
+    ) {
       emitUiTelemetry("permission_blocked", { requiredRoles: roles });
       emittedRef.current = true;
     }
   }, [authStatus, hasAccess, roles, rolesStatus]);
 
-  if (rolesStatus !== "loaded") {
-    return <AppLoading />;
+  if (authStatus === "authenticated" && rolesStatus === "loading") {
+    return <>{children}</>;
   }
 
-  if (!hasAccess) {
+  if (authStatus === "authenticated" && rolesStatus === "resolved" && !hasAccess) {
     if (fallback) {
       return <>{fallback}</>;
     }

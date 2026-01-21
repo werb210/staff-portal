@@ -28,7 +28,7 @@ export default function PrivateRoute({ children, allowedRoles = [] }: PrivateRou
 
   if (
     auth.authStatus === "authenticated" &&
-    auth.rolesStatus === "loaded" &&
+    auth.rolesStatus === "resolved" &&
     allowedRoles.length > 0 &&
     !hasRequiredRole(auth.user?.role, allowedRoles)
   ) {
@@ -45,7 +45,7 @@ export default function PrivateRoute({ children, allowedRoles = [] }: PrivateRou
     requestId,
     route: location.pathname,
     authState: auth.authStatus,
-    reason: auth.rolesStatus === "loaded" ? "authenticated" : "roles_loading"
+    reason: auth.rolesStatus === "resolved" ? "authenticated" : "roles_loading"
   });
   return children;
 }

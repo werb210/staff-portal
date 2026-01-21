@@ -116,7 +116,7 @@ describe("auth login", () => {
     render(createElement(AuthProvider, null, createElement(TestAuthState)));
 
     await waitFor(() =>
-      expect(screen.getByTestId("status")).toHaveTextContent("authenticated:loaded")
+      expect(screen.getByTestId("status")).toHaveTextContent("authenticated:resolved")
     );
     expect(screen.getByTestId("user")).toHaveTextContent("restored@example.com");
   });
@@ -140,7 +140,7 @@ describe("auth login", () => {
     await waitFor(() => expect(postSpy).toHaveBeenCalled());
     await waitFor(() => expect(getSpy).toHaveBeenCalledWith("/auth/me"));
     await waitFor(() =>
-      expect(screen.getByTestId("status")).toHaveTextContent("authenticated:loaded")
+      expect(screen.getByTestId("status")).toHaveTextContent("authenticated:resolved")
     );
   });
 });

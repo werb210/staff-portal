@@ -152,7 +152,7 @@ describe("auth server contract", () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByTestId("roles-status")).toHaveTextContent("loaded");
+      expect(screen.getByTestId("roles-status")).toHaveTextContent("resolved");
     });
 
     await waitFor(() => {

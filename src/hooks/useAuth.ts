@@ -41,7 +41,7 @@ export const useAuth = (): AuthValue => {
     logout
   } = useAuthContext();
 
-  const isLoading = authStatus === "authenticated" && rolesStatus === "loading";
+  const isLoading = authStatus === "loading" || (authStatus === "authenticated" && rolesStatus === "loading");
   const isAuthenticated = authStatus === "authenticated";
 
   return useMemo(

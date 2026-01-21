@@ -28,8 +28,8 @@ import { getAccessToken } from "@/lib/authToken";
 import { ApiError } from "@/lib/api";
 import { registerAuthFailureHandler } from "@/auth/authEvents";
 
-export type AuthStatus = "authenticated" | "unauthenticated";
-export type RolesStatus = "idle" | "loading" | "loaded" | "error";
+export type AuthStatus = "loading" | "authenticated" | "unauthenticated";
+export type RolesStatus = "loading" | "resolved";
 
 interface SetAuthPayload {
   user: AuthenticatedUser | null;
@@ -67,7 +67,7 @@ export type AuthContextType = AuthContextValue;
 
 const defaultAuthContext: AuthContextValue = {
   authStatus: "unauthenticated",
-  rolesStatus: "idle",
+  rolesStatus: "resolved",
   user: null,
   accessToken: null,
   error: null,
@@ -109,11 +109,12 @@ const logAuthError = (
 };
 
 export function AuthProvider({ children }: PropsWithChildren<{}>) {
+  const hasAccessToken = Boolean(getAccessToken());
   const [authStatus, setAuthStatus] = useState<AuthStatus>(() =>
-    getAccessToken() ? "authenticated" : "unauthenticated"
+    hasAccessToken ? "authenticated" : "unauthenticated"
   );
   const [rolesStatus, setRolesStatus] = useState<RolesStatus>(() =>
-    getAccessToken() ? "loading" : "idle"
+    hasAccessToken ? "loading" : "resolved"
   );
   const [user, setUser] = useState<AuthenticatedUser | null>(() =>
     getStoredUser<AuthenticatedUser>()
@@ -128,7 +129,7 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
     setAccessTokenState(null);
     setUser(null);
     setAuthStatus("unauthenticated");
-    setRolesStatus("idle");
+    setRolesStatus("resolved");
     setError(null);
   }, []);
 
@@ -145,13 +146,13 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
     setStoredUser(newUser ?? null);
     const nextAuthStatus = getAccessToken() ? "authenticated" : "unauthenticated";
     setAuthStatus(nextAuthStatus);
-    setRolesStatus(nextAuthStatus === "authenticated" ? "loaded" : "idle");
+    setRolesStatus("resolved");
     setError(null);
   }, []);
 
   const setAuthenticated = useCallback(() => {
     setAuthStatus("authenticated");
-    setRolesStatus((current) => (current === "idle" ? "loading" : current));
+    setRolesStatus((current) => (current === "resolved" ? current : "loading"));
     setError(null);
   }, []);
 
@@ -159,7 +160,7 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
     if (!getAccessToken()) {
       setUser(null);
       setAuthStatus("unauthenticated");
-      setRolesStatus("idle");
+      setRolesStatus("resolved");
       return false;
     }
     setAuthStatus("authenticated");
@@ -168,20 +169,23 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
       const profile = await fetchCurrentUser();
       setUser(profile.data ?? null);
       setStoredUser(profile.data ?? null);
-      setRolesStatus("loaded");
+      setRolesStatus("resolved");
       return Boolean(profile.data);
     } catch (fetchError) {
-      if (fetchError instanceof ApiError && fetchError.status === 401) {
+      if (
+        fetchError instanceof ApiError &&
+        (fetchError.status === 401 || fetchError.status === 403)
+      ) {
         clearStoredAuth();
         setUser(null);
         setAuthStatus("unauthenticated");
-        setRolesStatus("idle");
+        setRolesStatus("resolved");
         setError(null);
         return false;
       }
       logAuthError("/api/auth/me failed", user, { error: fetchError });
       setError("Unable to refresh user profile.");
-      setRolesStatus("error");
+      setRolesStatus("resolved");
       return false;
     }
   }, [user]);
@@ -202,7 +206,7 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
         if (!isMounted) return;
         setUser(null);
         setAuthStatus("unauthenticated");
-        setRolesStatus("idle");
+        setRolesStatus("resolved");
         setError(null);
         return;
       }
@@ -219,20 +223,23 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
           setUser(profile.data ?? null);
           setStoredUser(profile.data ?? null);
         }
-        setRolesStatus("loaded");
+        setRolesStatus("resolved");
       } catch (fetchError) {
         if (!isMounted) return;
-        if (fetchError instanceof ApiError && fetchError.status === 401) {
+        if (
+          fetchError instanceof ApiError &&
+          (fetchError.status === 401 || fetchError.status === 403)
+        ) {
           clearStoredAuth();
           setUser(null);
           setAuthStatus("unauthenticated");
-          setRolesStatus("idle");
+          setRolesStatus("resolved");
           setError(null);
           return;
         }
         logAuthError("/api/auth/me failed", null, { error: fetchError });
         setError("Unable to refresh user profile.");
-        setRolesStatus("error");
+        setRolesStatus("resolved");
         setUiFailure({
           message: "Authentication failed while validating credentials.",
           details: `Request ID: ${getRequestId()}`,
@@ -286,12 +293,21 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
           setPendingPhoneNumber(phone);
           return;
         }
+        const headers = result.headers ?? {};
+        const headerKey = Object.keys(headers).find((key) => key.toLowerCase() === "x-twilio-sid");
+        const twilioSid =
+          result.data?.twilioSid ??
+          result.data?.sid ??
+          (headerKey ? headers[headerKey] : undefined);
+        if (!twilioSid) {
+          throw new Error("Twilio SID missing from OTP response");
+        }
         setPendingPhoneNumber(phone);
       } catch (err: any) {
         const message = (err?.message as string) ?? "OTP failed";
         setError(message);
         setAuthStatus("unauthenticated");
-        setRolesStatus("idle");
+        setRolesStatus("resolved");
         throw err;
       }
     },
@@ -316,7 +332,7 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
         const message = (err?.message as string) ?? "OTP verification failed";
         setError(message);
         setAuthStatus("unauthenticated");
-        setRolesStatus("idle");
+        setRolesStatus("resolved");
         throw err;
       } finally {
         setPendingPhoneNumber(null);

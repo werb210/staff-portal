@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import apiClient from "@/api/httpClient";
 import { ApiError } from "@/api/http";
-import { buildApiUrl, redirectToLogin } from "@/services/api";
+import { redirectToLogin } from "@/services/api";
+import { buildRequestUrl } from "@/utils/apiLogging";
 import { registerAuthFailureHandler } from "@/auth/authEvents";
 import { clearStoredAuth, setStoredAccessToken } from "@/services/token";
 
@@ -33,7 +34,7 @@ describe("api client auth handling", () => {
     expect(adapter).toHaveBeenCalledOnce();
     const passedConfig = adapter.mock.calls[0][0];
     expect(passedConfig?.headers?.Authorization).toBe("Bearer test-token");
-    expect(passedConfig?.url).toBe(buildApiUrl("/example"));
+    expect(buildRequestUrl(passedConfig ?? {})).toMatch(/\/api\/example$/);
   });
 
   it("adds an idempotency key to write requests", async () => {

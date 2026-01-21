@@ -94,7 +94,7 @@ describe("auth flow", () => {
     fireEvent.click(screen.getByRole("button", { name: "Verify" }));
 
     await waitFor(() =>
-      expect(screen.getByTestId("status")).toHaveTextContent("authenticated:loaded")
+      expect(screen.getByTestId("status")).toHaveTextContent("authenticated:resolved")
     );
     expect(screen.getByTestId("role")).toHaveTextContent("Admin");
     expect(mockedFetchCurrentUser).toHaveBeenCalled();
@@ -186,7 +186,7 @@ describe("auth flow", () => {
     );
 
     await waitFor(() =>
-      expect(screen.getByTestId("status")).toHaveTextContent("authenticated:loaded")
+      expect(screen.getByTestId("status")).toHaveTextContent("authenticated:resolved")
     );
     expect(screen.getByTestId("role")).toHaveTextContent("Admin");
   });
@@ -250,14 +250,14 @@ describe("auth flow", () => {
     );
 
     await waitFor(() =>
-      expect(screen.getByTestId("status")).toHaveTextContent("authenticated:loaded")
+      expect(screen.getByTestId("status")).toHaveTextContent("authenticated:resolved")
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Logout" }));
 
     await waitFor(() => expect(mockedLogout).toHaveBeenCalled());
     await waitFor(() =>
-      expect(screen.getByTestId("status")).toHaveTextContent("unauthenticated:idle")
+      expect(screen.getByTestId("status")).toHaveTextContent("unauthenticated:resolved")
     );
     await waitFor(() => expect(screen.getByTestId("location")).toHaveTextContent("/login"));
   });

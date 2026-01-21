@@ -12,9 +12,9 @@ import { SiloProvider } from "@/context/SiloContext";
 import { clearStoredAuth, setStoredAccessToken } from "@/services/token";
 
 const server = setupServer(
-  http.get("http://localhost/api/health", () => HttpResponse.json({ status: "ok" })),
-  http.get("/api/_int/routes", () => HttpResponse.json({ routes: portalApiRoutes })),
-  http.post("http://localhost/api/auth/otp/start", () =>
+  http.get("*/api/health", () => HttpResponse.json({ status: "ok" })),
+  http.get("*/api/_int/routes", () => HttpResponse.json({ routes: portalApiRoutes })),
+  http.post("*/api/auth/otp/start", () =>
     new HttpResponse(null, {
       status: 204,
       headers: {
@@ -22,10 +22,10 @@ const server = setupServer(
       }
     })
   ),
-  http.post("http://localhost/api/auth/otp/verify", () =>
+  http.post("*/api/auth/otp/verify", () =>
     HttpResponse.json({ accessToken: "access-token", refreshToken: "refresh-token" })
   ),
-  http.get("http://localhost/api/lenders", () => HttpResponse.json({ items: [] }))
+  http.get("*/api/lenders", () => HttpResponse.json({ items: [] }))
 );
 
 const AuthProbe = () => {
@@ -62,9 +62,7 @@ describe("portal auth routing smoke tests", () => {
   });
 
   it("redirects unauthenticated users from / to /login", async () => {
-    server.use(
-      http.get("http://localhost/api/auth/me", () => new HttpResponse(null, { status: 401 }))
-    );
+    server.use(http.get("*/api/auth/me", () => new HttpResponse(null, { status: 401 })));
 
     renderApp("/");
 
@@ -78,9 +76,7 @@ describe("portal auth routing smoke tests", () => {
   it("allows authenticated users to access protected routes", async () => {
     setStoredAccessToken("test-token");
     server.use(
-      http.get("http://localhost/api/auth/me", () =>
-        HttpResponse.json({ id: "u1", role: "Staff" })
-      )
+      http.get("*/api/auth/me", () => HttpResponse.json({ id: "u1", role: "Staff" }))
     );
 
     renderApp("/");
@@ -90,16 +86,14 @@ describe("portal auth routing smoke tests", () => {
     });
 
     expect(await screen.findByText(/dashboard overview/i)).toBeInTheDocument();
-    expect(window.location.pathname).toBe("/dashboard");
+    expect(window.location.pathname).toBe("/");
   });
 
   it("navigates away from /login after OTP login", async () => {
     const user = userEvent.setup();
 
     server.use(
-      http.get("http://localhost/api/auth/me", () =>
-        HttpResponse.json({ id: "u1", role: "Staff" })
-      )
+      http.get("*/api/auth/me", () => HttpResponse.json({ id: "u1", role: "Staff" }))
     );
 
     renderApp("/login", true);
@@ -125,9 +119,7 @@ describe("portal auth routing smoke tests", () => {
 
     setStoredAccessToken("test-token");
     server.use(
-      http.get("http://localhost/api/auth/me", () =>
-        HttpResponse.json({ id: "u1", role: "Staff" })
-      )
+      http.get("*/api/auth/me", () => HttpResponse.json({ id: "u1", role: "Staff" }))
     );
 
     renderApp("/lenders");

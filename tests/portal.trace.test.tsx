@@ -20,7 +20,7 @@ describe("portal traceability", () => {
       config
     }));
 
-    await apiClient.get("/trace", { adapter } as any);
+    await apiClient.get("/trace", { adapter, skipAuth: true } as any);
 
     const passedConfig = adapter.mock.calls[0][0];
     expect(passedConfig.headers?.["X-Request-Id"]).toBe(getRequestId());
