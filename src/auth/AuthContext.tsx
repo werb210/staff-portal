@@ -25,6 +25,8 @@ import {
 } from "@/services/token";
 import { getAccessToken } from "@/lib/authToken";
 import { registerAuthFailureHandler } from "@/auth/authEvents";
+import api from "@/lib/api";
+import { decodeJwt } from "@/auth/token";
 
 export type AuthState = "unauthenticated" | "authenticated_pending" | "authenticated";
 export type AuthStatus = AuthState;
@@ -54,7 +56,7 @@ export interface AuthContextValue {
   isAuthenticated: boolean;
   authReady: boolean;
   pendingPhoneNumber: string | null;
-  startOtp: (payload: StartOtpPayload) => Promise<boolean>;
+  startOtp: (payload: StartOtpPayload | string) => Promise<boolean>;
   verifyOtp: (payload: VerifyOtpPayload | string, code?: string) => Promise<boolean>;
   login: (token: string) => Promise<void>;
   setAuth: (payload: SetAuthPayload) => void;
@@ -191,17 +193,8 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
     setAuthState("authenticated_pending");
     setRolesStatus("loading");
     try {
-      const res = await fetch("/api/auth/me", { credentials: "include" });
-      if (!res.ok) {
-        clearAuthState();
-        return false;
-      }
-      const ct = res.headers.get("content-type");
-      if (!ct || !ct.includes("application/json")) {
-        clearAuthState();
-        return false;
-      }
-      const data = (await res.json()) as AuthenticatedUser;
+      const response = await api.get<AuthenticatedUser>("/auth/me");
+      const data = response.data;
       setUser(data ?? null);
       setAuthState("authenticated");
       setRolesStatus("resolved");
@@ -241,18 +234,9 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
         setUserState(storedUser);
       }
       try {
-        const res = await fetch("/api/auth/me", { credentials: "include" });
+        const response = await api.get<AuthenticatedUser>("/auth/me");
         if (!isMounted) return;
-        if (!res.ok) {
-          clearAuthState();
-          return;
-        }
-        const ct = res.headers.get("content-type");
-        if (!ct || !ct.includes("application/json")) {
-          clearAuthState();
-          return;
-        }
-        const data = (await res.json()) as AuthenticatedUser;
+        const data = response.data;
         setUser(data ?? null);
         setAuthState("authenticated");
         setRolesStatus("resolved");
@@ -303,27 +287,14 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
   }, [authState, user]);
 
   const startOtp = useCallback(
-    async ({ phone }: StartOtpPayload): Promise<boolean> => {
+    async (payload: StartOtpPayload | string): Promise<boolean> => {
+      const phone = typeof payload === "string" ? payload : payload.phone;
       setError(null);
       try {
         logAuthInfo("OTP start request fired", user, { phone });
-        const result = await startOtpService({ phone });
-        // HTTP 204 is treated as success with no body.
-        if (result === null) {
-          setPendingPhoneNumber(phone);
-          return true;
-        }
-        const headers = result.headers ?? {};
-        const headerKey = Object.keys(headers).find((key) => key.toLowerCase() === "x-twilio-sid");
-        const twilioSid =
-          result.data?.twilioSid ??
-          result.data?.sid ??
-          (headerKey ? headers[headerKey] : undefined);
-        if (!twilioSid) {
-          setError("OTP pending. Please retry.");
-          return false;
-        }
+        await startOtpService({ phone });
         setPendingPhoneNumber(phone);
+        setError(null);
         return true;
       } catch (err: any) {
         const message = (err?.message as string) ?? "OTP failed";
@@ -338,7 +309,11 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
     async (payload: VerifyOtpPayload | string, codeArg?: string): Promise<boolean> => {
       setError(null);
       const resolvedPayload =
-        typeof payload === "string" ? { phone: payload, code: codeArg ?? "" } : payload;
+        typeof payload === "string"
+          ? codeArg
+            ? { phone: payload, code: codeArg }
+            : { code: payload }
+          : payload;
       const phoneNumber = resolvedPayload.phone ?? pendingPhoneNumber ?? "";
 
       try {
@@ -348,17 +323,22 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
           setError("OTP verification missing access token");
           return false;
         }
-        await login(response.accessToken);
+        setStoredAccessToken(response.accessToken);
+        setAccessTokenState(response.accessToken);
+        const decodedUser = decodeJwt(response.accessToken) as AuthenticatedUser | null;
+        setUser(decodedUser);
+        setAuthState("authenticated");
+        setRolesStatus("resolved");
+        setError(null);
+        setPendingPhoneNumber(null);
         return true;
       } catch (err: any) {
         const message = (err?.message as string) ?? "OTP verification failed";
         setError(message);
         return false;
-      } finally {
-        setPendingPhoneNumber(null);
       }
     },
-    [login, pendingPhoneNumber, user]
+    [pendingPhoneNumber, setUser, user]
   );
 
   const logout = useCallback(async (): Promise<void> => {
