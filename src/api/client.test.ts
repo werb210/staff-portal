@@ -42,14 +42,14 @@ describe("apiClient auth", () => {
     expect(passedConfig?.url).toBe(buildApiUrl("/example"));
   });
 
-  it("redirects when token is missing", async () => {
+  it("reports missing tokens without redirecting", async () => {
     await expect(apiClient.get("/secure", { adapter } as any)).rejects.toBeDefined();
 
     expect(failureHandler).toHaveBeenCalledWith("missing-token");
-    expect(redirectToLogin).toHaveBeenCalled();
+    expect(redirectToLogin).not.toHaveBeenCalled();
   });
 
-  it("redirects on 401 responses", async () => {
+  it("reports unauthorized responses without redirecting", async () => {
     setStoredAccessToken("test-token");
     const unauthorizedAdapter = vi.fn(async (config) => ({
       data: {},
@@ -62,7 +62,7 @@ describe("apiClient auth", () => {
     await expect(apiClient.get("/secure", { adapter: unauthorizedAdapter } as any)).rejects.toBeDefined();
 
     expect(failureHandler).toHaveBeenCalledWith("unauthorized");
-    expect(redirectToLogin).toHaveBeenCalled();
+    expect(redirectToLogin).not.toHaveBeenCalled();
   });
 
   it("adds idempotency and content type headers for mutating requests", async () => {

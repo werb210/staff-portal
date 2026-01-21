@@ -1,7 +1,6 @@
 import axios, { AxiosError, type AxiosRequestConfig } from "axios";
 import { ApiError, api } from "@/api/http";
 import { reportAuthFailure } from "@/auth/authEvents";
-import { redirectToLogin } from "@/services/api";
 import { attachRequestIdAndLog, logError, logResponse } from "@/utils/apiLogging";
 import { getAccessToken } from "@/lib/authToken";
 
@@ -42,7 +41,6 @@ const ensureAccessToken = (options?: RequestOptions) => {
   const token = getAccessToken();
   if (!token) {
     reportAuthFailure("missing-token");
-    redirectToLogin();
     throw new ApiError({
       status: 401,
       message: "Missing auth token",
@@ -55,10 +53,8 @@ const handleApiError = (error: unknown) => {
   if (error instanceof ApiError) {
     if (error.status === 401) {
       reportAuthFailure("unauthorized");
-      redirectToLogin();
     } else if (error.status === 403) {
       reportAuthFailure("forbidden");
-      redirectToLogin();
     }
   }
   throw error;

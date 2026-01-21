@@ -192,7 +192,7 @@ describe("auth server contract", () => {
         firstError = error;
       }
 
-      expect(redirectSpy).toHaveBeenCalledTimes(1);
+      expect(redirectSpy).not.toHaveBeenCalled();
 
       let secondError: unknown = null;
       try {
@@ -200,7 +200,7 @@ describe("auth server contract", () => {
       } catch (error) {
         secondError = error;
       }
-      expect(redirectSpy).toHaveBeenCalledTimes(2);
+      expect(redirectSpy).not.toHaveBeenCalled();
       expect(firstError).toBeTruthy();
       expect(secondError).toBeTruthy();
     } finally {

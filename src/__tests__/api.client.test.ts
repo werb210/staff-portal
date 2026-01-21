@@ -52,7 +52,7 @@ describe("api client auth handling", () => {
     expect(passedConfig?.headers?.["Idempotency-Key"]).toBeTruthy();
   });
 
-  it("redirects when token is missing", async () => {
+  it("reports missing tokens without redirecting", async () => {
     const failureHandler = vi.fn();
     registerAuthFailureHandler(failureHandler);
 
@@ -67,10 +67,10 @@ describe("api client auth handling", () => {
     await expect(apiClient.get("/secure", { adapter } as any)).rejects.toBeInstanceOf(ApiError);
 
     expect(failureHandler).toHaveBeenCalledWith("missing-token");
-    expect(redirectToLogin).toHaveBeenCalled();
+    expect(redirectToLogin).not.toHaveBeenCalled();
   });
 
-  it("redirects on 401 responses", async () => {
+  it("reports unauthorized responses without redirecting", async () => {
     setStoredAccessToken("test-token");
     const failureHandler = vi.fn();
     registerAuthFailureHandler(failureHandler);
@@ -86,6 +86,6 @@ describe("api client auth handling", () => {
     await expect(apiClient.get("/secure", { adapter } as any)).rejects.toBeInstanceOf(ApiError);
 
     expect(failureHandler).toHaveBeenCalledWith("unauthorized");
-    expect(redirectToLogin).toHaveBeenCalled();
+    expect(redirectToLogin).not.toHaveBeenCalled();
   });
 });
