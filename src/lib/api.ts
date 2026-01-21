@@ -40,6 +40,11 @@ export const api = axios.create({
   baseURL: apiBaseUrl
 });
 
+const shouldBypassAuthRedirect = (url?: string | null) => {
+  if (!url) return false;
+  return ["/auth/otp/start", "/auth/otp/verify"].some((path) => url.includes(path));
+};
+
 api.interceptors.request.use((config: AxiosRequestConfig) => {
   const token = getAccessToken();
   if (token) {
@@ -51,7 +56,8 @@ api.interceptors.request.use((config: AxiosRequestConfig) => {
   return attachRequestIdAndLog(config);
 });
 
-const handleUnauthorized = () => {
+const handleUnauthorized = (url?: string | null) => {
+  if (shouldBypassAuthRedirect(url)) return;
   clearAccessToken();
   reportAuthFailure("unauthorized");
   redirectToLogin();
@@ -63,7 +69,7 @@ api.interceptors.response.use(
     logError(error);
     const status = error.response?.status ?? 500;
     if (status === 401) {
-      handleUnauthorized();
+      handleUnauthorized(error.config?.url);
     }
     return Promise.reject(
       new ApiError({
