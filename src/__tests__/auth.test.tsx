@@ -14,11 +14,11 @@ vi.mock("@/api/auth", () => ({
 const mockedFetchCurrentUser = vi.mocked(fetchCurrentUser);
 
 const TestAuthState = () => {
-  const { status, user } = useAuth();
+  const { authStatus, user, rolesStatus } = useAuth();
   return createElement(
     "div",
     null,
-    createElement("span", { "data-testid": "status" }, status),
+    createElement("span", { "data-testid": "status" }, `${authStatus}:${rolesStatus}`),
     createElement("span", { "data-testid": "email" }, user?.email ?? "")
   );
 };
@@ -55,7 +55,9 @@ describe("token auth", () => {
 
     screen.getByRole("button", { name: "Set Auth" }).click();
 
-    await waitFor(() => expect(screen.getByTestId("status")).toHaveTextContent("authenticated"));
+    await waitFor(() =>
+      expect(screen.getByTestId("status")).toHaveTextContent("authenticated:loaded")
+    );
     expect(screen.getByTestId("email")).toHaveTextContent("demo@example.com");
   });
 
@@ -71,7 +73,9 @@ describe("token auth", () => {
       </AuthProvider>
     );
 
-    await waitFor(() => expect(screen.getByTestId("status")).toHaveTextContent("authenticated"));
+    await waitFor(() =>
+      expect(screen.getByTestId("status")).toHaveTextContent("authenticated:loaded")
+    );
     expect(screen.getByTestId("email")).toHaveTextContent("restored@example.com");
   });
 });

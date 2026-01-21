@@ -3,7 +3,7 @@ import "@testing-library/jest-dom/vitest";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
 import { AuthProvider, useAuth } from "@/auth/AuthContext";
@@ -11,16 +11,6 @@ import LoginPage from "@/pages/login/LoginPage";
 import apiClient from "@/api/httpClient";
 import * as apiService from "@/services/api";
 import { clearStoredAuth, setStoredAccessToken } from "@/services/token";
-
-const navigateSpy = vi.fn();
-
-vi.mock("react-router-dom", async () => {
-  const actual = await vi.importActual<typeof import("react-router-dom")>("react-router-dom");
-  return {
-    ...actual,
-    useNavigate: () => navigateSpy
-  };
-});
 
 const startOtpSpy = vi.fn();
 const verifyOtpSpy = vi.fn();
@@ -47,20 +37,30 @@ const server = setupServer(
 );
 
 const AuthProbe = () => {
-  const { authenticated, user } = useAuth();
+  const { authenticated, user, rolesStatus } = useAuth();
   return (
     <div>
       <span data-testid="auth-authenticated">{String(authenticated)}</span>
+      <span data-testid="roles-status">{rolesStatus}</span>
       <span data-testid="auth-user">{user ? JSON.stringify(user) : ""}</span>
     </div>
   );
 };
 
+const LocationProbe = () => {
+  const location = useLocation();
+  return <span data-testid="location">{location.pathname}</span>;
+};
+
 const TestApp = () => (
   <AuthProvider>
     <MemoryRouter initialEntries={["/login"]}>
-      <LoginPage />
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/dashboard" element={<div>Dashboard</div>} />
+      </Routes>
       <AuthProbe />
+      <LocationProbe />
     </MemoryRouter>
   </AuthProvider>
 );
@@ -73,7 +73,6 @@ describe("auth server contract", () => {
   afterEach(() => {
     server.resetHandlers();
     clearStoredAuth();
-    navigateSpy.mockClear();
     startOtpSpy.mockClear();
     verifyOtpSpy.mockClear();
     meSpy.mockClear();
@@ -153,11 +152,15 @@ describe("auth server contract", () => {
     });
 
     await waitFor(() => {
+      expect(screen.getByTestId("roles-status")).toHaveTextContent("loaded");
+    });
+
+    await waitFor(() => {
       expect(screen.getByTestId("auth-user")).toHaveTextContent("\"role\":\"Staff\"");
     });
 
     await waitFor(() => {
-      expect(navigateSpy).toHaveBeenCalledWith("/dashboard");
+      expect(screen.getByTestId("location")).toHaveTextContent("/dashboard");
     });
   });
 

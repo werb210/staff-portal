@@ -1,22 +1,12 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
 import { AuthProvider, useAuth } from "@/auth/AuthContext";
 import LoginPage from "@/pages/login/LoginPage";
 import { clearStoredAuth } from "@/services/token";
-
-const navigateSpy = vi.fn();
-
-vi.mock("react-router-dom", async () => {
-  const actual = await vi.importActual<typeof import("react-router-dom")>("react-router-dom");
-  return {
-    ...actual,
-    useNavigate: () => navigateSpy
-  };
-});
 
 const startOtpSpy = vi.fn();
 const verifyOtpSpy = vi.fn();
@@ -43,14 +33,20 @@ const server = setupServer(
 );
 
 const AuthProbe = () => {
-  const { authenticated, status, user } = useAuth();
+  const { authenticated, authStatus, rolesStatus, user } = useAuth();
   return (
     <div>
       <span data-testid="auth-status">{String(authenticated)}</span>
-      <span data-testid="auth-state">{status}</span>
+      <span data-testid="auth-state">{authStatus}</span>
+      <span data-testid="roles-state">{rolesStatus}</span>
       <span data-testid="auth-user">{user ? JSON.stringify(user) : ""}</span>
     </div>
   );
+};
+
+const LocationProbe = () => {
+  const location = useLocation();
+  return <span data-testid="location">{location.pathname}</span>;
 };
 
 describe("login contract flow", () => {
@@ -61,7 +57,6 @@ describe("login contract flow", () => {
   afterEach(() => {
     server.resetHandlers();
     clearStoredAuth();
-    navigateSpy.mockClear();
     startOtpSpy.mockClear();
     verifyOtpSpy.mockClear();
     meSpy.mockClear();
@@ -71,14 +66,18 @@ describe("login contract flow", () => {
     server.close();
   });
 
-  it("authenticates via OTP and navigates away from /login", async () => {
+  it("authenticates via OTP and redirects away from /login", async () => {
     const user = userEvent.setup();
 
     render(
       <AuthProvider>
         <MemoryRouter initialEntries={["/login"]}>
-          <LoginPage />
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/dashboard" element={<div>Dashboard</div>} />
+          </Routes>
           <AuthProbe />
+          <LocationProbe />
         </MemoryRouter>
       </AuthProvider>
     );
@@ -106,11 +105,12 @@ describe("login contract flow", () => {
     await waitFor(() => {
       expect(screen.getByTestId("auth-status")).toHaveTextContent("true");
       expect(screen.getByTestId("auth-state")).toHaveTextContent("authenticated");
+      expect(screen.getByTestId("roles-state")).toHaveTextContent("loaded");
       expect(screen.getByTestId("auth-user")).toHaveTextContent("\"role\":\"Staff\"");
     });
 
     await waitFor(() => {
-      expect(navigateSpy).toHaveBeenCalledWith("/dashboard");
+      expect(screen.getByTestId("location")).toHaveTextContent("/dashboard");
     });
   });
 });

@@ -37,8 +37,8 @@ const mockedLogout = vi.mocked(logoutService);
 const mockedFetchCurrentUser = vi.mocked(fetchCurrentUser);
 
 const TestAuthState = () => {
-  const { status } = useAuth();
-  return createElement("span", { "data-testid": "status" }, status);
+  const { authStatus, rolesStatus } = useAuth();
+  return createElement("span", { "data-testid": "status" }, `${authStatus}:${rolesStatus}`);
 };
 
 const TestAuthRole = () => {
@@ -93,7 +93,9 @@ describe("auth flow", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Verify" }));
 
-    await waitFor(() => expect(screen.getByTestId("status")).toHaveTextContent("authenticated"));
+    await waitFor(() =>
+      expect(screen.getByTestId("status")).toHaveTextContent("authenticated:loaded")
+    );
     expect(screen.getByTestId("role")).toHaveTextContent("Admin");
     expect(mockedFetchCurrentUser).toHaveBeenCalled();
   });
@@ -101,7 +103,11 @@ describe("auth flow", () => {
   it("does not redirect after OTP verification while roles are still loading", async () => {
     mockedStartOtp.mockResolvedValue(null);
     mockedVerifyOtp.mockResolvedValue({ accessToken: "access", refreshToken: "refresh" });
-    mockedFetchCurrentUser.mockResolvedValue({ data: { id: "1" } } as any);
+    let resolveUser: ((value: any) => void) | undefined;
+    const pendingUser = new Promise((resolve) => {
+      resolveUser = resolve;
+    });
+    mockedFetchCurrentUser.mockReturnValue(pendingUser as any);
 
     render(
       <MemoryRouter initialEntries={["/login"]}>
@@ -135,6 +141,35 @@ describe("auth flow", () => {
 
     expect(screen.queryByRole("heading", { name: /staff login/i })).not.toBeInTheDocument();
     expect(screen.queryByText("Access restricted")).not.toBeInTheDocument();
+    expect(screen.getByText("Dashboard")).toBeInTheDocument();
+
+    resolveUser?.({ data: { id: "1", role: "Staff" } });
+  });
+
+  it("renders protected routes after /api/auth/me succeeds", async () => {
+    setStoredAccessToken("test-token");
+    mockedFetchCurrentUser.mockResolvedValue({ data: { id: "1", role: "Staff" } } as any);
+
+    render(
+      <MemoryRouter initialEntries={["/dashboard"]}>
+        <AuthProvider>
+          <Routes>
+            <Route
+              path="/dashboard"
+              element={
+                <PrivateRoute allowedRoles={["Admin", "Staff"]}>
+                  <div>Dashboard Shell</div>
+                </PrivateRoute>
+              }
+            />
+          </Routes>
+          <LocationProbe />
+        </AuthProvider>
+      </MemoryRouter>
+    );
+
+    await waitFor(() => expect(screen.getByText("Dashboard Shell")).toBeInTheDocument());
+    expect(screen.getByTestId("location")).toHaveTextContent("/dashboard");
   });
 
   it("hydrates user on refresh", async () => {
@@ -150,7 +185,9 @@ describe("auth flow", () => {
       </AuthProvider>
     );
 
-    await waitFor(() => expect(screen.getByTestId("status")).toHaveTextContent("authenticated"));
+    await waitFor(() =>
+      expect(screen.getByTestId("status")).toHaveTextContent("authenticated:loaded")
+    );
     expect(screen.getByTestId("role")).toHaveTextContent("Admin");
   });
 
@@ -212,12 +249,16 @@ describe("auth flow", () => {
       </MemoryRouter>
     );
 
-    await waitFor(() => expect(screen.getByTestId("status")).toHaveTextContent("authenticated"));
+    await waitFor(() =>
+      expect(screen.getByTestId("status")).toHaveTextContent("authenticated:loaded")
+    );
 
     fireEvent.click(screen.getByRole("button", { name: "Logout" }));
 
     await waitFor(() => expect(mockedLogout).toHaveBeenCalled());
-    await waitFor(() => expect(screen.getByTestId("status")).toHaveTextContent("unauthenticated"));
+    await waitFor(() =>
+      expect(screen.getByTestId("status")).toHaveTextContent("unauthenticated:idle")
+    );
     await waitFor(() => expect(screen.getByTestId("location")).toHaveTextContent("/login"));
   });
 });

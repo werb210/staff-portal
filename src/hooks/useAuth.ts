@@ -13,7 +13,8 @@ export type AuthValue = {
   accessToken: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  status: string;
+  authStatus: string;
+  rolesStatus: string;
   error: string | null;
   startOtp: (payload: { phone: string }) => Promise<void>;
   verifyOtp: (payload: { code: string; phone?: string } | string, code?: string) => Promise<void>;
@@ -27,7 +28,8 @@ export type AuthValue = {
 export const useAuth = (): AuthValue => {
   const {
     user,
-    status,
+    authStatus,
+    rolesStatus,
     accessToken,
     error,
     startOtp,
@@ -39,8 +41,8 @@ export const useAuth = (): AuthValue => {
     logout
   } = useAuthContext();
 
-  const isLoading = status === "loading";
-  const isAuthenticated = status === "authenticated";
+  const isLoading = authStatus === "authenticated" && rolesStatus === "loading";
+  const isAuthenticated = authStatus === "authenticated";
 
   return useMemo(
     () => ({
@@ -48,7 +50,8 @@ export const useAuth = (): AuthValue => {
       accessToken,
       isAuthenticated,
       isLoading,
-      status,
+      authStatus,
+      rolesStatus,
       error,
       startOtp,
       verifyOtp,
@@ -63,7 +66,8 @@ export const useAuth = (): AuthValue => {
       accessToken,
       isAuthenticated,
       isLoading,
-      status,
+      authStatus,
+      rolesStatus,
       error,
       startOtp,
       verifyOtp,

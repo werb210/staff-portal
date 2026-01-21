@@ -14,34 +14,28 @@ export default function PrivateRoute({ children, allowedRoles = [] }: PrivateRou
   const auth = useAuth();
   const location = useLocation();
   const requestId = getRequestId();
-  const isRolePending = auth.status === "authenticated" && auth.user?.role === undefined;
 
-  if (auth.status === "loading" || isRolePending) {
+  if (auth.authStatus === "unauthenticated") {
     console.info("Route guard decision", {
       requestId,
       route: location.pathname,
-      authState: auth.status,
-      reason: isRolePending ? "roles_loading" : "auth_loading"
-    });
-    return null;
-  }
-
-  if (auth.status === "unauthenticated") {
-    console.info("Route guard decision", {
-      requestId,
-      route: location.pathname,
-      authState: auth.status,
+      authState: auth.authStatus,
       reason: "unauthenticated_redirect"
     });
     recordRedirect(location.pathname, "unauthenticated", location.key);
     return <Navigate to="/login" replace />;
   }
 
-  if (allowedRoles.length > 0 && !hasRequiredRole(auth.user?.role, allowedRoles)) {
+  if (
+    auth.authStatus === "authenticated" &&
+    auth.rolesStatus === "loaded" &&
+    allowedRoles.length > 0 &&
+    !hasRequiredRole(auth.user?.role, allowedRoles)
+  ) {
     console.info("Route guard decision", {
       requestId,
       route: location.pathname,
-      authState: auth.status,
+      authState: auth.authStatus,
       reason: "role_restricted"
     });
     return <AccessRestricted requiredRoles={allowedRoles} />;
@@ -50,8 +44,8 @@ export default function PrivateRoute({ children, allowedRoles = [] }: PrivateRou
   console.info("Route guard decision", {
     requestId,
     route: location.pathname,
-    authState: auth.status,
-    reason: "authenticated"
+    authState: auth.authStatus,
+    reason: auth.rolesStatus === "loaded" ? "authenticated" : "roles_loading"
   });
   return children;
 }

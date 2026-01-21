@@ -15,19 +15,18 @@ type RequireRoleProps = PropsWithChildren<{
 }>;
 
 const RequireRole = ({ roles, children, fallback, message = defaultMessage }: RequireRoleProps) => {
-  const { user, isLoading, status } = useAuth();
+  const { user, authStatus, rolesStatus } = useAuth();
   const hasAccess = hasRequiredRole(user?.role, roles);
   const emittedRef = useRef(false);
-  const isRolePending = status === "authenticated" && user?.role === undefined;
 
   useEffect(() => {
-    if (!isLoading && !isRolePending && !hasAccess && !emittedRef.current) {
+    if (rolesStatus === "loaded" && !hasAccess && authStatus === "authenticated" && !emittedRef.current) {
       emitUiTelemetry("permission_blocked", { requiredRoles: roles });
       emittedRef.current = true;
     }
-  }, [hasAccess, isLoading, isRolePending, roles]);
+  }, [authStatus, hasAccess, roles, rolesStatus]);
 
-  if (isLoading || isRolePending) {
+  if (rolesStatus !== "loaded") {
     return <AppLoading />;
   }
 

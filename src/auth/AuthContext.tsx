@@ -28,7 +28,8 @@ import { getAccessToken } from "@/lib/authToken";
 import { ApiError } from "@/lib/api";
 import { registerAuthFailureHandler } from "@/auth/authEvents";
 
-export type AuthStatus = "loading" | "authenticated" | "unauthenticated";
+export type AuthStatus = "authenticated" | "unauthenticated";
+export type RolesStatus = "idle" | "loading" | "loaded" | "error";
 
 interface SetAuthPayload {
   user: AuthenticatedUser | null;
@@ -44,7 +45,8 @@ interface VerifyOtpPayload {
 }
 
 export interface AuthContextValue {
-  status: AuthStatus;
+  authStatus: AuthStatus;
+  rolesStatus: RolesStatus;
   user: AuthenticatedUser | null;
   accessToken: string | null;
   error: string | null;
@@ -64,7 +66,8 @@ export interface AuthContextValue {
 export type AuthContextType = AuthContextValue;
 
 const defaultAuthContext: AuthContextValue = {
-  status: "loading",
+  authStatus: "unauthenticated",
+  rolesStatus: "idle",
   user: null,
   accessToken: null,
   error: null,
@@ -106,7 +109,12 @@ const logAuthError = (
 };
 
 export function AuthProvider({ children }: PropsWithChildren<{}>) {
-  const [status, setStatus] = useState<AuthStatus>("loading");
+  const [authStatus, setAuthStatus] = useState<AuthStatus>(() =>
+    getAccessToken() ? "authenticated" : "unauthenticated"
+  );
+  const [rolesStatus, setRolesStatus] = useState<RolesStatus>(() =>
+    getAccessToken() ? "loading" : "idle"
+  );
   const [user, setUser] = useState<AuthenticatedUser | null>(() =>
     getStoredUser<AuthenticatedUser>()
   );
@@ -119,7 +127,8 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
     clearStoredAuth();
     setAccessTokenState(null);
     setUser(null);
-    setStatus("unauthenticated");
+    setAuthStatus("unauthenticated");
+    setRolesStatus("idle");
     setError(null);
   }, []);
 
@@ -134,39 +143,45 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
   const setAuth = useCallback(({ user: newUser }: SetAuthPayload) => {
     setUser(newUser ?? null);
     setStoredUser(newUser ?? null);
-    setStatus(getAccessToken() ? "authenticated" : "unauthenticated");
+    const nextAuthStatus = getAccessToken() ? "authenticated" : "unauthenticated";
+    setAuthStatus(nextAuthStatus);
+    setRolesStatus(nextAuthStatus === "authenticated" ? "loaded" : "idle");
     setError(null);
   }, []);
 
   const setAuthenticated = useCallback(() => {
-    setStatus("authenticated");
+    setAuthStatus("authenticated");
+    setRolesStatus((current) => (current === "idle" ? "loading" : current));
     setError(null);
   }, []);
 
   const refreshUser = useCallback(async (): Promise<boolean> => {
     if (!getAccessToken()) {
       setUser(null);
-      setStatus("unauthenticated");
+      setAuthStatus("unauthenticated");
+      setRolesStatus("idle");
       return false;
     }
-    setStatus("loading");
+    setAuthStatus("authenticated");
+    setRolesStatus("loading");
     try {
       const profile = await fetchCurrentUser();
       setUser(profile.data ?? null);
       setStoredUser(profile.data ?? null);
-      setStatus("authenticated");
+      setRolesStatus("loaded");
       return Boolean(profile.data);
     } catch (fetchError) {
       if (fetchError instanceof ApiError && fetchError.status === 401) {
         clearStoredAuth();
         setUser(null);
-        setStatus("unauthenticated");
+        setAuthStatus("unauthenticated");
+        setRolesStatus("idle");
         setError(null);
         return false;
       }
       logAuthError("/api/auth/me failed", user, { error: fetchError });
       setError("Unable to refresh user profile.");
-      setStatus("authenticated");
+      setRolesStatus("error");
       return false;
     }
   }, [user]);
@@ -174,7 +189,8 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
   const login = useCallback(async (token: string): Promise<void> => {
     setStoredAccessToken(token);
     setAccessTokenState(token);
-    setStatus("loading");
+    setAuthStatus("authenticated");
+    setRolesStatus("loading");
     setError(null);
   }, []);
 
@@ -185,11 +201,13 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
       if (!accessToken) {
         if (!isMounted) return;
         setUser(null);
-        setStatus("unauthenticated");
+        setAuthStatus("unauthenticated");
+        setRolesStatus("idle");
         setError(null);
         return;
       }
-      setStatus("loading");
+      setAuthStatus("authenticated");
+      setRolesStatus("loading");
       const storedUser = getStoredUser<AuthenticatedUser>();
       if (storedUser) {
         setUser(storedUser);
@@ -201,19 +219,20 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
           setUser(profile.data ?? null);
           setStoredUser(profile.data ?? null);
         }
-        setStatus("authenticated");
+        setRolesStatus("loaded");
       } catch (fetchError) {
         if (!isMounted) return;
         if (fetchError instanceof ApiError && fetchError.status === 401) {
           clearStoredAuth();
           setUser(null);
-          setStatus("unauthenticated");
+          setAuthStatus("unauthenticated");
+          setRolesStatus("idle");
           setError(null);
           return;
         }
         logAuthError("/api/auth/me failed", null, { error: fetchError });
         setError("Unable to refresh user profile.");
-        setStatus("authenticated");
+        setRolesStatus("error");
         setUiFailure({
           message: "Authentication failed while validating credentials.",
           details: `Request ID: ${getRequestId()}`,
@@ -240,21 +259,21 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
 
   useEffect(() => {
     if (!previousStatus.current) {
-      previousStatus.current = status;
+      previousStatus.current = authStatus;
       return;
     }
 
     const prior = previousStatus.current;
-    if (prior !== status) {
-      if (prior === "unauthenticated" && status === "authenticated") {
+    if (prior !== authStatus) {
+      if (prior === "unauthenticated" && authStatus === "authenticated") {
         logAuthInfo("Auth transition unauthenticated → authenticated", user);
       }
-      if (prior === "authenticated" && status === "unauthenticated") {
+      if (prior === "authenticated" && authStatus === "unauthenticated") {
         logAuthInfo("Auth transition authenticated → unauthenticated", user);
       }
     }
-    previousStatus.current = status;
-  }, [status, user]);
+    previousStatus.current = authStatus;
+  }, [authStatus, user]);
 
   const startOtp = useCallback(
     async ({ phone }: StartOtpPayload): Promise<void> => {
@@ -271,7 +290,8 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
       } catch (err: any) {
         const message = (err?.message as string) ?? "OTP failed";
         setError(message);
-        setStatus("unauthenticated");
+        setAuthStatus("unauthenticated");
+        setRolesStatus("idle");
         throw err;
       }
     },
@@ -295,7 +315,8 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
       } catch (err: any) {
         const message = (err?.message as string) ?? "OTP verification failed";
         setError(message);
-        setStatus("unauthenticated");
+        setAuthStatus("unauthenticated");
+        setRolesStatus("idle");
         throw err;
       } finally {
         setPendingPhoneNumber(null);
@@ -313,17 +334,18 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
     clearAuthState();
   }, [clearAuthState, user]);
 
-  const isAuthenticated = status === "authenticated";
+  const isAuthenticated = authStatus === "authenticated";
 
   const contextValue = useMemo<AuthContextValue>(
     () => ({
-      status,
+      authStatus,
+      rolesStatus,
       user,
       accessToken,
       error,
       authenticated: isAuthenticated,
       isAuthenticated,
-      authReady: status !== "loading",
+      authReady: true,
       pendingPhoneNumber,
       startOtp,
       verifyOtp,
@@ -334,7 +356,8 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
       logout
     }),
     [
-      status,
+      authStatus,
+      rolesStatus,
       user,
       accessToken,
       error,
