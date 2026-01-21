@@ -1,8 +1,6 @@
 import axios, { AxiosError, type AxiosRequestConfig, type AxiosResponse } from "axios";
 import { attachRequestIdAndLog, logError, logResponse } from "@/utils/apiLogging";
 import { clearAccessToken, getAccessToken } from "@/lib/authToken";
-import { redirectToLogin } from "@/services/api";
-import { reportAuthFailure } from "@/auth/authEvents";
 
 export type ApiErrorOptions = {
   status: number;
@@ -59,8 +57,6 @@ api.interceptors.request.use((config: AxiosRequestConfig) => {
 const handleUnauthorized = (url?: string | null) => {
   if (shouldBypassAuthRedirect(url)) return;
   clearAccessToken();
-  reportAuthFailure("unauthorized");
-  redirectToLogin();
 };
 
 api.interceptors.response.use(

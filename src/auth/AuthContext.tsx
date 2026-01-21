@@ -25,6 +25,7 @@ import {
   setStoredUser
 } from "@/services/token";
 import { getAccessToken } from "@/lib/authToken";
+import { ApiError } from "@/lib/api";
 import { registerAuthFailureHandler } from "@/auth/authEvents";
 import { redirectToLogin } from "@/services/api";
 
@@ -184,13 +185,13 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
     let isMounted = true;
 
     const initializeAuth = async () => {
-      const token = getAccessToken();
-      if (!token) {
+      if (!accessToken) {
         if (!isMounted) return;
-        clearAuthState();
+        setUser(null);
+        setStatus("unauthenticated");
+        setError(null);
         return;
       }
-      setAccessTokenState(token);
       setStatus("authenticated");
       const storedUser = getStoredUser<AuthenticatedUser>();
       if (storedUser) {
@@ -205,7 +206,14 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
         }
       } catch (fetchError) {
         if (!isMounted) return;
-        logAuthError("/api/auth/me failed", user, { error: fetchError });
+        if (fetchError instanceof ApiError && fetchError.status === 401) {
+          clearStoredAuth();
+          setUser(null);
+          setStatus("unauthenticated");
+          setError(null);
+          return;
+        }
+        logAuthError("/api/auth/me failed", null, { error: fetchError });
         setError("Unable to refresh user profile.");
         setUiFailure({
           message: "Authentication failed while validating credentials.",
@@ -220,7 +228,7 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
     return () => {
       isMounted = false;
     };
-  }, [clearAuthState, user]);
+  }, [accessToken]);
 
   useEffect(() => {
     const unregister = registerAuthFailureHandler((reason) => {
