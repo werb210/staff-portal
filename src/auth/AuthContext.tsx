@@ -18,7 +18,12 @@ import {
 import { getRequestId } from "@/utils/requestId";
 import { fetchCurrentUser } from "@/api/auth";
 import { setUiFailure } from "@/utils/uiFailureStore";
-import { clearStoredAuth, setStoredAccessToken, setStoredUser } from "@/services/token";
+import {
+  clearStoredAuth,
+  getStoredUser,
+  setStoredAccessToken,
+  setStoredUser
+} from "@/services/token";
 import { getAccessToken } from "@/lib/authToken";
 import { registerAuthFailureHandler } from "@/auth/authEvents";
 import { redirectToLogin } from "@/services/api";
@@ -102,15 +107,17 @@ const logAuthError = (
 
 export function AuthProvider({ children }: PropsWithChildren<{}>) {
   const [status, setStatus] = useState<AuthStatus>("loading");
-  const [user, setUser] = useState<AuthenticatedUser | null>(null);
-  const [accessToken, setAccessToken] = useState<string | null>(() => getAccessToken());
+  const [user, setUser] = useState<AuthenticatedUser | null>(() =>
+    getStoredUser<AuthenticatedUser>()
+  );
+  const [accessToken, setAccessTokenState] = useState<string | null>(() => getAccessToken());
   const [error, setError] = useState<string | null>(null);
   const [pendingPhoneNumber, setPendingPhoneNumber] = useState<string | null>(null);
   const previousStatus = useRef<AuthStatus | null>(null);
 
   const clearAuthState = useCallback(() => {
     clearStoredAuth();
-    setAccessToken(null);
+    setAccessTokenState(null);
     setUser(null);
     setStatus("unauthenticated");
     setError(null);
@@ -125,19 +132,12 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
     [clearAuthState, user]
   );
 
-  const setAuth = useCallback(
-    ({ user: newUser }: SetAuthPayload) => {
-      if (newUser && !getAccessToken()) {
-        void forceLogout("missing-token");
-        return;
-      }
-      setUser(newUser ?? null);
-      setStoredUser(newUser ?? null);
-      setStatus(newUser ? "authenticated" : "unauthenticated");
-      setError(null);
-    },
-    [forceLogout]
-  );
+  const setAuth = useCallback(({ user: newUser }: SetAuthPayload) => {
+    setUser(newUser ?? null);
+    setStoredUser(newUser ?? null);
+    setStatus(getAccessToken() ? "authenticated" : "unauthenticated");
+    setError(null);
+  }, []);
 
   const setAuthenticated = useCallback(() => {
     setStatus("authenticated");
@@ -146,46 +146,38 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
 
   const refreshUser = useCallback(async (): Promise<boolean> => {
     if (!getAccessToken()) {
-      await forceLogout("missing-token");
+      setUser(null);
+      setStatus("unauthenticated");
       return false;
     }
     try {
       const profile = await fetchCurrentUser();
       setUser(profile.data ?? null);
       setStoredUser(profile.data ?? null);
-      setStatus(profile.data ? "authenticated" : "unauthenticated");
       return Boolean(profile.data);
     } catch (fetchError) {
       logAuthError("/api/auth/me failed", user, { error: fetchError });
-      await forceLogout("auth-me-failed");
-      setUiFailure({
-        message: "Authentication failed while validating credentials.",
-        details: `Request ID: ${getRequestId()}`,
-        timestamp: Date.now()
-      });
+      setError("Unable to refresh user profile.");
       return false;
     }
-  }, [forceLogout, user]);
+  }, [user]);
 
   const login = useCallback(
     async (token: string): Promise<void> => {
       setStoredAccessToken(token);
-      setAccessToken(token);
-      setStatus("loading");
+      setAccessTokenState(token);
+      setStatus("authenticated");
+      setError(null);
       try {
         const profile = await fetchCurrentUser();
         setUser(profile.data ?? null);
         setStoredUser(profile.data ?? null);
-        setStatus(profile.data ? "authenticated" : "unauthenticated");
-        if (!profile.data) {
-          await forceLogout("missing-user-profile");
-        }
       } catch (fetchError) {
         logAuthError("/api/auth/me failed after login", user, { error: fetchError });
-        await forceLogout("auth-me-failed");
+        setError("Login succeeded, but we could not load your profile yet.");
       }
     },
-    [forceLogout, user]
+    [user]
   );
 
   useEffect(() => {
@@ -195,22 +187,31 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
       const token = getAccessToken();
       if (!token) {
         if (!isMounted) return;
-        await forceLogout("missing-token");
+        clearAuthState();
         return;
       }
-      setAccessToken(token);
+      setAccessTokenState(token);
+      setStatus("authenticated");
+      const storedUser = getStoredUser<AuthenticatedUser>();
+      if (storedUser) {
+        setUser(storedUser);
+      }
       try {
         const profile = await fetchCurrentUser();
         if (!isMounted) return;
-        setUser(profile.data ?? null);
-        setStoredUser(profile.data ?? null);
-        setStatus(profile.data ? "authenticated" : "unauthenticated");
-        if (!profile.data) {
-          await forceLogout("missing-user-profile");
+        if (profile.data) {
+          setUser(profile.data ?? null);
+          setStoredUser(profile.data ?? null);
         }
       } catch (fetchError) {
         if (!isMounted) return;
-        await forceLogout("auth-me-failed");
+        logAuthError("/api/auth/me failed", user, { error: fetchError });
+        setError("Unable to refresh user profile.");
+        setUiFailure({
+          message: "Authentication failed while validating credentials.",
+          details: `Request ID: ${getRequestId()}`,
+          timestamp: Date.now()
+        });
       }
     };
 
@@ -219,7 +220,7 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
     return () => {
       isMounted = false;
     };
-  }, [clearAuthState, forceLogout]);
+  }, [clearAuthState, user]);
 
   useEffect(() => {
     const unregister = registerAuthFailureHandler((reason) => {

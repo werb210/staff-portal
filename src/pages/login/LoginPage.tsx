@@ -12,7 +12,30 @@ type OtpErrorDetails = {
   endpoint: string;
 };
 
+type ApiErrorPayload = {
+  message?: string;
+  code?: string;
+};
+
 const CORS_BLOCKED_MESSAGE = "Network error. Please try again.";
+const OTP_ERROR_MESSAGES: Record<string, string> = {
+  invalid_otp: "Invalid verification code. Please try again.",
+  otp_invalid: "Invalid verification code. Please try again.",
+  expired_otp: "Verification code expired. Request a new code.",
+  otp_expired: "Verification code expired. Request a new code."
+};
+
+const resolveApiErrorMessage = (error: ApiError): string => {
+  const details = error.details as ApiErrorPayload | undefined;
+  const code = error.code ?? details?.code;
+  if (code && OTP_ERROR_MESSAGES[code]) {
+    return OTP_ERROR_MESSAGES[code];
+  }
+  if (typeof details?.message === "string" && details.message.trim()) {
+    return details.message;
+  }
+  return error.message;
+};
 
 const buildOtpErrorDetails = (error: unknown, endpoint: string): OtpErrorDetails => {
   const fallbackRequestId = getRequestId();
@@ -20,7 +43,7 @@ const buildOtpErrorDetails = (error: unknown, endpoint: string): OtpErrorDetails
   let requestId = fallbackRequestId;
 
   if (error instanceof ApiError) {
-    message = error.message;
+    message = resolveApiErrorMessage(error);
     requestId = error.requestId ?? fallbackRequestId;
   } else if (typeof error === "string") {
     message = error;
@@ -30,7 +53,7 @@ const buildOtpErrorDetails = (error: unknown, endpoint: string): OtpErrorDetails
       if (axiosError.code === "ERR_NETWORK" || !axiosError.response) {
         message = CORS_BLOCKED_MESSAGE;
       } else {
-        const data = axiosError.response?.data as { message?: string } | undefined;
+        const data = axiosError.response?.data as ApiErrorPayload | undefined;
         if (typeof data?.message === "string") {
           message = data.message;
         } else if (typeof axiosError.message === "string") {
@@ -85,6 +108,7 @@ export default function LoginPage() {
       await startOtp({ phone: normalizedPhone });
       setSubmittedPhoneNumber(normalizedPhone);
       setHasRequestedCode(true);
+      setCode("");
     } catch (err) {
       const details = buildOtpErrorDetails(err, "/auth/otp/start");
       console.error("OTP start failed.", { ...details, error: err });
@@ -128,6 +152,7 @@ export default function LoginPage() {
       await startOtp({ phone });
       setSubmittedPhoneNumber(phone);
       setHasRequestedCode(true);
+      setCode("");
     } catch (err) {
       const details = buildOtpErrorDetails(err, "/auth/otp/start");
       console.error("OTP resend failed.", { ...details, error: err });
