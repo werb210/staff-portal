@@ -10,25 +10,42 @@ type PrivateRouteProps = {
   allowedRoles?: UserRole[];
 };
 
-export default function PrivateRoute({ children, allowedRoles = [] }: PrivateRouteProps) {
+export default function PrivateRoute({
+  children,
+  allowedRoles = [],
+}: PrivateRouteProps) {
   const auth = useAuth();
   const location = useLocation();
   const requestId = getRequestId();
 
+  // Hard block unauthenticated users
   if (auth.authStatus === "unauthenticated") {
     console.info("Route guard decision", {
       requestId,
       route: location.pathname,
       authState: auth.authStatus,
-      reason: "unauthenticated_redirect"
+      reason: "unauthenticated_redirect",
     });
+
     recordRedirect(location.pathname, "unauthenticated", location.key);
     return <Navigate to="/login" replace />;
   }
 
+  // Do NOT render protected content until roles are resolved
+  if (auth.rolesStatus !== "resolved") {
+    console.info("Route guard decision", {
+      requestId,
+      route: location.pathname,
+      authState: auth.authStatus,
+      reason: "roles_loading",
+    });
+
+    return null;
+  }
+
+  // Role restriction check
   if (
     auth.authStatus === "authenticated" &&
-    auth.rolesStatus === "resolved" &&
     allowedRoles.length > 0 &&
     !hasRequiredRole(auth.user?.role, allowedRoles)
   ) {
@@ -36,8 +53,9 @@ export default function PrivateRoute({ children, allowedRoles = [] }: PrivateRou
       requestId,
       route: location.pathname,
       authState: auth.authStatus,
-      reason: "role_restricted"
+      reason: "role_restricted",
     });
+
     return <AccessRestricted requiredRoles={allowedRoles} />;
   }
 
@@ -45,7 +63,8 @@ export default function PrivateRoute({ children, allowedRoles = [] }: PrivateRou
     requestId,
     route: location.pathname,
     authState: auth.authStatus,
-    reason: auth.rolesStatus === "resolved" ? "authenticated" : "roles_loading"
+    reason: "authenticated",
   });
+
   return children;
 }
