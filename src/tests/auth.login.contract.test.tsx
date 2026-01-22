@@ -14,9 +14,12 @@ const meSpy = vi.fn();
 
 const server = setupServer(
   http.post("http://localhost/api/auth/otp/start", async ({ request }) => {
+    const contentType = request.headers.get("content-type") ?? "";
+    expect(contentType.toLowerCase()).toContain("application/json");
+    expect(request.headers.has("x-request-id")).toBe(false);
     startOtpSpy(await request.json());
-    return new HttpResponse(null, {
-      status: 204,
+    return HttpResponse.json({ requestId: "req-otp" }, {
+      status: 200,
       headers: {
         "x-twilio-sid": "twilio-sid"
       }
@@ -87,6 +90,9 @@ describe("login contract flow", () => {
 
     expect(startOtpSpy).toHaveBeenCalledTimes(1);
     expect(startOtpSpy).toHaveBeenCalledWith({ phone: "+15555550100" });
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Code sent. Check your phone for the verification code."
+    );
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
 
     const otpInput = await screen.findByLabelText(/Verification code/i);

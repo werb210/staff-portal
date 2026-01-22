@@ -33,6 +33,7 @@ const apiBaseUrl = rawBaseUrl.endsWith("/api") ? rawBaseUrl : `${rawBaseUrl}/api
 
 export type AuthRequestConfig = AxiosRequestConfig & {
   skipAuth?: boolean;
+  skipRequestId?: boolean;
 };
 
 export const api = axios.create({

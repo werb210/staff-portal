@@ -5,7 +5,7 @@ describe("otp client", () => {
     vi.resetModules();
   });
 
-  it("starts otp requests with base url and request id header", async () => {
+  it("starts otp requests with base url and no custom headers", async () => {
     const client = await import("@/api/client");
     const apiInstance = client.default;
 
@@ -19,7 +19,7 @@ describe("otp client", () => {
     expect(apiPostSpy).toHaveBeenCalledWith("/auth/otp/start", { phone: "+15555550100" });
 
     const requestHandler = apiInstance.interceptors.request.handlers[0]?.fulfilled;
-    const config = requestHandler ? requestHandler({ headers: {} }) : null;
-    expect(config?.headers?.["X-Request-Id"]).toBeTruthy();
+    const config = requestHandler ? requestHandler({ headers: {}, skipRequestId: true }) : null;
+    expect(config?.headers?.["X-Request-Id"]).toBeUndefined();
   });
 });

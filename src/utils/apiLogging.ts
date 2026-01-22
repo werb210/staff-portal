@@ -59,31 +59,42 @@ export const buildRequestUrl = (config: AxiosRequestConfig) => {
   return `${base}${url}`;
 };
 
+type RequestIdConfig = AxiosRequestConfig & { skipRequestId?: boolean };
+
+const shouldAttachRequestId = (config: RequestIdConfig) => {
+  if (config.skipRequestId) return false;
+  return true;
+};
+
 export const attachRequestIdAndLog = (config: AxiosRequestConfig) => {
   const requestId = getRequestId();
-  const headers = { ...(config.headers ?? {}) } as Record<string, unknown>;
-  headers["X-Request-Id"] = requestId;
-  config.headers = headers;
+  const requestConfig = config as RequestIdConfig;
+  const headers = { ...(requestConfig.headers ?? {}) } as Record<string, unknown>;
+  const attachRequestId = shouldAttachRequestId(requestConfig);
+  if (attachRequestId) {
+    headers["X-Request-Id"] = requestId;
+  }
+  requestConfig.headers = headers;
 
-  if (!headers["X-Request-Id"]) {
+  if (attachRequestId && !headers["X-Request-Id"]) {
     throw new Error("Missing X-Request-Id header on request");
   }
 
-  const pendingId = startPendingRequest(config);
-  (config as AxiosRequestConfig & { __pendingId?: string }).__pendingId = pendingId;
+  const pendingId = startPendingRequest(requestConfig);
+  (requestConfig as AxiosRequestConfig & { __pendingId?: string }).__pendingId = pendingId;
 
   const sanitizedHeaders = redactSensitive(headers);
-  const payload = config.data ? redactSensitive(config.data as Redactable) : undefined;
+  const payload = requestConfig.data ? redactSensitive(requestConfig.data as Redactable) : undefined;
 
   console.info("API request", {
     requestId,
-    method: config.method?.toUpperCase(),
-    url: buildRequestUrl(config),
+    method: requestConfig.method?.toUpperCase(),
+    url: buildRequestUrl(requestConfig),
     headers: sanitizedHeaders,
     payload
   });
 
-  return config;
+  return requestConfig;
 };
 
 export const logResponse = (response: AxiosResponse) => {
