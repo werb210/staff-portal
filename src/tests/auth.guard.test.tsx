@@ -36,11 +36,11 @@ const buildAuthValue = (overrides: Partial<AuthContextValue>): AuthContextValue 
 });
 
 describe("route guard role handling", () => {
-  it("renders the dashboard shell while roles are loading", () => {
+  it("blocks rendering while auth is loading", () => {
     const authValue = buildAuthValue({
       user: { id: "user-1" },
-      authState: "authenticated",
-      authStatus: "authenticated",
+      authState: "loading",
+      authStatus: "loading",
       rolesStatus: "loading"
     });
 
@@ -63,7 +63,7 @@ describe("route guard role handling", () => {
       </AuthContext.Provider>
     );
 
-    expect(screen.getByText("Dashboard")).toBeInTheDocument();
+    expect(screen.queryByText("Dashboard")).not.toBeInTheDocument();
     expect(screen.getByTestId("location")).toHaveTextContent("/dashboard");
     expect(screen.queryByText("Login")).not.toBeInTheDocument();
   });

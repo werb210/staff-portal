@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from "react";
-import { useAuth as useAuthContext, type AuthState } from "@/auth/AuthContext";
+import { useAuth as useAuthContext, type AuthStatus } from "@/auth/AuthContext";
 import type { AuthenticatedUser } from "@/services/auth";
 import api from "@/lib/api";
 import { getAccessToken } from "@/lib/authToken";
@@ -15,8 +15,8 @@ export type AuthValue = {
   accessToken: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  authState: AuthState;
-  authStatus: AuthState;
+  authState: AuthStatus;
+  authStatus: AuthStatus;
   rolesStatus: string;
   error: string | null;
   startOtp: (payload: { phone: string }) => Promise<boolean>;
@@ -31,7 +31,7 @@ export type AuthValue = {
 export const useAuth = (): AuthValue => {
   const {
     user,
-    authState,
+    authStatus,
     rolesStatus,
     accessToken,
     error,
@@ -52,6 +52,7 @@ export const useAuth = (): AuthValue => {
         clearAuth();
         return false;
       }
+      setAuthState("loading");
       const response = await api.get<AuthenticatedUser>("/auth/me");
       setUser(response.data ?? null);
       setAuthState("authenticated");
@@ -62,10 +63,8 @@ export const useAuth = (): AuthValue => {
     }
   }, [clearAuth, setAuthState, setUser]);
 
-  const isLoading =
-    authState === "authenticated_pending" ||
-    (authState === "authenticated" && rolesStatus === "loading");
-  const isAuthenticated = authState === "authenticated";
+  const isLoading = authStatus === "loading" || rolesStatus === "loading";
+  const isAuthenticated = authStatus === "authenticated";
 
   return useMemo(
     () => ({
@@ -73,8 +72,8 @@ export const useAuth = (): AuthValue => {
       accessToken,
       isAuthenticated,
       isLoading,
-      authState,
-      authStatus: authState,
+      authState: authStatus,
+      authStatus,
       rolesStatus,
       error,
       startOtp,
@@ -90,7 +89,7 @@ export const useAuth = (): AuthValue => {
       accessToken,
       isAuthenticated,
       isLoading,
-      authState,
+      authStatus,
       rolesStatus,
       error,
       startOtp,

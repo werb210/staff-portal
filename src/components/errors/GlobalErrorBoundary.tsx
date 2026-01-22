@@ -49,7 +49,7 @@ class GlobalErrorBoundary extends Component<{ children: ReactNode }, GlobalError
             <p>
               <strong>Last API request:</strong>{" "}
               {lastRequest
-                ? `${lastRequest.method ?? "UNKNOWN"} ${lastRequest.path} (${lastRequest.status ?? "unknown"})${
+                ? `${lastRequest.method ?? "Unavailable"} ${lastRequest.path} (${lastRequest.status ?? "unknown"})${
                     lastRequest.requestId ? ` [${lastRequest.requestId}]` : ""
                   }`
                 : "No recent request recorded."}

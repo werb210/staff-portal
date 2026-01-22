@@ -1,13 +1,14 @@
-import { createContext, useEffect, useMemo, useState } from "react";
+import { createContext, useEffect, useMemo, useRef, useState } from "react";
+import { useAuth } from "@/auth/AuthContext";
 
 export type Silo = "BF" | "BI" | "SLF";
 
 const STORAGE_KEY = "staff-portal.silo";
 const DEFAULT_SILO: Silo = "BF";
 
-const readStoredSilo = (): Silo => {
+const readStoredSilo = (): Silo | null => {
   const stored = localStorage.getItem(STORAGE_KEY) as Silo | null;
-  return stored ?? DEFAULT_SILO;
+  return stored ?? null;
 };
 
 export type SiloContextValue = {
@@ -18,11 +19,23 @@ export type SiloContextValue = {
 const SiloContext = createContext<SiloContextValue | undefined>(undefined);
 
 export const SiloProvider = ({ children }: { children: React.ReactNode }) => {
-  const [silo, setSilo] = useState<Silo>(() => readStoredSilo());
+  const { authStatus, user } = useAuth();
+  const initialSilo = readStoredSilo();
+  const [silo, setSilo] = useState<Silo>(() => initialSilo ?? DEFAULT_SILO);
+  const hasStoredSilo = useRef(initialSilo !== null);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, silo);
   }, [silo]);
+
+  useEffect(() => {
+    if (authStatus !== "authenticated") return;
+    if (hasStoredSilo.current) return;
+    const userSilo = (user as { silo?: Silo } | null)?.silo;
+    if (!userSilo) return;
+    setSilo(userSilo);
+    hasStoredSilo.current = true;
+  }, [authStatus, user]);
 
   const value = useMemo(() => ({ silo, setSilo }), [silo]);
 

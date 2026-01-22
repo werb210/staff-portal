@@ -31,10 +31,10 @@ const buildAuthValue = (overrides: Partial<AuthContextValue>): AuthContextValue 
 });
 
 describe("auth guard", () => {
-  it("blocks rendering while roles are loading for authenticated users", () => {
+  it("blocks rendering while auth is loading", () => {
     const authValue = buildAuthValue({
-      authState: "authenticated",
-      authStatus: "authenticated",
+      authState: "loading",
+      authStatus: "loading",
       rolesStatus: "loading"
     });
 

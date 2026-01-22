@@ -47,7 +47,7 @@ const TestAuthState = () => {
 
 const TestAuthRole = () => {
   const { user } = useAuth();
-  return createElement("span", { "data-testid": "role" }, user?.role ?? "UNKNOWN");
+  return createElement("span", { "data-testid": "role" }, user?.role ?? "unassigned");
 };
 
 const TestVerifyAction = () => {

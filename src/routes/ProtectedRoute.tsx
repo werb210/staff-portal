@@ -11,15 +11,15 @@ export function ProtectedRoute({ children }: { children: JSX.Element }) {
   const location = useLocation();
   const requestId = getRequestId();
 
-  if (auth.authState === "authenticated_pending") {
+  if (auth.authStatus === "loading") {
     return <LoadingScreen />;
   }
 
-  if (auth.authState === "unauthenticated") {
+  if (auth.authStatus === "unauthenticated") {
     console.info("Route guard decision", {
       requestId,
       route: location.pathname,
-      authState: auth.authState,
+      authState: auth.authStatus,
       reason: "unauthenticated_redirect"
     });
     recordRedirect(location.pathname, "unauthenticated", location.key);
@@ -29,7 +29,7 @@ export function ProtectedRoute({ children }: { children: JSX.Element }) {
   console.info("Route guard decision", {
     requestId,
     route: location.pathname,
-    authState: auth.authState,
+    authState: auth.authStatus,
     reason: auth.rolesStatus === "resolved" ? "authenticated" : "roles_loading"
   });
   return children;

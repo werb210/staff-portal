@@ -30,7 +30,7 @@ const ProductFitTab = () => {
                   <div className="drawer-kv-list">
                     <div className="drawer-kv-list__item">
                       <dt>Product</dt>
-                      <dd>{score.productName ?? score.productId ?? "Unknown product"}</dd>
+                      <dd>{score.productName ?? score.productId ?? "Unlabeled product"}</dd>
                     </div>
                     <div className="drawer-kv-list__item">
                       <dt>Match</dt>

@@ -22,7 +22,7 @@ const ConversationViewer = ({ conversation, onSend, onAcknowledgeIssue }: Conver
   const metadata = useMemo(() => {
     if (!conversation) return null;
     return [
-      conversation.contactName || "Unknown contact",
+      conversation.contactName || "Unnamed contact",
       conversation.applicationName || conversation.applicationId,
       `Channel: ${conversation.type}`,
       conversation.assignedTo ? `Assigned: ${conversation.assignedTo}` : "Unassigned"

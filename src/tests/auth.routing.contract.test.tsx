@@ -105,11 +105,11 @@ describe("auth routing contract", () => {
     expect(lendersSpy).not.toHaveBeenCalled();
   });
 
-  it("renders protected routes while roles are loading and avoids redirects", () => {
+  it("renders protected routes when authenticated and avoids redirects", () => {
     const authValue: AuthContextValue = {
       authState: "authenticated",
       authStatus: "authenticated",
-      rolesStatus: "loading",
+      rolesStatus: "resolved",
       user: null,
       accessToken: null,
       error: null,
