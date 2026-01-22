@@ -1,4 +1,5 @@
 import api from "@/api/client";
+import type { AuthRequestConfig } from "@/lib/api";
 
 export type AuthenticatedUser = Record<string, any>;
 
@@ -21,7 +22,10 @@ export type OtpVerifyResponse = {
 };
 
 export async function startOtp(payload: { phone: string }): Promise<OtpStartResult | null> {
-  const response = await api.post<OtpStartResponse>("/auth/otp/start", payload);
+  const response = await api.post<OtpStartResponse>("/auth/otp/start", payload, {
+    skipAuth: true,
+    skipRequestId: true
+  } as AuthRequestConfig);
   if (response.status === 204) {
     return null;
   }
@@ -32,7 +36,10 @@ export async function startOtp(payload: { phone: string }): Promise<OtpStartResu
 }
 
 export async function verifyOtp(payload: { phone: string; code: string }): Promise<OtpVerifyResponse> {
-  const response = await api.post<OtpVerifyResponse>("/auth/otp/verify", payload);
+  const response = await api.post<OtpVerifyResponse>("/auth/otp/verify", payload, {
+    skipAuth: true,
+    skipRequestId: true
+  } as AuthRequestConfig);
   return response.data;
 }
 
