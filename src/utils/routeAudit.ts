@@ -2,6 +2,7 @@ import { getRequestId } from "@/utils/requestId";
 import { emitUiTelemetry } from "@/utils/uiTelemetry";
 import { setUiFailure } from "@/utils/uiFailureStore";
 import { getAccessToken } from "@/lib/authToken";
+import { getApiBaseUrl } from "@/config/api";
 import { reportAuthFailure } from "@/auth/authEvents";
 
 type RouteDescriptor = {
@@ -18,8 +19,8 @@ export const portalApiRoutes: RouteDescriptor[] = [
 ];
 
 const AUTH_ROUTE_PREFIXES = ["/auth/otp", "/auth/me", "/auth/logout"];
-const rawBaseUrl = import.meta.env.VITE_API_BASE_URL;
-const apiBaseUrl = rawBaseUrl?.endsWith("/api") ? rawBaseUrl : `${rawBaseUrl}/api`;
+const rawBaseUrl = import.meta.env.VITE_API_BASE_URL || getApiBaseUrl();
+const apiBaseUrl = rawBaseUrl.endsWith("/api") ? rawBaseUrl : `${rawBaseUrl}/api`;
 
 const normalizePath = (path: string) =>
   path
@@ -60,6 +61,9 @@ const isAuthBootstrapRoute = (route: RouteDescriptor) =>
   AUTH_ROUTE_PREFIXES.some((prefix) => normalizePath(route.path).startsWith(prefix));
 
 const resolveAuthState = async (requestId: string): Promise<boolean> => {
+  if (typeof window !== "undefined" && window.location.pathname === "/login") {
+    return false;
+  }
   const token = getAccessToken();
   if (!token) return false;
   try {

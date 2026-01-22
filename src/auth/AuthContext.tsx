@@ -237,12 +237,29 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
     let isMounted = true;
 
     const initializeAuth = async () => {
+      const isLoginRoute =
+        typeof window !== "undefined" && window.location.pathname === "/login";
       if (!accessToken) {
         if (!isMounted) return;
         setUserState(null);
         setAuthState("unauthenticated");
         setRolesStatus("resolved");
         setError(null);
+        return;
+      }
+      if (isLoginRoute) {
+        const storedUser = getStoredUser<AuthenticatedUser>();
+        const decodedUser = storedUser ?? (decodeJwt(accessToken) as AuthenticatedUser | null);
+        if (!isMounted) return;
+        if (decodedUser) {
+          setUserState(decodedUser);
+          setAuthState("authenticated");
+          setRolesStatus("resolved");
+          setError(null);
+        } else {
+          setAuthState("authenticated_pending");
+          setRolesStatus("loading");
+        }
         return;
       }
       if (!isMounted) return;
@@ -323,7 +340,11 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
         setError(null);
         return true;
       } catch (err: any) {
-        const message = (err?.message as string) ?? "OTP failed";
+        const status = getErrorStatus(err);
+        const message =
+          status === 400
+            ? "We could not send a code to that number. Please check and try again."
+            : (err?.message as string) ?? "OTP failed";
         setError(message);
         return false;
       }

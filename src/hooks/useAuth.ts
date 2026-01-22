@@ -2,6 +2,7 @@ import { useCallback, useMemo } from "react";
 import { useAuth as useAuthContext, type AuthState } from "@/auth/AuthContext";
 import type { AuthenticatedUser } from "@/services/auth";
 import api from "@/lib/api";
+import { getAccessToken } from "@/lib/authToken";
 
 export type StaffUser = AuthenticatedUser & {
   role?: string;
@@ -47,6 +48,10 @@ export const useAuth = (): AuthValue => {
 
   const refreshUser = useCallback(async (): Promise<boolean> => {
     try {
+      if (!getAccessToken()) {
+        clearAuth();
+        return false;
+      }
       const response = await api.get<AuthenticatedUser>("/auth/me");
       setUser(response.data ?? null);
       setAuthState("authenticated");
