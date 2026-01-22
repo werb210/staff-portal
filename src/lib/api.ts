@@ -1,6 +1,7 @@
 import axios, { AxiosError, type AxiosRequestConfig, type AxiosResponse } from "axios";
 import { attachRequestIdAndLog, logError, logResponse } from "@/utils/apiLogging";
 import { clearAccessToken, getAccessToken } from "@/lib/authToken";
+import { getApiBaseUrl } from "@/config/api";
 
 export type ApiErrorOptions = {
   status: number;
@@ -27,11 +28,7 @@ export class ApiError extends Error {
   }
 }
 
-const rawBaseUrl = import.meta.env.VITE_API_BASE_URL;
-if (!rawBaseUrl) {
-  throw new Error("VITE_API_BASE_URL is not defined");
-}
-
+const rawBaseUrl = import.meta.env.VITE_API_BASE_URL || getApiBaseUrl();
 const apiBaseUrl = rawBaseUrl.endsWith("/api") ? rawBaseUrl : `${rawBaseUrl}/api`;
 
 export type AuthRequestConfig = AxiosRequestConfig & {

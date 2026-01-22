@@ -39,7 +39,7 @@ class GlobalErrorBoundary extends Component<{ children: ReactNode }, GlobalError
       <div className="page">
         <Card title="Something went wrong">
           <div className="space-y-2 text-sm">
-            <p>We hit an unexpected error. Please refresh or contact support.</p>
+            <p>We hit an error while loading this page. Please try again or contact support.</p>
             <p>
               <strong>Error ID:</strong> {errorId}
             </p>

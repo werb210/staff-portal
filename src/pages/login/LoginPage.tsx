@@ -9,6 +9,7 @@ export default function LoginPage() {
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [status, setStatus] = useState<string | null>(null);
 
   const otpInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -22,12 +23,16 @@ export default function LoginPage() {
   const handleSendCode = async () => {
     setLoading(true);
     setError(null);
+    setStatus(null);
 
     try {
       const ok = await auth.startOtp(phone);
       if (!ok) {
         setError(auth.error ?? "Failed to send code");
+        setStatus(null);
+        return;
       }
+      setStatus("Code sent. Check your phone for the verification code.");
     } catch {
       setError("Failed to send code");
     } finally {
@@ -47,11 +52,13 @@ export default function LoginPage() {
 
     setLoading(true);
     setError(null);
+    setStatus(null);
 
     try {
       const ok = await auth.verifyOtp(targetPhone, code);
       if (!ok) {
         setError(auth.error ?? "Invalid verification code");
+        setStatus(null);
       }
     } catch {
       setError("Invalid verification code");
@@ -69,6 +76,11 @@ export default function LoginPage() {
       {(error || auth.error) && (
         <div role="alert" className="text-sm text-red-700">
           {error ?? auth.error}
+        </div>
+      )}
+      {status && (
+        <div role="status" className="text-sm text-emerald-700">
+          {status}
         </div>
       )}
 

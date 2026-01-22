@@ -12,12 +12,7 @@ const ErrorFallback = ({ error, resetErrorBoundary }: { error: Error; resetError
 
 const AppErrorBoundary = ({ children }: { children: React.ReactNode }) => {
   return (
-    <ErrorBoundary
-      FallbackComponent={ErrorFallback}
-      onReset={() => {
-        window.location.reload();
-      }}
-    >
+    <ErrorBoundary FallbackComponent={ErrorFallback}>
       {children}
     </ErrorBoundary>
   );

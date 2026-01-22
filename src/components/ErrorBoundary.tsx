@@ -44,7 +44,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryStat
           <div className="max-w-md text-center space-y-3">
             <h1 className="text-xl font-semibold">Something went wrong</h1>
             <p className="text-sm text-slate-600">
-              The application ran into an unexpected error. Please refresh the page or contact support.
+              The application ran into an error. Please try again or contact support.
             </p>
             <div className="text-xs text-slate-500 space-y-1">
               <p>

@@ -75,7 +75,7 @@ export default function App() {
       const requestId = getRequestId();
       console.error("Window error", { requestId, error: event.error, message: event.message });
       setUiFailure({
-        message: "An unexpected error occurred.",
+        message: "An error occurred while loading the page.",
         details: `Request ID: ${requestId}`,
         timestamp: Date.now()
       });
