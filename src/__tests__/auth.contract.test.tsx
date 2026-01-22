@@ -35,7 +35,7 @@ describe("auth contract", () => {
     api.defaults.adapter = originalAdapter;
   });
 
-  it("sets authenticated immediately and resolves roles after /api/auth/me", async () => {
+  it("sets loading immediately and resolves roles after /api/auth/me", async () => {
     clearStoredAuth();
     setStoredAccessToken("token");
 
@@ -57,7 +57,7 @@ describe("auth contract", () => {
       </AuthProvider>
     );
 
-    expect(screen.getByTestId("status")).toHaveTextContent("authenticated_pending:loading");
+    expect(screen.getByTestId("status")).toHaveTextContent("loading:loading");
 
     deferred.resolve({ id: "1", role: "Staff" });
 

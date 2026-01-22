@@ -36,12 +36,12 @@ const AuthProbe = () => {
 const renderApp = (initialRoute: string, includeProbe = false) => {
   window.history.pushState({}, "", initialRoute);
   return render(
-    <SiloProvider>
-      <AuthProvider>
+    <AuthProvider>
+      <SiloProvider>
         {includeProbe ? <AuthProbe /> : null}
         <App />
-      </AuthProvider>
-    </SiloProvider>
+      </SiloProvider>
+    </AuthProvider>
   );
 };
 

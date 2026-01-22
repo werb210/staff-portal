@@ -14,12 +14,12 @@ startUiHeartbeat(rootElement);
 
 ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
-    <SiloProvider>
-      <AuthProvider>
+    <AuthProvider>
+      <SiloProvider>
         <ErrorBoundary>
           <App />
         </ErrorBoundary>
-      </AuthProvider>
-    </SiloProvider>
+      </SiloProvider>
+    </AuthProvider>
   </React.StrictMode>
 );

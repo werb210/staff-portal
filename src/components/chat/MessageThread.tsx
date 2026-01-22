@@ -3,7 +3,7 @@ import type { MessageRecord } from "@/types/messages.types";
 const resolveSenderLabel = (message: MessageRecord) => {
   if (message.senderName) return message.senderName;
   if (message.senderType) return message.senderType;
-  return "Unknown sender";
+  return "Unidentified sender";
 };
 
 const resolveStatusLabel = (message: MessageRecord) => {

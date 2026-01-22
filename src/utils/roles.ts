@@ -18,7 +18,7 @@ export const isUserRole = (role: string): role is UserRole => roleValues.include
 
 export const assertKnownRole = (role: string): asserts role is UserRole => {
   if (!isUserRole(role)) {
-    throw new Error(`Unknown role: ${role}`);
+    throw new Error(`Invalid role: ${role}`);
   }
 };
 
@@ -33,6 +33,6 @@ export const getRoleLabel = (role?: UserRole | null) => {
     case "Referrer":
       return "Referrer";
     default:
-      return "Unknown";
+      return "Unassigned";
   }
 };

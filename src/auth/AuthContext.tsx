@@ -19,17 +19,16 @@ import { getRequestId } from "@/utils/requestId";
 import { setUiFailure } from "@/utils/uiFailureStore";
 import {
   clearStoredAuth,
-  getStoredUser,
   setStoredAccessToken,
   setStoredUser
 } from "@/services/token";
 import { getAccessToken } from "@/lib/authToken";
 import { registerAuthFailureHandler } from "@/auth/authEvents";
 import api from "@/lib/api";
-import { decodeJwt } from "@/auth/token";
-
-export type AuthState = "unauthenticated" | "authenticated_pending" | "authenticated";
-export type AuthStatus = AuthState;
+import { setAuthTelemetryContext } from "@/utils/uiTelemetry";
+import type { UserRole } from "@/utils/roles";
+export type AuthStatus = "loading" | "authenticated" | "unauthenticated";
+export type AuthState = AuthStatus;
 export type RolesStatus = "loading" | "resolved";
 
 interface SetAuthPayload {
@@ -71,7 +70,7 @@ export interface AuthContextValue {
 export type AuthContextType = AuthContextValue;
 
 const fallbackAccessToken = getAccessToken();
-const fallbackAuthState: AuthState = fallbackAccessToken ? "authenticated_pending" : "unauthenticated";
+const fallbackAuthState: AuthState = fallbackAccessToken ? "loading" : "unauthenticated";
 const fallbackRolesStatus: RolesStatus = fallbackAccessToken ? "loading" : "resolved";
 
 const defaultAuthContext: AuthContextValue = {
@@ -83,7 +82,7 @@ const defaultAuthContext: AuthContextValue = {
   error: null,
   authenticated: fallbackAuthState === "authenticated",
   isAuthenticated: fallbackAuthState === "authenticated",
-  authReady: fallbackAuthState !== "authenticated_pending",
+  authReady: fallbackAuthState !== "loading",
   pendingPhoneNumber: null,
   startOtp: async () => false,
   verifyOtp: async () => false,
@@ -134,19 +133,17 @@ const getErrorStatus = (error: unknown): number | undefined => {
 export function AuthProvider({ children }: PropsWithChildren<{}>) {
   const storedAccessToken = getAccessToken();
   const hasAccessToken = Boolean(storedAccessToken);
-  const [authState, setAuthState] = useState<AuthState>(() =>
-    hasAccessToken ? "authenticated_pending" : "unauthenticated"
+  const [authStatus, setAuthStatus] = useState<AuthStatus>(() =>
+    hasAccessToken ? "loading" : "unauthenticated"
   );
   const [rolesStatus, setRolesStatus] = useState<RolesStatus>(() =>
     hasAccessToken ? "loading" : "resolved"
   );
-  const [user, setUserState] = useState<AuthenticatedUser | null>(() =>
-    getStoredUser<AuthenticatedUser>()
-  );
+  const [user, setUserState] = useState<AuthenticatedUser | null>(null);
   const [accessToken, setAccessTokenState] = useState<string | null>(() => storedAccessToken);
   const [error, setError] = useState<string | null>(null);
   const [pendingPhoneNumber, setPendingPhoneNumber] = useState<string | null>(null);
-  const previousStatus = useRef<AuthState | null>(null);
+  const previousStatus = useRef<AuthStatus | null>(null);
 
   const setUser = useCallback((nextUser: AuthenticatedUser | null) => {
     setUserState(nextUser ?? null);
@@ -157,7 +154,7 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
     clearStoredAuth();
     setAccessTokenState(null);
     setUserState(null);
-    setAuthState("unauthenticated");
+    setAuthStatus("unauthenticated");
     setRolesStatus("resolved");
     setError(null);
     setPendingPhoneNumber(null);
@@ -179,11 +176,11 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
     ({ user: newUser }: SetAuthPayload) => {
       setUser(newUser ?? null);
       if (!getAccessToken()) {
-        setAuthState("unauthenticated");
+        setAuthStatus("unauthenticated");
       } else if (newUser) {
-        setAuthState("authenticated");
+        setAuthStatus("authenticated");
       } else {
-        setAuthState("authenticated_pending");
+        setAuthStatus("loading");
       }
       setRolesStatus("resolved");
       setError(null);
@@ -192,7 +189,8 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
   );
 
   const setAuthenticated = useCallback(() => {
-    setAuthState("authenticated");
+    setAuthStatus("authenticated");
+    setRolesStatus("resolved");
     setError(null);
   }, []);
 
@@ -201,13 +199,13 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
       clearAuthState();
       return false;
     }
-    setAuthState("authenticated_pending");
+    setAuthStatus("loading");
     setRolesStatus("loading");
     try {
       const response = await api.get<AuthenticatedUser>("/auth/me");
       const data = response.data;
       setUser(data ?? null);
-      setAuthState("authenticated");
+      setAuthStatus("authenticated");
       setRolesStatus("resolved");
       return true;
     } catch (fetchError) {
@@ -216,7 +214,7 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
       if (status === 401) {
         clearAuthState();
       } else {
-        setAuthState("authenticated_pending");
+        setAuthStatus("loading");
         setRolesStatus("loading");
         setError("Authentication temporarily unavailable.");
       }
@@ -227,7 +225,7 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
   const login = useCallback(async (token: string): Promise<void> => {
     setStoredAccessToken(token);
     setAccessTokenState(token);
-    setAuthState("authenticated_pending");
+    setAuthStatus("loading");
     setRolesStatus("loading");
     setError(null);
     await refreshUser();
@@ -237,44 +235,24 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
     let isMounted = true;
 
     const initializeAuth = async () => {
-      const isLoginRoute =
-        typeof window !== "undefined" && window.location.pathname === "/login";
       if (!accessToken) {
         if (!isMounted) return;
         setUserState(null);
-        setAuthState("unauthenticated");
+        setAuthStatus("unauthenticated");
         setRolesStatus("resolved");
         setError(null);
         return;
       }
-      if (isLoginRoute) {
-        const storedUser = getStoredUser<AuthenticatedUser>();
-        const decodedUser = storedUser ?? (decodeJwt(accessToken) as AuthenticatedUser | null);
-        if (!isMounted) return;
-        if (decodedUser) {
-          setUserState(decodedUser);
-          setAuthState("authenticated");
-          setRolesStatus("resolved");
-          setError(null);
-        } else {
-          setAuthState("authenticated_pending");
-          setRolesStatus("loading");
-        }
-        return;
-      }
       if (!isMounted) return;
-      setAuthState("authenticated_pending");
+      setAuthStatus("loading");
       setRolesStatus("loading");
-      const storedUser = getStoredUser<AuthenticatedUser>();
-      if (storedUser) {
-        setUserState(storedUser);
-      }
+      setUserState(null);
       try {
         const response = await api.get<AuthenticatedUser>("/auth/me");
         if (!isMounted) return;
         const data = response.data;
         setUser(data ?? null);
-        setAuthState("authenticated");
+        setAuthStatus("authenticated");
         setRolesStatus("resolved");
       } catch (fetchError) {
         if (!isMounted) return;
@@ -283,7 +261,7 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
         if (status === 401) {
           clearAuthState();
         } else {
-          setAuthState("authenticated_pending");
+          setAuthStatus("loading");
           setRolesStatus("loading");
           setError("Authentication temporarily unavailable.");
           setUiFailure({
@@ -312,22 +290,28 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
   }, [forceLogout]);
 
   useEffect(() => {
+    const role = (user as { role?: UserRole } | null)?.role ?? null;
+    const silo = (user as { silo?: string } | null)?.silo ?? null;
+    setAuthTelemetryContext({ authStatus, role, silo });
+  }, [authStatus, user]);
+
+  useEffect(() => {
     if (!previousStatus.current) {
-      previousStatus.current = authState;
+      previousStatus.current = authStatus;
       return;
     }
 
     const prior = previousStatus.current;
-    if (prior !== authState) {
-      if (prior === "unauthenticated" && authState === "authenticated") {
+    if (prior !== authStatus) {
+      if (prior === "unauthenticated" && authStatus === "authenticated") {
         logAuthInfo("Auth transition unauthenticated → authenticated", user);
       }
-      if (prior === "authenticated" && authState === "unauthenticated") {
+      if (prior === "authenticated" && authStatus === "unauthenticated") {
         logAuthInfo("Auth transition authenticated → unauthenticated", user);
       }
     }
-    previousStatus.current = authState;
-  }, [authState, user]);
+    previousStatus.current = authStatus;
+  }, [authStatus, user]);
 
   const startOtp = useCallback(
     async (payload: StartOtpPayload | string): Promise<boolean> => {
@@ -372,18 +356,14 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
         }
         setStoredAccessToken(response.accessToken);
         setAccessTokenState(response.accessToken);
-        const decodedUser = decodeJwt(response.accessToken) as AuthenticatedUser | null;
-        setUser(decodedUser);
-        setAuthState("authenticated_pending");
+        setUser(null);
+        setAuthStatus("loading");
         setRolesStatus("loading");
         setError(null);
         setPendingPhoneNumber(null);
         const refreshed = await refreshUser();
         if (!refreshed && !getAccessToken()) {
           return false;
-        }
-        if (!decodedUser?.role) {
-          return true;
         }
         return true;
       } catch (err: any) {
@@ -404,19 +384,19 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
     clearAuthState();
   }, [clearAuthState, user]);
 
-  const isAuthenticated = authState === "authenticated";
+  const isAuthenticated = authStatus === "authenticated";
 
   const contextValue = useMemo<AuthContextValue>(
     () => ({
-      authState,
-      authStatus: authState,
+      authState: authStatus,
+      authStatus,
       rolesStatus,
       user,
       accessToken,
       error,
       authenticated: isAuthenticated,
       isAuthenticated,
-      authReady: authState !== "authenticated_pending",
+      authReady: authStatus !== "loading",
       pendingPhoneNumber,
       startOtp,
       verifyOtp,
@@ -424,13 +404,13 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
       setAuth,
       setUser,
       setAuthenticated,
-      setAuthState,
+      setAuthState: setAuthStatus,
       clearAuth,
       refreshUser,
       logout
     }),
     [
-      authState,
+      authStatus,
       rolesStatus,
       user,
       accessToken,
@@ -443,7 +423,7 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
       setAuth,
       setUser,
       setAuthenticated,
-      setAuthState,
+      setAuthStatus,
       clearAuth,
       refreshUser,
       logout
