@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { AuthContext, type AuthContextValue } from "@/auth/AuthContext";
-import { ProtectedRoute } from "@/routes/ProtectedRoute";
+import PrivateRoute from "@/router/PrivateRoute";
 
 const buildAuthValue = (overrides: Partial<AuthContextValue>): AuthContextValue => ({
   authState: "authenticated",
@@ -31,7 +31,7 @@ const buildAuthValue = (overrides: Partial<AuthContextValue>): AuthContextValue 
 });
 
 describe("auth guard", () => {
-  it("allows rendering while roles are loading for authenticated users", () => {
+  it("blocks rendering while roles are loading for authenticated users", () => {
     const authValue = buildAuthValue({
       authState: "authenticated",
       authStatus: "authenticated",
@@ -45,9 +45,9 @@ describe("auth guard", () => {
             <Route
               path="/dashboard"
               element={
-                <ProtectedRoute>
+                <PrivateRoute>
                   <div>Dashboard</div>
-                </ProtectedRoute>
+                </PrivateRoute>
               }
             />
           </Routes>
@@ -55,6 +55,6 @@ describe("auth guard", () => {
       </AuthContext.Provider>
     );
 
-    expect(screen.getByText("Dashboard")).toBeInTheDocument();
+    expect(screen.queryByText("Dashboard")).not.toBeInTheDocument();
   });
 });
