@@ -121,6 +121,16 @@ const logAuthError = (
   console.error(message, { ...buildAuthLogContext(user), ...extra });
 };
 
+const getErrorStatus = (error: unknown): number | undefined => {
+  if (error && typeof error === "object" && "status" in error) {
+    const status = (error as { status?: unknown }).status;
+    if (typeof status === "number") {
+      return status;
+    }
+  }
+  return undefined;
+};
+
 export function AuthProvider({ children }: PropsWithChildren<{}>) {
   const storedAccessToken = getAccessToken();
   const hasAccessToken = Boolean(storedAccessToken);
@@ -201,8 +211,15 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
       setRolesStatus("resolved");
       return true;
     } catch (fetchError) {
-      logAuthError("/api/auth/me failed", user, { error: fetchError });
-      clearAuthState();
+      const status = getErrorStatus(fetchError);
+      logAuthError("/api/auth/me failed", user, { error: fetchError, status });
+      if (status === 401) {
+        clearAuthState();
+      } else {
+        setAuthState("authenticated_pending");
+        setRolesStatus("loading");
+        setError("Authentication temporarily unavailable.");
+      }
       return false;
     }
   }, [clearAuthState, setUser, user]);
@@ -213,7 +230,8 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
     setAuthState("authenticated_pending");
     setRolesStatus("loading");
     setError(null);
-  }, []);
+    await refreshUser();
+  }, [refreshUser]);
 
   useEffect(() => {
     let isMounted = true;
@@ -243,13 +261,20 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
         setRolesStatus("resolved");
       } catch (fetchError) {
         if (!isMounted) return;
-        logAuthError("/api/auth/me failed", null, { error: fetchError });
-        clearAuthState();
-        setUiFailure({
-          message: "Authentication failed while validating credentials.",
-          details: `Request ID: ${getRequestId()}`,
-          timestamp: Date.now()
-        });
+        const status = getErrorStatus(fetchError);
+        logAuthError("/api/auth/me failed", null, { error: fetchError, status });
+        if (status === 401) {
+          clearAuthState();
+        } else {
+          setAuthState("authenticated_pending");
+          setRolesStatus("loading");
+          setError("Authentication temporarily unavailable.");
+          setUiFailure({
+            message: "Authentication failed while validating credentials.",
+            details: `Request ID: ${getRequestId()}`,
+            timestamp: Date.now()
+          });
+        }
       }
     };
 
@@ -328,10 +353,17 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
         setAccessTokenState(response.accessToken);
         const decodedUser = decodeJwt(response.accessToken) as AuthenticatedUser | null;
         setUser(decodedUser);
-        setAuthState("authenticated");
-        setRolesStatus("resolved");
+        setAuthState("authenticated_pending");
+        setRolesStatus("loading");
         setError(null);
         setPendingPhoneNumber(null);
+        const refreshed = await refreshUser();
+        if (!refreshed && !getAccessToken()) {
+          return false;
+        }
+        if (!decodedUser?.role) {
+          return true;
+        }
         return true;
       } catch (err: any) {
         const message = (err?.message as string) ?? "OTP verification failed";
@@ -339,7 +371,7 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
         return false;
       }
     },
-    [pendingPhoneNumber, setUser, user]
+    [pendingPhoneNumber, refreshUser, setUser, user]
   );
 
   const logout = useCallback(async (): Promise<void> => {

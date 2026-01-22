@@ -18,6 +18,8 @@ export const portalApiRoutes: RouteDescriptor[] = [
 ];
 
 const AUTH_ROUTE_PREFIXES = ["/auth/otp", "/auth/me", "/auth/logout"];
+const rawBaseUrl = import.meta.env.VITE_API_BASE_URL;
+const apiBaseUrl = rawBaseUrl?.endsWith("/api") ? rawBaseUrl : `${rawBaseUrl}/api`;
 
 const normalizePath = (path: string) =>
   path
@@ -61,7 +63,7 @@ const resolveAuthState = async (requestId: string): Promise<boolean> => {
   const token = getAccessToken();
   if (!token) return false;
   try {
-    const response = await fetch("/api/auth/me", {
+    const response = await fetch(`${apiBaseUrl}/auth/me`, {
       headers: {
         "X-Request-Id": requestId,
         Authorization: `Bearer ${token}`
@@ -88,7 +90,7 @@ export const runRouteAudit = async (): Promise<void> => {
   });
 
   try {
-    const response = await fetch("/api/_int/routes", {
+    const response = await fetch(`${apiBaseUrl}/_int/routes`, {
       headers: { "X-Request-Id": requestId }
     });
 
