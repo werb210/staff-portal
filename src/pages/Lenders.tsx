@@ -51,7 +51,7 @@ export default function Lenders() {
   if (loading) return <div>Loading lenders…</div>;
   if (error) return <div>{error}</div>;
   if (!Array.isArray(lenders) || lenders.length === 0) {
-    return <div>No lenders found</div>;
+    return <div>No lenders</div>;
   }
 
   return (

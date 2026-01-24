@@ -24,7 +24,7 @@ const runtimeChecks: RuntimeCheck[] = [
   {
     id: "lenders",
     label: "/api/lenders",
-    run: () => apiClient.getList("/lenders")
+    run: () => apiClient.get("/lenders")
   },
   {
     id: "lender-products",

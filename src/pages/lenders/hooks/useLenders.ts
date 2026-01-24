@@ -3,15 +3,12 @@
    ========================================================= */
 
 import { useQuery } from "@tanstack/react-query";
-import { apiClient } from "@/api/httpClient";
+import { fetchLenders } from "@/api/lenders";
 
 export function useLenders() {
   return useQuery({
     queryKey: ["lenders"],
-    queryFn: async ({ signal }) => {
-      const data = await apiClient.getList("/lenders", { signal });
-      return data.items;
-    },
+    queryFn: ({ signal }) => fetchLenders({ signal }),
     placeholderData: (previousData) => previousData ?? [],
     staleTime: 30_000,
     refetchOnWindowFocus: false
