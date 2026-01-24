@@ -14,12 +14,15 @@ import LendersPage from "./pages/lenders/LendersPage";
 import LenderProductsPage from "./pages/lenders/LenderProductsPage";
 import SettingsPage from "./pages/settings/SettingsPage";
 import TaskPane from "./pages/tasks/TaskPane";
+import AdminUsers from "./pages/AdminUsers";
+import MyProfile from "./pages/MyProfile";
 import { emitUiTelemetry } from "./utils/uiTelemetry";
 import { useApiHealthCheck } from "./hooks/useApiHealthCheck";
 import UiFailureBanner from "./components/UiFailureBanner";
 import { getRequestId } from "./utils/requestId";
 import { setUiFailure } from "./utils/uiFailureStore";
 import { runRouteAudit } from "./utils/routeAudit";
+import RequireRole from "./components/auth/RequireRole";
 
 const RouteChangeObserver = () => {
   const location = useLocation();
@@ -117,6 +120,22 @@ export default function App() {
             <Route path="/lender-products/:productId/edit" element={<LenderProductsPage />} />
             <Route path="/lenders/products" element={<LenderProductsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route
+              path="/profile"
+              element={
+                <RequireRole roles={["Admin", "Staff"]}>
+                  <MyProfile />
+                </RequireRole>
+              }
+            />
+            <Route
+              path="/admin/users"
+              element={
+                <RequireRole roles={["Admin"]}>
+                  <AdminUsers />
+                </RequireRole>
+              }
+            />
           </Route>
         </Routes>
       </BrowserRouter>
