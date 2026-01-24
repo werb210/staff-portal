@@ -16,6 +16,7 @@ import SettingsPage from "./pages/settings/SettingsPage";
 import TaskPane from "./pages/tasks/TaskPane";
 import AdminUsers from "./pages/AdminUsers";
 import MyProfile from "./pages/MyProfile";
+import RuntimeVerification from "./pages/RuntimeVerification";
 import { emitUiTelemetry } from "./utils/uiTelemetry";
 import { useApiHealthCheck } from "./hooks/useApiHealthCheck";
 import UiFailureBanner from "./components/UiFailureBanner";
@@ -23,6 +24,7 @@ import { getRequestId } from "./utils/requestId";
 import { setUiFailure } from "./utils/uiFailureStore";
 import { runRouteAudit } from "./utils/routeAudit";
 import RequireRole from "./components/auth/RequireRole";
+import { fullStaffRoles } from "./utils/roles";
 
 const RouteChangeObserver = () => {
   const location = useLocation();
@@ -45,7 +47,7 @@ const RouteChangeObserver = () => {
 };
 
 const ProtectedApp = () => (
-  <PrivateRoute>
+  <PrivateRoute allowedRoles={fullStaffRoles}>
     <AppLayout />
   </PrivateRoute>
 );
@@ -125,6 +127,14 @@ export default function App() {
               element={
                 <RequireRole roles={["Admin", "Staff"]}>
                   <MyProfile />
+                </RequireRole>
+              }
+            />
+            <Route
+              path="/runtime-verification"
+              element={
+                <RequireRole roles={["Admin"]}>
+                  <RuntimeVerification />
                 </RequireRole>
               }
             />
