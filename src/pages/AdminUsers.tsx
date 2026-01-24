@@ -49,8 +49,16 @@ const AdminUsers = () => {
       const response = await getUsers(queryParams);
       setUsers(response.data.users);
     } catch (loadError) {
+      const status =
+        typeof loadError === "object" && loadError !== null && "response" in loadError
+          ? (loadError as { response?: { status?: number } }).response?.status
+          : undefined;
       console.error(loadError);
-      setError("Unable to load users. Please try again.");
+      if (status === 403) {
+        setError("You do not have permission to view users.");
+      } else {
+        setError("Unable to load users. Please try again.");
+      }
     } finally {
       setLoading(false);
     }

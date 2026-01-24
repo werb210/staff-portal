@@ -1,0 +1,325 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`portal role & permission guards > matches role snapshots 1`] = `
+<div>
+  <aside
+    class="sidebar"
+  >
+    <div
+      class="sidebar__header"
+    >
+      BF
+       Portal
+    </div>
+    <nav
+      class="sidebar__nav"
+    >
+      <a
+        aria-current="page"
+        class="sidebar__link sidebar__link--active"
+        href="/"
+      >
+        Dashboard
+      </a>
+      <a
+        class="sidebar__link "
+        href="/applications"
+      >
+        Applications
+      </a>
+      <a
+        class="sidebar__link "
+        href="/crm"
+      >
+        CRM
+      </a>
+      <a
+        class="sidebar__link "
+        href="/communications"
+      >
+        Communications
+      </a>
+      <a
+        class="sidebar__link "
+        href="/calendar"
+      >
+        Calendar & Tasks
+      </a>
+      <a
+        class="sidebar__link "
+        href="/marketing"
+      >
+        Marketing
+      </a>
+      <a
+        class="sidebar__link "
+        href="/lenders"
+      >
+        Lenders
+      </a>
+      <a
+        class="sidebar__link "
+        href="/lender-products"
+      >
+        Lender Products
+      </a>
+      <a
+        class="sidebar__link "
+        href="/profile"
+      >
+        My Profile
+      </a>
+      <a
+        class="sidebar__link "
+        href="/settings"
+      >
+        Settings
+      </a>
+      <a
+        class="sidebar__link "
+        href="/runtime-verification"
+      >
+        Runtime Verification
+      </a>
+      <a
+        class="sidebar__link "
+        href="/admin/users"
+      >
+        Users
+      </a>
+    </nav>
+  </aside>
+</div>
+`;
+
+exports[`portal role & permission guards > matches role snapshots 2`] = `
+<div>
+  <aside
+    class="sidebar"
+  >
+    <div
+      class="sidebar__header"
+    >
+      BF
+       Portal
+    </div>
+    <nav
+      class="sidebar__nav"
+    >
+      <a
+        aria-current="page"
+        class="sidebar__link sidebar__link--active"
+        href="/"
+      >
+        Dashboard
+      </a>
+      <a
+        class="sidebar__link "
+        href="/applications"
+      >
+        Applications
+      </a>
+      <a
+        class="sidebar__link "
+        href="/crm"
+      >
+        CRM
+      </a>
+      <a
+        class="sidebar__link "
+        href="/communications"
+      >
+        Communications
+      </a>
+      <a
+        class="sidebar__link "
+        href="/calendar"
+      >
+        Calendar & Tasks
+      </a>
+      <a
+        class="sidebar__link "
+        href="/lenders"
+      >
+        Lenders
+      </a>
+      <a
+        class="sidebar__link "
+        href="/profile"
+      >
+        My Profile
+      </a>
+      <a
+        class="sidebar__link "
+        href="/settings"
+      >
+        Settings
+      </a>
+    </nav>
+  </aside>
+</div>
+`;
+
+exports[`portal role & permission guards > matches role snapshots 3`] = `
+<div>
+  <div
+    class="lender-shell"
+  >
+    <aside
+      class="lender-sidebar"
+    >
+      <div
+        class="lender-sidebar__brand"
+      >
+        <div
+          aria-hidden="true"
+          class="lender-sidebar__logo"
+        >
+          ⛰️
+        </div>
+        <div>
+          <div
+            class="lender-sidebar__title"
+          >
+            Lender Portal
+          </div>
+          <div
+            class="lender-sidebar__subtitle"
+          >
+            Lender Co
+          </div>
+        </div>
+      </div>
+      <nav
+        class="lender-sidebar__nav"
+      >
+        <a
+          aria-current="page"
+          class="lender-nav-link lender-nav-link--active"
+          href="/lender/products"
+        >
+          My Products
+        </a>
+      </nav>
+    </aside>
+    <div
+      class="lender-shell__content"
+    >
+      <header
+        class="lender-topbar"
+      >
+        <div>
+          <div
+            class="lender-topbar__title"
+          >
+            Welcome back
+          </div>
+          <div
+            class="lender-topbar__subtitle"
+          >
+            Manage your lender profile and offers
+          </div>
+        </div>
+        <div
+          class="lender-topbar__user"
+        >
+          <div
+            class="lender-avatar"
+          >
+            L
+          </div>
+          <div
+            class="lender-topbar__user-meta"
+          >
+            <span
+              class="lender-topbar__user-name"
+            >
+              Lender User
+            </span>
+            <span
+              class="lender-topbar__user-role"
+            >
+              Lender
+            </span>
+          </div>
+          <button
+            class="ui-button ui-button--ghost"
+            type="button"
+          >
+            Logout
+          </button>
+        </div>
+      </header>
+      <main
+        class="lender-shell__main"
+      >
+        <div>
+          Products
+        </div>
+      </main>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`portal role & permission guards > matches role snapshots 4`] = `
+<div>
+  <aside
+    class="sidebar"
+  >
+    <div
+      class="sidebar__header"
+    >
+      BF
+       Portal
+    </div>
+    <nav
+      class="sidebar__nav"
+    >
+      <a
+        aria-current="page"
+        class="sidebar__link sidebar__link--active"
+        href="/"
+      >
+        Dashboard
+      </a>
+      <a
+        class="sidebar__link "
+        href="/applications"
+      >
+        Applications
+      </a>
+      <a
+        class="sidebar__link "
+        href="/crm"
+      >
+        CRM
+      </a>
+      <a
+        class="sidebar__link "
+        href="/communications"
+      >
+        Communications
+      </a>
+      <a
+        class="sidebar__link "
+        href="/calendar"
+      >
+        Calendar & Tasks
+      </a>
+      <a
+        class="sidebar__link "
+        href="/profile"
+      >
+        My Profile
+      </a>
+      <a
+        class="sidebar__link "
+        href="/settings"
+      >
+        Settings
+      </a>
+    </nav>
+  </aside>
+</div>
+`;
