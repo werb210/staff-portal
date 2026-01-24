@@ -6,6 +6,7 @@ import Table from "@/components/ui/Table";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Select from "@/components/ui/Select";
+import ErrorBanner from "@/components/ui/ErrorBanner";
 import {
   createLender,
   fetchLenders,
@@ -139,9 +140,9 @@ const LendersContent = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { lenderId } = useParams();
-  const { data, isLoading, error } = useQuery<Lender[], Error>({
+  const { data = [], isLoading, error } = useQuery<Lender[], Error>({
     queryKey: ["lenders"],
-    queryFn: fetchLenders
+    queryFn: ({ signal }) => fetchLenders({ signal })
   });
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [formValues, setFormValues] = useState<LenderFormValues>(emptyForm);
@@ -172,22 +173,39 @@ const LendersContent = () => {
 
   useEffect(() => {
     if (selectedLender) {
+      const address = selectedLender.address ?? {
+        street: "",
+        city: "",
+        stateProvince: "",
+        postalCode: "",
+        country: "CA"
+      };
+      const primaryContact = selectedLender.primaryContact ?? {
+        name: "",
+        email: "",
+        phone: ""
+      };
+      const submissionConfig = selectedLender.submissionConfig ?? {
+        method: "MANUAL",
+        submissionEmail: ""
+      };
       resetForm({
-        name: selectedLender.name,
-        active: selectedLender.active,
-        street: selectedLender.address.street,
-        city: selectedLender.address.city,
-        region: selectedLender.address.stateProvince,
-        postalCode: selectedLender.address.postalCode,
-        country: selectedLender.address.country,
-        phone: selectedLender.phone,
+        ...emptyForm,
+        name: selectedLender.name ?? "",
+        active: selectedLender.active ?? true,
+        street: address.street ?? "",
+        city: address.city ?? "",
+        region: address.stateProvince ?? "",
+        postalCode: address.postalCode ?? "",
+        country: address.country ?? "CA",
+        phone: selectedLender.phone ?? "",
         website: selectedLender.website ?? "",
         description: selectedLender.description ?? "",
-        primaryContactName: selectedLender.primaryContact.name,
-        primaryContactEmail: selectedLender.primaryContact.email,
-        primaryContactPhone: selectedLender.primaryContact.phone,
-        submissionMethod: selectedLender.submissionConfig.method,
-        submissionEmail: selectedLender.submissionConfig.submissionEmail ?? ""
+        primaryContactName: primaryContact.name ?? "",
+        primaryContactEmail: primaryContact.email ?? "",
+        primaryContactPhone: primaryContact.phone ?? "",
+        submissionMethod: submissionConfig.method ?? "MANUAL",
+        submissionEmail: submissionConfig.submissionEmail ?? ""
       });
       return;
     }
@@ -298,10 +316,10 @@ const LendersContent = () => {
           }
         >
           {isLoading && <AppLoading />}
-          {error && <p className="text-red-700">{getErrorMessage(error, "Unable to load lenders.")}</p>}
+          {error && <ErrorBanner message={getErrorMessage(error, "Unable to load lenders.")} />}
           {!isLoading && !error && (
             <Table headers={["Name", "Status", "Country", "Primary contact", "Submission", "Products"]}>
-              {data?.map((lender) => (
+              {data.map((lender) => (
                 <tr
                   key={lender.id}
                   className={lender.active ? "management-row" : "management-row management-row--disabled"}
@@ -330,12 +348,12 @@ const LendersContent = () => {
                       </Button>
                     </div>
                   </td>
-                  <td>{lender.address.country}</td>
+                  <td>{lender.address?.country || "—"}</td>
                   <td>
-                    <div className="text-sm font-semibold">{lender.primaryContact.name}</div>
-                    <div className="text-xs text-slate-500">{lender.primaryContact.email}</div>
+                    <div className="text-sm font-semibold">{lender.primaryContact?.name || "—"}</div>
+                    <div className="text-xs text-slate-500">{lender.primaryContact?.email || "—"}</div>
                   </td>
-                  <td>{lender.submissionConfig.method}</td>
+                  <td>{lender.submissionConfig?.method || "—"}</td>
                   <td>
                     <Button
                       type="button"
@@ -347,9 +365,9 @@ const LendersContent = () => {
                   </td>
                 </tr>
               ))}
-              {!data?.length && (
+              {!data.length && (
                 <tr>
-                  <td colSpan={6}>No lender profiles available.</td>
+                  <td colSpan={6}>No lenders</td>
                 </tr>
               )}
             </Table>

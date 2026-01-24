@@ -6,6 +6,7 @@ import Table from "@/components/ui/Table";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Select from "@/components/ui/Select";
+import ErrorBanner from "@/components/ui/ErrorBanner";
 import RequireRole from "@/components/auth/RequireRole";
 import AppLoading from "@/components/layout/AppLoading";
 import { getErrorMessage } from "@/utils/errors";
@@ -149,7 +150,7 @@ const LenderProductsContent = () => {
 
   const { data: lenders = [], isLoading: lendersLoading, error: lendersError } = useQuery<Lender[], Error>({
     queryKey: ["lenders"],
-    queryFn: fetchLenders,
+    queryFn: ({ signal }) => fetchLenders({ signal }),
     staleTime: 30_000,
     refetchOnWindowFocus: false
   });
@@ -415,9 +416,7 @@ const LenderProductsContent = () => {
     <div className="page">
       <Card title="Lender Products">
         {lendersLoading && <AppLoading />}
-        {lendersError && (
-          <p className="text-red-700">{getErrorMessage(lendersError, "Unable to load lenders.")}</p>
-        )}
+        {lendersError && <ErrorBanner message={getErrorMessage(lendersError, "Unable to load lenders.")} />}
         {!lendersLoading && !lendersError && hasLenders && (
           <Select
             label="Filter by lender"
@@ -436,14 +435,14 @@ const LenderProductsContent = () => {
           </Select>
         )}
         {!lendersLoading && !lendersError && !hasLenders && (
-          <p className="text-sm text-slate-500">No lenders yet. Create a lender to manage products.</p>
+          <p className="text-sm text-slate-500">No lenders</p>
         )}
         {activeLender && (
           <div className="management-note">
             <span className={`status-pill status-pill--${activeLender.active ? "active" : "paused"}`}>
               {activeLender.active ? "Lender active" : "Lender inactive"}
             </span>
-            <span>{activeLender.address.country}</span>
+            <span>{activeLender.address?.country || "—"}</span>
             {!activeLender.active && (
               <span className="text-xs text-amber-600">Inactive lenders cannot publish products.</span>
             )}
@@ -497,9 +496,7 @@ const LenderProductsContent = () => {
             </Select>
           </div>
           {productsLoading && <AppLoading />}
-          {productsError && (
-            <p className="text-red-700">{getErrorMessage(productsError, "Unable to load products.")}</p>
-          )}
+          {productsError && <ErrorBanner message={getErrorMessage(productsError, "Unable to load products.")} />}
           {!productsLoading && !productsError && (
             <Table
               headers={[
