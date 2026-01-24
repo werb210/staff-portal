@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/auth/AuthContext";
+import { ApiError } from "@/api/http";
+import { normalizeToE164 } from "@/utils/phone";
+import { getRequestId } from "@/utils/requestId";
 
 export default function LoginPage() {
   const auth = useAuth();
@@ -9,6 +12,10 @@ export default function LoginPage() {
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [errorDetails, setErrorDetails] = useState<{
+    endpoint?: string;
+    requestId?: string;
+  } | null>(null);
   const [status, setStatus] = useState<string | null>(null);
 
   const otpInputRef = useRef<HTMLInputElement | null>(null);
@@ -23,17 +30,34 @@ export default function LoginPage() {
   const handleSendCode = async () => {
     setLoading(true);
     setError(null);
+    setErrorDetails(null);
     setStatus(null);
 
     try {
-      const ok = await auth.startOtp(phone);
+      const normalizedPhone = normalizeToE164(phone);
+      const ok = await auth.startOtp({ phone: normalizedPhone });
       if (!ok) {
         setError(auth.error ?? "Failed to send code");
         setStatus(null);
         return;
       }
       setStatus("Code sent. Check your phone for the verification code.");
-    } catch {
+    } catch (err) {
+      if (err instanceof Error && err.message === "Invalid phone number") {
+        setError("Please enter a valid phone number.");
+        return;
+      }
+      if (err instanceof ApiError) {
+        setError(err.message);
+        setErrorDetails({ endpoint: "/auth/otp/start", requestId: err.requestId ?? getRequestId() });
+        console.error("OTP start failed.", { requestId: err.requestId ?? getRequestId(), error: err });
+        return;
+      }
+      if (typeof err === "object" && err && "isAxiosError" in err && (err as { code?: string }).code) {
+        setError("Network error. Please try again.");
+        setErrorDetails({ endpoint: "/auth/otp/start", requestId: getRequestId() });
+        return;
+      }
       setError("Failed to send code");
     } finally {
       setLoading(false);
@@ -49,18 +73,30 @@ export default function LoginPage() {
     }
 
     const targetPhone = auth.pendingPhoneNumber ?? phone;
+    let normalizedPhone = targetPhone;
 
     setLoading(true);
     setError(null);
+    setErrorDetails(null);
     setStatus(null);
 
     try {
-      const ok = await auth.verifyOtp(targetPhone, code);
+      normalizedPhone = normalizeToE164(targetPhone);
+      const ok = await auth.verifyOtp({ phone: normalizedPhone, code });
       if (!ok) {
         setError(auth.error ?? "Invalid verification code");
         setStatus(null);
       }
-    } catch {
+    } catch (err) {
+      if (err instanceof Error && err.message === "Invalid phone number") {
+        setError("Please enter a valid phone number.");
+        return;
+      }
+      if (err instanceof ApiError) {
+        setError(err.message);
+        setErrorDetails({ endpoint: "/auth/otp/verify", requestId: err.requestId ?? getRequestId() });
+        return;
+      }
       setError("Invalid verification code");
     } finally {
       setLoading(false);
@@ -74,8 +110,14 @@ export default function LoginPage() {
       <h1 className="text-2xl font-bold">Staff Login</h1>
 
       {(error || auth.error) && (
-        <div role="alert" className="text-sm text-red-700">
-          {error ?? auth.error}
+        <div role="alert" className="text-sm text-red-700 space-y-1">
+          <div>{error ?? auth.error}</div>
+          {errorDetails && (
+            <div className="text-xs text-red-600 space-y-0.5">
+              <div>Request ID: {errorDetails.requestId ?? ""}</div>
+              <div>Endpoint: {errorDetails.endpoint}</div>
+            </div>
+          )}
         </div>
       )}
       {status && (
