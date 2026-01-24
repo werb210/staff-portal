@@ -7,7 +7,6 @@ import MeetingLinks from "./tabs/MeetingLinks";
 import CommunicationSettings from "./tabs/CommunicationSettings";
 import SiloSettings from "./tabs/SiloSettings";
 import BrandingSettings from "./tabs/BrandingSettings";
-import UserManagement from "./tabs/UserManagement";
 import RequireRole from "@/components/auth/RequireRole";
 
 const SettingsContent = () => {
@@ -20,10 +19,7 @@ const SettingsContent = () => {
       { key: "meeting", label: "Meeting Links", component: <MeetingLinks /> },
       { key: "communication", label: "Communication", component: <CommunicationSettings /> },
       { key: "silo", label: "Silo", component: <SiloSettings /> },
-      { key: "branding", label: "Branding", component: <BrandingSettings /> },
-      ...(isAdmin
-        ? [{ key: "users", label: "User Management", component: <UserManagement /> }]
-        : [])
+      { key: "branding", label: "Branding", component: <BrandingSettings /> }
     ],
     [isAdmin]
   );

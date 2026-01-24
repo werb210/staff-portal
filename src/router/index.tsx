@@ -14,6 +14,9 @@ import SettingsPage from "@/pages/settings/SettingsPage";
 import { fullStaffRoles } from "@/utils/roles";
 import LenderRoutes from "./lenderRoutes";
 import { AuthProvider } from "@/auth/AuthContext";
+import AdminUsers from "@/pages/AdminUsers";
+import MyProfile from "@/pages/MyProfile";
+import RequireRole from "@/components/auth/RequireRole";
 
 const AppRouter = () => (
   <AuthProvider>
@@ -44,6 +47,22 @@ const AppRouter = () => (
           <Route path="lender-products/:productId/edit" element={<LenderProductsPage />} />
           <Route path="lenders/products" element={<LenderProductsPage />} />
           <Route path="settings" element={<SettingsPage />} />
+          <Route
+            path="profile"
+            element={
+              <RequireRole roles={["Admin", "Staff"]}>
+                <MyProfile />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="admin/users"
+            element={
+              <RequireRole roles={["Admin"]}>
+                <AdminUsers />
+              </RequireRole>
+            }
+          />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

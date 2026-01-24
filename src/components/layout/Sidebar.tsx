@@ -11,7 +11,9 @@ const baseNavigation = [
   { label: "Marketing", path: "/marketing" },
   { label: "Lenders", path: "/lenders" },
   { label: "Lender Products", path: "/lender-products" },
-  { label: "Settings", path: "/settings" }
+  { label: "My Profile", path: "/profile" },
+  { label: "Settings", path: "/settings" },
+  { label: "Users", path: "/admin/users" }
 ];
 
 const siloNavigation = {
@@ -21,6 +23,7 @@ const siloNavigation = {
     { label: "CRM", path: "/crm" },
     { label: "Communications", path: "/communications" },
     { label: "Calendar & Tasks", path: "/calendar" },
+    { label: "My Profile", path: "/profile" },
     { label: "Settings", path: "/settings" }
   ],
   SLF: [
@@ -29,6 +32,7 @@ const siloNavigation = {
     { label: "CRM", path: "/crm" },
     { label: "Communications", path: "/communications" },
     { label: "Calendar & Tasks", path: "/calendar" },
+    { label: "My Profile", path: "/profile" },
     { label: "Settings", path: "/settings" }
   ]
 };
@@ -37,8 +41,9 @@ const Sidebar = () => {
   const { silo } = useSilo();
   const { user } = useAuth();
   const isAdmin = user?.role === "Admin";
+  const adminOnlyPaths = new Set(["/marketing", "/admin/users"]);
   const navigation = siloNavigation[silo].filter((item) =>
-    item.path === "/marketing" ? isAdmin : true
+    adminOnlyPaths.has(item.path) ? isAdmin : true
   );
 
   return (
