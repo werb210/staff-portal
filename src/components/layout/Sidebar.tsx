@@ -44,10 +44,23 @@ const Sidebar = () => {
   const { silo } = useSilo();
   const { user } = useAuth();
   const isAdmin = user?.role === "Admin";
-  const adminOnlyPaths = new Set(["/marketing", "/admin/users", "/runtime-verification"]);
-  const navigation = siloNavigation[silo].filter((item) =>
-    adminOnlyPaths.has(item.path) ? isAdmin : true
-  );
+  const canSeeLenderMenus = user?.role === "Admin" || user?.role === "Staff";
+  const lenderMenus = new Set(["/lenders", "/lender-products"]);
+  const adminOnlyPaths = new Set([
+    "/marketing",
+    "/admin/users",
+    "/runtime-verification",
+    "/lender-products"
+  ]);
+  const navigation = siloNavigation[silo].filter((item) => {
+    if (adminOnlyPaths.has(item.path)) {
+      return isAdmin;
+    }
+    if (!canSeeLenderMenus && lenderMenus.has(item.path)) {
+      return false;
+    }
+    return true;
+  });
 
   return (
     <aside className="sidebar">

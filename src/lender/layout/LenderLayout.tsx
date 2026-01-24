@@ -23,14 +23,13 @@ const LenderLayout = () => {
           </div>
         </div>
         <nav className="lender-sidebar__nav">
-          <NavLink to="/lender/dashboard" className={({ isActive }) => (isActive ? "lender-nav-link lender-nav-link--active" : "lender-nav-link")}>
-            Dashboard
-          </NavLink>
-          <NavLink to="/lender/company" className={({ isActive }) => (isActive ? "lender-nav-link lender-nav-link--active" : "lender-nav-link")}>
-            Company Info
-          </NavLink>
-          <NavLink to="/lender/products" className={({ isActive }) => (isActive ? "lender-nav-link lender-nav-link--active" : "lender-nav-link")}>
-            Products
+          <NavLink
+            to="/lender/products"
+            className={({ isActive }) =>
+              isActive ? "lender-nav-link lender-nav-link--active" : "lender-nav-link"
+            }
+          >
+            My Products
           </NavLink>
         </nav>
       </aside>
