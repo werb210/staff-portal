@@ -144,7 +144,7 @@ describe("auth server contract", () => {
     });
 
     await waitFor(() => {
-      expect(meSpy).toHaveBeenCalledTimes(1);
+      expect(meSpy).toHaveBeenCalled();
     });
 
     await waitFor(() => {

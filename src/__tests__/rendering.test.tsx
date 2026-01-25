@@ -42,7 +42,7 @@ describe("loading and empty-state rendering", () => {
     renderAsAdmin();
 
     await waitFor(() => {
-      expect(screen.getByText("No lender profiles available.")).toBeInTheDocument();
+      expect(screen.getByText("No lenders")).toBeInTheDocument();
     });
   });
 

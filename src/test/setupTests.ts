@@ -1,8 +1,13 @@
 import "@testing-library/jest-dom/vitest";
+import type { AxiosRequestConfig } from "axios";
 import { afterEach, beforeAll, describe, it, test, vi } from "vitest";
 import { cleanup } from "@testing-library/react";
+import api from "@/lib/api";
+import clientApi from "@/api/client";
 
 vi.stubEnv("VITE_API_BASE_URL", "http://localhost/api");
+api.defaults.baseURL = "http://localhost/api";
+clientApi.defaults.baseURL = "http://localhost/api";
 
 const blockSkip = (label: string) => {
   return () => {
@@ -46,3 +51,25 @@ beforeAll(() => {
 afterEach(() => {
   cleanup();
 });
+
+const fetchAdapter = async (config: AxiosRequestConfig) => {
+  const baseURL = config.baseURL ?? "";
+  const url = config.url ?? "";
+  const response = await fetch(`${baseURL}${url}`, {
+    method: config.method?.toUpperCase() ?? "GET",
+    headers: config.headers as HeadersInit,
+    body: config.data ?? undefined
+  });
+  const contentType = response.headers.get("content-type") ?? "";
+  const data = contentType.includes("application/json") ? await response.json() : await response.text();
+  return {
+    data,
+    status: response.status,
+    statusText: response.statusText,
+    headers: Object.fromEntries(response.headers.entries()),
+    config
+  };
+};
+
+api.defaults.adapter = fetchAdapter;
+clientApi.defaults.adapter = fetchAdapter;

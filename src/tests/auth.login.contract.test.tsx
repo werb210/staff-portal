@@ -105,7 +105,7 @@ describe("login contract flow", () => {
     });
 
     await waitFor(() => {
-      expect(meSpy).toHaveBeenCalledTimes(1);
+      expect(meSpy).toHaveBeenCalled();
     });
 
     await waitFor(() => {

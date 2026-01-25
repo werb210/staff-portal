@@ -17,13 +17,14 @@ export default function LoginPage() {
     requestId?: string;
   } | null>(null);
   const [status, setStatus] = useState<string | null>(null);
+  const [otpSent, setOtpSent] = useState(false);
 
   const otpInputRef = useRef<HTMLInputElement | null>(null);
 
   // 🚨 CRITICAL: redirect immediately once authenticated
   useEffect(() => {
     if (auth.authStatus === "authenticated") {
-      navigate("/", { replace: true });
+      navigate("/dashboard", { replace: true });
     }
   }, [auth.authStatus, navigate]);
 
@@ -39,9 +40,11 @@ export default function LoginPage() {
       if (!ok) {
         setError(auth.error ?? "Failed to send code");
         setStatus(null);
+        setOtpSent(false);
         return;
       }
       setStatus("Code sent. Check your phone for the verification code.");
+      setOtpSent(true);
     } catch (err) {
       if (err instanceof Error && err.message === "Invalid phone number") {
         setError("Please enter a valid phone number.");
@@ -103,7 +106,7 @@ export default function LoginPage() {
     }
   };
 
-  const showOtpInput = Boolean(auth.pendingPhoneNumber);
+  const showOtpInput = Boolean(auth.pendingPhoneNumber) || otpSent;
 
   return (
     <div className="max-w-md mx-auto p-6 space-y-4">
@@ -159,6 +162,14 @@ export default function LoginPage() {
               disabled={loading}
             >
               Verify code
+            </button>
+            <button
+              type="button"
+              className="mt-2 w-full border border-blue-600 text-blue-600 rounded px-4 py-2"
+              onClick={handleSendCode}
+              disabled={loading}
+            >
+              Resend code
             </button>
           </div>
         )}
