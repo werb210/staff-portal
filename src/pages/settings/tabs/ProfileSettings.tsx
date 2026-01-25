@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import Button from "@/components/ui/Button";
+import ErrorBanner from "@/components/ui/ErrorBanner";
 import { useAuth } from "@/hooks/useAuth";
 import { useSettingsStore } from "@/state/settings.store";
+import { getErrorMessage } from "@/utils/errors";
 import UserDetailsFields from "../components/UserDetailsFields";
 
 const MAX_AVATAR_SIZE_BYTES = 2 * 1024 * 1024;
@@ -12,19 +14,30 @@ const ProfileSettings = () => {
   const { profile, fetchProfile, saveProfile, statusMessage, isLoadingProfile } = useSettingsStore();
   const [localProfile, setLocalProfile] = useState(profile);
   const [avatarError, setAvatarError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-
-  useEffect(() => {
-    fetchProfile();
-  }, [fetchProfile]);
 
   useEffect(() => {
     setLocalProfile(profile);
   }, [profile]);
 
-  const onSave = (event: React.FormEvent) => {
+  const onSave = async (event: React.FormEvent) => {
     event.preventDefault();
-    saveProfile(localProfile);
+    setFormError(null);
+    try {
+      await saveProfile(localProfile);
+    } catch (error) {
+      setFormError(getErrorMessage(error, "Unable to save profile."));
+    }
+  };
+
+  const onLoadProfile = async () => {
+    setFormError(null);
+    try {
+      await fetchProfile();
+    } catch (error) {
+      setFormError(getErrorMessage(error, "Unable to load profile details."));
+    }
   };
 
   const loadImage = (file: File) =>
@@ -77,6 +90,7 @@ const ProfileSettings = () => {
         <h2>My profile</h2>
         <p>Update your name, phone, and avatar. OAuth connections open in a new window.</p>
       </header>
+      {formError && <ErrorBanner message={formError} />}
 
       <div className="profile-summary">
         <div>
@@ -130,6 +144,9 @@ const ProfileSettings = () => {
       </div>
 
       <div className="settings-actions">
+        <Button type="button" variant="secondary" onClick={onLoadProfile} disabled={isLoadingProfile}>
+          {isLoadingProfile ? "Refreshing..." : "Refresh profile"}
+        </Button>
         <Button type="submit" disabled={isLoadingProfile}>
           {isLoadingProfile ? "Saving..." : "Save changes"}
         </Button>

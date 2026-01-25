@@ -1,17 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import Button from "@/components/ui/Button";
+import ErrorBanner from "@/components/ui/ErrorBanner";
 import { useAuth } from "@/hooks/useAuth";
 import { useSettingsStore } from "@/state/settings.store";
+import { getErrorMessage } from "@/utils/errors";
 
 const BrandingSettings = () => {
   const { branding, fetchBranding, saveBranding, statusMessage, isLoadingBranding } = useSettingsStore();
   const { user } = useAuth();
   const isAdmin = user?.role === "Admin";
   const [localBranding, setLocalBranding] = useState(branding);
-
-  useEffect(() => {
-    fetchBranding();
-  }, [fetchBranding]);
+  const [formError, setFormError] = useState<string | null>(null);
 
   useEffect(() => {
     setLocalBranding(branding);
@@ -24,8 +23,22 @@ const BrandingSettings = () => {
     setLocalBranding((prev) => ({ ...prev, logoUrl: previewUrl }));
   };
 
-  const onSave = () => {
-    saveBranding(localBranding);
+  const onSave = async () => {
+    setFormError(null);
+    try {
+      await saveBranding(localBranding);
+    } catch (error) {
+      setFormError(getErrorMessage(error, "Unable to save branding settings."));
+    }
+  };
+
+  const onLoadBranding = async () => {
+    setFormError(null);
+    try {
+      await fetchBranding();
+    } catch (error) {
+      setFormError(getErrorMessage(error, "Unable to load branding settings."));
+    }
   };
 
   const logoPreviewStyle = useMemo(
@@ -41,6 +54,7 @@ const BrandingSettings = () => {
         <h2>Branding</h2>
         <p>Upload a logo and size it for the portal header, emails, PDFs, and client apps.</p>
       </header>
+      {formError && <ErrorBanner message={formError} />}
 
       <div className="branding-preview">
         <div>
@@ -79,6 +93,9 @@ const BrandingSettings = () => {
       </div>
 
       <div className="settings-actions">
+        <Button type="button" variant="secondary" onClick={onLoadBranding} disabled={isLoadingBranding}>
+          {isLoadingBranding ? "Refreshing..." : "Refresh branding"}
+        </Button>
         {isAdmin && (
           <Button type="button" onClick={onSave} disabled={isLoadingBranding}>
             {isLoadingBranding ? "Saving..." : "Save branding"}

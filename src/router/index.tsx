@@ -9,9 +9,12 @@ import CommunicationsPage from "@/pages/communications/CommunicationsPage";
 import CalendarPage from "@/pages/calendar/CalendarPage";
 import MarketingPage from "@/pages/marketing/MarketingPage";
 import LendersPage from "@/pages/lenders/LendersPage";
-import LenderProductsPage from "@/pages/lenders/LenderProductsPage";
-import LenderProductDetail from "@/pages/lenders/LenderProductDetail";
 import SettingsPage from "@/pages/settings/SettingsPage";
+import ProfileSettings from "@/pages/settings/tabs/ProfileSettings";
+import BrandingSettings from "@/pages/settings/tabs/BrandingSettings";
+import UserManagement from "@/pages/settings/tabs/UserManagement";
+import RuntimeSettings from "@/pages/settings/tabs/RuntimeSettings";
+import SettingsSectionLayout from "@/pages/settings/components/SettingsSectionLayout";
 import { fullStaffRoles } from "@/utils/roles";
 import LenderRoutes from "./lenderRoutes";
 import { AuthProvider } from "@/auth/AuthContext";
@@ -42,11 +45,47 @@ const AppRouter = () => (
           <Route path="lenders" element={<LendersPage />} />
           <Route path="lenders/new" element={<LendersPage />} />
           <Route path="lenders/:lenderId/edit" element={<LendersPage />} />
-          <Route path="lender-products" element={<LenderProductsPage />} />
-          <Route path="lender-products/new" element={<LenderProductsPage />} />
-          <Route path="lender-products/:productId/edit" element={<LenderProductsPage />} />
-          <Route path="lenders/products" element={<LenderProductsPage />} />
-          <Route path="settings/*" element={<SettingsPage />} />
+          <Route path="settings" element={<SettingsPage />} />
+          <Route
+            path="settings/profile"
+            element={
+              <RequireRole roles={["Admin", "Staff"]} fallback={<Navigate to="/unauthorized" replace />}>
+                <SettingsSectionLayout>
+                  <ProfileSettings />
+                </SettingsSectionLayout>
+              </RequireRole>
+            }
+          />
+          <Route
+            path="settings/branding"
+            element={
+              <RequireRole roles={["Admin", "Staff"]} fallback={<Navigate to="/unauthorized" replace />}>
+                <SettingsSectionLayout>
+                  <BrandingSettings />
+                </SettingsSectionLayout>
+              </RequireRole>
+            }
+          />
+          <Route
+            path="settings/runtime"
+            element={
+              <RequireRole roles={["Admin", "Staff"]} fallback={<Navigate to="/unauthorized" replace />}>
+                <SettingsSectionLayout>
+                  <RuntimeSettings />
+                </SettingsSectionLayout>
+              </RequireRole>
+            }
+          />
+          <Route
+            path="settings/users"
+            element={
+              <RequireRole roles={["Admin"]} fallback={<Navigate to="/unauthorized" replace />}>
+                <SettingsSectionLayout>
+                  <UserManagement />
+                </SettingsSectionLayout>
+              </RequireRole>
+            }
+          />
           <Route path="unauthorized" element={<UnauthorizedPage />} />
           <Route
             path="admin/lenders"
@@ -61,22 +100,6 @@ const AppRouter = () => (
             element={
               <RequireRole roles={["Admin"]} fallback={<Navigate to="/unauthorized" replace />}>
                 <LendersPage />
-              </RequireRole>
-            }
-          />
-          <Route
-            path="admin/lender-products/:productId"
-            element={
-              <RequireRole roles={["Admin"]} fallback={<Navigate to="/unauthorized" replace />}>
-                <LenderProductDetail />
-              </RequireRole>
-            }
-          />
-          <Route
-            path="admin/lender-products/:productId/requirements"
-            element={
-              <RequireRole roles={["Admin"]} fallback={<Navigate to="/unauthorized" replace />}>
-                <LenderProductDetail />
               </RequireRole>
             }
           />

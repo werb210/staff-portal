@@ -26,7 +26,6 @@ describe("portal role & permission guards", () => {
     );
 
     expect(screen.getByText("Lenders")).toBeInTheDocument();
-    expect(screen.getByText("Lender Products")).toBeInTheDocument();
     expect(screen.getByText("Settings")).toBeInTheDocument();
   });
 
@@ -49,7 +48,6 @@ describe("portal role & permission guards", () => {
 
     expect(screen.getByText("Lenders")).toBeInTheDocument();
     expect(screen.getByText("Applications")).toBeInTheDocument();
-    expect(screen.getByText("Lender Products")).toBeInTheDocument();
     expect(screen.getByText("Settings")).toBeInTheDocument();
   });
 
