@@ -10,6 +10,7 @@ import CalendarPage from "@/pages/calendar/CalendarPage";
 import MarketingPage from "@/pages/marketing/MarketingPage";
 import LendersPage from "@/pages/lenders/LendersPage";
 import LenderProductsPage from "@/pages/lenders/LenderProductsPage";
+import LenderProductDetail from "@/pages/lenders/LenderProductDetail";
 import SettingsPage from "@/pages/settings/SettingsPage";
 import { fullStaffRoles } from "@/utils/roles";
 import LenderRoutes from "./lenderRoutes";
@@ -17,6 +18,7 @@ import { AuthProvider } from "@/auth/AuthContext";
 import AdminUsers from "@/pages/AdminUsers";
 import MyProfile from "@/pages/MyProfile";
 import RequireRole from "@/components/auth/RequireRole";
+import UnauthorizedPage from "@/pages/Unauthorized";
 
 const AppRouter = () => (
   <AuthProvider>
@@ -47,6 +49,7 @@ const AppRouter = () => (
           <Route path="lender-products/:productId/edit" element={<LenderProductsPage />} />
           <Route path="lenders/products" element={<LenderProductsPage />} />
           <Route path="settings" element={<SettingsPage />} />
+          <Route path="unauthorized" element={<UnauthorizedPage />} />
           <Route
             path="profile"
             element={
@@ -60,6 +63,38 @@ const AppRouter = () => (
             element={
               <RequireRole roles={["Admin"]}>
                 <AdminUsers />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="admin/lenders"
+            element={
+              <RequireRole roles={["Admin"]} fallback={<Navigate to="/unauthorized" replace />}>
+                <LendersPage />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="admin/lenders/:lenderId"
+            element={
+              <RequireRole roles={["Admin"]} fallback={<Navigate to="/unauthorized" replace />}>
+                <LendersPage />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="admin/lender-products/:productId"
+            element={
+              <RequireRole roles={["Admin"]} fallback={<Navigate to="/unauthorized" replace />}>
+                <LenderProductDetail />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="admin/lender-products/:productId/requirements"
+            element={
+              <RequireRole roles={["Admin"]} fallback={<Navigate to="/unauthorized" replace />}>
+                <LenderProductDetail />
               </RequireRole>
             }
           />

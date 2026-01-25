@@ -104,5 +104,13 @@ export type LenderProduct = {
 };
 
 export type LenderProductPayload = Omit<LenderProduct, "id" | "requiredDocuments"> & {
-  required_documents: ProductDocumentRequirement[];
+  required_documents?: ProductDocumentRequirement[];
+};
+
+export type LenderProductRequirement = {
+  id: string;
+  documentType: string;
+  required: boolean;
+  minAmount: number | null;
+  maxAmount: number | null;
 };
