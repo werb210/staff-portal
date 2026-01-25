@@ -4,7 +4,8 @@ import type {
   Lender,
   LenderPayload,
   LenderProduct,
-  LenderProductPayload
+  LenderProductPayload,
+  LenderProductRequirement
 } from "@/types/lenderManagement.models";
 
 type LenderStatus = "active" | "inactive";
@@ -15,7 +16,7 @@ type LenderSummary = {
   status?: LenderStatus;
 };
 
-export type { Lender, LenderPayload, LenderProduct, LenderProductPayload };
+export type { Lender, LenderPayload, LenderProduct, LenderProductPayload, LenderProductRequirement };
 
 export type LenderMatch = {
   id: string;
@@ -34,6 +35,19 @@ export type ClientLenderProduct = {
   max_amount: number | null;
   lender_id: string;
   lender_name: string;
+};
+
+type LenderProductRequirementApi = {
+  id: string;
+  document_type: string;
+  required: boolean;
+  min_amount: number | null;
+  max_amount: number | null;
+};
+
+type ClientRequirementResponse = {
+  requirements?: LenderProductRequirementApi[];
+  document_types?: string[];
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -202,6 +216,11 @@ export const fetchLenderProducts = async (lenderId?: string) => {
   return res.items;
 };
 
+export const fetchLenderProductById = async (productId: string) => {
+  const product = await apiClient.get<LenderProduct>(`/lender-products/${productId}`);
+  return assertEntityHasId(product, "lender product");
+};
+
 export const createLenderProduct = async (payload: LenderProductPayload) => {
   const product = await apiClient.post<LenderProduct>(`/lender-products`, payload);
   return assertEntityHasId(product, "lender product");
@@ -227,3 +246,65 @@ export async function fetchClientLenderProducts(): Promise<ClientLenderProduct[]
   const res = await clientApi.get("/api/client/lender-products");
   return res.data.data;
 }
+
+const normalizeRequirement = (requirement: LenderProductRequirementApi): LenderProductRequirement => ({
+  id: requirement.id,
+  documentType: requirement.document_type ?? "",
+  required: Boolean(requirement.required),
+  minAmount: requirement.min_amount ?? null,
+  maxAmount: requirement.max_amount ?? null
+});
+
+const parseRequirementResponse = (data: unknown) => {
+  if (Array.isArray(data)) {
+    return { requirements: data as LenderProductRequirementApi[] };
+  }
+  if (isRecord(data)) {
+    const requirements = Array.isArray((data as ClientRequirementResponse).requirements)
+      ? ((data as ClientRequirementResponse).requirements as LenderProductRequirementApi[])
+      : Array.isArray((data as { items?: unknown }).items)
+        ? ((data as { items: LenderProductRequirementApi[] }).items ?? [])
+        : [];
+    const documentTypes = Array.isArray((data as ClientRequirementResponse).document_types)
+      ? ((data as ClientRequirementResponse).document_types as string[])
+      : undefined;
+    return { requirements, documentTypes };
+  }
+  return { requirements: [] as LenderProductRequirementApi[] };
+};
+
+export async function fetchClientLenderProductRequirements(productId: string) {
+  const res = await clientApi.get(`/api/client/lender-products/${productId}/requirements`);
+  const payload = res.data?.data ?? res.data;
+  const parsed = parseRequirementResponse(payload);
+  return {
+    requirements: parsed.requirements.map(normalizeRequirement),
+    documentTypes: parsed.documentTypes
+  };
+}
+
+export const createLenderProductRequirement = async (
+  productId: string,
+  payload: Omit<LenderProductRequirementApi, "id">
+) => {
+  const requirement = await apiClient.post<LenderProductRequirementApi>(
+    `/lender-products/${productId}/requirements`,
+    payload
+  );
+  return normalizeRequirement(assertEntityHasId(requirement, "requirement"));
+};
+
+export const updateLenderProductRequirement = async (
+  productId: string,
+  requirementId: string,
+  payload: Omit<LenderProductRequirementApi, "id">
+) => {
+  const requirement = await apiClient.put<LenderProductRequirementApi>(
+    `/lender-products/${productId}/requirements/${requirementId}`,
+    payload
+  );
+  return normalizeRequirement(assertEntityHasId(requirement, "requirement"));
+};
+
+export const deleteLenderProductRequirement = (productId: string, requirementId: string) =>
+  apiClient.delete(`/lender-products/${productId}/requirements/${requirementId}`);

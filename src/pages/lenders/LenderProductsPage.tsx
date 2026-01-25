@@ -28,7 +28,6 @@ import {
   type RateType,
   type TermUnit
 } from "@/types/lenderManagement.types";
-import type { ProductDocumentRequirement } from "@/types/lenderManagement.models";
 
 type ProductFormValues = {
   lenderId: string;
@@ -51,32 +50,6 @@ type ProductFormValues = {
   minimumRevenue: string;
   timeInBusinessMonths: string;
   industryRestrictions: string;
-  requiredDocuments: RequiredDocumentForm[];
-};
-
-type RequiredDocumentForm = {
-  category: string;
-  required: boolean;
-  description: string;
-};
-
-const createEmptyDocumentRequirement = (): RequiredDocumentForm => ({
-  category: "",
-  required: true,
-  description: ""
-});
-
-const normalizeRequiredDocuments = (
-  documents: ProductDocumentRequirement[] | undefined
-): RequiredDocumentForm[] => {
-  if (!documents?.length) {
-    return [createEmptyDocumentRequirement()];
-  }
-  return documents.map((doc) => ({
-    category: doc.category ?? "",
-    required: doc.required ?? false,
-    description: doc.description ?? ""
-  }));
 };
 
 const emptyProductForm = (lenderId: string): ProductFormValues => ({
@@ -99,19 +72,8 @@ const emptyProductForm = (lenderId: string): ProductFormValues => ({
   eligibilityRules: "",
   minimumRevenue: "",
   timeInBusinessMonths: "",
-  industryRestrictions: "",
-  requiredDocuments: [createEmptyDocumentRequirement()]
+  industryRestrictions: ""
 });
-
-const formatRequiredDocumentSummary = (documents: ProductDocumentRequirement[]) => {
-  if (!documents.length) return "No document requirements defined.";
-  return documents
-    .map((doc) => {
-      const description = doc.description ? ` — ${doc.description}` : "";
-      return `${doc.category} (${doc.required ? "required" : "optional"})${description}`;
-    })
-    .join("\n");
-};
 
 const toOptionalNumber = (value: string) => {
   if (!value.trim()) return null;
@@ -256,8 +218,7 @@ const LenderProductsContent = () => {
         eligibilityRules: selectedProduct.eligibilityRules ?? "",
         minimumRevenue: selectedProduct.eligibilityFlags.minimumRevenue?.toString() ?? "",
         timeInBusinessMonths: selectedProduct.eligibilityFlags.timeInBusinessMonths?.toString() ?? "",
-        industryRestrictions: selectedProduct.eligibilityFlags.industryRestrictions ?? "",
-        requiredDocuments: normalizeRequiredDocuments(selectedProduct.requiredDocuments)
+        industryRestrictions: selectedProduct.eligibilityFlags.industryRestrictions ?? ""
       });
       setFormErrors({});
       return;
@@ -357,14 +318,6 @@ const LenderProductsContent = () => {
     if (values.timeInBusinessMonths.trim() && timeInBusiness === null) {
       errors.timeInBusinessMonths = "Time in business must be a number.";
     }
-    if (!values.requiredDocuments.some((doc) => doc.required)) {
-      errors.requiredDocuments = "Mark at least one document as required.";
-    }
-    values.requiredDocuments.forEach((doc, index) => {
-      if (!doc.category.trim()) {
-        errors[`requiredDocuments.${index}.category`] = "Category is required.";
-      }
-    });
     const normalizedCountry = values.country.trim().toUpperCase();
     if (values.category === "SBA_GOVERNMENT" && normalizedCountry !== "US") {
       errors.category = "SBA products must be limited to US lenders.";
@@ -402,12 +355,7 @@ const LenderProductsContent = () => {
       minimumRevenue: toOptionalNumber(values.minimumRevenue),
       timeInBusinessMonths: toOptionalNumber(values.timeInBusinessMonths),
       industryRestrictions: values.industryRestrictions.trim() ? values.industryRestrictions.trim() : null
-    },
-    required_documents: values.requiredDocuments.map((doc) => ({
-      category: doc.category.trim(),
-      required: doc.required,
-      description: doc.description.trim() ? doc.description.trim() : null
-    }))
+    }
   });
 
   const categoryOptions = buildCategoryOptions(formValues.country);
@@ -505,15 +453,11 @@ const LenderProductsContent = () => {
                 "Country",
                 "Currency",
                 "Status",
-                "Amount range",
-                "Required docs"
+                "Amount range"
               ]}
             >
               {filteredProducts.map((product) => {
                 const productActive = product.category === "STARTUP_CAPITAL" ? false : product.active;
-                const requiredDocuments = product.requiredDocuments ?? [];
-                const requiredCount = requiredDocuments.filter((doc) => doc.required).length;
-                const documentSummary = formatRequiredDocumentSummary(requiredDocuments);
                 return (
                 <tr
                   key={product.id}
@@ -551,19 +495,11 @@ const LenderProductsContent = () => {
                   <td>
                     ${product.minAmount.toLocaleString()} - ${product.maxAmount.toLocaleString()}
                   </td>
-                  <td>
-                    <div className="text-sm font-semibold" title={documentSummary}>
-                      {requiredCount} required
-                    </div>
-                    <div className="text-xs text-slate-500" title={documentSummary}>
-                      {requiredDocuments.length} total
-                    </div>
-                  </td>
                 </tr>
               );})}
               {!filteredProducts.length && (
                 <tr>
-                  <td colSpan={7}>
+                  <td colSpan={6}>
                     {activeLenderId ? "No products for this lender." : "No lender products available."}
                   </td>
                 </tr>
@@ -814,89 +750,6 @@ const LenderProductsContent = () => {
                     rows={2}
                   />
                 </label>
-              </div>
-
-              <div className="management-field">
-                <span className="management-field__label">Required documents</span>
-                <div className="space-y-4">
-                  {formValues.requiredDocuments.map((doc, index) => {
-                    const categoryError = formErrors[`requiredDocuments.${index}.category`];
-                    return (
-                      <div
-                        key={`${doc.category}-${index}`}
-                        className="management-grid__row"
-                        style={{ gridTemplateColumns: "2fr 1fr 2fr auto", alignItems: "center" }}
-                      >
-                        <Input
-                          label={`Category ${index + 1}`}
-                          value={doc.category}
-                          onChange={(event) =>
-                            setFormValues((prev) => {
-                              const next = [...prev.requiredDocuments];
-                              next[index] = { ...next[index], category: event.target.value };
-                              return { ...prev, requiredDocuments: next };
-                            })
-                          }
-                          error={categoryError}
-                        />
-                        <label className="management-toggle" aria-label={`Required document ${index + 1}`}>
-                          <input
-                            type="checkbox"
-                            checked={doc.required}
-                            onChange={(event) =>
-                              setFormValues((prev) => {
-                                const next = [...prev.requiredDocuments];
-                                next[index] = { ...next[index], required: event.target.checked };
-                                return { ...prev, requiredDocuments: next };
-                              })
-                            }
-                          />
-                          <span>Required</span>
-                        </label>
-                        <Input
-                          label={`Description ${index + 1} (optional)`}
-                          value={doc.description}
-                          onChange={(event) =>
-                            setFormValues((prev) => {
-                              const next = [...prev.requiredDocuments];
-                              next[index] = { ...next[index], description: event.target.value };
-                              return { ...prev, requiredDocuments: next };
-                            })
-                          }
-                        />
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          onClick={() =>
-                            setFormValues((prev) => ({
-                              ...prev,
-                              requiredDocuments: prev.requiredDocuments.filter((_, rowIndex) => rowIndex !== index)
-                            }))
-                          }
-                        >
-                          Remove
-                        </Button>
-                      </div>
-                    );
-                  })}
-                  <div>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      onClick={() =>
-                        setFormValues((prev) => ({
-                          ...prev,
-                          requiredDocuments: [...prev.requiredDocuments, createEmptyDocumentRequirement()]
-                        }))
-                      }
-                    >
-                      Add document
-                    </Button>
-                  </div>
-                </div>
-                {formErrors.requiredDocuments && (
-                  <span className="ui-field__error">{formErrors.requiredDocuments}</span>
-                )}
               </div>
 
               <div className="management-actions">
