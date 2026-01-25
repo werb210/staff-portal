@@ -1,5 +1,5 @@
 import axios from "axios";
-import api, { type AuthRequestConfig } from "@/lib/api";
+import api from "@/lib/api";
 
 export const clientApi = axios.create({
   baseURL: "https://api.staff.boreal.financial",
@@ -30,16 +30,10 @@ export type OtpVerifyResponse = {
 };
 
 export const otpStart = (payload: OtpStartPayload) =>
-  api.post<OtpStartResponse>("/auth/otp/start", payload, {
-    skipAuth: true,
-    skipRequestId: true
-  } as AuthRequestConfig);
+  api.post<OtpStartResponse>("/auth/otp/start", payload);
 
 export const otpVerify = (payload: OtpVerifyPayload) =>
-  api.post<OtpVerifyResponse>("/auth/otp/verify", payload, {
-    skipAuth: true,
-    skipRequestId: true
-  } as AuthRequestConfig);
+  api.post<OtpVerifyResponse>("/auth/otp/verify", payload);
 
 export const otp = {
   start: otpStart,
