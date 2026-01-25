@@ -15,8 +15,6 @@ import SettingsPage from "@/pages/settings/SettingsPage";
 import { fullStaffRoles } from "@/utils/roles";
 import LenderRoutes from "./lenderRoutes";
 import { AuthProvider } from "@/auth/AuthContext";
-import AdminUsers from "@/pages/AdminUsers";
-import MyProfile from "@/pages/MyProfile";
 import RequireRole from "@/components/auth/RequireRole";
 import UnauthorizedPage from "@/pages/Unauthorized";
 
@@ -50,22 +48,6 @@ const AppRouter = () => (
           <Route path="lenders/products" element={<LenderProductsPage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="unauthorized" element={<UnauthorizedPage />} />
-          <Route
-            path="profile"
-            element={
-              <RequireRole roles={["Admin", "Staff"]}>
-                <MyProfile />
-              </RequireRole>
-            }
-          />
-          <Route
-            path="admin/users"
-            element={
-              <RequireRole roles={["Admin"]}>
-                <AdminUsers />
-              </RequireRole>
-            }
-          />
           <Route
             path="admin/lenders"
             element={

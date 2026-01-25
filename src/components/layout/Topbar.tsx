@@ -1,18 +1,35 @@
 import { useAuth } from "@/hooks/useAuth";
 import { useSilo } from "@/hooks/useSilo";
+import { useSettingsStore } from "@/state/settings.store";
 import { getRoleLabel } from "@/utils/roles";
 import Button from "../ui/Button";
 import SiloSelector from "./SiloSelector";
 
-const Topbar = () => {
+type TopbarProps = {
+  onToggleSidebar: () => void;
+};
+
+const Topbar = ({ onToggleSidebar }: TopbarProps) => {
   const { user, logout } = useAuth();
   const { silo } = useSilo();
+  const { branding } = useSettingsStore();
 
   return (
     <header className="topbar">
       <div className="topbar__left">
-        <h1 className="topbar__title">Staff Portal</h1>
-        <span className="topbar__subtitle">Silo: {silo}</span>
+        <button
+          type="button"
+          className="topbar__menu-button"
+          aria-label="Toggle navigation"
+          onClick={onToggleSidebar}
+        >
+          ☰
+        </button>
+        {branding.logoUrl && <img src={branding.logoUrl} alt="Company logo" className="topbar__logo" />}
+        <div className="topbar__title-stack">
+          <h1 className="topbar__title">Staff Portal</h1>
+          <span className="topbar__subtitle">Silo: {silo}</span>
+        </div>
       </div>
       <div className="topbar__right">
         <SiloSelector />

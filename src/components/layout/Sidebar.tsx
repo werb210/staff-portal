@@ -2,6 +2,11 @@ import { NavLink } from "react-router-dom";
 import { useSilo } from "@/hooks/useSilo";
 import { useAuth } from "@/hooks/useAuth";
 
+type SidebarProps = {
+  isOpen: boolean;
+  onClose: () => void;
+};
+
 const baseNavigation = [
   { label: "Dashboard", path: "/" },
   { label: "Applications", path: "/applications" },
@@ -11,60 +16,23 @@ const baseNavigation = [
   { label: "Marketing", path: "/marketing" },
   { label: "Lenders", path: "/lenders" },
   { label: "Lender Products", path: "/lender-products" },
-  { label: "My Profile", path: "/profile" },
-  { label: "Settings", path: "/settings" },
-  { label: "Runtime Verification", path: "/runtime-verification" },
-  { label: "Users", path: "/admin/users" }
+  { label: "Settings", path: "/settings" }
 ];
 
-const siloNavigation = {
-  BF: baseNavigation,
-  BI: [
-    { label: "Dashboard", path: "/" },
-    { label: "CRM", path: "/crm" },
-    { label: "Communications", path: "/communications" },
-    { label: "Calendar & Tasks", path: "/calendar" },
-    { label: "My Profile", path: "/profile" },
-    { label: "Settings", path: "/settings" },
-    { label: "Runtime Verification", path: "/runtime-verification" }
-  ],
-  SLF: [
-    { label: "Dashboard", path: "/" },
-    { label: "Applications", path: "/applications" },
-    { label: "CRM", path: "/crm" },
-    { label: "Communications", path: "/communications" },
-    { label: "Calendar & Tasks", path: "/calendar" },
-    { label: "My Profile", path: "/profile" },
-    { label: "Settings", path: "/settings" },
-    { label: "Runtime Verification", path: "/runtime-verification" }
-  ]
-};
-
-const Sidebar = () => {
+const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
   const { silo } = useSilo();
   const { user } = useAuth();
-  const isAdmin = user?.role === "Admin";
-  const canSeeLenderMenus = user?.role === "Admin" || user?.role === "Staff";
-  const lenderMenus = new Set(["/lenders", "/lender-products"]);
-  const adminOnlyPaths = new Set([
-    "/marketing",
-    "/admin/users",
-    "/runtime-verification",
-    "/lender-products"
-  ]);
-  const navigation = siloNavigation[silo].filter((item) => {
-    if (adminOnlyPaths.has(item.path)) {
-      return isAdmin;
-    }
-    if (!canSeeLenderMenus && lenderMenus.has(item.path)) {
-      return false;
-    }
-    return true;
-  });
+  const canViewStaffNav = user?.role === "Admin" || user?.role === "Staff";
+  const navigation = canViewStaffNav ? baseNavigation : [];
 
   return (
-    <aside className="sidebar">
-      <div className="sidebar__header">{silo} Portal</div>
+    <aside className={`sidebar ${isOpen ? "sidebar--open" : ""}`}>
+      <div className="sidebar__header">
+        <span>{silo} Portal</span>
+        <button type="button" className="sidebar__close" onClick={onClose} aria-label="Close navigation">
+          ×
+        </button>
+      </div>
       <nav className="sidebar__nav">
         {navigation.map((item) => (
           <NavLink
@@ -73,6 +41,7 @@ const Sidebar = () => {
             className={({ isActive }) =>
               `sidebar__link ${isActive ? "sidebar__link--active" : ""}`
             }
+            onClick={onClose}
           >
             {item.label}
           </NavLink>

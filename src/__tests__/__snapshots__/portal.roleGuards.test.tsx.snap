@@ -8,8 +8,17 @@ exports[`portal role & permission guards > matches role snapshots 1`] = `
     <div
       class="sidebar__header"
     >
-      BF
-       Portal
+      <span>
+        BF
+         Portal
+      </span>
+      <button
+        aria-label="Close navigation"
+        class="sidebar__close"
+        type="button"
+      >
+        ×
+      </button>
     </div>
     <nav
       class="sidebar__nav"
@@ -65,27 +74,9 @@ exports[`portal role & permission guards > matches role snapshots 1`] = `
       </a>
       <a
         class="sidebar__link "
-        href="/profile"
-      >
-        My Profile
-      </a>
-      <a
-        class="sidebar__link "
         href="/settings"
       >
         Settings
-      </a>
-      <a
-        class="sidebar__link "
-        href="/runtime-verification"
-      >
-        Runtime Verification
-      </a>
-      <a
-        class="sidebar__link "
-        href="/admin/users"
-      >
-        Users
       </a>
     </nav>
   </aside>
@@ -100,8 +91,17 @@ exports[`portal role & permission guards > matches role snapshots 2`] = `
     <div
       class="sidebar__header"
     >
-      BF
-       Portal
+      <span>
+        BF
+         Portal
+      </span>
+      <button
+        aria-label="Close navigation"
+        class="sidebar__close"
+        type="button"
+      >
+        ×
+      </button>
     </div>
     <nav
       class="sidebar__nav"
@@ -139,15 +139,21 @@ exports[`portal role & permission guards > matches role snapshots 2`] = `
       </a>
       <a
         class="sidebar__link "
+        href="/marketing"
+      >
+        Marketing
+      </a>
+      <a
+        class="sidebar__link "
         href="/lenders"
       >
         Lenders
       </a>
       <a
         class="sidebar__link "
-        href="/profile"
+        href="/lender-products"
       >
-        My Profile
+        Lender Products
       </a>
       <a
         class="sidebar__link "
@@ -270,56 +276,21 @@ exports[`portal role & permission guards > matches role snapshots 4`] = `
     <div
       class="sidebar__header"
     >
-      BF
-       Portal
+      <span>
+        BF
+         Portal
+      </span>
+      <button
+        aria-label="Close navigation"
+        class="sidebar__close"
+        type="button"
+      >
+        ×
+      </button>
     </div>
     <nav
       class="sidebar__nav"
-    >
-      <a
-        aria-current="page"
-        class="sidebar__link sidebar__link--active"
-        href="/"
-      >
-        Dashboard
-      </a>
-      <a
-        class="sidebar__link "
-        href="/applications"
-      >
-        Applications
-      </a>
-      <a
-        class="sidebar__link "
-        href="/crm"
-      >
-        CRM
-      </a>
-      <a
-        class="sidebar__link "
-        href="/communications"
-      >
-        Communications
-      </a>
-      <a
-        class="sidebar__link "
-        href="/calendar"
-      >
-        Calendar & Tasks
-      </a>
-      <a
-        class="sidebar__link "
-        href="/profile"
-      >
-        My Profile
-      </a>
-      <a
-        class="sidebar__link "
-        href="/settings"
-      >
-        Settings
-      </a>
-    </nav>
+    />
   </aside>
 </div>
 `;
