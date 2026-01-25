@@ -1,77 +1,89 @@
+import { useEffect, useMemo, useState } from "react";
+import Button from "@/components/ui/Button";
 import { useAuth } from "@/hooks/useAuth";
 import { useSettingsStore } from "@/state/settings.store";
 
 const BrandingSettings = () => {
-  const { branding, uploadFavicon, uploadLogo, statusMessage } = useSettingsStore();
+  const { branding, fetchBranding, saveBranding, statusMessage, isLoadingBranding } = useSettingsStore();
   const { user } = useAuth();
   const isAdmin = user?.role === "Admin";
+  const [localBranding, setLocalBranding] = useState(branding);
 
-  const handleFavicon = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    const previewUrl = URL.createObjectURL(file);
-    uploadFavicon(previewUrl);
-  };
+  useEffect(() => {
+    fetchBranding();
+  }, [fetchBranding]);
+
+  useEffect(() => {
+    setLocalBranding(branding);
+  }, [branding]);
 
   const handleLogo = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
     const previewUrl = URL.createObjectURL(file);
-    uploadLogo(previewUrl);
+    setLocalBranding((prev) => ({ ...prev, logoUrl: previewUrl }));
   };
+
+  const onSave = () => {
+    saveBranding(localBranding);
+  };
+
+  const logoPreviewStyle = useMemo(
+    () => ({
+      width: `${localBranding.logoWidth}px`
+    }),
+    [localBranding.logoWidth]
+  );
 
   return (
     <section className="settings-panel" aria-label="Branding settings">
       <header>
         <h2>Branding</h2>
-        <p>Upload a logo to keep branding consistent across the portal, emails, PDFs, and client apps.</p>
+        <p>Upload a logo and size it for the portal header, emails, PDFs, and client apps.</p>
       </header>
 
       <div className="branding-preview">
         <div>
-          <p className="ui-field__label">Favicon</p>
-          <img src={branding.faviconUrl} alt="Current favicon" className="favicon-preview" />
-          {isAdmin && <input type="file" accept="image/*" onChange={handleFavicon} aria-label="Upload favicon" />}
+          <p className="ui-field__label">Logo preview</p>
+          <div className="logo-preview__frame">
+            <img
+              src={localBranding.logoUrl}
+              alt="Company logo preview"
+              className="logo-preview"
+              style={logoPreviewStyle}
+            />
+          </div>
         </div>
-        <div>
-          <p className="ui-field__label">Logo</p>
-          <img src={branding.logoUrl} alt="Company logo" className="logo-preview" />
+        <div className="branding-controls">
+          <label className="ui-field">
+            <span className="ui-field__label">Logo size</span>
+            <input
+              type="range"
+              min={120}
+              max={360}
+              step={10}
+              value={localBranding.logoWidth}
+              onChange={(event) =>
+                setLocalBranding((prev) => ({
+                  ...prev,
+                  logoWidth: Number(event.target.value)
+                }))
+              }
+              disabled={!isAdmin}
+              aria-label="Resize logo"
+            />
+          </label>
           {isAdmin && <input type="file" accept="image/*" onChange={handleLogo} aria-label="Upload logo" />}
+          {!isAdmin && <p className="ui-field__helper">Admins can upload and resize the logo.</p>}
         </div>
-      </div>
-
-      <div className="branding-usage">
-        <p className="ui-field__label">Logo usage</p>
-        <ul>
-          <li>Portal header</li>
-          <li>Email templates</li>
-          <li>PDF exports</li>
-          <li>Client app (if configured)</li>
-        </ul>
-      </div>
-
-      <div className="palette">
-        <p className="ui-field__label">Color palette</p>
-        <div className="palette-swatches">
-          {branding.palette.map((color) => (
-            <span key={color} className="swatch" style={{ background: color }} aria-label={color} />
-          ))}
-        </div>
-      </div>
-
-      <div className="typography">
-        <p className="ui-field__label">Typography</p>
-        <ul>
-          {branding.typography.map((font) => (
-            <li key={font}>{font}</li>
-          ))}
-        </ul>
       </div>
 
       <div className="settings-actions">
-        <a className="ui-button" href={branding.brandKitUrl} target="_blank" rel="noreferrer">
-          Download Brand Kit
-        </a>
+        {isAdmin && (
+          <Button type="button" onClick={onSave} disabled={isLoadingBranding}>
+            {isLoadingBranding ? "Saving..." : "Save branding"}
+          </Button>
+        )}
         {statusMessage && <span role="status">{statusMessage}</span>}
       </div>
     </section>
