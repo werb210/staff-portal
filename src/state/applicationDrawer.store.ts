@@ -9,7 +9,8 @@ export type DrawerTabId =
   | "product-fit"
   | "documents"
   | "messages"
-  | "audit";
+  | "audit"
+  | "lenders";
 
 export type ApplicationDrawerState = {
   isOpen: boolean;

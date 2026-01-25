@@ -78,9 +78,13 @@ describe("OTP auth requirements", () => {
     mockedStartOtp.mockResolvedValue(null);
 
     render(
-      <AuthProvider>
-        <LoginPage />
-      </AuthProvider>
+      <MemoryRouter initialEntries={["/login"]}>
+        <AuthProvider>
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
+          </Routes>
+        </AuthProvider>
+      </MemoryRouter>
     );
 
     fireEvent.change(screen.getByLabelText(/phone number/i), {

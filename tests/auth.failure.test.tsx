@@ -54,7 +54,7 @@ describe("auth failure safeguards", () => {
     await waitFor(() => expect(authRef).not.toBeNull());
     const result = await authRef!.verifyOtp({ phone: "+15555550100", code: "123456" });
     expect(result).toBe(false);
-    expect(authRef!.error).toMatch(/access token/i);
+    await waitFor(() => expect(authRef!.error).toMatch(/access token/i));
   });
 
   it("Token with invalid role -> fail", () => {
@@ -102,7 +102,7 @@ describe("auth failure safeguards", () => {
     await waitFor(() => expect(authRef).not.toBeNull());
     const result = await authRef!.startOtp({ phone: "+15555550100" });
     expect(result).toBe(true);
-    expect(authRef!.pendingPhoneNumber).toBe("+15555550100");
-    expect(authRef!.error).toBeNull();
+    await waitFor(() => expect(authRef!.pendingPhoneNumber).toBe("+15555550100"));
+    await waitFor(() => expect(authRef!.error).toBeNull());
   });
 });

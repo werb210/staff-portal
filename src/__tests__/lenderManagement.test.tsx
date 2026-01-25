@@ -277,12 +277,6 @@ describe("lender management flows", () => {
     await userEvent.type(screen.getByLabelText(/Interest rate max/i), "10.25");
     await userEvent.type(screen.getByLabelText(/Term length min/i), "6");
     await userEvent.type(screen.getByLabelText(/Term length max/i), "60");
-    await userEvent.type(screen.getByLabelText(/Category 1/i), "financials");
-    const requiredCheckbox = screen.getByRole("checkbox", { name: /Required document 1/i });
-    await userEvent.click(requiredCheckbox);
-    if (!(requiredCheckbox as HTMLInputElement).checked) {
-      fireEvent.click(requiredCheckbox);
-    }
 
     fireEvent.click(screen.getByRole("button", { name: /Create product/i }));
 

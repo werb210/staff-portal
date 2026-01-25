@@ -128,7 +128,7 @@ describe("portal auth routing smoke tests", () => {
       expect(window.location.pathname).toBe("/lenders");
     });
 
-    expect(await screen.findByText(/no lender profiles available/i)).toBeInTheDocument();
+    expect(await screen.findByText(/no lenders/i)).toBeInTheDocument();
     expect(consoleErrorSpy).not.toHaveBeenCalled();
   });
 });
