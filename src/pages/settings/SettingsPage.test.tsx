@@ -29,11 +29,8 @@ describe("SettingsPage", () => {
   test("renders all tabs for admins", () => {
     renderWithAuth("Admin");
     expect(screen.getByRole("button", { name: /Profile/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Security/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Meeting Links/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Communication/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Silo/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Branding/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Runtime/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /User Management/i })).toBeInTheDocument();
   });
 
@@ -42,22 +39,6 @@ describe("SettingsPage", () => {
     fireEvent.change(screen.getByLabelText(/First name/i), { target: { value: "Taylor" } });
     fireEvent.click(screen.getByRole("button", { name: /Save changes/i }));
     expect(screen.getByRole("status")).toHaveTextContent("Profile updated");
-  });
-
-  test("saves meeting link and updates preview", () => {
-    renderWithAuth();
-    fireEvent.click(screen.getByRole("button", { name: /Meeting Links/i }));
-    const input = screen.getByLabelText(/Public meeting URL/i);
-    fireEvent.change(input, { target: { value: "https://bookings.office.com/new-link" } });
-    fireEvent.click(screen.getByRole("button", { name: /Save link/i }));
-    expect(screen.getByRole("link", { name: "https://bookings.office.com/new-link" })).toBeInTheDocument();
-  });
-
-  test("updates silo settings", () => {
-    renderWithAuth();
-    fireEvent.click(screen.getByRole("button", { name: /Silo/i }));
-    fireEvent.change(screen.getByLabelText(/Default silo/i), { target: { value: "BI" } });
-    expect(screen.getByRole("status")).toHaveTextContent("Default silo updated");
   });
 
   test("renders branding preview", () => {
@@ -70,24 +51,15 @@ describe("SettingsPage", () => {
   test("allows admin user management", () => {
     renderWithAuth();
     fireEvent.click(screen.getByRole("button", { name: /User Management/i }));
-    fireEvent.change(screen.getByLabelText(/Name/i), { target: { value: "New User" } });
     fireEvent.change(screen.getByLabelText(/Email/i), { target: { value: "new@example.com" } });
     fireEvent.click(screen.getByRole("button", { name: /Add user/i }));
-    expect(screen.getByText("New User")).toBeInTheDocument();
+    expect(screen.getByText("new@example.com")).toBeInTheDocument();
   });
 
   test("enforces permissions for non-admins", () => {
     renderWithAuth("Staff");
     expect(screen.queryByRole("button", { name: /User Management/i })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /Communication/i }));
-    expect(screen.queryByRole("button", { name: /Refresh O365 Token/i })).not.toBeInTheDocument();
-  });
-
-  test("shows communication channels per silo", () => {
-    renderWithAuth();
-    fireEvent.click(screen.getByRole("button", { name: /Communication/i }));
-    expect(screen.getByText(/BF Silo/)).toBeInTheDocument();
-    expect(screen.getByText(/BI Silo/)).toBeInTheDocument();
-    expect(screen.getByText(/SLF Silo/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Runtime/i }));
+    expect(screen.getByText(/Runtime status/i)).toBeInTheDocument();
   });
 });

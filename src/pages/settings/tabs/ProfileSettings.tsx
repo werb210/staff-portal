@@ -1,19 +1,15 @@
 import { useRef, useState } from "react";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
-import Select from "@/components/ui/Select";
 import { useSettingsStore } from "@/state/settings.store";
 
-const timezones = [
-  { value: "America/New_York", label: "Eastern" },
-  { value: "America/Chicago", label: "Central" },
-  { value: "America/Denver", label: "Mountain" },
-  { value: "America/Los_Angeles", label: "Pacific" }
-];
+const MAX_AVATAR_SIZE_BYTES = 2 * 1024 * 1024;
+const MAX_AVATAR_DIMENSION = 256;
 
 const ProfileSettings = () => {
   const { profile, updateProfile, statusMessage } = useSettingsStore();
   const [localProfile, setLocalProfile] = useState(profile);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const onSave = (event: React.FormEvent) => {
@@ -21,11 +17,47 @@ const ProfileSettings = () => {
     updateProfile(localProfile);
   };
 
-  const onFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const loadImage = (file: File) =>
+    new Promise<HTMLImageElement>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const image = new Image();
+        image.onload = () => resolve(image);
+        image.onerror = () => reject(new Error("Unable to read image."));
+        image.src = reader.result as string;
+      };
+      reader.onerror = () => reject(new Error("Unable to read file."));
+      reader.readAsDataURL(file);
+    });
+
+  const onFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      const previewUrl = URL.createObjectURL(file);
-      setLocalProfile((prev) => ({ ...prev, profileImage: previewUrl }));
+      if (file.size > MAX_AVATAR_SIZE_BYTES) {
+        setAvatarError("Avatar must be under 2MB.");
+        return;
+      }
+      try {
+        const image = await loadImage(file);
+        const squareSize = Math.min(image.width, image.height);
+        const cropX = (image.width - squareSize) / 2;
+        const cropY = (image.height - squareSize) / 2;
+        const outputSize = Math.min(squareSize, MAX_AVATAR_DIMENSION);
+        const canvas = document.createElement("canvas");
+        canvas.width = outputSize;
+        canvas.height = outputSize;
+        const context = canvas.getContext("2d");
+        if (!context) {
+          throw new Error("Unable to prepare image preview.");
+        }
+        context.drawImage(image, cropX, cropY, squareSize, squareSize, 0, 0, outputSize, outputSize);
+        const previewUrl = canvas.toDataURL("image/png");
+        setLocalProfile((prev) => ({ ...prev, profileImage: previewUrl }));
+        setAvatarError(null);
+      } catch (error) {
+        console.error(error);
+        setAvatarError("Unable to process that image. Please try a different file.");
+      }
     }
   };
 
@@ -33,7 +65,7 @@ const ProfileSettings = () => {
     <form className="settings-panel" onSubmit={onSave} aria-label="Profile settings">
       <header>
         <h2>Personal settings</h2>
-        <p>Update your name, phone, timezone, and avatar.</p>
+        <p>Update your name, phone, and avatar.</p>
       </header>
 
       <div className="settings-grid">
@@ -54,12 +86,6 @@ const ProfileSettings = () => {
           value={localProfile.phone}
           onChange={(e) => setLocalProfile({ ...localProfile, phone: e.target.value })}
         />
-        <Select
-          label="Timezone"
-          value={localProfile.timezone}
-          onChange={(e) => setLocalProfile({ ...localProfile, timezone: e.target.value })}
-          options={timezones}
-        />
       </div>
 
       <div className="avatar-upload">
@@ -77,6 +103,21 @@ const ProfileSettings = () => {
             onChange={onFileChange}
             aria-label="Upload profile image"
           />
+          <p className="avatar-helper">Square crop enforced, max 256×256px, 2MB limit.</p>
+          {avatarError && <p className="ui-field__error">{avatarError}</p>}
+        </div>
+      </div>
+
+      <div className="connected-accounts">
+        <h3>Connected accounts</h3>
+        <p>Connect optional services. OAuth prompts open in a new window.</p>
+        <div className="connected-accounts__actions">
+          <Button type="button" variant="secondary">
+            Connect O365
+          </Button>
+          <Button type="button" variant="secondary">
+            Connect LinkedIn
+          </Button>
         </div>
       </div>
 

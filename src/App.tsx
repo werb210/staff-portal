@@ -14,16 +14,12 @@ import LendersPage from "./pages/lenders/LendersPage";
 import LenderProductsPage from "./pages/lenders/LenderProductsPage";
 import SettingsPage from "./pages/settings/SettingsPage";
 import TaskPane from "./pages/tasks/TaskPane";
-import AdminUsers from "./pages/AdminUsers";
-import MyProfile from "./pages/MyProfile";
-import RuntimeVerification from "./pages/RuntimeVerification";
 import { emitUiTelemetry } from "./utils/uiTelemetry";
 import { useApiHealthCheck } from "./hooks/useApiHealthCheck";
 import UiFailureBanner from "./components/UiFailureBanner";
 import { getRequestId } from "./utils/requestId";
 import { setUiFailure } from "./utils/uiFailureStore";
 import { runRouteAudit } from "./utils/routeAudit";
-import RequireRole from "./components/auth/RequireRole";
 import { RequireRole as RequireClientRole } from "./guards/RequireRole";
 import { fullStaffRoles } from "./utils/roles";
 
@@ -172,30 +168,6 @@ export default function App() {
               }
             />
             <Route path="/settings" element={<SettingsPage />} />
-            <Route
-              path="/profile"
-              element={
-                <RequireRole roles={["Admin", "Staff"]}>
-                  <MyProfile />
-                </RequireRole>
-              }
-            />
-            <Route
-              path="/runtime-verification"
-              element={
-                <RequireRole roles={["Admin"]}>
-                  <RuntimeVerification />
-                </RequireRole>
-              }
-            />
-            <Route
-              path="/admin/users"
-              element={
-                <RequireRole roles={["Admin"]}>
-                  <AdminUsers />
-                </RequireRole>
-              }
-            />
           </Route>
         </Routes>
       </BrowserRouter>

@@ -1,9 +1,8 @@
-import Button from "@/components/ui/Button";
 import { useAuth } from "@/hooks/useAuth";
 import { useSettingsStore } from "@/state/settings.store";
 
 const BrandingSettings = () => {
-  const { branding, uploadFavicon, statusMessage } = useSettingsStore();
+  const { branding, uploadFavicon, uploadLogo, statusMessage } = useSettingsStore();
   const { user } = useAuth();
   const isAdmin = user?.role === "Admin";
 
@@ -14,11 +13,18 @@ const BrandingSettings = () => {
     uploadFavicon(previewUrl);
   };
 
+  const handleLogo = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const previewUrl = URL.createObjectURL(file);
+    uploadLogo(previewUrl);
+  };
+
   return (
     <section className="settings-panel" aria-label="Branding settings">
       <header>
         <h2>Branding</h2>
-        <p>Preview favicon, logo, colors, and typography.</p>
+        <p>Upload a logo to keep branding consistent across the portal, emails, PDFs, and client apps.</p>
       </header>
 
       <div className="branding-preview">
@@ -30,7 +36,18 @@ const BrandingSettings = () => {
         <div>
           <p className="ui-field__label">Logo</p>
           <img src={branding.logoUrl} alt="Company logo" className="logo-preview" />
+          {isAdmin && <input type="file" accept="image/*" onChange={handleLogo} aria-label="Upload logo" />}
         </div>
+      </div>
+
+      <div className="branding-usage">
+        <p className="ui-field__label">Logo usage</p>
+        <ul>
+          <li>Portal header</li>
+          <li>Email templates</li>
+          <li>PDF exports</li>
+          <li>Client app (if configured)</li>
+        </ul>
       </div>
 
       <div className="palette">
