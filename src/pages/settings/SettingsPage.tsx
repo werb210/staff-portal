@@ -7,22 +7,28 @@ import MeetingLinks from "./tabs/MeetingLinks";
 import CommunicationSettings from "./tabs/CommunicationSettings";
 import SiloSettings from "./tabs/SiloSettings";
 import BrandingSettings from "./tabs/BrandingSettings";
+import UserManagement from "./tabs/UserManagement";
 import RequireRole from "@/components/auth/RequireRole";
 
 const SettingsContent = () => {
   const { user } = useAuth();
   const isAdmin = user?.role === "Admin";
-  const tabs = useMemo(
-    () => [
+  const tabs = useMemo(() => {
+    const baseTabs = [
       { key: "profile", label: "Profile", component: <ProfileSettings /> },
       { key: "security", label: "Security", component: <SecuritySettings /> },
       { key: "meeting", label: "Meeting Links", component: <MeetingLinks /> },
       { key: "communication", label: "Communication", component: <CommunicationSettings /> },
       { key: "silo", label: "Silo", component: <SiloSettings /> },
       { key: "branding", label: "Branding", component: <BrandingSettings /> }
-    ],
-    [isAdmin]
-  );
+    ];
+
+    if (isAdmin) {
+      baseTabs.push({ key: "users", label: "User Management", component: <UserManagement /> });
+    }
+
+    return baseTabs;
+  }, [isAdmin]);
 
   const [activeTab, setActiveTab] = useState<string>(tabs[0]?.key ?? "profile");
 

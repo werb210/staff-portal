@@ -1,23 +1,83 @@
-import { useState } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { fetchLenderMatches, sendToLenders, type LenderMatch } from "@/api/lenders";
+import { useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  createLenderSubmission,
+  fetchLenderMatches,
+  fetchLenderSubmissions,
+  retryLenderTransmission,
+  type LenderMatch,
+  type LenderSubmission,
+  type LenderSubmissionStatus
+} from "@/api/lenders";
+import { ApiError } from "@/lib/api";
 import { useApplicationDrawerStore } from "@/state/applicationDrawer.store";
 import { getErrorMessage } from "@/utils/errors";
+import { useAuth } from "@/hooks/useAuth";
+import AccessRestricted from "@/components/auth/AccessRestricted";
+import { fullStaffRoles, hasRequiredRole } from "@/utils/roles";
 
 const LendersTab = () => {
   const applicationId = useApplicationDrawerStore((state) => state.selectedApplicationId);
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const { data: matches = [], isLoading, error } = useQuery<LenderMatch[]>({
     queryKey: ["lenders", applicationId, "matches"],
     queryFn: ({ signal }) => fetchLenderMatches(applicationId ?? "", { signal }),
     enabled: Boolean(applicationId)
   });
+  const {
+    data: submissions = [],
+    isLoading: submissionsLoading,
+    error: submissionsError
+  } = useQuery<LenderSubmission[]>({
+    queryKey: ["lenders", applicationId, "submissions"],
+    queryFn: ({ signal }) => fetchLenderSubmissions(applicationId ?? "", { signal }),
+    enabled: Boolean(applicationId),
+    refetchInterval: 15000
+  });
 
   const [selected, setSelected] = useState<string[]>([]);
+  const [submitError, setSubmitError] = useState<{ message: string; canRetry: boolean } | null>(null);
+  const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
 
   const mutation = useMutation({
-    mutationFn: () => sendToLenders(applicationId ?? "", selected),
-    onSuccess: () => setSelected([])
+    mutationFn: () => createLenderSubmission(applicationId ?? "", eligibleSelection),
+    onSuccess: () => {
+      setSelected([]);
+      setSubmitError(null);
+      setSubmitSuccess("Submission sent successfully.");
+      queryClient.invalidateQueries({ queryKey: ["lenders", applicationId, "submissions"] });
+    },
+    onError: (err) => {
+      const nextError = getSubmissionErrorMessage(err);
+      setSubmitError(nextError);
+      setSubmitSuccess(null);
+    }
   });
+
+  const retryMutation = useMutation({
+    mutationFn: (transmissionId: string) => retryLenderTransmission(transmissionId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["lenders", applicationId, "submissions"] });
+    }
+  });
+
+  const submissionByProductId = useMemo(
+    () =>
+      submissions.reduce<Record<string, LenderSubmission>>((acc, submission) => {
+        acc[submission.lenderProductId] = submission;
+        return acc;
+      }, {}),
+    [submissions]
+  );
+
+  const eligibleSelection = useMemo(
+    () => selected.filter((id) => !submissionByProductId[id]),
+    [selected, submissionByProductId]
+  );
+
+  const canManageSubmissions = hasRequiredRole(user?.role, fullStaffRoles);
+  const isReadOnly = user?.role === "Lender";
 
   const toggleSelection = (id: string) => {
     setSelected((current) => (current.includes(id) ? current.filter((item) => item !== id) : [...current, id]));
@@ -26,23 +86,82 @@ const LendersTab = () => {
   if (!applicationId) return <div className="drawer-placeholder">Select an application to view lenders.</div>;
   if (isLoading) return <div className="drawer-placeholder">Loading lenders…</div>;
   if (error) return <div className="drawer-placeholder">{getErrorMessage(error, "Unable to load lenders.")}</div>;
+  if (user?.role === "Referrer") {
+    return <AccessRestricted message="You do not have permission to view lender submissions." />;
+  }
 
   return (
     <div className="drawer-tab drawer-tab__lenders">
       <div className="drawer-section">
         <div className="drawer-section__title">Recommended Lenders</div>
+        {submissionsError ? (
+          <div className="drawer-placeholder">{getErrorMessage(submissionsError, "Unable to load submission status.")}</div>
+        ) : null}
+        {submitSuccess ? (
+          <div className="drawer-placeholder" role="status">
+            {submitSuccess}
+          </div>
+        ) : null}
+        {submitError ? (
+          <div className="drawer-placeholder text-red-600" role="alert">
+            <div>{submitError.message}</div>
+            {submitError.canRetry ? (
+              <button
+                type="button"
+                className="btn btn--secondary mt-2"
+                onClick={() => mutation.mutate()}
+                disabled={mutation.isPending || !canManageSubmissions}
+              >
+                Retry send
+              </button>
+            ) : null}
+          </div>
+        ) : null}
         {matches.length ? (
           <ul className="drawer-list">
             {matches.map((match) => (
               <li key={match.id} className="lender-row">
                 <label>
-                  <input type="checkbox" checked={selected.includes(match.id)} onChange={() => toggleSelection(match.id)} />
+                  <input
+                    type="checkbox"
+                    checked={selected.includes(match.id)}
+                    onChange={() => toggleSelection(match.id)}
+                    disabled={Boolean(submissionByProductId[match.id]) || !canManageSubmissions}
+                  />
                   <span className="lender-row__name">{match.lenderName}</span>
                 </label>
                 <div className="lender-row__meta">
                   <div>Product: {match.productCategory ?? "—"}</div>
                   <div>Terms: {match.terms ?? "—"}</div>
                   <div>Documents: {match.requiredDocsStatus ?? "—"}</div>
+                  <div>
+                    Status:{" "}
+                    <SubmissionStatus
+                      status={submissionByProductId[match.id]?.status}
+                      loading={submissionsLoading}
+                    />
+                  </div>
+                  {submissionByProductId[match.id]?.status === "failed" ? (
+                    <button
+                      type="button"
+                      className="btn btn--secondary"
+                      disabled={
+                        !canManageSubmissions ||
+                        retryMutation.isPending ||
+                        !getRetryId(submissionByProductId[match.id])
+                      }
+                      onClick={() => {
+                        const transmissionId = getRetryId(submissionByProductId[match.id]);
+                        if (!transmissionId) return;
+                        retryMutation.mutate(transmissionId);
+                      }}
+                    >
+                      Retry
+                    </button>
+                  ) : null}
+                  {submissionByProductId[match.id]?.errorMessage ? (
+                    <div className="text-xs text-red-600">{submissionByProductId[match.id]?.errorMessage}</div>
+                  ) : null}
                 </div>
               </li>
             ))}
@@ -52,12 +171,52 @@ const LendersTab = () => {
         )}
       </div>
       <div className="drawer-footer-actions">
-        <button className="btn btn--primary" type="button" onClick={() => mutation.mutate()} disabled={!selected.length}>
-          Submit Application to Selected Lenders
+        <button
+          className="btn btn--primary"
+          type="button"
+          onClick={() => mutation.mutate()}
+          disabled={!eligibleSelection.length || mutation.isPending || !canManageSubmissions}
+        >
+          Send to Lender
         </button>
+        {isReadOnly ? <span className="text-xs text-slate-500">Read-only access.</span> : null}
       </div>
     </div>
   );
+};
+
+const SubmissionStatus = ({ status, loading }: { status?: LenderSubmissionStatus; loading?: boolean }) => {
+  if (loading) return <span className="status-pill status-pill--pending">Refreshing…</span>;
+  if (!status) return <span className="status-pill status-pill--idle">Not sent</span>;
+  switch (status) {
+    case "sent":
+      return <span className="status-pill status-pill--sent">Sent</span>;
+    case "failed":
+      return <span className="status-pill status-pill--failed">Failed</span>;
+    case "pending_manual":
+      return <span className="status-pill status-pill--pending">Pending manual</span>;
+    default:
+      return <span className="status-pill status-pill--idle">Unknown</span>;
+  }
+};
+
+const getRetryId = (submission?: LenderSubmission) =>
+  submission?.transmissionId?.trim() || submission?.id || null;
+
+const getSubmissionErrorMessage = (error: unknown) => {
+  if (error instanceof ApiError) {
+    if (error.status >= 500) {
+      return { message: "Submission failed due to a server error. Please retry.", canRetry: true };
+    }
+    if (error.status >= 400) {
+      const details = error.details as { message?: string } | undefined;
+      return {
+        message: details?.message ?? error.message ?? "Submission failed due to invalid data.",
+        canRetry: false
+      };
+    }
+  }
+  return { message: getErrorMessage(error, "Unable to send to lender."), canRetry: false };
 };
 
 export default LendersTab;

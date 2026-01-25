@@ -9,7 +9,8 @@ export type DrawerTabId =
   | "product-fit"
   | "documents"
   | "messages"
-  | "audit";
+  | "audit"
+  | "lenders";
 
 export type DrawerTab = {
   id: DrawerTabId;
@@ -25,7 +26,8 @@ export const TABS: DrawerTab[] = [
   { id: "product-fit", label: "Product Fit / Match" },
   { id: "documents", label: "Documents" },
   { id: "messages", label: "Messages" },
-  { id: "audit", label: "Audit / Timeline" }
+  { id: "audit", label: "Audit / Timeline" },
+  { id: "lenders", label: "Lenders" }
 ];
 
 type DrawerTabsProps = {

@@ -512,6 +512,26 @@ a {
   color: #92400e;
 }
 
+.status-pill--sent {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-pill--failed {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.status-pill--pending {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.status-pill--idle {
+  background: #e2e8f0;
+  color: #475569;
+}
+
 .management-field {
   display: flex;
   flex-direction: column;

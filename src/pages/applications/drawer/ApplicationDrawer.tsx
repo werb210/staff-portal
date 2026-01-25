@@ -10,6 +10,7 @@ import ProductFitTab from "./tab-product-fit/ProductFitTab";
 import DocumentsTab from "./tab-documents/DocumentsTab";
 import MessagesTab from "./tab-messages/MessagesTab";
 import AuditTimelineTab from "./tab-audit/AuditTimelineTab";
+import LendersTab from "./tab-lenders/LendersTab";
 import { useApplicationDrawerStore } from "@/state/applicationDrawer.store";
 import { usePipelineStore } from "@/pages/applications/pipeline/pipeline.store";
 
@@ -21,7 +22,8 @@ const tabContentMap: Record<DrawerTabId, JSX.Element> = {
   "product-fit": <ProductFitTab />,
   documents: <DocumentsTab />,
   messages: <MessagesTab />,
-  audit: <AuditTimelineTab />
+  audit: <AuditTimelineTab />,
+  lenders: <LendersTab />
 };
 
 const ApplicationDrawer = () => {

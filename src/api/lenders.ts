@@ -26,6 +26,17 @@ export type LenderMatch = {
   requiredDocsStatus?: string;
 };
 
+export type LenderSubmissionStatus = "sent" | "failed" | "pending_manual";
+
+export type LenderSubmission = {
+  id: string;
+  lenderProductId: string;
+  status: LenderSubmissionStatus;
+  transmissionId?: string | null;
+  errorMessage?: string | null;
+  updatedAt?: string | null;
+};
+
 export type ClientLender = { id: string; name: string };
 export type ClientLenderProduct = {
   id: string;
@@ -234,8 +245,17 @@ export const updateLenderProduct = async (productId: string, payload: Partial<Le
 export const fetchLenderMatches = (applicationId: string, options?: RequestOptions) =>
   apiClient.get<LenderMatch[]>(`/applications/${applicationId}/lenders`, options);
 
-export const sendToLenders = (applicationId: string, lenderIds: string[]) =>
-  apiClient.post(`/lenders/send-to-lender`, { applicationId, lenderIds });
+export const createLenderSubmission = (applicationId: string, lenderProductIds: string[]) =>
+  apiClient.post(`/lender/submissions`, { applicationId, lenderProductIds });
+
+export const fetchLenderSubmissions = (applicationId: string, options?: RequestOptions) =>
+  apiClient.get<LenderSubmission[]>(`/lender/submissions`, {
+    ...options,
+    params: { applicationId, ...(options?.params ?? {}) }
+  });
+
+export const retryLenderTransmission = (transmissionId: string) =>
+  apiClient.post(`/admin/transmissions/${transmissionId}/retry`);
 
 export async function fetchClientLenders(): Promise<ClientLender[]> {
   const res = await clientApi.get("/api/client/lenders");

@@ -169,7 +169,14 @@ describe("auth routing contract", () => {
 
     window.history.pushState({}, "", "/lenders");
 
-    await expect(api.get("/secure")).rejects.toBeTruthy();
+    let firstStatus: number | undefined;
+    try {
+      const response = await api.get("/secure");
+      firstStatus = response.status;
+    } catch (error) {
+      firstStatus = (error as { status?: number }).status;
+    }
+    expect(firstStatus).toBe(401);
 
     await waitFor(() => {
       expect(window.location.pathname).toBe("/lenders");
