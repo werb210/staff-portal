@@ -25,7 +25,14 @@ const Topbar = ({ onToggleSidebar }: TopbarProps) => {
         >
           ☰
         </button>
-        {branding.logoUrl && <img src={branding.logoUrl} alt="Company logo" className="topbar__logo" />}
+        {branding.logoUrl && (
+          <img
+            src={branding.logoUrl}
+            alt="Company logo"
+            className="topbar__logo"
+            style={{ maxWidth: `${branding.logoWidth}px` }}
+          />
+        )}
         <div className="topbar__title-stack">
           <h1 className="topbar__title">Staff Portal</h1>
           <span className="topbar__subtitle">Silo: {silo}</span>

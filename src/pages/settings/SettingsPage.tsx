@@ -1,40 +1,56 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import Card from "@/components/ui/Card";
 import { useAuth } from "@/hooks/useAuth";
+import RequireRole from "@/components/auth/RequireRole";
+import SettingsOverview from "./tabs/SettingsOverview";
 import ProfileSettings from "./tabs/ProfileSettings";
 import BrandingSettings from "./tabs/BrandingSettings";
 import UserManagement from "./tabs/UserManagement";
 import RuntimeSettings from "./tabs/RuntimeSettings";
-import RequireRole from "@/components/auth/RequireRole";
 
 const SettingsContent = () => {
   const { user } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
   const isAdmin = user?.role === "Admin";
   const tabs = useMemo(() => {
     const baseTabs = [
-      { key: "profile", label: "Profile", component: <ProfileSettings /> },
-      { key: "branding", label: "Branding", component: <BrandingSettings /> },
-      { key: "runtime", label: "Runtime", component: <RuntimeSettings /> }
+      { key: "settings", label: "Settings", path: "/settings", component: <SettingsOverview /> },
+      { key: "profile", label: "My Profile", path: "/settings/profile", component: <ProfileSettings /> },
+      { key: "branding", label: "Branding", path: "/settings/branding", component: <BrandingSettings /> },
+      { key: "runtime", label: "Runtime Verification", path: "/settings/runtime", component: <RuntimeSettings /> }
     ];
 
     if (isAdmin) {
-      baseTabs.splice(1, 0, {
+      baseTabs.splice(2, 0, {
         key: "users",
         label: "User Management",
-        component: <UserManagement />
+        path: "/settings/users",
+        component: (
+          <RequireRole roles={["Admin"]}>
+            <UserManagement />
+          </RequireRole>
+        )
       });
     }
 
     return baseTabs;
   }, [isAdmin]);
 
-  const [activeTab, setActiveTab] = useState<string>(tabs[0]?.key ?? "profile");
+  const matchedTab = tabs.find((tab) => {
+    if (tab.path === "/settings") {
+      return location.pathname === tab.path;
+    }
+    return location.pathname === tab.path || location.pathname.startsWith(`${tab.path}/`);
+  });
+  const activeTab = matchedTab ?? tabs[0];
 
   useEffect(() => {
-    if (!tabs.find((tab) => tab.key === activeTab)) {
-      setActiveTab(tabs[0]?.key ?? "profile");
+    if (!matchedTab && location.pathname !== tabs[0]?.path) {
+      navigate(tabs[0]?.path ?? "/settings", { replace: true });
     }
-  }, [activeTab, tabs]);
+  }, [location.pathname, matchedTab, navigate, tabs]);
 
   return (
     <div className="page settings-page">
@@ -44,16 +60,16 @@ const SettingsContent = () => {
             {tabs.map((tab) => (
               <button
                 key={tab.key}
-                className={`settings-tab ${activeTab === tab.key ? "is-active" : ""}`}
-                onClick={() => setActiveTab(tab.key)}
-                aria-current={activeTab === tab.key}
+                className={`settings-tab ${activeTab?.key === tab.key ? "is-active" : ""}`}
+                onClick={() => navigate(tab.path)}
+                aria-current={activeTab?.key === tab.key}
               >
                 {tab.label}
               </button>
             ))}
           </nav>
           <div className="settings-content">
-            {tabs.find((tab) => tab.key === activeTab)?.component ?? tabs[0]?.component}
+            {activeTab?.component ?? tabs[0]?.component}
           </div>
         </div>
       </Card>

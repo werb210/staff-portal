@@ -1,19 +1,17 @@
 import { create } from "zustand";
+import apiClient from "@/api/httpClient";
 import type { UserRole } from "@/utils/roles";
 
 export type ProfileSettings = {
-  firstName: string;
-  lastName: string;
+  name: string;
+  email: string;
   phone: string;
   profileImage?: string;
 };
 
 export type BrandingSettingsState = {
-  faviconUrl: string;
   logoUrl: string;
-  palette: string[];
-  typography: string[];
-  brandKitUrl: string;
+  logoWidth: number;
 };
 
 export type AdminUser = {
@@ -22,115 +20,176 @@ export type AdminUser = {
   email: string;
   role: UserRole;
   disabled?: boolean;
-  deleted?: boolean;
 };
 
 export type SettingsState = {
   profile: ProfileSettings;
   branding: BrandingSettingsState;
   users: AdminUser[];
+  isLoadingProfile: boolean;
+  isLoadingBranding: boolean;
+  isLoadingUsers: boolean;
   statusMessage?: string;
-  updateProfile: (updates: Partial<ProfileSettings>) => void;
-  uploadFavicon: (url: string) => void;
-  uploadLogo: (url: string) => void;
-  addUser: (user: Pick<AdminUser, "email" | "role">) => void;
-  updateUser: (id: string, updates: Partial<AdminUser>) => void;
-  setUserDisabled: (id: string, disabled: boolean) => void;
-  softDeleteUser: (id: string) => void;
+  fetchProfile: () => Promise<void>;
+  saveProfile: (updates: Partial<ProfileSettings>) => Promise<void>;
+  fetchBranding: () => Promise<void>;
+  saveBranding: (branding: BrandingSettingsState) => Promise<void>;
+  fetchUsers: () => Promise<void>;
+  addUser: (user: Pick<AdminUser, "email" | "role" | "name"> & { phone?: string }) => Promise<void>;
+  updateUserRole: (id: string, role: UserRole) => Promise<void>;
+  setUserDisabled: (id: string, disabled: boolean) => Promise<void>;
   setStatusMessage: (message?: string) => void;
   reset: () => void;
 };
 
 type SettingsSnapshot = Omit<
   SettingsState,
-  | "updateProfile"
-  | "uploadFavicon"
-  | "uploadLogo"
+  | "fetchProfile"
+  | "saveProfile"
+  | "fetchBranding"
+  | "saveBranding"
+  | "fetchUsers"
   | "addUser"
-  | "updateUser"
+  | "updateUserRole"
   | "setUserDisabled"
-  | "softDeleteUser"
   | "setStatusMessage"
   | "reset"
 >;
 
 const createInitialState = (): SettingsSnapshot => ({
   profile: {
-    firstName: "Alex",
-    lastName: "Smith",
+    name: "Alex Smith",
+    email: "alex@example.com",
     phone: "+1 (555) 123-4567",
     profileImage: "https://placehold.co/80x80?text=AS"
   },
   branding: {
-    faviconUrl: "https://placehold.co/32x32/mountain?text=\u26f0",
     logoUrl: "https://placehold.co/200x60?text=BF+Logo",
-    palette: ["#003F5C", "#7A5195", "#EF5675", "#FFA600"],
-    typography: ["Inter", "Instrument Sans", "Space Grotesk"],
-    brandKitUrl: "https://example.com/brand-kit.zip"
+    logoWidth: 220
   },
   users: [
     { id: "u-1", name: "Alex Smith", email: "alex@example.com", role: "Admin" },
     { id: "u-2", name: "Jamie Rivera", email: "jamie@example.com", role: "Staff" }
   ],
+  isLoadingProfile: false,
+  isLoadingBranding: false,
+  isLoadingUsers: false,
   statusMessage: undefined
 });
 
-export const useSettingsStore = create<SettingsState>((set) => ({
+type ProfileResponse = Partial<ProfileSettings>;
+type BrandingResponse = Partial<BrandingSettingsState>;
+type UsersResponse = AdminUser[];
+
+export const useSettingsStore = create<SettingsState>((set, get) => ({
   ...createInitialState(),
-  updateProfile: (updates) => {
-    set((state) => ({
-      profile: { ...state.profile, ...updates },
-      statusMessage: "Profile updated"
-    }));
+  fetchProfile: async () => {
+    set({ isLoadingProfile: true });
+    try {
+      const data = await apiClient.get<ProfileResponse>("/users/me");
+      if (data) {
+        set((state) => ({
+          profile: { ...state.profile, ...data },
+          statusMessage: undefined
+        }));
+      }
+    } finally {
+      set({ isLoadingProfile: false });
+    }
   },
-  uploadFavicon: (url) => {
-    set((state) => ({
-      branding: { ...state.branding, faviconUrl: url },
-      statusMessage: "Branding updated"
-    }));
+  saveProfile: async (updates) => {
+    set({ isLoadingProfile: true });
+    try {
+      const data = await apiClient.patch<ProfileResponse>("/users/me", updates);
+      const nextProfile = data ? { ...get().profile, ...data } : { ...get().profile, ...updates };
+      set({
+        profile: nextProfile,
+        statusMessage: "Profile updated"
+      });
+    } finally {
+      set({ isLoadingProfile: false });
+    }
   },
-  uploadLogo: (url) => {
-    set((state) => ({
-      branding: { ...state.branding, logoUrl: url },
-      statusMessage: "Logo updated"
-    }));
+  fetchBranding: async () => {
+    set({ isLoadingBranding: true });
+    try {
+      const data = await apiClient.get<BrandingResponse>("/settings/branding");
+      if (data) {
+        set((state) => ({
+          branding: { ...state.branding, ...data },
+          statusMessage: undefined
+        }));
+      }
+    } finally {
+      set({ isLoadingBranding: false });
+    }
   },
-  addUser: (user) => {
-    const id = `u-${Date.now()}`;
-    set((state) => ({
-      users: [
-        ...state.users,
-        {
-          id,
-          email: user.email,
-          role: user.role,
-          name: user.email.split("@")[0],
-          disabled: false,
-          deleted: false
-        }
-      ],
-      statusMessage: "User added"
-    }));
+  saveBranding: async (branding) => {
+    set({ isLoadingBranding: true });
+    try {
+      const data = await apiClient.post<BrandingResponse>("/settings/branding", branding);
+      const nextBranding = data ? { ...branding, ...data } : branding;
+      set({
+        branding: nextBranding,
+        statusMessage: "Branding updated"
+      });
+    } finally {
+      set({ isLoadingBranding: false });
+    }
   },
-  updateUser: (id, updates) => {
-    set((state) => ({
-      users: state.users.map((user) => (user.id === id ? { ...user, ...updates } : user)),
-      statusMessage: "User updated"
-    }));
+  fetchUsers: async () => {
+    set({ isLoadingUsers: true });
+    try {
+      const data = await apiClient.get<UsersResponse>("/users");
+      if (data) {
+        set({ users: data, statusMessage: undefined });
+      }
+    } finally {
+      set({ isLoadingUsers: false });
+    }
   },
-  setUserDisabled: (id, disabled) => {
-    set((state) => ({
-      users: state.users.map((user) => (user.id === id ? { ...user, disabled } : user)),
-      statusMessage: disabled ? "User disabled" : "User enabled"
-    }));
+  addUser: async (user) => {
+    set({ isLoadingUsers: true });
+    try {
+      const data = await apiClient.post<AdminUser>("/users", user);
+      const created = data ?? {
+        id: `u-${Date.now()}`,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      };
+      set((state) => ({
+        users: [...state.users, created],
+        statusMessage: "User added"
+      }));
+    } finally {
+      set({ isLoadingUsers: false });
+    }
   },
-  softDeleteUser: (id) => {
-    set((state) => ({
-      users: state.users.map((user) =>
-        user.id === id ? { ...user, deleted: true, disabled: true } : user
-      ),
-      statusMessage: "User deleted"
-    }));
+  updateUserRole: async (id, role) => {
+    set({ isLoadingUsers: true });
+    try {
+      const data = await apiClient.post<AdminUser>(`/users/${id}/role`, { role });
+      set((state) => ({
+        users: state.users.map((user) => (user.id === id ? { ...user, ...data, role } : user)),
+        statusMessage: "Role updated"
+      }));
+    } finally {
+      set({ isLoadingUsers: false });
+    }
+  },
+  setUserDisabled: async (id, disabled) => {
+    set({ isLoadingUsers: true });
+    try {
+      const endpoint = disabled ? `/users/${id}/disable` : `/users/${id}/enable`;
+      const data = await apiClient.post<AdminUser>(endpoint);
+      set((state) => ({
+        users: state.users.map((user) => (user.id === id ? { ...user, ...data, disabled } : user)),
+        statusMessage: disabled ? "User disabled" : "User enabled"
+      }));
+    } finally {
+      set({ isLoadingUsers: false });
+    }
   },
   setStatusMessage: (message) => set({ statusMessage: message }),
   reset: () => set({ ...createInitialState() })

@@ -1,21 +1,33 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
+import Modal from "@/components/ui/Modal";
 import Select from "@/components/ui/Select";
 import Table from "@/components/ui/Table";
 import { useSettingsStore, type AdminUser } from "@/state/settings.store";
+import UserDetailsFields from "../components/UserDetailsFields";
 
 const UserManagement = () => {
-  const { users, addUser, updateUser, setUserDisabled, softDeleteUser, statusMessage } = useSettingsStore();
-  const [newUser, setNewUser] = useState<Pick<AdminUser, "email" | "role">>({
+  const { users, addUser, updateUserRole, setUserDisabled, statusMessage, fetchUsers, isLoadingUsers } =
+    useSettingsStore();
+  const [newUser, setNewUser] = useState<Pick<AdminUser, "email" | "role" | "name"> & { phone?: string }>({
+    name: "",
     email: "",
+    phone: "",
     role: "Staff"
   });
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const onAddUser = (event: React.FormEvent) => {
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
+
+  const visibleUsers = useMemo(() => users, [users]);
+
+  const onAddUser = async (event: React.FormEvent) => {
     event.preventDefault();
-    addUser({ ...newUser });
-    setNewUser({ email: "", role: "Staff" });
+    await addUser({ ...newUser });
+    setNewUser({ name: "", email: "", phone: "", role: "Staff" });
+    setIsModalOpen(false);
   };
 
   return (
@@ -23,51 +35,39 @@ const UserManagement = () => {
       <header>
         <h2>Admin: User Management</h2>
         <p>
-          Add users, set roles, and manage access. Admin adds a user, the user logs in via OTP, and a profile is
-          auto-created on first login.
+          Add users, set roles, and manage access. Admins add a user, and the user logs in via OTP to finish their
+          profile.
         </p>
       </header>
 
-      <form className="settings-grid" onSubmit={onAddUser} aria-label="Add user form">
-        <Input
-          label="Email"
-          type="email"
-          value={newUser.email}
-          onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-          required
-        />
-        <Select
-          label="Role"
-          value={newUser.role}
-          onChange={(e) => setNewUser({ ...newUser, role: e.target.value as AdminUser["role"] })}
-          options={[
-            { value: "Admin", label: "Admin" },
-            { value: "Staff", label: "Staff" }
-          ]}
-        />
-        <Button type="submit">Add user</Button>
-      </form>
+      <div className="settings-actions">
+        <Button type="button" onClick={() => setIsModalOpen(true)}>
+          Add user
+        </Button>
+      </div>
 
       <div className="user-management__table">
-        <Table headers={["User", "Email", "Role", "Status", "Actions"]}>
-          {users.map((user) => {
+        <Table headers={["Name", "Role", "Status", "Actions"]}>
+          {visibleUsers.map((user) => {
             const displayName = user.name ?? user.email.split("@")[0];
-            const statusLabel = user.deleted ? "Deleted" : user.disabled ? "Disabled" : "Active";
+            const statusLabel = user.disabled ? "Disabled" : "Active";
             return (
               <tr key={user.id}>
-                <td>{displayName}</td>
-                <td>{user.email}</td>
+                <td>
+                  <div className="user-table__name">{displayName}</div>
+                  <div className="user-table__email">{user.email}</div>
+                </td>
                 <td>
                   <Select
                     label="Role"
                     value={user.role}
-                    onChange={(e) => updateUser(user.id, { role: e.target.value as AdminUser["role"] })}
+                    onChange={(e) => updateUserRole(user.id, e.target.value as AdminUser["role"])}
                     options={[
                       { value: "Admin", label: "Admin" },
                       { value: "Staff", label: "Staff" }
                     ]}
                     hideLabel
-                    disabled={user.deleted}
+                    disabled={isLoadingUsers}
                   />
                 </td>
                 <td>
@@ -78,29 +78,26 @@ const UserManagement = () => {
                     type="button"
                     variant="secondary"
                     onClick={() => setUserDisabled(user.id, !user.disabled)}
-                    disabled={user.deleted}
+                    disabled={isLoadingUsers}
                   >
                     {user.disabled ? "Enable" : "Disable"}
-                  </Button>
-                  <Button type="button" variant="ghost" onClick={() => softDeleteUser(user.id)} disabled={user.deleted}>
-                    {user.deleted ? "Deleted" : "Soft delete"}
                   </Button>
                 </td>
               </tr>
             );
           })}
-          {users.length === 0 && (
+          {visibleUsers.length === 0 && (
             <tr>
-              <td colSpan={5}>No users have been added yet.</td>
+              <td colSpan={4}>No users have been added yet.</td>
             </tr>
           )}
         </Table>
       </div>
 
       <div className="user-management__cards">
-        {users.map((user) => {
+        {visibleUsers.map((user) => {
           const displayName = user.name ?? user.email.split("@")[0];
-          const statusLabel = user.deleted ? "Deleted" : user.disabled ? "Disabled" : "Active";
+          const statusLabel = user.disabled ? "Disabled" : "Active";
           return (
             <div key={user.id} className="user-card">
               <div className="user-card__header">
@@ -114,39 +111,61 @@ const UserManagement = () => {
                 <Select
                   label="Role"
                   value={user.role}
-                  onChange={(e) => updateUser(user.id, { role: e.target.value as AdminUser["role"] })}
+                  onChange={(e) => updateUserRole(user.id, e.target.value as AdminUser["role"])}
                   options={[
                     { value: "Admin", label: "Admin" },
                     { value: "Staff", label: "Staff" }
                   ]}
-                  disabled={user.deleted}
+                  disabled={isLoadingUsers}
                 />
                 <div className="user-card__actions">
                   <Button
                     type="button"
                     variant="secondary"
                     onClick={() => setUserDisabled(user.id, !user.disabled)}
-                    disabled={user.deleted}
+                    disabled={isLoadingUsers}
                   >
                     {user.disabled ? "Enable" : "Disable"}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    onClick={() => softDeleteUser(user.id)}
-                    disabled={user.deleted}
-                  >
-                    {user.deleted ? "Deleted" : "Soft delete"}
                   </Button>
                 </div>
               </div>
             </div>
           );
         })}
-        {users.length === 0 && <div className="user-card user-card--empty">No users have been added yet.</div>}
+        {visibleUsers.length === 0 && <div className="user-card user-card--empty">No users have been added yet.</div>}
       </div>
 
       {statusMessage && <div role="status">{statusMessage}</div>}
+
+      {isModalOpen && (
+        <Modal title="Add user" onClose={() => setIsModalOpen(false)}>
+          <form className="settings-grid modal-form" onSubmit={onAddUser} aria-label="Add user form">
+            <UserDetailsFields
+              name={newUser.name}
+              email={newUser.email}
+              phone={newUser.phone ?? ""}
+              onChange={(updates) => setNewUser((prev) => ({ ...prev, ...updates }))}
+            />
+            <Select
+              label="Role"
+              value={newUser.role}
+              onChange={(e) => setNewUser({ ...newUser, role: e.target.value as AdminUser["role"] })}
+              options={[
+                { value: "Admin", label: "Admin" },
+                { value: "Staff", label: "Staff" }
+              ]}
+            />
+            <div className="settings-actions">
+              <Button type="submit" disabled={isLoadingUsers}>
+                {isLoadingUsers ? "Adding..." : "Add user"}
+              </Button>
+              <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}>
+                Cancel
+              </Button>
+            </div>
+          </form>
+        </Modal>
+      )}
     </section>
   );
 };

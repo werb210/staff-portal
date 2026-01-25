@@ -1,20 +1,30 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
+import { useAuth } from "@/hooks/useAuth";
 import { useSettingsStore } from "@/state/settings.store";
+import UserDetailsFields from "../components/UserDetailsFields";
 
 const MAX_AVATAR_SIZE_BYTES = 2 * 1024 * 1024;
 const MAX_AVATAR_DIMENSION = 256;
 
 const ProfileSettings = () => {
-  const { profile, updateProfile, statusMessage } = useSettingsStore();
+  const { user } = useAuth();
+  const { profile, fetchProfile, saveProfile, statusMessage, isLoadingProfile } = useSettingsStore();
   const [localProfile, setLocalProfile] = useState(profile);
   const [avatarError, setAvatarError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
+  useEffect(() => {
+    fetchProfile();
+  }, [fetchProfile]);
+
+  useEffect(() => {
+    setLocalProfile(profile);
+  }, [profile]);
+
   const onSave = (event: React.FormEvent) => {
     event.preventDefault();
-    updateProfile(localProfile);
+    saveProfile(localProfile);
   };
 
   const loadImage = (file: File) =>
@@ -64,27 +74,25 @@ const ProfileSettings = () => {
   return (
     <form className="settings-panel" onSubmit={onSave} aria-label="Profile settings">
       <header>
-        <h2>Personal settings</h2>
-        <p>Update your name, phone, and avatar.</p>
+        <h2>My profile</h2>
+        <p>Update your name, phone, and avatar. OAuth connections open in a new window.</p>
       </header>
 
+      <div className="profile-summary">
+        <div>
+          <p className="ui-field__label">Signed in as</p>
+          <div className="profile-summary__name">{user?.name ?? localProfile.name}</div>
+          <div className="profile-summary__email">{localProfile.email}</div>
+        </div>
+      </div>
+
       <div className="settings-grid">
-        <Input
-          label="First name"
-          value={localProfile.firstName}
-          onChange={(e) => setLocalProfile({ ...localProfile, firstName: e.target.value })}
-          required
-        />
-        <Input
-          label="Last name"
-          value={localProfile.lastName}
-          onChange={(e) => setLocalProfile({ ...localProfile, lastName: e.target.value })}
-          required
-        />
-        <Input
-          label="Phone"
-          value={localProfile.phone}
-          onChange={(e) => setLocalProfile({ ...localProfile, phone: e.target.value })}
+        <UserDetailsFields
+          name={localProfile.name}
+          email={localProfile.email}
+          phone={localProfile.phone}
+          onChange={(updates) => setLocalProfile((prev) => ({ ...prev, ...updates }))}
+          emailDisabled
         />
       </div>
 
@@ -113,16 +121,18 @@ const ProfileSettings = () => {
         <p>Connect optional services. OAuth prompts open in a new window.</p>
         <div className="connected-accounts__actions">
           <Button type="button" variant="secondary">
-            Connect O365
+            Microsoft 365
           </Button>
           <Button type="button" variant="secondary">
-            Connect LinkedIn
+            LinkedIn
           </Button>
         </div>
       </div>
 
       <div className="settings-actions">
-        <Button type="submit">Save changes</Button>
+        <Button type="submit" disabled={isLoadingProfile}>
+          {isLoadingProfile ? "Saving..." : "Save changes"}
+        </Button>
         {statusMessage && <span role="status">{statusMessage}</span>}
       </div>
     </form>
