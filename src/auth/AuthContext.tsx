@@ -69,31 +69,33 @@ export interface AuthContextValue {
 
 export type AuthContextType = AuthContextValue;
 
-const fallbackAccessToken = getAccessToken();
-const fallbackAuthState: AuthState = fallbackAccessToken ? "loading" : "unauthenticated";
-const fallbackRolesStatus: RolesStatus = fallbackAccessToken ? "loading" : "resolved";
+const buildFallbackAuthContext = (): AuthContextValue => {
+  const fallbackAccessToken = getAccessToken();
+  const fallbackAuthState: AuthState = fallbackAccessToken ? "loading" : "unauthenticated";
+  const fallbackRolesStatus: RolesStatus = fallbackAccessToken ? "loading" : "resolved";
 
-const defaultAuthContext: AuthContextValue = {
-  authState: fallbackAuthState,
-  authStatus: fallbackAuthState,
-  rolesStatus: fallbackRolesStatus,
-  user: null,
-  accessToken: fallbackAccessToken,
-  error: null,
-  authenticated: fallbackAuthState === "authenticated",
-  isAuthenticated: fallbackAuthState === "authenticated",
-  authReady: fallbackAuthState !== "loading",
-  pendingPhoneNumber: null,
-  startOtp: async () => false,
-  verifyOtp: async () => false,
-  login: async () => undefined,
-  setAuth: () => undefined,
-  setUser: () => undefined,
-  setAuthenticated: () => undefined,
-  setAuthState: () => undefined,
-  clearAuth: () => undefined,
-  refreshUser: async () => false,
-  logout: async () => undefined
+  return {
+    authState: fallbackAuthState,
+    authStatus: fallbackAuthState,
+    rolesStatus: fallbackRolesStatus,
+    user: null,
+    accessToken: fallbackAccessToken,
+    error: null,
+    authenticated: fallbackAuthState === "authenticated",
+    isAuthenticated: fallbackAuthState === "authenticated",
+    authReady: fallbackAuthState !== "loading",
+    pendingPhoneNumber: null,
+    startOtp: async () => false,
+    verifyOtp: async () => false,
+    login: async () => undefined,
+    setAuth: () => undefined,
+    setUser: () => undefined,
+    setAuthenticated: () => undefined,
+    setAuthState: () => undefined,
+    clearAuth: () => undefined,
+    refreshUser: async () => false,
+    logout: async () => undefined
+  };
 };
 
 export const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -435,5 +437,5 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
 
 export function useAuth(): AuthContextValue {
   const ctx = useContext(AuthContext);
-  return ctx ?? defaultAuthContext;
+  return ctx ?? buildFallbackAuthContext();
 }
