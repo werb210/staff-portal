@@ -9,6 +9,7 @@ import { AuthProvider } from "@/auth/AuthContext";
 import LendersPage from "@/pages/lenders/LendersPage";
 import LenderProductsPage from "@/pages/lenders/LenderProductsPage";
 import LoginPage from "@/pages/login/LoginPage";
+import PrivateRoute from "@/router/PrivateRoute";
 import {
   LENDER_PRODUCT_CATEGORIES,
   LENDER_PRODUCT_CATEGORY_LABELS,
@@ -53,12 +54,54 @@ const renderWithProviders = (initialEntry: string) => {
         <MemoryRouter initialEntries={[initialEntry]}>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
-            <Route path="/lenders" element={<LendersPage />} />
-            <Route path="/lenders/new" element={<LendersPage />} />
-            <Route path="/lenders/:lenderId/edit" element={<LendersPage />} />
-            <Route path="/lender-products" element={<LenderProductsPage />} />
-            <Route path="/lender-products/new" element={<LenderProductsPage />} />
-            <Route path="/lender-products/:productId/edit" element={<LenderProductsPage />} />
+            <Route
+              path="/lenders"
+              element={
+                <PrivateRoute>
+                  <LendersPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/lenders/new"
+              element={
+                <PrivateRoute>
+                  <LendersPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/lenders/:lenderId/edit"
+              element={
+                <PrivateRoute>
+                  <LendersPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/lender-products"
+              element={
+                <PrivateRoute>
+                  <LenderProductsPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/lender-products/new"
+              element={
+                <PrivateRoute>
+                  <LenderProductsPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/lender-products/:productId/edit"
+              element={
+                <PrivateRoute>
+                  <LenderProductsPage />
+                </PrivateRoute>
+              }
+            />
           </Routes>
         </MemoryRouter>
       </AuthProvider>
@@ -114,24 +157,23 @@ const baseProduct: LenderProduct = {
   currency: "USD",
   minAmount: 10000,
   maxAmount: 500000,
-  minTermMonths: 6,
-  maxTermMonths: 60,
-  minLtv: 30,
-  maxLtv: 80,
-  minLtc: 50,
-  maxLtc: 85,
-  minCreditScore: 650,
-  maxInterestRate: 10.25,
-  minInterestRate: 6.5,
-  originationFee: 2,
-  guarantyFee: 1,
-  prepaymentPenalty: "None",
-  eligiblePropertyTypes: ["Retail", "Industrial"],
-  allowPrimaryResidence: false,
-  allowOwnerOccupied: true,
-  allowNonOwnerOccupied: true,
-  allowForeignNationals: false,
-  allowFirstTimeInvestors: true
+  interestRateMin: 6.5,
+  interestRateMax: 10.25,
+  rateType: "fixed",
+  termLength: {
+    min: 6,
+    max: 60,
+    unit: "months"
+  },
+  minimumCreditScore: 650,
+  ltv: 80,
+  eligibilityRules: "None",
+  eligibilityFlags: {
+    minimumRevenue: 0,
+    timeInBusinessMonths: 12,
+    industryRestrictions: null
+  },
+  requiredDocuments: []
 };
 
 describe("lender management flows", () => {
@@ -210,7 +252,7 @@ describe("lender management flows", () => {
 
     renderWithProviders("/lender-products");
 
-    expect(await screen.findByText(/Term loan/i)).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: /Term loan/i })).toBeInTheDocument();
   });
 
   it("creates a lender product", async () => {
@@ -221,29 +263,26 @@ describe("lender management flows", () => {
     const createLenderProductMock = vi.mocked(createLenderProduct);
     createLenderProductMock.mockResolvedValue(baseProduct);
 
-    renderWithProviders("/lender-products/new");
+    renderWithProviders("/lender-products/new?lenderId=l-1");
 
     const nameInput = await screen.findByLabelText(/Product name/i);
     await userEvent.type(nameInput, "Term loan");
-    await userEvent.selectOptions(screen.getByLabelText(/Category/i), "TERM_LOAN");
-    await userEvent.type(screen.getByLabelText(/Min amount/i), "10000");
-    await userEvent.type(screen.getByLabelText(/Max amount/i), "500000");
-    await userEvent.type(screen.getByLabelText(/Min term/i), "6");
-    await userEvent.type(screen.getByLabelText(/Max term/i), "60");
-    await userEvent.type(screen.getByLabelText(/Min LTV/i), "30");
-    await userEvent.type(screen.getByLabelText(/Max LTV/i), "80");
-    await userEvent.type(screen.getByLabelText(/Min LTC/i), "50");
-    await userEvent.type(screen.getByLabelText(/Max LTC/i), "85");
-    await userEvent.type(screen.getByLabelText(/Min credit score/i), "650");
-    await userEvent.type(screen.getByLabelText(/Max interest rate/i), "10.25");
-    await userEvent.type(screen.getByLabelText(/Min interest rate/i), "6.5");
-    await userEvent.type(screen.getByLabelText(/Origination fee/i), "2");
-    await userEvent.type(screen.getByLabelText(/Guaranty fee/i), "1");
-    await userEvent.type(screen.getByLabelText(/Prepayment penalty/i), "None");
-    await userEvent.click(screen.getByRole("checkbox", { name: /allow owner occupied/i }));
-    await userEvent.click(screen.getByRole("checkbox", { name: /allow non owner occupied/i }));
-    await userEvent.click(screen.getByRole("checkbox", { name: /allow first time investors/i }));
-    await userEvent.click(screen.getByRole("checkbox", { name: /Retail/i }));
+    await userEvent.selectOptions(screen.getByLabelText(/Product category/i), "TERM_LOAN");
+    const countryInputs = screen.getAllByLabelText(/^Country$/i);
+    await userEvent.type(countryInputs[countryInputs.length - 1], "US");
+    await userEvent.type(screen.getAllByLabelText(/Currency/i)[0], "USD");
+    await userEvent.type(screen.getAllByLabelText(/Minimum amount/i)[0], "10000");
+    await userEvent.type(screen.getAllByLabelText(/Maximum amount/i)[0], "500000");
+    await userEvent.type(screen.getByLabelText(/Interest rate min/i), "6.5");
+    await userEvent.type(screen.getByLabelText(/Interest rate max/i), "10.25");
+    await userEvent.type(screen.getByLabelText(/Term length min/i), "6");
+    await userEvent.type(screen.getByLabelText(/Term length max/i), "60");
+    await userEvent.type(screen.getByLabelText(/Category 1/i), "financials");
+    const requiredCheckbox = screen.getByRole("checkbox", { name: /Required document 1/i });
+    await userEvent.click(requiredCheckbox);
+    if (!(requiredCheckbox as HTMLInputElement).checked) {
+      fireEvent.click(requiredCheckbox);
+    }
 
     fireEvent.click(screen.getByRole("button", { name: /Create product/i }));
 
@@ -277,9 +316,10 @@ describe("lender management flows", () => {
 
     renderWithProviders("/lenders/new");
 
-    fireEvent.click(screen.getByRole("button", { name: /Create lender/i }));
+    const createButton = await screen.findByRole("button", { name: /Create lender/i });
+    fireEvent.click(createButton);
 
-    const errorMessage = await screen.findByText(/Please complete required fields/i);
+    const errorMessage = await screen.findByText(/State\/province is required/i);
     expect(errorMessage).toBeInTheDocument();
   });
 
@@ -291,8 +331,8 @@ describe("lender management flows", () => {
 
     renderWithProviders("/lender-products");
 
-    const productCard = await screen.findByText(/Term loan/i);
-    fireEvent.click(within(productCard.closest("article") as HTMLElement).getByRole("button", { name: /Edit/i }));
+    const productButton = await screen.findByRole("button", { name: /Term loan/i });
+    fireEvent.click(productButton);
 
     expect(screen.getByLabelText(/Product name/i)).toBeInTheDocument();
   });

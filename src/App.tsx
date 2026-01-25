@@ -24,6 +24,7 @@ import { getRequestId } from "./utils/requestId";
 import { setUiFailure } from "./utils/uiFailureStore";
 import { runRouteAudit } from "./utils/routeAudit";
 import RequireRole from "./components/auth/RequireRole";
+import { RequireRole as RequireClientRole } from "./guards/RequireRole";
 import { fullStaffRoles } from "./utils/roles";
 
 const RouteChangeObserver = () => {
@@ -114,13 +115,62 @@ export default function App() {
             <Route path="/calendar" element={<CalendarPage />} />
             <Route path="/tasks" element={<TaskPane />} />
             <Route path="/marketing" element={<MarketingPage />} />
-            <Route path="/lenders" element={<LendersPage />} />
-            <Route path="/lenders/new" element={<LendersPage />} />
-            <Route path="/lenders/:lenderId/edit" element={<LendersPage />} />
-            <Route path="/lender-products" element={<LenderProductsPage />} />
-            <Route path="/lender-products/new" element={<LenderProductsPage />} />
-            <Route path="/lender-products/:productId/edit" element={<LenderProductsPage />} />
-            <Route path="/lenders/products" element={<LenderProductsPage />} />
+            <Route
+              path="/lenders"
+              element={
+                <RequireClientRole allow={["Admin", "Staff", "Lender"]}>
+                  <LendersPage />
+                </RequireClientRole>
+              }
+            />
+            <Route
+              path="/lenders/new"
+              element={
+                <RequireClientRole allow={["Admin", "Staff", "Lender"]}>
+                  <LendersPage />
+                </RequireClientRole>
+              }
+            />
+            <Route
+              path="/lenders/:lenderId/edit"
+              element={
+                <RequireClientRole allow={["Admin", "Staff", "Lender"]}>
+                  <LendersPage />
+                </RequireClientRole>
+              }
+            />
+            <Route
+              path="/lender-products"
+              element={
+                <RequireClientRole allow={["Admin", "Staff", "Lender"]}>
+                  <LenderProductsPage />
+                </RequireClientRole>
+              }
+            />
+            <Route
+              path="/lender-products/new"
+              element={
+                <RequireClientRole allow={["Admin", "Staff", "Lender"]}>
+                  <LenderProductsPage />
+                </RequireClientRole>
+              }
+            />
+            <Route
+              path="/lender-products/:productId/edit"
+              element={
+                <RequireClientRole allow={["Admin", "Staff", "Lender"]}>
+                  <LenderProductsPage />
+                </RequireClientRole>
+              }
+            />
+            <Route
+              path="/lenders/products"
+              element={
+                <RequireClientRole allow={["Admin", "Staff", "Lender"]}>
+                  <LenderProductsPage />
+                </RequireClientRole>
+              }
+            />
             <Route path="/settings" element={<SettingsPage />} />
             <Route
               path="/profile"

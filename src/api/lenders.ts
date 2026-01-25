@@ -1,4 +1,5 @@
 import { apiClient, type ListResponse, type RequestOptions } from "./httpClient";
+import { clientApi } from "./client";
 import type {
   Lender,
   LenderPayload,
@@ -22,6 +23,17 @@ export type LenderMatch = {
   productCategory?: string;
   terms?: string;
   requiredDocsStatus?: string;
+};
+
+export type ClientLender = { id: string; name: string };
+export type ClientLenderProduct = {
+  id: string;
+  name: string;
+  product_type: string;
+  min_amount: number | null;
+  max_amount: number | null;
+  lender_id: string;
+  lender_name: string;
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -205,3 +217,13 @@ export const fetchLenderMatches = (applicationId: string, options?: RequestOptio
 
 export const sendToLenders = (applicationId: string, lenderIds: string[]) =>
   apiClient.post(`/lenders/send-to-lender`, { applicationId, lenderIds });
+
+export async function fetchClientLenders(): Promise<ClientLender[]> {
+  const res = await clientApi.get("/api/client/lenders");
+  return res.data.data;
+}
+
+export async function fetchClientLenderProducts(): Promise<ClientLenderProduct[]> {
+  const res = await clientApi.get("/api/client/lender-products");
+  return res.data.data;
+}

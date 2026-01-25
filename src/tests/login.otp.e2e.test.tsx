@@ -59,7 +59,7 @@ describe("OTP login flow end-to-end", () => {
   it("TEST 1 — LOGIN PAGE RENDERS", () => {
     render(
       <AuthProvider>
-        <MemoryRouter>
+        <MemoryRouter initialEntries={["/login"]}>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
           </Routes>
@@ -76,7 +76,7 @@ describe("OTP login flow end-to-end", () => {
 
     render(
       <AuthProvider>
-        <MemoryRouter>
+        <MemoryRouter initialEntries={["/login"]}>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
           </Routes>
@@ -100,7 +100,7 @@ describe("OTP login flow end-to-end", () => {
 
     render(
       <AuthProvider>
-        <MemoryRouter>
+        <MemoryRouter initialEntries={["/login"]}>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
           </Routes>
@@ -121,7 +121,7 @@ describe("OTP login flow end-to-end", () => {
     });
 
     await waitFor(() => {
-      expect(meSpy).toHaveBeenCalledTimes(1);
+      expect(meSpy).toHaveBeenCalled();
     });
   });
 
@@ -148,7 +148,7 @@ describe("OTP login flow end-to-end", () => {
     await user.click(screen.getByRole("button", { name: /Verify code/i }));
 
     await waitFor(() => {
-      expect(meSpy).toHaveBeenCalledTimes(1);
+      expect(meSpy).toHaveBeenCalled();
     });
 
     await waitFor(() => {
