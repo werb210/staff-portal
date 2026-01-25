@@ -5,16 +5,18 @@ interface TableProps {
 }
 
 const Table = ({ headers, children }: PropsWithChildren<TableProps>) => (
-  <table className="ui-table">
-    <thead>
-      <tr>
-        {headers.map((header, index) => (
-          <th key={index}>{header}</th>
-        ))}
-      </tr>
-    </thead>
-    <tbody>{children}</tbody>
-  </table>
+  <div className="ui-table__wrapper">
+    <table className="ui-table">
+      <thead>
+        <tr>
+          {headers.map((header, index) => (
+            <th key={index}>{header}</th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>{children}</tbody>
+    </table>
+  </div>
 );
 
 export default Table;

@@ -15,19 +15,14 @@ type NavigationItem = {
 };
 
 const baseNavigation: NavigationItem[] = [
-  { label: "Dashboard", path: "/" },
+  { label: "Dashboard", path: "/dashboard" },
   { label: "Applications", path: "/applications" },
   { label: "CRM", path: "/crm" },
   { label: "Communications", path: "/communications" },
-  { label: "Calendar & Tasks", path: "/calendar" },
+  { label: "Calendar", path: "/calendar" },
   { label: "Marketing", path: "/marketing" },
   { label: "Lenders", path: "/lenders" },
-  { label: "Lender Products", path: "/lender-products" },
-  { label: "Settings", path: "/settings" },
-  { label: "User Management", path: "/settings/users", roles: ["Admin"] },
-  { label: "My Profile", path: "/settings/profile", roles: ["Admin", "Staff"] },
-  { label: "Branding", path: "/settings/branding", roles: ["Admin", "Staff"] },
-  { label: "Runtime Verification", path: "/settings/runtime", roles: ["Admin", "Staff"] }
+  { label: "Settings", path: "/settings" }
 ];
 
 const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
@@ -51,7 +46,7 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
           <NavLink
             key={item.path}
             to={item.path}
-            end={item.path === "/" || item.path === "/settings"}
+            end={item.path === "/dashboard" || item.path === "/settings"}
             className={({ isActive }) =>
               `sidebar__link ${isActive ? "sidebar__link--active" : ""}`
             }

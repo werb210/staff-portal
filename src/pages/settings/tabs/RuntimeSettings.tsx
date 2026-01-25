@@ -1,6 +1,8 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import apiClient from "@/api/httpClient";
 import Button from "@/components/ui/Button";
+import ErrorBanner from "@/components/ui/ErrorBanner";
+import { getErrorMessage } from "@/utils/errors";
 
 type RuntimeStatus = "green" | "red" | "yellow";
 
@@ -25,8 +27,10 @@ const defaultRuntimeData: RuntimeData = {
 const RuntimeSettings = () => {
   const [runtime, setRuntime] = useState<RuntimeData>(defaultRuntimeData);
   const [lastChecked, setLastChecked] = useState<string>("");
+  const [runtimeError, setRuntimeError] = useState<string | null>(null);
 
   const fetchRuntime = async () => {
+    setRuntimeError(null);
     try {
       const healthData = await apiClient.get<Record<string, unknown>>("/_int/health");
       const versionData = await apiClient.get<Record<string, unknown>>("/_int/version");
@@ -43,12 +47,9 @@ const RuntimeSettings = () => {
     } catch {
       setRuntime((prev) => ({ ...prev, status: "red", health: "Error" }));
       setLastChecked(new Date().toLocaleTimeString());
+      setRuntimeError(getErrorMessage(null, "Unable to load runtime status."));
     }
   };
-
-  useEffect(() => {
-    fetchRuntime();
-  }, []);
 
   return (
     <section className="settings-panel" aria-label="Runtime status">
@@ -56,6 +57,7 @@ const RuntimeSettings = () => {
         <h2>Runtime verification</h2>
         <p>Read-only checks for health, schema, CORS, and build metadata.</p>
       </header>
+      {runtimeError && <ErrorBanner message={runtimeError} />}
 
       <div className="runtime-status">
         <div className="runtime-status__row">

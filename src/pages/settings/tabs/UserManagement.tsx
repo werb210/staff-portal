@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Button from "@/components/ui/Button";
+import ErrorBanner from "@/components/ui/ErrorBanner";
 import Modal from "@/components/ui/Modal";
 import Select from "@/components/ui/Select";
 import Table from "@/components/ui/Table";
 import { useSettingsStore, type AdminUser } from "@/state/settings.store";
+import { getErrorMessage } from "@/utils/errors";
 import UserDetailsFields from "../components/UserDetailsFields";
 
 const UserManagement = () => {
@@ -16,18 +18,47 @@ const UserManagement = () => {
     role: "Staff"
   });
   const [isModalOpen, setIsModalOpen] = useState(false);
-
-  useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers]);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const visibleUsers = useMemo(() => users, [users]);
 
   const onAddUser = async (event: React.FormEvent) => {
     event.preventDefault();
-    await addUser({ ...newUser });
-    setNewUser({ name: "", email: "", phone: "", role: "Staff" });
-    setIsModalOpen(false);
+    setFormError(null);
+    try {
+      await addUser({ ...newUser });
+      setNewUser({ name: "", email: "", phone: "", role: "Staff" });
+      setIsModalOpen(false);
+    } catch (error) {
+      setFormError(getErrorMessage(error, "Unable to add user."));
+    }
+  };
+
+  const onLoadUsers = async () => {
+    setFormError(null);
+    try {
+      await fetchUsers();
+    } catch (error) {
+      setFormError(getErrorMessage(error, "Unable to load users."));
+    }
+  };
+
+  const onUpdateRole = async (id: string, role: AdminUser["role"]) => {
+    setFormError(null);
+    try {
+      await updateUserRole(id, role);
+    } catch (error) {
+      setFormError(getErrorMessage(error, "Unable to update user role."));
+    }
+  };
+
+  const onToggleDisabled = async (id: string, disabled: boolean) => {
+    setFormError(null);
+    try {
+      await setUserDisabled(id, disabled);
+    } catch (error) {
+      setFormError(getErrorMessage(error, "Unable to update user status."));
+    }
   };
 
   return (
@@ -40,7 +71,12 @@ const UserManagement = () => {
         </p>
       </header>
 
+      {formError && <ErrorBanner message={formError} />}
+
       <div className="settings-actions">
+        <Button type="button" variant="secondary" onClick={onLoadUsers} disabled={isLoadingUsers}>
+          {isLoadingUsers ? "Refreshing..." : "Refresh users"}
+        </Button>
         <Button type="button" onClick={() => setIsModalOpen(true)}>
           Add user
         </Button>
@@ -61,7 +97,7 @@ const UserManagement = () => {
                   <Select
                     label="Role"
                     value={user.role}
-                    onChange={(e) => updateUserRole(user.id, e.target.value as AdminUser["role"])}
+                    onChange={(e) => onUpdateRole(user.id, e.target.value as AdminUser["role"])}
                     options={[
                       { value: "Admin", label: "Admin" },
                       { value: "Staff", label: "Staff" }
@@ -77,7 +113,7 @@ const UserManagement = () => {
                   <Button
                     type="button"
                     variant="secondary"
-                    onClick={() => setUserDisabled(user.id, !user.disabled)}
+                    onClick={() => onToggleDisabled(user.id, !user.disabled)}
                     disabled={isLoadingUsers}
                   >
                     {user.disabled ? "Enable" : "Disable"}
@@ -111,7 +147,7 @@ const UserManagement = () => {
                 <Select
                   label="Role"
                   value={user.role}
-                  onChange={(e) => updateUserRole(user.id, e.target.value as AdminUser["role"])}
+                  onChange={(e) => onUpdateRole(user.id, e.target.value as AdminUser["role"])}
                   options={[
                     { value: "Admin", label: "Admin" },
                     { value: "Staff", label: "Staff" }
@@ -122,7 +158,7 @@ const UserManagement = () => {
                   <Button
                     type="button"
                     variant="secondary"
-                    onClick={() => setUserDisabled(user.id, !user.disabled)}
+                    onClick={() => onToggleDisabled(user.id, !user.disabled)}
                     disabled={isLoadingUsers}
                   >
                     {user.disabled ? "Enable" : "Disable"}

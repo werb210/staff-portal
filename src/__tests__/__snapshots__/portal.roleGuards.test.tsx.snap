@@ -26,7 +26,7 @@ exports[`portal role & permission guards > matches role snapshots 1`] = `
       <a
         aria-current="page"
         class="sidebar__link sidebar__link--active"
-        href="/"
+        href="/dashboard"
       >
         Dashboard
       </a>
@@ -52,7 +52,7 @@ exports[`portal role & permission guards > matches role snapshots 1`] = `
         class="sidebar__link "
         href="/calendar"
       >
-        Calendar & Tasks
+        Calendar
       </a>
       <a
         class="sidebar__link "
@@ -65,12 +65,6 @@ exports[`portal role & permission guards > matches role snapshots 1`] = `
         href="/lenders"
       >
         Lenders
-      </a>
-      <a
-        class="sidebar__link "
-        href="/lender-products"
-      >
-        Lender Products
       </a>
       <a
         class="sidebar__link "
@@ -109,7 +103,7 @@ exports[`portal role & permission guards > matches role snapshots 2`] = `
       <a
         aria-current="page"
         class="sidebar__link sidebar__link--active"
-        href="/"
+        href="/dashboard"
       >
         Dashboard
       </a>
@@ -135,7 +129,7 @@ exports[`portal role & permission guards > matches role snapshots 2`] = `
         class="sidebar__link "
         href="/calendar"
       >
-        Calendar & Tasks
+        Calendar
       </a>
       <a
         class="sidebar__link "
@@ -148,12 +142,6 @@ exports[`portal role & permission guards > matches role snapshots 2`] = `
         href="/lenders"
       >
         Lenders
-      </a>
-      <a
-        class="sidebar__link "
-        href="/lender-products"
-      >
-        Lender Products
       </a>
       <a
         class="sidebar__link "

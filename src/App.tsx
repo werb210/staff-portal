@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from "react";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import PrivateRoute from "./router/PrivateRoute";
 import LoginPage from "./pages/login/LoginPage";
@@ -11,8 +11,12 @@ import CommunicationsPage from "./pages/communications/CommunicationsPage";
 import CalendarPage from "./pages/calendar/CalendarPage";
 import MarketingPage from "./pages/marketing/MarketingPage";
 import LendersPage from "./pages/lenders/LendersPage";
-import LenderProductsPage from "./pages/lenders/LenderProductsPage";
 import SettingsPage from "./pages/settings/SettingsPage";
+import ProfileSettings from "./pages/settings/tabs/ProfileSettings";
+import BrandingSettings from "./pages/settings/tabs/BrandingSettings";
+import UserManagement from "./pages/settings/tabs/UserManagement";
+import RuntimeSettings from "./pages/settings/tabs/RuntimeSettings";
+import SettingsSectionLayout from "./pages/settings/components/SettingsSectionLayout";
 import TaskPane from "./pages/tasks/TaskPane";
 import { emitUiTelemetry } from "./utils/uiTelemetry";
 import { useApiHealthCheck } from "./hooks/useApiHealthCheck";
@@ -22,6 +26,7 @@ import { setUiFailure } from "./utils/uiFailureStore";
 import { runRouteAudit } from "./utils/routeAudit";
 import { RequireRole as RequireClientRole } from "./guards/RequireRole";
 import { fullStaffRoles } from "./utils/roles";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 const RouteChangeObserver = () => {
   const location = useLocation();
@@ -97,13 +102,14 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <UiFailureBanner />
-      <BrowserRouter>
-        <RouteChangeObserver />
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route element={<ProtectedApp />}>
-            <Route path="/" element={<DashboardPage />} />
-            <Route path="/dashboard" element={<DashboardPage />} />
+      <ErrorBoundary>
+        <BrowserRouter>
+          <RouteChangeObserver />
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route element={<ProtectedApp />}>
+              <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/applications" element={<ApplicationsPage />} />
             <Route path="/crm" element={<CRMPage />} />
             <Route path="/communications" element={<CommunicationsPage />} />
@@ -135,42 +141,51 @@ export default function App() {
                 </RequireClientRole>
               }
             />
-            <Route
-              path="/lender-products"
-              element={
-                <RequireClientRole allow={["Admin", "Staff", "Lender"]}>
-                  <LenderProductsPage />
-                </RequireClientRole>
-              }
-            />
-            <Route
-              path="/lender-products/new"
-              element={
-                <RequireClientRole allow={["Admin", "Staff", "Lender"]}>
-                  <LenderProductsPage />
-                </RequireClientRole>
-              }
-            />
-            <Route
-              path="/lender-products/:productId/edit"
-              element={
-                <RequireClientRole allow={["Admin", "Staff", "Lender"]}>
-                  <LenderProductsPage />
-                </RequireClientRole>
-              }
-            />
-            <Route
-              path="/lenders/products"
-              element={
-                <RequireClientRole allow={["Admin", "Staff", "Lender"]}>
-                  <LenderProductsPage />
-                </RequireClientRole>
-              }
-            />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route
+              path="/settings/profile"
+              element={
+                <RequireClientRole allow={["Admin", "Staff"]}>
+                  <SettingsSectionLayout>
+                    <ProfileSettings />
+                  </SettingsSectionLayout>
+                </RequireClientRole>
+              }
+            />
+            <Route
+              path="/settings/branding"
+              element={
+                <RequireClientRole allow={["Admin", "Staff"]}>
+                  <SettingsSectionLayout>
+                    <BrandingSettings />
+                  </SettingsSectionLayout>
+                </RequireClientRole>
+              }
+            />
+            <Route
+              path="/settings/runtime"
+              element={
+                <RequireClientRole allow={["Admin", "Staff"]}>
+                  <SettingsSectionLayout>
+                    <RuntimeSettings />
+                  </SettingsSectionLayout>
+                </RequireClientRole>
+              }
+            />
+            <Route
+              path="/settings/users"
+              element={
+                <RequireClientRole allow={["Admin"]}>
+                  <SettingsSectionLayout>
+                    <UserManagement />
+                  </SettingsSectionLayout>
+                </RequireClientRole>
+              }
+            />
           </Route>
         </Routes>
       </BrowserRouter>
+      </ErrorBoundary>
     </QueryClientProvider>
   );
 }

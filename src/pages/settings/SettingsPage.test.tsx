@@ -3,6 +3,11 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import SettingsPage from "./SettingsPage";
+import ProfileSettings from "./tabs/ProfileSettings";
+import BrandingSettings from "./tabs/BrandingSettings";
+import RuntimeSettings from "./tabs/RuntimeSettings";
+import UserManagement from "./tabs/UserManagement";
+import SettingsSectionLayout from "./components/SettingsSectionLayout";
 import { useSettingsStore } from "@/state/settings.store";
 
 let mockRole: "Admin" | "Staff" = "Admin";
@@ -34,7 +39,39 @@ const renderWithAuth = (role: "Admin" | "Staff" = "Admin", route: string = "/set
   return render(
     <MemoryRouter initialEntries={[route]}>
       <Routes>
-        <Route path="/settings/*" element={<SettingsPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
+        <Route
+          path="/settings/profile"
+          element={
+            <SettingsSectionLayout>
+              <ProfileSettings />
+            </SettingsSectionLayout>
+          }
+        />
+        <Route
+          path="/settings/branding"
+          element={
+            <SettingsSectionLayout>
+              <BrandingSettings />
+            </SettingsSectionLayout>
+          }
+        />
+        <Route
+          path="/settings/runtime"
+          element={
+            <SettingsSectionLayout>
+              <RuntimeSettings />
+            </SettingsSectionLayout>
+          }
+        />
+        <Route
+          path="/settings/users"
+          element={
+            <SettingsSectionLayout>
+              <UserManagement />
+            </SettingsSectionLayout>
+          }
+        />
       </Routes>
     </MemoryRouter>
   );
@@ -69,13 +106,12 @@ beforeEach(() => {
 });
 
 describe("SettingsPage", () => {
-  test("renders all tabs for admins", () => {
+  test("renders settings overview cards for admins", () => {
     renderWithAuth("Admin");
-    expect(screen.getByRole("button", { name: /Settings/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /My Profile/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Branding/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Runtime Verification/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /User Management/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /My Profile/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Branding/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Runtime Verification/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /User Management/i })).toBeInTheDocument();
   });
 
   test("updates profile fields", async () => {
@@ -86,6 +122,7 @@ describe("SettingsPage", () => {
     });
     renderWithAuth("Admin", "/settings/profile");
     await screen.findByRole("heading", { name: /My profile/i });
+    fireEvent.click(screen.getByRole("button", { name: /Refresh profile/i }));
     fireEvent.change(screen.getByLabelText(/Name/i), { target: { value: "Taylor" } });
     fireEvent.click(screen.getByRole("button", { name: /Save changes/i }));
     await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Profile updated"));
@@ -117,7 +154,7 @@ describe("SettingsPage", () => {
 
   test("enforces permissions for non-admins", () => {
     renderWithAuth("Staff", "/settings/runtime");
-    expect(screen.queryByRole("button", { name: /User Management/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /User Management/i })).not.toBeInTheDocument();
     return screen.findByRole("heading", { name: /Runtime verification/i });
   });
 
@@ -182,6 +219,7 @@ describe("SettingsPage", () => {
 
     const { unmount } = renderWithAuth("Admin", "/settings/profile");
     await screen.findByRole("heading", { name: /My profile/i });
+    fireEvent.click(screen.getByRole("button", { name: /Refresh profile/i }));
     fireEvent.change(screen.getByLabelText(/Name/i), { target: { value: "Taylor Updated" } });
     fireEvent.click(screen.getByRole("button", { name: /Save changes/i }));
 
@@ -191,6 +229,7 @@ describe("SettingsPage", () => {
     useSettingsStore.getState().reset();
 
     renderWithAuth("Admin", "/settings/profile");
+    fireEvent.click(screen.getByRole("button", { name: /Refresh profile/i }));
     await waitFor(() => expect(screen.getByLabelText(/Name/i)).toHaveValue("Taylor Updated"));
   });
 });

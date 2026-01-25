@@ -457,13 +457,19 @@ a {
   font-size: 13px;
 }
 
+.ui-table__wrapper {
+  width: 100%;
+  overflow-x: auto;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  -webkit-overflow-scrolling: touch;
+}
+
 .ui-table {
   width: 100%;
+  min-width: 640px;
   border-collapse: collapse;
-  background: #fff;
-  border-radius: 12px;
-  overflow: hidden;
-  border: 1px solid #e5e7eb;
 }
 
 .ui-table th,
@@ -724,9 +730,8 @@ a {
 
   .modal__content {
     width: 100%;
-    height: 100%;
-    max-height: none;
-    border-radius: 0;
+    max-height: 90vh;
+    border-radius: 12px;
   }
 
   .modal__header {
@@ -986,18 +991,6 @@ a {
   border-radius: 12px;
   text-align: center;
   color: #6b7280;
-}
-
-.ui-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.ui-table th,
-.ui-table td {
-  text-align: left;
-  padding: 12px;
-  border-bottom: 1px solid #e5e7eb;
 }
 
 .management-grid {

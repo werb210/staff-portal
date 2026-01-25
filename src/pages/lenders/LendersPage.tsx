@@ -1,25 +1,40 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import Card from "@/components/ui/Card";
-import Table from "@/components/ui/Table";
 import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
-import Select from "@/components/ui/Select";
+import Card from "@/components/ui/Card";
 import ErrorBanner from "@/components/ui/ErrorBanner";
+import Input from "@/components/ui/Input";
+import Modal from "@/components/ui/Modal";
+import Select from "@/components/ui/Select";
+import Table from "@/components/ui/Table";
+import AppLoading from "@/components/layout/AppLoading";
+import RequireRole from "@/components/auth/RequireRole";
 import {
   createLender,
+  createLenderProduct,
+  fetchLenderProducts,
   fetchLenders,
   updateLender,
+  updateLenderProduct,
   type Lender,
-  type LenderPayload
+  type LenderPayload,
+  type LenderProduct,
+  type LenderProductPayload
 } from "@/api/lenders";
-import AppLoading from "@/components/layout/AppLoading";
 import { getErrorMessage } from "@/utils/errors";
 import { getRequestId } from "@/utils/requestId";
-import RequireRole from "@/components/auth/RequireRole";
 import { emitUiTelemetry } from "@/utils/uiTelemetry";
 import { SUBMISSION_METHODS, type SubmissionMethod } from "@/types/lenderManagement.types";
+import {
+  LENDER_PRODUCT_CATEGORIES,
+  LENDER_PRODUCT_CATEGORY_LABELS,
+  RATE_TYPES,
+  TERM_UNITS,
+  type LenderProductCategory,
+  type RateType,
+  type TermUnit
+} from "@/types/lenderManagement.types";
 
 type LenderFormValues = {
   name: string;
@@ -39,7 +54,30 @@ type LenderFormValues = {
   submissionEmail: string;
 };
 
-const emptyForm: LenderFormValues = {
+type ProductFormValues = {
+  lenderId: string;
+  productName: string;
+  active: boolean;
+  category: LenderProductCategory;
+  country: string;
+  currency: string;
+  minAmount: string;
+  maxAmount: string;
+  interestRateMin: string;
+  interestRateMax: string;
+  rateType: RateType;
+  termMin: string;
+  termMax: string;
+  termUnit: TermUnit;
+  minimumCreditScore: string;
+  ltv: string;
+  eligibilityRules: string;
+  minimumRevenue: string;
+  timeInBusinessMonths: string;
+  industryRestrictions: string;
+};
+
+const emptyLenderForm: LenderFormValues = {
   name: "",
   active: true,
   street: "",
@@ -57,8 +95,30 @@ const emptyForm: LenderFormValues = {
   submissionEmail: ""
 };
 
-const optionalString = (value: string) => (value.trim() ? value.trim() : null);
+const emptyProductForm = (lenderId: string): ProductFormValues => ({
+  lenderId,
+  productName: "",
+  active: true,
+  category: LENDER_PRODUCT_CATEGORIES[0],
+  country: "",
+  currency: "",
+  minAmount: "",
+  maxAmount: "",
+  interestRateMin: "",
+  interestRateMax: "",
+  rateType: RATE_TYPES[0],
+  termMin: "",
+  termMax: "",
+  termUnit: TERM_UNITS[0],
+  minimumCreditScore: "",
+  ltv: "",
+  eligibilityRules: "",
+  minimumRevenue: "",
+  timeInBusinessMonths: "",
+  industryRestrictions: ""
+});
 
+const optionalString = (value: string) => (value.trim() ? value.trim() : null);
 const isValidEmail = (value: string) => value.includes("@");
 
 const COUNTRIES = [
@@ -135,113 +195,180 @@ const STATES = [
   { value: "WY", label: "Wyoming" }
 ];
 
+const toOptionalNumber = (value: string) => {
+  if (!value.trim()) return null;
+  const parsed = Number(value);
+  if (Number.isNaN(parsed)) return null;
+  return parsed;
+};
+
+const formatRateType = (value: RateType) => value.charAt(0).toUpperCase() + value.slice(1);
+
+const buildCategoryOptions = (country: string) => {
+  const normalizedCountry = country.trim().toUpperCase();
+  const isUs = normalizedCountry === "US";
+  const isCa = normalizedCountry === "CA";
+  return LENDER_PRODUCT_CATEGORIES.map((category) => ({
+    value: category,
+    label: LENDER_PRODUCT_CATEGORY_LABELS[category],
+    disabled: (category === "SBA_GOVERNMENT" && !isUs) || (category === "STARTUP_CAPITAL" && !isCa)
+  }));
+};
+
 const LendersContent = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const location = useLocation();
   const { lenderId } = useParams();
-  const { data = [], isLoading, error } = useQuery<Lender[], Error>({
+  const isNewRoute = location.pathname.endsWith("/new");
+
+  const { data: lenders = [], isLoading, error } = useQuery<Lender[], Error>({
     queryKey: ["lenders"],
     queryFn: ({ signal }) => fetchLenders({ signal })
   });
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [formValues, setFormValues] = useState<LenderFormValues>(emptyForm);
-  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
-  const isNewRoute = location.pathname.endsWith("/new");
+
+  const [selectedLenderId, setSelectedLenderId] = useState<string | null>(null);
+  const [isLenderModalOpen, setIsLenderModalOpen] = useState(false);
+  const [editingLender, setEditingLender] = useState<Lender | null>(null);
+  const [lenderFormValues, setLenderFormValues] = useState<LenderFormValues>(emptyLenderForm);
+  const [lenderFormErrors, setLenderFormErrors] = useState<Record<string, string>>({});
+
+  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<LenderProduct | null>(null);
+  const [productFormValues, setProductFormValues] = useState<ProductFormValues>(emptyProductForm(""));
+  const [productFormErrors, setProductFormErrors] = useState<Record<string, string>>({});
+
   const selectedLender = useMemo(
-    () => data?.find((lender) => lender.id === selectedId) ?? null,
-    [data, selectedId]
+    () => lenders.find((lender) => lender.id === selectedLenderId) ?? null,
+    [lenders, selectedLenderId]
   );
 
-  const resetForm = (values?: LenderFormValues) => {
-    setFormValues(values ?? emptyForm);
-    setFormErrors({});
-  };
+  const isSelectedLenderInactive = Boolean(selectedLender && !selectedLender.active);
+
+  const {
+    data: products = [],
+    isLoading: productsLoading,
+    error: productsError
+  } = useQuery<LenderProduct[], Error>({
+    queryKey: ["lender-products", selectedLenderId ?? "none"],
+    queryFn: () => fetchLenderProducts(selectedLenderId ?? ""),
+    enabled: Boolean(selectedLenderId),
+    placeholderData: (previousData) => previousData ?? []
+  });
 
   useEffect(() => {
     if (isNewRoute) {
-      setSelectedId(null);
-      resetForm(emptyForm);
+      setEditingLender(null);
+      setLenderFormValues(emptyLenderForm);
+      setLenderFormErrors({});
+      setIsLenderModalOpen(true);
       return;
     }
-    if (lenderId) {
-      setSelectedId(lenderId);
-      return;
-    }
-    setSelectedId(null);
-  }, [isNewRoute, lenderId]);
+    if (!lenderId) return;
+    const matching = lenders.find((lender) => lender.id === lenderId);
+    if (!matching) return;
+    setSelectedLenderId(matching.id);
+    setEditingLender(matching);
+    setIsLenderModalOpen(true);
+  }, [isNewRoute, lenderId, lenders]);
 
   useEffect(() => {
-    if (selectedLender) {
-      const address = selectedLender.address ?? {
+    if (selectedLenderId) return;
+    if (lenders.length) {
+      setSelectedLenderId(lenders[0].id);
+    }
+  }, [lenders, selectedLenderId]);
+
+  useEffect(() => {
+    if (editingLender) {
+      const address = editingLender.address ?? {
         street: "",
         city: "",
         stateProvince: "",
         postalCode: "",
         country: "CA"
       };
-      const primaryContact = selectedLender.primaryContact ?? {
+      const primaryContact = editingLender.primaryContact ?? {
         name: "",
         email: "",
         phone: ""
       };
-      const submissionConfig = selectedLender.submissionConfig ?? {
+      const submissionConfig = editingLender.submissionConfig ?? {
         method: "MANUAL",
         submissionEmail: ""
       };
-      resetForm({
-        ...emptyForm,
-        name: selectedLender.name ?? "",
-        active: selectedLender.active ?? true,
+      setLenderFormValues({
+        ...emptyLenderForm,
+        name: editingLender.name ?? "",
+        active: editingLender.active ?? true,
         street: address.street ?? "",
         city: address.city ?? "",
         region: address.stateProvince ?? "",
         postalCode: address.postalCode ?? "",
         country: address.country ?? "CA",
-        phone: selectedLender.phone ?? "",
-        website: selectedLender.website ?? "",
-        description: selectedLender.description ?? "",
+        phone: editingLender.phone ?? "",
+        website: editingLender.website ?? "",
+        description: editingLender.description ?? "",
         primaryContactName: primaryContact.name ?? "",
         primaryContactEmail: primaryContact.email ?? "",
         primaryContactPhone: primaryContact.phone ?? "",
         submissionMethod: submissionConfig.method ?? "MANUAL",
         submissionEmail: submissionConfig.submissionEmail ?? ""
       });
+      setLenderFormErrors({});
       return;
     }
-    resetForm();
-  }, [selectedLender]);
+    if (!isLenderModalOpen) return;
+    setLenderFormValues(emptyLenderForm);
+    setLenderFormErrors({});
+  }, [editingLender, isLenderModalOpen]);
 
-  const createMutation = useMutation({
+  const createLenderMutation = useMutation({
     mutationFn: (payload: LenderPayload) => createLender(payload),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["lenders"] });
-      setSelectedId(null);
+      setIsLenderModalOpen(false);
+      setEditingLender(null);
       navigate("/lenders");
     }
   });
 
-  const updateMutation = useMutation({
+  const updateLenderMutation = useMutation({
     mutationFn: ({ id, payload }: { id: string; payload: Partial<LenderPayload> }) =>
       updateLender(id, payload),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["lenders"] });
-      setSelectedId(null);
+      setIsLenderModalOpen(false);
+      setEditingLender(null);
       navigate("/lenders");
     }
   });
 
-  const toggleMutation = useMutation({
-    mutationFn: ({ id, active }: { id: string; active: boolean }) => updateLender(id, { active }),
+  const createProductMutation = useMutation({
+    mutationFn: (payload: LenderProductPayload) => createLenderProduct(payload),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["lenders"] });
+      await queryClient.invalidateQueries({ queryKey: ["lender-products"] });
+      setIsProductModalOpen(false);
+      setEditingProduct(null);
     }
   });
 
-  const mutationError = createMutation.error ?? updateMutation.error;
-  const mutationLoading = createMutation.isPending || updateMutation.isPending;
+  const updateProductMutation = useMutation({
+    mutationFn: ({ productId, payload }: { productId: string; payload: Partial<LenderProductPayload> }) =>
+      updateLenderProduct(productId, payload),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["lender-products"] });
+      setIsProductModalOpen(false);
+      setEditingProduct(null);
+    }
+  });
 
-  const validateForm = (values: LenderFormValues) => {
+  const mutationError = createLenderMutation.error ?? updateLenderMutation.error;
+  const mutationLoading = createLenderMutation.isPending || updateLenderMutation.isPending;
+  const productMutationError = createProductMutation.error ?? updateProductMutation.error;
+  const productMutationLoading = createProductMutation.isPending || updateProductMutation.isPending;
+
+  const validateLenderForm = (values: LenderFormValues) => {
     const nextErrors: Record<string, string> = {};
     if (!values.name.trim()) nextErrors.name = "Name is required.";
     if (!values.street.trim()) nextErrors.street = "Street is required.";
@@ -263,7 +390,7 @@ const LendersContent = () => {
     return nextErrors;
   };
 
-  const buildCreatePayload = (values: LenderFormValues): LenderPayload => ({
+  const buildLenderPayload = (values: LenderFormValues): LenderPayload => ({
     name: values.name.trim(),
     active: values.active,
     phone: values.phone.trim(),
@@ -282,9 +409,165 @@ const LendersContent = () => {
       values.submissionMethod === "EMAIL" ? optionalString(values.submissionEmail) : null
   });
 
-  const buildUpdatePayload = (values: LenderFormValues): Partial<LenderPayload> => ({
-    ...buildCreatePayload(values)
+  const validateProductForm = (values: ProductFormValues) => {
+    const errors: Record<string, string> = {};
+    if (!values.lenderId) errors.lenderId = "Lender is required.";
+    if (!values.productName.trim()) errors.productName = "Product name is required.";
+    if (!values.category) errors.category = "Product category is required.";
+    if (!values.country.trim()) errors.country = "Country is required.";
+    if (!values.currency.trim()) errors.currency = "Currency is required.";
+    if (!values.minAmount) errors.minAmount = "Minimum amount is required.";
+    if (!values.maxAmount) errors.maxAmount = "Maximum amount is required.";
+    const minAmount = Number(values.minAmount);
+    const maxAmount = Number(values.maxAmount);
+    if (Number.isNaN(minAmount)) errors.minAmount = "Minimum amount must be a number.";
+    if (Number.isNaN(maxAmount)) errors.maxAmount = "Maximum amount must be a number.";
+    if (!Number.isNaN(minAmount) && !Number.isNaN(maxAmount) && minAmount > maxAmount) {
+      errors.maxAmount = "Maximum amount must be greater than minimum.";
+    }
+    const rateMin = Number(values.interestRateMin);
+    const rateMax = Number(values.interestRateMax);
+    if (!values.interestRateMin) errors.interestRateMin = "Minimum rate is required.";
+    if (!values.interestRateMax) errors.interestRateMax = "Maximum rate is required.";
+    if (Number.isNaN(rateMin)) errors.interestRateMin = "Minimum rate must be a number.";
+    if (Number.isNaN(rateMax)) errors.interestRateMax = "Maximum rate must be a number.";
+    if (!Number.isNaN(rateMin) && !Number.isNaN(rateMax) && rateMin > rateMax) {
+      errors.interestRateMax = "Maximum rate must be greater than minimum.";
+    }
+    if (rateMin < 0 || rateMax < 0) {
+      errors.interestRateMin = "Rates must be positive.";
+    }
+    if (!values.rateType) errors.rateType = "Rate type is required.";
+    if (!values.termMin) errors.termMin = "Minimum term is required.";
+    if (!values.termMax) errors.termMax = "Maximum term is required.";
+    const termMin = Number(values.termMin);
+    const termMax = Number(values.termMax);
+    if (Number.isNaN(termMin)) errors.termMin = "Minimum term must be a number.";
+    if (Number.isNaN(termMax)) errors.termMax = "Maximum term must be a number.";
+    if (!Number.isNaN(termMin) && !Number.isNaN(termMax) && termMin > termMax) {
+      errors.termMax = "Maximum term must be greater than minimum.";
+    }
+    const creditScore = toOptionalNumber(values.minimumCreditScore);
+    if (values.minimumCreditScore.trim() && creditScore === null) {
+      errors.minimumCreditScore = "Minimum credit score must be a number.";
+    }
+    const ltv = toOptionalNumber(values.ltv);
+    if (values.ltv.trim() && ltv === null) {
+      errors.ltv = "LTV must be a number.";
+    }
+    if (ltv !== null && (ltv < 0 || ltv > 100)) {
+      errors.ltv = "LTV must be between 0 and 100.";
+    }
+    const minRevenue = toOptionalNumber(values.minimumRevenue);
+    if (values.minimumRevenue.trim() && minRevenue === null) {
+      errors.minimumRevenue = "Minimum revenue must be a number.";
+    }
+    const timeInBusiness = toOptionalNumber(values.timeInBusinessMonths);
+    if (values.timeInBusinessMonths.trim() && timeInBusiness === null) {
+      errors.timeInBusinessMonths = "Time in business must be a number.";
+    }
+    const normalizedCountry = values.country.trim().toUpperCase();
+    if (values.category === "SBA_GOVERNMENT" && normalizedCountry !== "US") {
+      errors.category = "SBA products must be limited to US lenders.";
+    }
+    if (values.category === "STARTUP_CAPITAL" && normalizedCountry !== "CA") {
+      errors.category = "Startup capital is limited to Canada.";
+    }
+    if (values.category === "STARTUP_CAPITAL" && values.active) {
+      errors.active = "Startup capital products must remain inactive.";
+    }
+    return errors;
+  };
+
+  const buildProductPayload = (values: ProductFormValues): LenderProductPayload => ({
+    lenderId: values.lenderId,
+    productName: values.productName.trim(),
+    active: values.category === "STARTUP_CAPITAL" || isSelectedLenderInactive ? false : values.active,
+    category: values.category,
+    country: values.country.trim(),
+    currency: values.currency.trim(),
+    minAmount: Number(values.minAmount),
+    maxAmount: Number(values.maxAmount),
+    interestRateMin: Number(values.interestRateMin),
+    interestRateMax: Number(values.interestRateMax),
+    rateType: values.rateType,
+    termLength: {
+      min: Number(values.termMin),
+      max: Number(values.termMax),
+      unit: values.termUnit
+    },
+    minimumCreditScore: toOptionalNumber(values.minimumCreditScore),
+    ltv: toOptionalNumber(values.ltv),
+    eligibilityRules: values.eligibilityRules.trim() ? values.eligibilityRules.trim() : null,
+    eligibilityFlags: {
+      minimumRevenue: toOptionalNumber(values.minimumRevenue),
+      timeInBusinessMonths: toOptionalNumber(values.timeInBusinessMonths),
+      industryRestrictions: values.industryRestrictions.trim() ? values.industryRestrictions.trim() : null
+    }
   });
+
+  const openCreateLenderModal = () => {
+    setEditingLender(null);
+    setLenderFormValues(emptyLenderForm);
+    setLenderFormErrors({});
+    setIsLenderModalOpen(true);
+  };
+
+  const openEditLenderModal = (lender: Lender) => {
+    setEditingLender(lender);
+    setIsLenderModalOpen(true);
+  };
+
+  const closeLenderModal = () => {
+    setIsLenderModalOpen(false);
+    setEditingLender(null);
+    setLenderFormErrors({});
+    if (isNewRoute || lenderId) {
+      navigate("/lenders");
+    }
+  };
+
+  const openCreateProductModal = () => {
+    if (!selectedLender) return;
+    setEditingProduct(null);
+    setProductFormValues(emptyProductForm(selectedLender.id));
+    setProductFormErrors({});
+    setIsProductModalOpen(true);
+  };
+
+  const openEditProductModal = (product: LenderProduct) => {
+    setEditingProduct(product);
+    setProductFormValues({
+      lenderId: product.lenderId,
+      productName: product.productName,
+      active: product.category === "STARTUP_CAPITAL" || isSelectedLenderInactive ? false : product.active,
+      category: product.category,
+      country: product.country,
+      currency: product.currency,
+      minAmount: product.minAmount.toString(),
+      maxAmount: product.maxAmount.toString(),
+      interestRateMin: product.interestRateMin.toString(),
+      interestRateMax: product.interestRateMax.toString(),
+      rateType: product.rateType,
+      termMin: product.termLength.min.toString(),
+      termMax: product.termLength.max.toString(),
+      termUnit: product.termLength.unit,
+      minimumCreditScore: product.minimumCreditScore?.toString() ?? "",
+      ltv: product.ltv?.toString() ?? "",
+      eligibilityRules: product.eligibilityRules ?? "",
+      minimumRevenue: product.eligibilityFlags.minimumRevenue?.toString() ?? "",
+      timeInBusinessMonths: product.eligibilityFlags.timeInBusinessMonths?.toString() ?? "",
+      industryRestrictions: product.eligibilityFlags.industryRestrictions ?? ""
+    });
+    setProductFormErrors({});
+    setIsProductModalOpen(true);
+  };
+
+  const closeProductModal = () => {
+    setIsProductModalOpen(false);
+    setEditingProduct(null);
+    setProductFormErrors({});
+  };
 
   useEffect(() => {
     if (error) {
@@ -294,9 +577,9 @@ const LendersContent = () => {
 
   useEffect(() => {
     if (!isLoading && !error) {
-      emitUiTelemetry("data_loaded", { view: "lenders", count: data?.length ?? 0 });
+      emitUiTelemetry("data_loaded", { view: "lenders", count: lenders.length });
     }
-  }, [data?.length, error, isLoading]);
+  }, [error, isLoading, lenders.length]);
 
   return (
     <div className="page">
@@ -304,22 +587,16 @@ const LendersContent = () => {
         <Card
           title="Lenders"
           actions={
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => {
-                navigate("/lenders/new");
-              }}
-            >
-              Add Lender
+            <Button type="button" variant="secondary" onClick={openCreateLenderModal}>
+              Create lender
             </Button>
           }
         >
           {isLoading && <AppLoading />}
           {error && <ErrorBanner message={getErrorMessage(error, "Unable to load lenders.")} />}
           {!isLoading && !error && (
-            <Table headers={["Name", "Status", "Country", "Primary contact", "Submission", "Products"]}>
-              {data.map((lender) => (
+            <Table headers={["Name", "Status", "Country", "Primary contact", "Submission", "Actions"]}>
+              {lenders.map((lender) => (
                 <tr
                   key={lender.id}
                   className={lender.active ? "management-row" : "management-row management-row--disabled"}
@@ -328,25 +605,15 @@ const LendersContent = () => {
                     <button
                       type="button"
                       className="management-link"
-                      onClick={() => navigate(`/lenders/${lender.id}/edit`)}
+                      onClick={() => setSelectedLenderId(lender.id)}
                     >
                       {lender.name}
                     </button>
                   </td>
                   <td>
-                    <div className="flex flex-col gap-2">
-                      <span className={`status-pill status-pill--${lender.active ? "active" : "paused"}`}>
-                        {lender.active ? "Active" : "Inactive"}
-                      </span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        onClick={() => toggleMutation.mutate({ id: lender.id, active: !lender.active })}
-                        disabled={toggleMutation.isPending}
-                      >
-                        {lender.active ? "Deactivate" : "Activate"}
-                      </Button>
-                    </div>
+                    <span className={`status-pill status-pill--${lender.active ? "active" : "paused"}`}>
+                      {lender.active ? "Active" : "Inactive"}
+                    </span>
                   </td>
                   <td>{lender.address?.country || "—"}</td>
                   <td>
@@ -355,17 +622,13 @@ const LendersContent = () => {
                   </td>
                   <td>{lender.submissionConfig?.method || "—"}</td>
                   <td>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      onClick={() => navigate(`/lender-products?lenderId=${lender.id}`)}
-                    >
-                      Manage products
+                    <Button type="button" variant="ghost" onClick={() => openEditLenderModal(lender)}>
+                      Edit lender
                     </Button>
                   </td>
                 </tr>
               ))}
-              {!data.length && (
+              {!lenders.length && (
                 <tr>
                   <td colSpan={6}>No lenders</td>
                 </tr>
@@ -374,57 +637,149 @@ const LendersContent = () => {
           )}
         </Card>
 
-        <Card title={selectedLender ? "Edit lender" : "Create lender"}>
+        <Card
+          title="Products"
+          actions={
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={openCreateProductModal}
+              disabled={!selectedLender || isSelectedLenderInactive}
+            >
+              Add product
+            </Button>
+          }
+        >
+          {!selectedLender && (
+            <p className="text-sm text-slate-500">Select a lender on the left to view and manage products.</p>
+          )}
+          {selectedLender && (
+            <div className="management-note">
+              <span className={`status-pill status-pill--${selectedLender.active ? "active" : "paused"}`}>
+                {selectedLender.active ? "Lender active" : "Lender inactive"}
+              </span>
+              <span>{selectedLender.address?.country || "—"}</span>
+              {!selectedLender.active && (
+                <span className="text-xs text-amber-600">Inactive lenders cannot publish products.</span>
+              )}
+            </div>
+          )}
+          {productsLoading && <AppLoading />}
+          {productsError && <ErrorBanner message={getErrorMessage(productsError, "Unable to load products.")} />}
+          {selectedLender && !productsLoading && !productsError && (
+            <Table headers={["Name", "Category", "Country", "Currency", "Status", "Amount range"]}>
+              {products.map((product) => {
+                const productActive = product.category === "STARTUP_CAPITAL" ? false : product.active;
+                return (
+                  <tr
+                    key={product.id}
+                    className={productActive ? "management-row" : "management-row management-row--disabled"}
+                  >
+                    <td>
+                      <button
+                        type="button"
+                        className="management-link"
+                        onClick={() => openEditProductModal(product)}
+                      >
+                        {product.productName}
+                      </button>
+                    </td>
+                    <td>
+                      <div className="text-sm font-semibold">
+                        {LENDER_PRODUCT_CATEGORY_LABELS[product.category]}
+                      </div>
+                      {product.category === "SBA_GOVERNMENT" && (
+                        <div className="text-xs text-slate-500">Government Program</div>
+                      )}
+                      {product.category === "STARTUP_CAPITAL" && (
+                        <div className="text-xs text-amber-600">Not Live</div>
+                      )}
+                    </td>
+                    <td>{product.country}</td>
+                    <td>{product.currency}</td>
+                    <td>
+                      <span className={`status-pill status-pill--${productActive ? "active" : "paused"}`}>
+                        {productActive ? "Active" : "Inactive"}
+                      </span>
+                    </td>
+                    <td>
+                      ${product.minAmount.toLocaleString()} - ${product.maxAmount.toLocaleString()}
+                    </td>
+                  </tr>
+                );
+              })}
+              {!products.length && (
+                <tr>
+                  <td colSpan={6}>No products for this lender.</td>
+                </tr>
+              )}
+            </Table>
+          )}
+        </Card>
+      </div>
+
+      {isLenderModalOpen && (
+        <Modal
+          title={editingLender ? "Edit lender" : "Create lender"}
+          onClose={closeLenderModal}
+        >
           {mutationError && (
-            <p className="text-red-700">{getErrorMessage(mutationError, "Unable to save lender.")}</p>
+            <ErrorBanner message={getErrorMessage(mutationError, "Unable to save lender.")} />
           )}
           <form
             className="management-form"
             onSubmit={(event) => {
               event.preventDefault();
-              const nextErrors = validateForm(formValues);
-              setFormErrors(nextErrors);
+              const nextErrors = validateLenderForm(lenderFormValues);
+              setLenderFormErrors(nextErrors);
               if (Object.keys(nextErrors).length) return;
-              if (selectedLender) {
-                updateMutation.mutate({ id: selectedLender.id, payload: buildUpdatePayload(formValues) });
+              if (editingLender) {
+                updateLenderMutation.mutate({
+                  id: editingLender.id,
+                  payload: buildLenderPayload(lenderFormValues)
+                });
                 return;
               }
-              createMutation.mutate(buildCreatePayload(formValues));
+              createLenderMutation.mutate(buildLenderPayload(lenderFormValues));
             }}
           >
             <div className="management-field">
               <span className="management-field__label">Lender profile</span>
               <Input
                 label="Name"
-                value={formValues.name}
-                onChange={(event) => setFormValues((prev) => ({ ...prev, name: event.target.value }))}
-                error={formErrors.name}
+                value={lenderFormValues.name}
+                onChange={(event) => setLenderFormValues((prev) => ({ ...prev, name: event.target.value }))}
+                error={lenderFormErrors.name}
               />
               <label className="management-toggle">
                 <input
                   type="checkbox"
-                  checked={formValues.active}
-                  onChange={(event) => setFormValues((prev) => ({ ...prev, active: event.target.checked }))}
+                  checked={lenderFormValues.active}
+                  onChange={(event) =>
+                    setLenderFormValues((prev) => ({ ...prev, active: event.target.checked }))
+                  }
                 />
                 <span>Active lender</span>
               </label>
               <Input
                 label="Phone"
-                value={formValues.phone}
-                onChange={(event) => setFormValues((prev) => ({ ...prev, phone: event.target.value }))}
-                error={formErrors.phone}
+                value={lenderFormValues.phone}
+                onChange={(event) => setLenderFormValues((prev) => ({ ...prev, phone: event.target.value }))}
+                error={lenderFormErrors.phone}
               />
               <Input
                 label="Website"
-                value={formValues.website}
-                onChange={(event) => setFormValues((prev) => ({ ...prev, website: event.target.value }))}
+                value={lenderFormValues.website}
+                onChange={(event) => setLenderFormValues((prev) => ({ ...prev, website: event.target.value }))}
               />
               <label className="ui-field">
                 <span className="ui-field__label">Description</span>
                 <textarea
                   className="ui-input ui-textarea"
-                  value={formValues.description}
-                  onChange={(event) => setFormValues((prev) => ({ ...prev, description: event.target.value }))}
+                  value={lenderFormValues.description}
+                  onChange={(event) =>
+                    setLenderFormValues((prev) => ({ ...prev, description: event.target.value }))
+                  }
                   rows={3}
                 />
               </label>
@@ -434,45 +789,47 @@ const LendersContent = () => {
               <span className="management-field__label">Address</span>
               <Input
                 label="Street"
-                value={formValues.street}
-                onChange={(event) => setFormValues((prev) => ({ ...prev, street: event.target.value }))}
-                error={formErrors.street}
+                value={lenderFormValues.street}
+                onChange={(event) => setLenderFormValues((prev) => ({ ...prev, street: event.target.value }))}
+                error={lenderFormErrors.street}
               />
               <div className="management-grid__row">
                 <Input
                   label="City"
-                  value={formValues.city}
-                  onChange={(event) => setFormValues((prev) => ({ ...prev, city: event.target.value }))}
-                  error={formErrors.city}
+                  value={lenderFormValues.city}
+                  onChange={(event) => setLenderFormValues((prev) => ({ ...prev, city: event.target.value }))}
+                  error={lenderFormErrors.city}
                 />
                 <Select
                   label="State / Province"
-                  value={formValues.region}
-                  onChange={(event) => setFormValues((prev) => ({ ...prev, region: event.target.value }))}
+                  value={lenderFormValues.region}
+                  onChange={(event) => setLenderFormValues((prev) => ({ ...prev, region: event.target.value }))}
                 >
                   <option value="">
-                    Select {formValues.country === "US" ? "state" : "province"}
+                    Select {lenderFormValues.country === "US" ? "state" : "province"}
                   </option>
-                  {(formValues.country === "US" ? STATES : PROVINCES).map((region) => (
+                  {(lenderFormValues.country === "US" ? STATES : PROVINCES).map((region) => (
                     <option key={region.value} value={region.value}>
                       {region.label}
                     </option>
                   ))}
                 </Select>
-                {formErrors.region && <span className="ui-field__error">{formErrors.region}</span>}
+                {lenderFormErrors.region && <span className="ui-field__error">{lenderFormErrors.region}</span>}
               </div>
               <div className="management-grid__row">
                 <Input
                   label="Postal code"
-                  value={formValues.postalCode}
-                  onChange={(event) => setFormValues((prev) => ({ ...prev, postalCode: event.target.value }))}
-                  error={formErrors.postalCode}
+                  value={lenderFormValues.postalCode}
+                  onChange={(event) =>
+                    setLenderFormValues((prev) => ({ ...prev, postalCode: event.target.value }))
+                  }
+                  error={lenderFormErrors.postalCode}
                 />
                 <Select
                   label="Country"
-                  value={formValues.country}
+                  value={lenderFormValues.country}
                   onChange={(event) =>
-                    setFormValues((prev) => ({
+                    setLenderFormValues((prev) => ({
                       ...prev,
                       country: event.target.value,
                       region: prev.country === event.target.value ? prev.region : ""
@@ -485,7 +842,7 @@ const LendersContent = () => {
                     </option>
                   ))}
                 </Select>
-                {formErrors.country && <span className="ui-field__error">{formErrors.country}</span>}
+                {lenderFormErrors.country && <span className="ui-field__error">{lenderFormErrors.country}</span>}
               </div>
             </div>
 
@@ -493,24 +850,26 @@ const LendersContent = () => {
               <span className="management-field__label">Primary contact</span>
               <Input
                 label="Contact name"
-                value={formValues.primaryContactName}
-                onChange={(event) => setFormValues((prev) => ({ ...prev, primaryContactName: event.target.value }))}
-                error={formErrors.primaryContactName}
+                value={lenderFormValues.primaryContactName}
+                onChange={(event) =>
+                  setLenderFormValues((prev) => ({ ...prev, primaryContactName: event.target.value }))
+                }
+                error={lenderFormErrors.primaryContactName}
               />
               <Input
                 label="Contact email"
-                value={formValues.primaryContactEmail}
+                value={lenderFormValues.primaryContactEmail}
                 onChange={(event) =>
-                  setFormValues((prev) => ({ ...prev, primaryContactEmail: event.target.value }))
+                  setLenderFormValues((prev) => ({ ...prev, primaryContactEmail: event.target.value }))
                 }
-                error={formErrors.primaryContactEmail}
+                error={lenderFormErrors.primaryContactEmail}
               />
               <div className="management-grid__row">
                 <Input
                   label="Contact phone"
-                  value={formValues.primaryContactPhone}
+                  value={lenderFormValues.primaryContactPhone}
                   onChange={(event) =>
-                    setFormValues((prev) => ({ ...prev, primaryContactPhone: event.target.value }))
+                    setLenderFormValues((prev) => ({ ...prev, primaryContactPhone: event.target.value }))
                   }
                 />
               </div>
@@ -520,9 +879,9 @@ const LendersContent = () => {
               <span className="management-field__label">Submission configuration</span>
               <Select
                 label="Submission method"
-                value={formValues.submissionMethod}
+                value={lenderFormValues.submissionMethod}
                 onChange={(event) =>
-                  setFormValues((prev) => ({
+                  setLenderFormValues((prev) => ({
                     ...prev,
                     submissionMethod: event.target.value as SubmissionMethod
                   }))
@@ -534,25 +893,286 @@ const LendersContent = () => {
                   </option>
                 ))}
               </Select>
-              {formErrors.submissionMethod && <span className="ui-field__error">{formErrors.submissionMethod}</span>}
-              {formValues.submissionMethod === "EMAIL" && (
+              {lenderFormErrors.submissionMethod && (
+                <span className="ui-field__error">{lenderFormErrors.submissionMethod}</span>
+              )}
+              {lenderFormValues.submissionMethod === "EMAIL" && (
                 <Input
                   label="Submission email"
-                  value={formValues.submissionEmail}
-                  onChange={(event) => setFormValues((prev) => ({ ...prev, submissionEmail: event.target.value }))}
-                  error={formErrors.submissionEmail}
+                  value={lenderFormValues.submissionEmail}
+                  onChange={(event) =>
+                    setLenderFormValues((prev) => ({ ...prev, submissionEmail: event.target.value }))
+                  }
+                  error={lenderFormErrors.submissionEmail}
                 />
               )}
             </div>
 
             <div className="management-actions">
               <Button type="submit" disabled={mutationLoading}>
-                {selectedLender ? "Save changes" : "Create lender"}
+                {editingLender ? "Save changes" : "Create lender"}
               </Button>
             </div>
           </form>
-        </Card>
-      </div>
+        </Modal>
+      )}
+
+      {isProductModalOpen && selectedLender && (
+        <Modal title={editingProduct ? "Edit product" : "Add product"} onClose={closeProductModal}>
+          {productMutationError && (
+            <ErrorBanner message={getErrorMessage(productMutationError, "Unable to save product.")} />
+          )}
+          {isSelectedLenderInactive && (
+            <p className="text-xs text-amber-600">
+              This lender is inactive. Products will remain inactive until the lender is active again.
+            </p>
+          )}
+          <form
+            className="management-form"
+            onSubmit={(event) => {
+              event.preventDefault();
+              const errors = validateProductForm(productFormValues);
+              setProductFormErrors(errors);
+              if (Object.keys(errors).length) return;
+              const payload = buildProductPayload(productFormValues);
+              if (editingProduct) {
+                updateProductMutation.mutate({ productId: editingProduct.id, payload });
+                return;
+              }
+              createProductMutation.mutate(payload);
+            }}
+          >
+            <div className="management-field">
+              <span className="management-field__label">Core details</span>
+              <Select
+                label="Lender"
+                value={productFormValues.lenderId}
+                onChange={(event) =>
+                  setProductFormValues((prev) => ({ ...prev, lenderId: event.target.value }))
+                }
+                disabled
+              >
+                <option value={selectedLender.id}>{selectedLender.name}</option>
+              </Select>
+              {productFormErrors.lenderId && <span className="ui-field__error">{productFormErrors.lenderId}</span>}
+              <Input
+                label="Product name"
+                value={productFormValues.productName}
+                onChange={(event) =>
+                  setProductFormValues((prev) => ({ ...prev, productName: event.target.value }))
+                }
+                error={productFormErrors.productName}
+              />
+              <label className="management-toggle">
+                <input
+                  type="checkbox"
+                  checked={productFormValues.active}
+                  onChange={(event) =>
+                    setProductFormValues((prev) => ({ ...prev, active: event.target.checked }))
+                  }
+                  disabled={productFormValues.category === "STARTUP_CAPITAL" || isSelectedLenderInactive}
+                />
+                <span>Active product</span>
+              </label>
+              {productFormErrors.active && <span className="ui-field__error">{productFormErrors.active}</span>}
+              <Select
+                label="Product category"
+                value={productFormValues.category}
+                onChange={(event) =>
+                  setProductFormValues((prev) => ({
+                    ...prev,
+                    category: event.target.value as LenderProductCategory
+                  }))
+                }
+              >
+                {buildCategoryOptions(productFormValues.country).map((option) => (
+                  <option key={option.value} value={option.value} disabled={option.disabled}>
+                    {option.label}
+                  </option>
+                ))}
+              </Select>
+              {productFormErrors.category && <span className="ui-field__error">{productFormErrors.category}</span>}
+              <div className="management-grid__row">
+                <Input
+                  label="Country"
+                  value={productFormValues.country}
+                  onChange={(event) =>
+                    setProductFormValues((prev) => ({ ...prev, country: event.target.value }))
+                  }
+                  error={productFormErrors.country}
+                />
+                <Input
+                  label="Currency"
+                  value={productFormValues.currency}
+                  onChange={(event) =>
+                    setProductFormValues((prev) => ({ ...prev, currency: event.target.value }))
+                  }
+                  error={productFormErrors.currency}
+                />
+              </div>
+              {productFormValues.category === "SBA_GOVERNMENT" && (
+                <div className="text-xs text-slate-500">Government Program (US only)</div>
+              )}
+              {productFormValues.category === "STARTUP_CAPITAL" && (
+                <div className="text-xs text-amber-600">
+                  Not Live — startup capital products remain inactive and internal-only.
+                </div>
+              )}
+            </div>
+
+            <div className="management-field">
+              <span className="management-field__label">Amount & pricing</span>
+              <div className="management-grid__row">
+                <Input
+                  label="Minimum amount"
+                  value={productFormValues.minAmount}
+                  onChange={(event) =>
+                    setProductFormValues((prev) => ({ ...prev, minAmount: event.target.value }))
+                  }
+                  error={productFormErrors.minAmount}
+                />
+                <Input
+                  label="Maximum amount"
+                  value={productFormValues.maxAmount}
+                  onChange={(event) =>
+                    setProductFormValues((prev) => ({ ...prev, maxAmount: event.target.value }))
+                  }
+                  error={productFormErrors.maxAmount}
+                />
+              </div>
+              <div className="management-grid__row">
+                <Input
+                  label="Interest rate min (%)"
+                  value={productFormValues.interestRateMin}
+                  onChange={(event) =>
+                    setProductFormValues((prev) => ({ ...prev, interestRateMin: event.target.value }))
+                  }
+                  error={productFormErrors.interestRateMin}
+                />
+                <Input
+                  label="Interest rate max (%)"
+                  value={productFormValues.interestRateMax}
+                  onChange={(event) =>
+                    setProductFormValues((prev) => ({ ...prev, interestRateMax: event.target.value }))
+                  }
+                  error={productFormErrors.interestRateMax}
+                />
+              </div>
+              <Select
+                label="Rate type"
+                value={productFormValues.rateType}
+                onChange={(event) =>
+                  setProductFormValues((prev) => ({ ...prev, rateType: event.target.value as RateType }))
+                }
+              >
+                {RATE_TYPES.map((rateType) => (
+                  <option key={rateType} value={rateType}>
+                    {formatRateType(rateType)}
+                  </option>
+                ))}
+              </Select>
+              {productFormErrors.rateType && <span className="ui-field__error">{productFormErrors.rateType}</span>}
+              <div className="management-grid__row">
+                <Input
+                  label="Term length min"
+                  value={productFormValues.termMin}
+                  onChange={(event) =>
+                    setProductFormValues((prev) => ({ ...prev, termMin: event.target.value }))
+                  }
+                  error={productFormErrors.termMin}
+                />
+                <Input
+                  label="Term length max"
+                  value={productFormValues.termMax}
+                  onChange={(event) =>
+                    setProductFormValues((prev) => ({ ...prev, termMax: event.target.value }))
+                  }
+                  error={productFormErrors.termMax}
+                />
+              </div>
+              <Select
+                label="Term unit"
+                value={productFormValues.termUnit}
+                onChange={(event) =>
+                  setProductFormValues((prev) => ({ ...prev, termUnit: event.target.value as TermUnit }))
+                }
+              >
+                {TERM_UNITS.map((unit) => (
+                  <option key={unit} value={unit}>
+                    {unit}
+                  </option>
+                ))}
+              </Select>
+              <div className="management-grid__row">
+                <Input
+                  label="Minimum credit score"
+                  value={productFormValues.minimumCreditScore}
+                  onChange={(event) =>
+                    setProductFormValues((prev) => ({ ...prev, minimumCreditScore: event.target.value }))
+                  }
+                  error={productFormErrors.minimumCreditScore}
+                />
+                <Input
+                  label="LTV (%)"
+                  value={productFormValues.ltv}
+                  onChange={(event) => setProductFormValues((prev) => ({ ...prev, ltv: event.target.value }))}
+                  error={productFormErrors.ltv}
+                />
+              </div>
+            </div>
+
+            <div className="management-field">
+              <span className="management-field__label">Eligibility requirements</span>
+              <label className="ui-field">
+                <span className="ui-field__label">Eligibility rules</span>
+                <textarea
+                  className="ui-input ui-textarea"
+                  value={productFormValues.eligibilityRules}
+                  onChange={(event) =>
+                    setProductFormValues((prev) => ({ ...prev, eligibilityRules: event.target.value }))
+                  }
+                  rows={3}
+                />
+              </label>
+              <div className="management-grid__row">
+                <Input
+                  label="Minimum revenue"
+                  value={productFormValues.minimumRevenue}
+                  onChange={(event) =>
+                    setProductFormValues((prev) => ({ ...prev, minimumRevenue: event.target.value }))
+                  }
+                  error={productFormErrors.minimumRevenue}
+                />
+                <Input
+                  label="Time in business (months)"
+                  value={productFormValues.timeInBusinessMonths}
+                  onChange={(event) =>
+                    setProductFormValues((prev) => ({ ...prev, timeInBusinessMonths: event.target.value }))
+                  }
+                  error={productFormErrors.timeInBusinessMonths}
+                />
+              </div>
+              <label className="ui-field">
+                <span className="ui-field__label">Industry restrictions</span>
+                <textarea
+                  className="ui-input ui-textarea"
+                  value={productFormValues.industryRestrictions}
+                  onChange={(event) =>
+                    setProductFormValues((prev) => ({ ...prev, industryRestrictions: event.target.value }))
+                  }
+                  rows={2}
+                />
+              </label>
+            </div>
+
+            <div className="management-actions">
+              <Button type="submit" disabled={productMutationLoading}>
+                {editingProduct ? "Save changes" : "Create product"}
+              </Button>
+            </div>
+          </form>
+        </Modal>
+      )}
     </div>
   );
 };

@@ -7,7 +7,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "@/auth/AuthContext";
 import LendersPage from "@/pages/lenders/LendersPage";
-import LenderProductsPage from "@/pages/lenders/LenderProductsPage";
 import LoginPage from "@/pages/login/LoginPage";
 import PrivateRoute from "@/router/PrivateRoute";
 import {
@@ -75,30 +74,6 @@ const renderWithProviders = (initialEntry: string) => {
               element={
                 <PrivateRoute>
                   <LendersPage />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/lender-products"
-              element={
-                <PrivateRoute>
-                  <LenderProductsPage />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/lender-products/new"
-              element={
-                <PrivateRoute>
-                  <LenderProductsPage />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/lender-products/:productId/edit"
-              element={
-                <PrivateRoute>
-                  <LenderProductsPage />
                 </PrivateRoute>
               }
             />
@@ -250,7 +225,7 @@ describe("lender management flows", () => {
     const fetchLenderProductsMock = vi.mocked(fetchLenderProducts);
     fetchLenderProductsMock.mockResolvedValue([baseProduct]);
 
-    renderWithProviders("/lender-products");
+    renderWithProviders("/lenders");
 
     expect(await screen.findByRole("button", { name: /Term loan/i })).toBeInTheDocument();
   });
@@ -263,7 +238,9 @@ describe("lender management flows", () => {
     const createLenderProductMock = vi.mocked(createLenderProduct);
     createLenderProductMock.mockResolvedValue(baseProduct);
 
-    renderWithProviders("/lender-products/new?lenderId=l-1");
+    renderWithProviders("/lenders");
+
+    await userEvent.click(await screen.findByRole("button", { name: /Add product/i }));
 
     const nameInput = await screen.findByLabelText(/Product name/i);
     await userEvent.type(nameInput, "Term loan");
@@ -323,7 +300,7 @@ describe("lender management flows", () => {
     const fetchLenderProductsMock = vi.mocked(fetchLenderProducts);
     fetchLenderProductsMock.mockResolvedValue([baseProduct]);
 
-    renderWithProviders("/lender-products");
+    renderWithProviders("/lenders");
 
     const productButton = await screen.findByRole("button", { name: /Term loan/i });
     fireEvent.click(productButton);
