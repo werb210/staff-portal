@@ -131,8 +131,9 @@ const LenderProductsContent = () => {
       setActiveLenderId(requestedLenderId);
       return;
     }
-    if (safeLenders.length) {
-      setActiveLenderId(safeLenders[0].id);
+    const firstLender = safeLenders.find((lender) => Boolean(lender?.id));
+    if (firstLender?.id) {
+      setActiveLenderId(firstLender.id);
     }
   }, [activeLenderId, safeLenders, searchParams]);
 
@@ -151,7 +152,7 @@ const LenderProductsContent = () => {
     refetch: refetchProducts
   } = useQuery<LenderProduct[], Error>({
     queryKey: ["lender-products", activeLenderId || "all"],
-    queryFn: () => fetchLenderProducts(activeLenderId || undefined),
+    queryFn: ({ signal }) => fetchLenderProducts(activeLenderId || undefined, { signal }),
     placeholderData: (previousData) => previousData ?? [],
     staleTime: 30_000,
     refetchOnWindowFocus: false
@@ -260,8 +261,10 @@ const LenderProductsContent = () => {
     mutationFn: (payload: LenderProductPayload) => createLenderProduct(payload),
     onSuccess: async (created) => {
       await queryClient.invalidateQueries({ queryKey: ["lender-products"] });
-      setSelectedProductId(created.id);
-      navigate(`/lender-products/${created.id}/edit?lenderId=${created.lenderId}`);
+      if (created?.id && created?.lenderId) {
+        setSelectedProductId(created.id);
+        navigate(`/lender-products/${created.id}/edit?lenderId=${created.lenderId}`);
+      }
     }
   });
 
@@ -270,7 +273,9 @@ const LenderProductsContent = () => {
       updateLenderProduct(productId, payload),
     onSuccess: async (updated) => {
       await queryClient.invalidateQueries({ queryKey: ["lender-products"] });
-      navigate(`/lender-products/${updated.id}/edit?lenderId=${updated.lenderId}`);
+      if (updated?.id && updated?.lenderId) {
+        navigate(`/lender-products/${updated.id}/edit?lenderId=${updated.lenderId}`);
+      }
     }
   });
 
@@ -399,11 +404,15 @@ const LenderProductsContent = () => {
             }}
           >
             <option value="">All lenders</option>
-            {safeLenders.map((lender) => (
-              <option key={lender.id} value={lender.id}>
-                {lender.name}
-              </option>
-            ))}
+            {safeLenders.map((lender, index) => {
+              const lenderIdValue = lender.id ?? "";
+              const optionKey = lenderIdValue || `lender-${index}`;
+              return (
+                <option key={optionKey} value={lenderIdValue}>
+                  {lender.name || "Unnamed lender"}
+                </option>
+              );
+            })}
           </Select>
         )}
         {!lendersLoading && !lendersError && !hasLenders && (
@@ -496,13 +505,15 @@ const LenderProductsContent = () => {
                 "Amount range"
               ]}
             >
-              {filteredProducts.map((product) => {
-                const productActive = product.category === "STARTUP_CAPITAL" ? false : product.active;
+              {filteredProducts.map((product, index) => {
+                const productIdValue = product.id ?? "";
+                const productCategory = product.category ?? LENDER_PRODUCT_CATEGORIES[0];
+                const productActive = productCategory === "STARTUP_CAPITAL" ? false : product.active;
                 const minAmount = Number.isFinite(product.minAmount) ? product.minAmount : 0;
                 const maxAmount = Number.isFinite(product.maxAmount) ? product.maxAmount : 0;
                 return (
                 <tr
-                  key={product.id}
+                  key={productIdValue || `product-${index}`}
                   className={productActive ? "management-row" : "management-row management-row--disabled"}
                 >
                   <td>
@@ -510,25 +521,27 @@ const LenderProductsContent = () => {
                       type="button"
                       className="management-link"
                       onClick={() =>
-                        navigate(`/lender-products/${product.id}/edit?lenderId=${product.lenderId}`)
+                        productIdValue &&
+                        navigate(`/lender-products/${productIdValue}/edit?lenderId=${product.lenderId ?? ""}`)
                       }
+                      disabled={!productIdValue}
                     >
-                      {product.productName}
+                      {product.productName || "Untitled product"}
                     </button>
                   </td>
                   <td>
                     <div className="text-sm font-semibold">
-                      {LENDER_PRODUCT_CATEGORY_LABELS[product.category]}
+                      {LENDER_PRODUCT_CATEGORY_LABELS[productCategory]}
                     </div>
-                    {product.category === "SBA_GOVERNMENT" && (
+                    {productCategory === "SBA_GOVERNMENT" && (
                       <div className="text-xs text-slate-500">Government Program</div>
                     )}
-                    {product.category === "STARTUP_CAPITAL" && (
+                    {productCategory === "STARTUP_CAPITAL" && (
                       <div className="text-xs text-amber-600">Not Live</div>
                     )}
                   </td>
-                  <td>{product.country}</td>
-                  <td>{product.currency}</td>
+                  <td>{product.country || "—"}</td>
+                  <td>{product.currency || "—"}</td>
                   <td>
                     <span className={`status-pill status-pill--${productActive ? "active" : "paused"}`}>
                       {productActive ? "Active" : "Inactive"}
@@ -565,6 +578,10 @@ const LenderProductsContent = () => {
               if (!formValues.lenderId) return;
               const payload = buildPayload(formValues);
               if (selectedProduct) {
+                if (!selectedProduct.id) {
+                  setFormErrors({ productName: "Missing product id. Please refresh and try again." });
+                  return;
+                }
                 updateMutation.mutate({
                   productId: selectedProduct.id,
                   payload
@@ -596,11 +613,15 @@ const LenderProductsContent = () => {
                   disabled={Boolean(selectedProduct)}
                 >
                   <option value="">Select lender</option>
-                  {safeLenders.map((lender) => (
-                    <option key={lender.id} value={lender.id}>
-                      {lender.name}
-                    </option>
-                  ))}
+                  {safeLenders.map((lender, index) => {
+                    const lenderIdValue = lender.id ?? "";
+                    const optionKey = lenderIdValue || `lender-${index}`;
+                    return (
+                      <option key={optionKey} value={lenderIdValue}>
+                        {lender.name || "Unnamed lender"}
+                      </option>
+                    );
+                  })}
                 </Select>
                 {formErrors.lenderId && <span className="ui-field__error">{formErrors.lenderId}</span>}
                 <Input

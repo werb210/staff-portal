@@ -167,7 +167,11 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
         : Array.isArray(data?.users)
           ? data.users
           : [];
-      set({ users: nextUsers, statusMessage: undefined });
+      const safeUsers = nextUsers.map((user) => ({
+        ...user,
+        id: typeof user.id === "string" ? user.id : ""
+      }));
+      set({ users: safeUsers, statusMessage: undefined });
     } finally {
       set({ isLoadingUsers: false });
     }

@@ -64,18 +64,18 @@ type ClientRequirementResponse = {
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
 
-const assertEntityHasId = <T extends { id?: string }>(entity: T, context: string): T => {
-  const id = entity?.id;
-  if (typeof id !== "string" || !id.trim()) {
-    throw new Error(`Expected ${context} response to include an id.`);
+const ensureEntityHasId = <T extends { id?: string }>(
+  entity: T | null | undefined,
+  context: string,
+  fallbackId?: string
+): T & { id: string } => {
+  const safeEntity = (entity ?? {}) as T;
+  const rawId = typeof safeEntity.id === "string" ? safeEntity.id.trim() : "";
+  if (!rawId) {
+    console.warn(`Expected ${context} response to include an id.`);
+    return { ...safeEntity, id: fallbackId ?? "" } as T & { id: string };
   }
-  return entity;
-};
-
-const assertEntitiesHaveIds = <T extends { id?: string }>(entities: T[], context: string) => {
-  entities.forEach((entity) => {
-    assertEntityHasId(entity, context);
-  });
+  return { ...safeEntity, id: rawId } as T & { id: string };
 };
 
 const parseLendersResponse = (data: unknown): LenderSummary[] => {
@@ -196,50 +196,46 @@ export const fetchLenders = async (options?: RequestOptions) => {
   const lenders = parseLendersResponse(res)
     .map((item) => normalizeLender(item))
     .filter((item): item is Lender => Boolean(item));
-  if (lenders.length) {
-    assertEntitiesHaveIds(lenders, "lender");
-  }
   return lenders;
 };
 
 export const fetchLenderById = async (id: string) => {
   const lender = await apiClient.get<Lender>(`/lenders/${id}`);
-  return assertEntityHasId(lender, "lender");
+  return ensureEntityHasId(lender, "lender", id);
 };
 
 export const createLender = async (payload: LenderPayload) => {
   const lender = await apiClient.post<Lender>(`/lenders`, payload);
-  return assertEntityHasId(lender, "lender");
+  return ensureEntityHasId(lender, "lender");
 };
 
 export const updateLender = async (id: string, payload: Partial<LenderPayload>) => {
   const lender = await apiClient.put<Lender>(`/lenders/${id}`, payload);
-  return assertEntityHasId(lender, "lender");
+  return ensureEntityHasId(lender, "lender", id);
 };
 
-export const fetchLenderProducts = async (lenderId?: string) => {
+export const fetchLenderProducts = async (lenderId?: string, options?: RequestOptions) => {
   const res: ListResponse<LenderProduct> = await apiClient.getList<LenderProduct>(`/lender-products`, {
-    params: lenderId ? { lenderId } : undefined
+    params: lenderId ? { lenderId } : undefined,
+    ...options
   });
-  if (res.items.length) {
-    assertEntitiesHaveIds(res.items, "lender product");
-  }
-  return res.items;
+  const items = Array.isArray(res.items) ? res.items : [];
+  return items.map((item) => ensureEntityHasId(item, "lender product", item.id));
 };
 
 export const fetchLenderProductById = async (productId: string) => {
   const product = await apiClient.get<LenderProduct>(`/lender-products/${productId}`);
-  return assertEntityHasId(product, "lender product");
+  return ensureEntityHasId(product, "lender product", productId);
 };
 
 export const createLenderProduct = async (payload: LenderProductPayload) => {
   const product = await apiClient.post<LenderProduct>(`/lender-products`, payload);
-  return assertEntityHasId(product, "lender product");
+  return ensureEntityHasId(product, "lender product");
 };
 
 export const updateLenderProduct = async (productId: string, payload: Partial<LenderProductPayload>) => {
   const product = await apiClient.put<LenderProduct>(`/lender-products/${productId}`, payload);
-  return assertEntityHasId(product, "lender product");
+  return ensureEntityHasId(product, "lender product", productId);
 };
 
 export const fetchLenderMatches = (applicationId: string, options?: RequestOptions) =>
@@ -325,7 +321,7 @@ export const createLenderProductRequirement = async (
     `/lender-products/${productId}/requirements`,
     payload
   );
-  return normalizeRequirement(assertEntityHasId(requirement, "requirement"));
+  return normalizeRequirement(ensureEntityHasId(requirement, "requirement"));
 };
 
 export const updateLenderProductRequirement = async (
@@ -337,7 +333,7 @@ export const updateLenderProductRequirement = async (
     `/lender-products/${productId}/requirements/${requirementId}`,
     payload
   );
-  return normalizeRequirement(assertEntityHasId(requirement, "requirement"));
+  return normalizeRequirement(ensureEntityHasId(requirement, "requirement", requirementId));
 };
 
 export const deleteLenderProductRequirement = (productId: string, requirementId: string) =>

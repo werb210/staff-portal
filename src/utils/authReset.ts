@@ -27,7 +27,7 @@ export const resetAuthState = async () => {
   clearPortalDraft();
   resetRedirectTracking();
 
-  useApiStatusStore.setState({ status: "starting" }, true);
+  useApiStatusStore.setState({ status: "starting" });
   useApplicationDrawerStore.setState(
     { isOpen: false, selectedApplicationId: null, selectedTab: "overview" },
     true
