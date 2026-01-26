@@ -11,10 +11,11 @@ type OtpInputProps = {
 const OtpInput = ({ value, length = 6, disabled = false, onChange, onComplete }: OtpInputProps) => {
   const inputsRef = useRef<Array<HTMLInputElement | null>>([]);
 
-  const digits = useMemo(() => {
-    const normalized = value.replace(/\D/g, "").slice(0, length);
-    return Array.from({ length }, (_, index) => normalized[index] ?? "");
-  }, [length, value]);
+  const normalizedValue = useMemo(() => value.replace(/\D/g, "").slice(0, length), [length, value]);
+  const digits = useMemo(
+    () => Array.from({ length }, (_, index) => normalizedValue[index] ?? ""),
+    [length, normalizedValue]
+  );
 
   const focusIndex = (index: number) => {
     const input = inputsRef.current[index];
@@ -26,15 +27,16 @@ const OtpInput = ({ value, length = 6, disabled = false, onChange, onComplete }:
 
   useEffect(() => {
     if (disabled) return;
-    focusIndex(0);
-  }, [disabled]);
+    const nextIndex = Math.min(digits.findIndex((digit) => !digit), length - 1);
+    focusIndex(nextIndex === -1 ? length - 1 : nextIndex);
+  }, [digits, disabled, length]);
 
   useEffect(() => {
-    const normalized = value.replace(/\D/g, "").slice(0, length);
-    if (normalized.length === length && onComplete) {
-      onComplete(normalized);
+    if (disabled) return;
+    if (normalizedValue.length === length && onComplete) {
+      onComplete(normalizedValue);
     }
-  }, [length, onComplete, value]);
+  }, [disabled, length, normalizedValue, onComplete]);
 
   const updateValueAt = (index: number, nextDigit: string) => {
     const normalized = value.replace(/\D/g, "").slice(0, length).split("");
@@ -44,6 +46,7 @@ const OtpInput = ({ value, length = 6, disabled = false, onChange, onComplete }:
   };
 
   const handleInputChange = (index: number, nextValue: string) => {
+    if (disabled) return;
     if (!nextValue) {
       updateValueAt(index, "");
       return;
@@ -66,6 +69,7 @@ const OtpInput = ({ value, length = 6, disabled = false, onChange, onComplete }:
   };
 
   const handleKeyDown = (index: number, event: KeyboardEvent<HTMLInputElement>) => {
+    if (disabled) return;
     if (event.key === "Backspace") {
       event.preventDefault();
       const normalized = value.replace(/\D/g, "").split("");
@@ -95,6 +99,7 @@ const OtpInput = ({ value, length = 6, disabled = false, onChange, onComplete }:
   };
 
   const handlePaste = (event: ClipboardEvent<HTMLDivElement>) => {
+    if (disabled) return;
     event.preventDefault();
     const pasted = event.clipboardData.getData("text");
     if (!pasted) return;
