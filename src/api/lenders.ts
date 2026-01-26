@@ -210,7 +210,7 @@ export const createLender = async (payload: LenderPayload) => {
 };
 
 export const updateLender = async (id: string, payload: Partial<LenderPayload>) => {
-  const lender = await apiClient.put<Lender>(`/lenders/${id}`, payload);
+  const lender = await apiClient.patch<Lender>(`/lenders/${id}`, payload);
   return ensureEntityHasId(lender, "lender", id);
 };
 
