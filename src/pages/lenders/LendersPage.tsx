@@ -240,7 +240,7 @@ const LendersContent = () => {
     refetch: refetchProducts
   } = useQuery<LenderProduct[], Error>({
     queryKey: ["lender-products", selectedLenderId ?? "none"],
-    queryFn: () => fetchLenderProducts(selectedLenderId ?? ""),
+    queryFn: ({ signal }) => fetchLenderProducts(selectedLenderId ?? "", { signal }),
     enabled: Boolean(selectedLenderId),
     placeholderData: (previousData) => previousData ?? []
   });
@@ -264,8 +264,9 @@ const LendersContent = () => {
 
   useEffect(() => {
     if (selectedLenderId) return;
-    if (safeLenders.length) {
-      setSelectedLenderId(safeLenders[0].id);
+    const firstLender = safeLenders.find((lender) => Boolean(lender?.id));
+    if (firstLender?.id) {
+      setSelectedLenderId(firstLender.id);
     }
   }, [safeLenders, selectedLenderId]);
 
@@ -508,6 +509,7 @@ const LendersContent = () => {
   };
 
   const openEditLenderModal = (lender: Lender) => {
+    if (!lender?.id) return;
     setEditingLender(lender);
     setIsLenderModalOpen(true);
   };
@@ -522,7 +524,7 @@ const LendersContent = () => {
   };
 
   const openCreateProductModal = () => {
-    if (!selectedLender) return;
+    if (!selectedLender?.id) return;
     setEditingProduct(null);
     setProductFormValues(emptyProductForm(selectedLender.id));
     setProductFormErrors({});
@@ -530,6 +532,7 @@ const LendersContent = () => {
   };
 
   const openEditProductModal = (product: LenderProduct) => {
+    if (!product?.id) return;
     const eligibilityFlags = product.eligibilityFlags ?? {
       minimumRevenue: null,
       timeInBusinessMonths: null,
@@ -617,19 +620,22 @@ const LendersContent = () => {
           )}
           {!isLoading && !error && (
             <Table headers={["Name", "Status", "Country", "Primary contact", "Submission", "Actions"]}>
-              {safeLenders.map((lender) => {
+              {safeLenders.map((lender, index) => {
+                const lenderIdValue = lender.id ?? "";
                 const isActive = lender.active ?? true;
                 const lenderName = lender.name?.trim() || "Unnamed lender";
+                const rowKey = lenderIdValue || `lender-${index}`;
                 return (
                   <tr
-                    key={lender.id}
+                    key={rowKey}
                     className={isActive ? "management-row" : "management-row management-row--disabled"}
                   >
                   <td>
                     <button
                       type="button"
                       className="management-link"
-                      onClick={() => setSelectedLenderId(lender.id)}
+                      onClick={() => lenderIdValue && setSelectedLenderId(lenderIdValue)}
+                      disabled={!lenderIdValue}
                     >
                       {lenderName}
                     </button>
@@ -718,15 +724,17 @@ const LendersContent = () => {
           )}
           {selectedLender && !productsLoading && !productsError && (
             <Table headers={["Name", "Category", "Country", "Currency", "Status", "Amount range"]}>
-              {safeProducts.map((product) => {
+              {safeProducts.map((product, index) => {
+                const productIdValue = product.id ?? "";
                 const productCategory = product.category ?? LENDER_PRODUCT_CATEGORIES[0];
                 const productActive =
                   productCategory === "STARTUP_CAPITAL" ? false : Boolean(product.active);
                 const minAmount = Number.isFinite(product.minAmount) ? product.minAmount : 0;
                 const maxAmount = Number.isFinite(product.maxAmount) ? product.maxAmount : 0;
+                const rowKey = productIdValue || `product-${index}`;
                 return (
                   <tr
-                    key={product.id}
+                    key={rowKey}
                     className={productActive ? "management-row" : "management-row management-row--disabled"}
                   >
                     <td>
@@ -734,6 +742,7 @@ const LendersContent = () => {
                         type="button"
                         className="management-link"
                         onClick={() => openEditProductModal(product)}
+                        disabled={!productIdValue}
                       >
                         {product.productName || "Untitled product"}
                       </button>
@@ -789,6 +798,10 @@ const LendersContent = () => {
               setLenderFormErrors(nextErrors);
               if (Object.keys(nextErrors).length) return;
               if (editingLender) {
+                if (!editingLender.id) {
+                  setLenderFormErrors({ name: "Missing lender id. Please refresh and try again." });
+                  return;
+                }
                 updateLenderMutation.mutate({
                   id: editingLender.id,
                   payload: buildLenderPayload(lenderFormValues)
@@ -996,6 +1009,10 @@ const LendersContent = () => {
             if (Object.keys(errors).length) return;
             const payload = buildProductPayload(productFormValues);
             if (editingProduct) {
+              if (!editingProduct.id) {
+                setProductFormErrors({ productName: "Missing product id. Please refresh and try again." });
+                return;
+              }
               updateProductMutation.mutate({ productId: editingProduct.id, payload });
               return;
             }

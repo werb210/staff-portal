@@ -169,6 +169,8 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
   const previousStatus = useRef<AuthStatus | null>(null);
   const previousRoleRef = useRef<UserRole | null>(null);
   const skipNextHydrationRef = useRef(false);
+  const initAuthRef = useRef<string | null>(null);
+  const refreshInFlightRef = useRef<Promise<boolean> | null>(null);
   const [isHydratingSession, setIsHydratingSession] = useState<boolean>(() => !hasAccessToken);
   const hasHydratedSessionRef = useRef(false);
 
@@ -224,30 +226,41 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
   }, []);
 
   const refreshUser = useCallback(async (): Promise<boolean> => {
-    if (!getAccessToken()) {
-      clearAuthState();
-      return false;
+    if (refreshInFlightRef.current) {
+      return refreshInFlightRef.current;
     }
-    setAuthStatus("loading");
-    setRolesStatus("loading");
-    try {
-      const response = await api.get<AuthenticatedUser>("/auth/me");
-      const data = response.data;
-      setUser(data ?? null);
-      setAuthStatus("authenticated");
-      setRolesStatus("resolved");
-      return true;
-    } catch (fetchError) {
-      const status = getErrorStatus(fetchError);
-      logAuthError("/api/auth/me failed", user, { error: fetchError, status });
-      if (status === 401) {
+    const refreshPromise = (async () => {
+      if (!getAccessToken()) {
         clearAuthState();
-      } else {
-        setAuthStatus("loading");
-        setRolesStatus("loading");
-        setError("Authentication temporarily unavailable.");
+        return false;
       }
-      return false;
+      setAuthStatus("loading");
+      setRolesStatus("loading");
+      try {
+        const response = await api.get<AuthenticatedUser>("/auth/me");
+        const data = response.data;
+        setUser(data ?? null);
+        setAuthStatus("authenticated");
+        setRolesStatus("resolved");
+        return true;
+      } catch (fetchError) {
+        const status = getErrorStatus(fetchError);
+        logAuthError("/api/auth/me failed", user, { error: fetchError, status });
+        if (status === 401) {
+          clearAuthState();
+        } else {
+          setAuthStatus("loading");
+          setRolesStatus("loading");
+          setError("Authentication temporarily unavailable.");
+        }
+        return false;
+      }
+    })();
+    refreshInFlightRef.current = refreshPromise;
+    try {
+      return await refreshPromise;
+    } finally {
+      refreshInFlightRef.current = null;
     }
   }, [clearAuthState, setUser, user]);
 
@@ -276,6 +289,10 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
         skipNextHydrationRef.current = false;
         return;
       }
+      if (initAuthRef.current === accessToken) {
+        return;
+      }
+      initAuthRef.current = accessToken;
       if (!accessToken) {
         if (isHydratingSession) {
           return;
@@ -528,7 +545,7 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
       error,
       authenticated: isAuthenticated,
       isAuthenticated,
-      authReady: authStatus !== "loading" && !isHydratingSession,
+      authReady: authStatus !== "loading" && (!isHydratingSession || !accessToken),
       isHydratingSession,
       pendingPhoneNumber,
       startOtp,

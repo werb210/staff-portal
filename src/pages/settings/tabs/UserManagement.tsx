@@ -32,6 +32,8 @@ const UserManagement = () => {
   const [formError, setFormError] = useState<string | null>(null);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
+  const [isSavingUser, setIsSavingUser] = useState(false);
+  const [pendingUserIds, setPendingUserIds] = useState<Set<string>>(new Set());
 
   const visibleUsers = useMemo(() => users, [users]);
   const safeUsers = Array.isArray(visibleUsers) ? visibleUsers : [];
@@ -66,23 +68,43 @@ const UserManagement = () => {
     return errors;
   };
 
+  const setUserPending = (id: string, pending: boolean) => {
+    setPendingUserIds((prev) => {
+      const next = new Set(prev);
+      if (pending) {
+        next.add(id);
+      } else {
+        next.delete(id);
+      }
+      return next;
+    });
+  };
+
   const onSubmitUser = async (event: React.FormEvent) => {
     event.preventDefault();
     setFormError(null);
     const errors = validateUserForm();
     setFormErrors(errors);
     if (Object.keys(errors).length > 0) return;
+    setIsSavingUser(true);
     try {
       if (editingUser) {
+        if (!editingUser.id) {
+          setFormError("Missing user id. Please refresh and try again.");
+          return;
+        }
         await updateUser(editingUser.id, userForm);
       } else {
         await addUser({ ...userForm });
       }
+      await fetchUsers();
       setUserForm({ firstName: "", lastName: "", email: "", phone: "", role: "Staff" });
       setEditingUser(null);
       setIsModalOpen(false);
     } catch (error) {
       setFormError(getErrorMessage(error, "Unable to save user."));
+    } finally {
+      setIsSavingUser(false);
     }
   };
 
@@ -97,20 +119,36 @@ const UserManagement = () => {
 
   const onUpdateRole = async (id: string, role: AdminUser["role"]) => {
     if (!role) return;
+    if (!id) {
+      setFormError("Missing user id. Please refresh and try again.");
+      return;
+    }
     setFormError(null);
+    setUserPending(id, true);
     try {
       await updateUserRole(id, role);
+      await fetchUsers();
     } catch (error) {
       setFormError(getErrorMessage(error, "Unable to update user role."));
+    } finally {
+      setUserPending(id, false);
     }
   };
 
   const onToggleDisabled = async (id: string, disabled: boolean) => {
+    if (!id) {
+      setFormError("Missing user id. Please refresh and try again.");
+      return;
+    }
     setFormError(null);
+    setUserPending(id, true);
     try {
       await setUserDisabled(id, disabled);
+      await fetchUsers();
     } catch (error) {
       setFormError(getErrorMessage(error, "Unable to update user status."));
+    } finally {
+      setUserPending(id, false);
     }
   };
 
@@ -153,7 +191,9 @@ const UserManagement = () => {
 
       <div className="user-management__table">
         <Table headers={["Name", "Role", "Status", "Actions"]}>
-          {safeUsers.map((user) => {
+          {safeUsers.map((user, index) => {
+            const userId = user.id ?? "";
+            const rowKey = userId || `user-${index}`;
             const safeEmail = user.email ?? "";
             const displayName =
               `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() ||
@@ -161,8 +201,9 @@ const UserManagement = () => {
               (safeEmail ? safeEmail.split("@")[0] : "Unknown user");
             const statusLabel = user.disabled ? "Disabled" : "Active";
             const roleValue = user.role === "Admin" || user.role === "Staff" ? user.role : "Staff";
+            const isPending = userId ? pendingUserIds.has(userId) : false;
             return (
-              <tr key={user.id}>
+              <tr key={rowKey}>
                 <td>
                   <div className="user-table__name">{displayName}</div>
                   <div className="user-table__email">{user.email}</div>
@@ -171,13 +212,13 @@ const UserManagement = () => {
                   <Select
                     label="Role"
                     value={roleValue}
-                    onChange={(e) => onUpdateRole(user.id, e.target.value as AdminUser["role"])}
+                    onChange={(e) => onUpdateRole(userId, e.target.value as AdminUser["role"])}
                     options={[
                       { value: "Admin", label: "Admin" },
                       { value: "Staff", label: "Staff" }
                     ]}
                     hideLabel
-                    disabled={isLoadingUsers}
+                    disabled={isLoadingUsers || isPending || !userId}
                   />
                 </td>
                 <td>
@@ -187,15 +228,16 @@ const UserManagement = () => {
                   <Button
                     type="button"
                     variant="secondary"
-                    onClick={() => onToggleDisabled(user.id, !user.disabled)}
-                    disabled={isLoadingUsers}
-                    title={isLoadingUsers ? "User updates are refreshing." : undefined}
+                    onClick={() => onToggleDisabled(userId, !user.disabled)}
+                    disabled={isLoadingUsers || isPending || !userId}
+                    title={isPending ? "User update in progress." : isLoadingUsers ? "User updates are refreshing." : undefined}
                   >
-                    {user.disabled ? "Enable" : "Disable"}
+                    {isPending ? "Updating..." : user.disabled ? "Enable" : "Disable"}
                   </Button>
                   <Button
                     type="button"
                     variant="ghost"
+                    disabled={!userId}
                     onClick={() => {
                       const fallbackName = splitName(user.name);
                       setEditingUser(user);
@@ -225,16 +267,19 @@ const UserManagement = () => {
       </div>
 
       <div className="user-management__cards">
-        {safeUsers.map((user) => {
-          const safeEmail = user.email ?? "";
-          const displayName =
-            `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() ||
-            user.name ||
-            (safeEmail ? safeEmail.split("@")[0] : "Unknown user");
-          const statusLabel = user.disabled ? "Disabled" : "Active";
-          const roleValue = user.role === "Admin" || user.role === "Staff" ? user.role : "Staff";
-          return (
-            <div key={user.id} className="user-card">
+          {safeUsers.map((user, index) => {
+            const userId = user.id ?? "";
+            const cardKey = userId || `user-${index}`;
+            const safeEmail = user.email ?? "";
+            const displayName =
+              `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() ||
+              user.name ||
+              (safeEmail ? safeEmail.split("@")[0] : "Unknown user");
+            const statusLabel = user.disabled ? "Disabled" : "Active";
+            const roleValue = user.role === "Admin" || user.role === "Staff" ? user.role : "Staff";
+            const isPending = userId ? pendingUserIds.has(userId) : false;
+            return (
+            <div key={cardKey} className="user-card">
               <div className="user-card__header">
                 <div>
                   <div className="user-card__name">{displayName}</div>
@@ -246,26 +291,27 @@ const UserManagement = () => {
                 <Select
                   label="Role"
                   value={roleValue}
-                  onChange={(e) => onUpdateRole(user.id, e.target.value as AdminUser["role"])}
+                  onChange={(e) => onUpdateRole(userId, e.target.value as AdminUser["role"])}
                   options={[
                     { value: "Admin", label: "Admin" },
                     { value: "Staff", label: "Staff" }
                   ]}
-                  disabled={isLoadingUsers}
+                  disabled={isLoadingUsers || isPending || !userId}
                 />
                 <div className="user-card__actions">
                   <Button
                     type="button"
                     variant="secondary"
-                    onClick={() => onToggleDisabled(user.id, !user.disabled)}
-                    disabled={isLoadingUsers}
-                    title={isLoadingUsers ? "User updates are refreshing." : undefined}
+                    onClick={() => onToggleDisabled(userId, !user.disabled)}
+                    disabled={isLoadingUsers || isPending || !userId}
+                    title={isPending ? "User update in progress." : isLoadingUsers ? "User updates are refreshing." : undefined}
                   >
-                    {user.disabled ? "Enable" : "Disable"}
+                    {isPending ? "Updating..." : user.disabled ? "Enable" : "Disable"}
                   </Button>
                   <Button
                     type="button"
                     variant="ghost"
+                    disabled={!userId}
                     onClick={() => {
                       const fallbackName = splitName(user.name);
                       setEditingUser(user);
@@ -313,8 +359,12 @@ const UserManagement = () => {
               ]}
             />
             <div className="settings-actions">
-              <Button type="submit" disabled={isLoadingUsers} title={isLoadingUsers ? "Saving user." : undefined}>
-                {isLoadingUsers ? "Saving..." : editingUser ? "Save changes" : "Add user"}
+              <Button
+                type="submit"
+                disabled={isLoadingUsers || isSavingUser}
+                title={isSavingUser || isLoadingUsers ? "Saving user." : undefined}
+              >
+                {isSavingUser || isLoadingUsers ? "Saving..." : editingUser ? "Save changes" : "Add user"}
               </Button>
               <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}>
                 Cancel
