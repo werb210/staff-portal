@@ -26,6 +26,7 @@ import OfflineBanner from "./components/OfflineBanner";
 import InstallPromptBanner from "./components/InstallPromptBanner";
 import { flushQueuedMutations, registerBackgroundSync } from "./utils/backgroundSyncQueue";
 import { getDisplayMode } from "./utils/pwa";
+import DataReadyGuard from "./guards/DataReadyGuard";
 
 const RouteChangeObserver = () => {
   const location = useLocation();
@@ -49,7 +50,9 @@ const RouteChangeObserver = () => {
 
 const ProtectedApp = () => (
   <PrivateRoute allowedRoles={fullStaffRoles}>
-    <AppLayout />
+    <DataReadyGuard>
+      <AppLayout />
+    </DataReadyGuard>
   </PrivateRoute>
 );
 
@@ -59,8 +62,8 @@ export default function App() {
     () =>
       new QueryClient({
         defaultOptions: {
-          queries: { throwOnError: true },
-          mutations: { throwOnError: true }
+          queries: { throwOnError: false },
+          mutations: { throwOnError: false }
         }
       }),
     []
@@ -208,7 +211,30 @@ export default function App() {
         <BrowserRouter>
           <RouteChangeObserver />
           <Routes>
-            <Route path="/login" element={<LoginPage />} />
+            <Route
+              path="/login"
+              element={
+                <DataReadyGuard>
+                  <LoginPage />
+                </DataReadyGuard>
+              }
+            />
+            <Route
+              path="/auth/callback"
+              element={
+                <DataReadyGuard>
+                  <LoginPage />
+                </DataReadyGuard>
+              }
+            />
+            <Route
+              path="/auth/microsoft/callback"
+              element={
+                <DataReadyGuard>
+                  <LoginPage />
+                </DataReadyGuard>
+              }
+            />
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route element={<ProtectedApp />}>
               <Route path="/dashboard" element={<DashboardPage />} />

@@ -6,9 +6,17 @@ export type Silo = "BF" | "BI" | "SLF";
 const STORAGE_KEY = "staff-portal.silo";
 const DEFAULT_SILO: Silo = "BF";
 
+const canUseLocalStorage = () =>
+  typeof window !== "undefined" && typeof window.localStorage !== "undefined";
+
 const readStoredSilo = (): Silo | null => {
-  const stored = localStorage.getItem(STORAGE_KEY) as Silo | null;
-  return stored ?? null;
+  if (!canUseLocalStorage()) return null;
+  try {
+    const stored = window.localStorage.getItem(STORAGE_KEY) as Silo | null;
+    return stored ?? null;
+  } catch {
+    return null;
+  }
 };
 
 export type SiloContextValue = {
@@ -25,7 +33,12 @@ export const SiloProvider = ({ children }: { children: React.ReactNode }) => {
   const hasStoredSilo = useRef(initialSilo !== null);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, silo);
+    if (!canUseLocalStorage()) return;
+    try {
+      window.localStorage.setItem(STORAGE_KEY, silo);
+    } catch {
+      // ignore storage errors
+    }
   }, [silo]);
 
   useEffect(() => {

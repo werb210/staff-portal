@@ -122,9 +122,11 @@ describe("SettingsPage", () => {
     });
     renderWithAuth("Admin", "/settings/profile");
     await screen.findByRole("heading", { name: /My profile/i });
-    fireEvent.click(screen.getByRole("button", { name: /Refresh profile/i }));
-    fireEvent.change(screen.getByLabelText(/Name/i), { target: { value: "Taylor" } });
-    fireEvent.click(screen.getByRole("button", { name: /Save changes/i }));
+    const refreshButton = screen.getByRole("button", { name: /Refresh profile/i });
+    fireEvent.click(refreshButton);
+    await waitFor(() => expect(refreshButton).toBeEnabled());
+    fireEvent.change(screen.getByLabelText(/First name/i), { target: { value: "Taylor" } });
+    fireEvent.click(screen.getByRole("button", { name: /(Save changes|Saving\.\.\.)/i }));
     await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Profile updated"));
   });
 
@@ -144,7 +146,8 @@ describe("SettingsPage", () => {
     renderWithAuth("Admin", "/settings/users");
     await screen.findByRole("heading", { name: /Admin: User Management/i });
     fireEvent.click(screen.getByRole("button", { name: /Add user/i }));
-    fireEvent.change(screen.getByLabelText(/Name/i), { target: { value: "New User" } });
+    fireEvent.change(screen.getByLabelText(/First name/i), { target: { value: "New" } });
+    fireEvent.change(screen.getByLabelText(/Last name/i), { target: { value: "User" } });
     fireEvent.change(screen.getByLabelText(/Email/i), { target: { value: "new@example.com" } });
     const addButtons = screen.getAllByRole("button", { name: /Add user/i });
     fireEvent.click(addButtons[addButtons.length - 1]);
@@ -175,8 +178,18 @@ describe("SettingsPage", () => {
   });
 
   test("logo upload previews correctly", async () => {
-    const createObjectURL = vi.fn(() => "blob:logo-preview");
-    Object.defineProperty(global.URL, "createObjectURL", { value: createObjectURL });
+    const fileReaderSpy = vi.fn();
+    class MockFileReader {
+      result: string | ArrayBuffer | null = null;
+      onload: ((this: FileReader, ev: ProgressEvent<FileReader>) => unknown) | null = null;
+      onerror: ((this: FileReader, ev: ProgressEvent<FileReader>) => unknown) | null = null;
+      readAsDataURL() {
+        this.result = "data:image/png;base64,preview";
+        fileReaderSpy();
+        this.onload?.(new ProgressEvent("load"));
+      }
+    }
+    Object.defineProperty(window, "FileReader", { value: MockFileReader });
 
     renderWithAuth("Admin", "/settings/branding");
     const fileInput = await screen.findByLabelText(/Upload logo/i);
@@ -184,7 +197,8 @@ describe("SettingsPage", () => {
     fireEvent.change(fileInput, { target: { files: [file] } });
 
     const preview = screen.getByAltText(/Company logo preview/i) as HTMLImageElement;
-    expect(preview.src).toContain("blob:logo-preview");
+    expect(fileReaderSpy).toHaveBeenCalled();
+    expect(preview.src).toContain("data:image/png;base64,preview");
   });
 
   test("profile save persists on reload", async () => {
@@ -219,9 +233,12 @@ describe("SettingsPage", () => {
 
     const { unmount } = renderWithAuth("Admin", "/settings/profile");
     await screen.findByRole("heading", { name: /My profile/i });
-    fireEvent.click(screen.getByRole("button", { name: /Refresh profile/i }));
-    fireEvent.change(screen.getByLabelText(/Name/i), { target: { value: "Taylor Updated" } });
-    fireEvent.click(screen.getByRole("button", { name: /Save changes/i }));
+    const refreshButton = screen.getByRole("button", { name: /Refresh profile/i });
+    fireEvent.click(refreshButton);
+    await waitFor(() => expect(refreshButton).toBeEnabled());
+    fireEvent.change(screen.getByLabelText(/First name/i), { target: { value: "Taylor Updated" } });
+    const saveButton = screen.getByRole("button", { name: /(Save changes|Saving\.\.\.)/i });
+    fireEvent.click(saveButton);
 
     await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Profile updated"));
 
@@ -229,7 +246,7 @@ describe("SettingsPage", () => {
     useSettingsStore.getState().reset();
 
     renderWithAuth("Admin", "/settings/profile");
-    fireEvent.click(screen.getByRole("button", { name: /Refresh profile/i }));
-    await waitFor(() => expect(screen.getByLabelText(/Name/i)).toHaveValue("Taylor Updated"));
+    fireEvent.click(screen.getByRole("button", { name: /(Refresh profile|Refreshing\.\.\.)/i }));
+    await waitFor(() => expect(screen.getByLabelText(/First name/i)).toHaveValue("Taylor Updated"));
   });
 });

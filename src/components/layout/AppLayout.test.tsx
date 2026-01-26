@@ -15,6 +15,12 @@ vi.mock("@/hooks/useSilo", () => ({
   useSilo: () => ({ silo: "Staff" })
 }));
 
+vi.mock("@/state/settings.store", () => ({
+  useSettingsStore: () => ({
+    branding: { logoUrl: "", logoWidth: 220 }
+  })
+}));
+
 describe("AppLayout", () => {
   test("mobile navigation toggles with the hamburger", () => {
     window.innerWidth = 375;

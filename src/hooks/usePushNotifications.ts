@@ -18,20 +18,6 @@ export const usePushNotifications = () => {
   const [permission, setPermission] = useState<PushState>("unsupported");
   const [subscription, setSubscription] = useState<PushSubscription | null>(getPushSubscription());
 
-  useEffect(() => {
-    if (!("Notification" in window)) {
-      setPermission("unsupported");
-      return;
-    }
-    setPermission(Notification.permission);
-  }, []);
-
-  useEffect(() => {
-    if (permission === "granted" && !subscription) {
-      void subscribe();
-    }
-  }, [permission, subscribe, subscription]);
-
   const subscribe = useCallback(async () => {
     if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
       return null;
@@ -58,6 +44,20 @@ export const usePushNotifications = () => {
     setSubscription(newSubscription);
     return newSubscription;
   }, []);
+
+  useEffect(() => {
+    if (!("Notification" in window)) {
+      setPermission("unsupported");
+      return;
+    }
+    setPermission(Notification.permission);
+  }, []);
+
+  useEffect(() => {
+    if (permission === "granted" && !subscription) {
+      void subscribe();
+    }
+  }, [permission, subscribe, subscription]);
 
   const requestPermission = useCallback(async () => {
     if (!("Notification" in window)) {
