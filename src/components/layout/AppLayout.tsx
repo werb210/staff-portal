@@ -4,11 +4,14 @@ import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
 import ApiStatusBanner from "./ApiStatusBanner";
 import ApiErrorToast from "./ApiErrorToast";
+import NotificationToast from "@/components/notifications/NotificationToast";
+import { useNotificationPermissionPrompt } from "@/hooks/useNotificationPermissionPrompt";
 import "@/styles/globals.css";
 
 const AppLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
+  useNotificationPermissionPrompt();
 
   useEffect(() => {
     setSidebarOpen(false);
@@ -20,6 +23,7 @@ const AppLayout = () => {
       <div className="app-shell__content">
         <ApiStatusBanner />
         <ApiErrorToast />
+        <NotificationToast />
         <Topbar onToggleSidebar={() => setSidebarOpen((prev) => !prev)} />
         <main className="app-shell__main">
           <Outlet />
