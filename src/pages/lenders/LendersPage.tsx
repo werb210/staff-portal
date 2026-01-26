@@ -219,7 +219,6 @@ const LendersContent = () => {
   const [editingLender, setEditingLender] = useState<Lender | null>(null);
   const [lenderFormValues, setLenderFormValues] = useState<LenderFormValues>(emptyLenderForm);
   const [lenderFormErrors, setLenderFormErrors] = useState<Record<string, string>>({});
-  const [statusFilter, setStatusFilter] = useState<"active" | "inactive" | "all">("active");
   const [togglingLenderId, setTogglingLenderId] = useState<string | null>(null);
 
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
@@ -227,12 +226,6 @@ const LendersContent = () => {
   const [productFormValues, setProductFormValues] = useState<ProductFormValues>(emptyProductForm(""));
   const [productFormErrors, setProductFormErrors] = useState<Record<string, string>>({});
   const canManageLenders = useAuthorization({ roles: ["Admin", "Staff"] });
-
-  const filteredLenders = useMemo(() => {
-    if (statusFilter === "all") return safeLenders;
-    const shouldBeActive = statusFilter === "active";
-    return safeLenders.filter((lender) => Boolean(lender.active ?? true) === shouldBeActive);
-  }, [safeLenders, statusFilter]);
 
   const selectedLender = useMemo(
     () => safeLenders.find((lender) => lender.id === selectedLenderId) ?? null,
@@ -253,6 +246,8 @@ const LendersContent = () => {
     placeholderData: (previousData) => previousData ?? []
   });
   const safeProducts = Array.isArray(products) ? products : [];
+  const hasSelectedLender = Boolean(selectedLender);
+  const productsToRender = hasSelectedLender ? safeProducts : [];
 
   useEffect(() => {
     if (isNewRoute) {
@@ -271,11 +266,11 @@ const LendersContent = () => {
   }, [isNewRoute, lenderId, safeLenders]);
 
   useEffect(() => {
-    if (!filteredLenders.length) return;
-    if (!selectedLenderId || !filteredLenders.some((lender) => lender.id === selectedLenderId)) {
-      setSelectedLenderId(filteredLenders[0].id ?? null);
+    if (!safeLenders.length) return;
+    if (!selectedLenderId || !safeLenders.some((lender) => lender.id === selectedLenderId)) {
+      setSelectedLenderId(safeLenders[0].id ?? null);
     }
-  }, [filteredLenders, selectedLenderId]);
+  }, [safeLenders, selectedLenderId]);
 
   useEffect(() => {
     if (editingLender) {
@@ -325,6 +320,7 @@ const LendersContent = () => {
     mutationFn: (payload: LenderPayload) => createLender(payload),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["lenders"] });
+      await refetchLenders();
       setIsLenderModalOpen(false);
       setEditingLender(null);
       navigate("/lenders");
@@ -651,22 +647,9 @@ const LendersContent = () => {
           {statusToggleError && !error && (
             <ErrorBanner message={getErrorMessage(statusToggleError, "Unable to update lender status.")} />
           )}
-          {!isLoading && !error && safeLenders.length > 0 && (
-            <div className="management-grid__row" style={{ marginBottom: 12 }}>
-              <Select
-                label="Status"
-                value={statusFilter}
-                onChange={(event) => setStatusFilter(event.target.value as "active" | "inactive" | "all")}
-              >
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-                <option value="all">All</option>
-              </Select>
-            </div>
-          )}
           {!isLoading && !error && (
             <Table headers={["Name", "Status", "Country", "Primary contact", "Submission", "Actions"]}>
-              {filteredLenders.map((lender, index) => {
+              {safeLenders.map((lender, index) => {
                 const lenderIdValue = lender.id ?? "";
                 const isActive = lender.active ?? true;
                 const lenderName = lender.name?.trim() || "Unnamed lender";
@@ -734,14 +717,10 @@ const LendersContent = () => {
                 </tr>
                 );
               })}
-              {!filteredLenders.length && (
+              {!safeLenders.length && (
                 <tr>
                   <td colSpan={6}>
-                    {statusFilter === "active"
-                      ? "No active lenders."
-                      : statusFilter === "inactive"
-                        ? "No inactive lenders."
-                        : "No lenders"}
+                    No lenders.
                   </td>
                 </tr>
               )}
@@ -794,9 +773,9 @@ const LendersContent = () => {
               </Button>
             </div>
           )}
-          {selectedLender && !productsLoading && !productsError && (
+          {!productsLoading && !productsError && (
             <Table headers={["Name", "Category", "Country", "Currency", "Status", "Amount range"]}>
-              {safeProducts.map((product, index) => {
+              {productsToRender.map((product, index) => {
                 const productIdValue = product.id ?? "";
                 const productCategory = product.category ?? LENDER_PRODUCT_CATEGORIES[0];
                 const productActive =
@@ -843,9 +822,11 @@ const LendersContent = () => {
                   </tr>
                 );
               })}
-              {!safeProducts.length && (
+              {!productsToRender.length && (
                 <tr>
-                  <td colSpan={6}>No products for this lender.</td>
+                  <td colSpan={6}>
+                    {hasSelectedLender ? "No products for this lender." : "Select a lender to view products."}
+                  </td>
                 </tr>
               )}
             </Table>

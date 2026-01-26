@@ -312,6 +312,12 @@ export default function LoginPage() {
                   setErrorDetails(null);
                   setMicrosoftError(null);
                 }}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    void handleSendCode();
+                  }
+                }}
                 placeholder="+15555550100"
                 disabled={inputsDisabled}
               />
