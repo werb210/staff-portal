@@ -10,6 +10,7 @@ import Select from "@/components/ui/Select";
 import Table from "@/components/ui/Table";
 import AppLoading from "@/components/layout/AppLoading";
 import RequireRole from "@/components/auth/RequireRole";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import LenderProductModal, { type ProductFormValues } from "@/components/LenderProductModal";
 import {
   createLender,
@@ -221,7 +222,7 @@ const LendersContent = () => {
     [lenders, selectedLenderId]
   );
 
-  const isSelectedLenderInactive = Boolean(selectedLender && !selectedLender.active);
+  const isSelectedLenderInactive = Boolean(selectedLender && selectedLender.active === false);
 
   const {
     data: products = [],
@@ -583,11 +584,13 @@ const LendersContent = () => {
           {error && <ErrorBanner message={getErrorMessage(error, "Unable to load lenders.")} />}
           {!isLoading && !error && (
             <Table headers={["Name", "Status", "Country", "Primary contact", "Submission", "Actions"]}>
-              {lenders.map((lender) => (
-                <tr
-                  key={lender.id}
-                  className={lender.active ? "management-row" : "management-row management-row--disabled"}
-                >
+              {lenders.map((lender) => {
+                const isActive = lender.active ?? true;
+                return (
+                  <tr
+                    key={lender.id}
+                    className={isActive ? "management-row" : "management-row management-row--disabled"}
+                  >
                   <td>
                     <button
                       type="button"
@@ -598,8 +601,8 @@ const LendersContent = () => {
                     </button>
                   </td>
                   <td>
-                    <span className={`status-pill status-pill--${lender.active ? "active" : "paused"}`}>
-                      {lender.active ? "Active" : "Inactive"}
+                    <span className={`status-pill status-pill--${isActive ? "active" : "paused"}`}>
+                      {isActive ? "Active" : "Inactive"}
                     </span>
                   </td>
                   <td>{lender.address?.country || "—"}</td>
@@ -614,7 +617,8 @@ const LendersContent = () => {
                     </Button>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
               {!lenders.length && (
                 <tr>
                   <td colSpan={6}>No lenders</td>
@@ -950,7 +954,9 @@ const LendersContent = () => {
 
 const LendersPage = () => (
   <RequireRole roles={["Admin", "Staff"]}>
-    <LendersContent />
+    <ErrorBoundary>
+      <LendersContent />
+    </ErrorBoundary>
   </RequireRole>
 );
 

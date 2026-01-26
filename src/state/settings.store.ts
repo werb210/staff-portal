@@ -3,10 +3,14 @@ import apiClient from "@/api/httpClient";
 import type { UserRole } from "@/utils/roles";
 
 export type ProfileSettings = {
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   phone: string;
   profileImage?: string;
+  lastLogin?: string;
+  microsoftConnected?: boolean;
+  microsoftAccountEmail?: string;
 };
 
 export type BrandingSettingsState = {
@@ -17,7 +21,10 @@ export type BrandingSettingsState = {
 export type AdminUser = {
   id: string;
   name?: string;
+  firstName?: string;
+  lastName?: string;
   email: string;
+  phone?: string;
   role: UserRole;
   disabled?: boolean;
 };
@@ -35,9 +42,11 @@ export type SettingsState = {
   fetchBranding: () => Promise<void>;
   saveBranding: (branding: BrandingSettingsState) => Promise<void>;
   fetchUsers: () => Promise<void>;
-  addUser: (user: Pick<AdminUser, "email" | "role" | "name"> & { phone?: string }) => Promise<void>;
+  addUser: (user: Pick<AdminUser, "email" | "role" | "firstName" | "lastName" | "phone">) => Promise<void>;
+  updateUser: (id: string, updates: Partial<AdminUser>) => Promise<void>;
   updateUserRole: (id: string, role: UserRole) => Promise<void>;
   setUserDisabled: (id: string, disabled: boolean) => Promise<void>;
+  setMicrosoftConnection: (payload: { email?: string; connected: boolean }) => void;
   setStatusMessage: (message?: string) => void;
   reset: () => void;
 };
@@ -50,27 +59,30 @@ type SettingsSnapshot = Omit<
   | "saveBranding"
   | "fetchUsers"
   | "addUser"
+  | "updateUser"
   | "updateUserRole"
   | "setUserDisabled"
+  | "setMicrosoftConnection"
   | "setStatusMessage"
   | "reset"
 >;
 
 const createInitialState = (): SettingsSnapshot => ({
   profile: {
-    name: "Alex Smith",
-    email: "alex@example.com",
-    phone: "+1 (555) 123-4567",
-    profileImage: "https://placehold.co/80x80?text=AS"
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    profileImage: undefined,
+    lastLogin: undefined,
+    microsoftConnected: false,
+    microsoftAccountEmail: undefined
   },
   branding: {
-    logoUrl: "https://placehold.co/200x60?text=BF+Logo",
+    logoUrl: "",
     logoWidth: 220
   },
-  users: [
-    { id: "u-1", name: "Alex Smith", email: "alex@example.com", role: "Admin" },
-    { id: "u-2", name: "Jamie Rivera", email: "jamie@example.com", role: "Staff" }
-  ],
+  users: [],
   isLoadingProfile: false,
   isLoadingBranding: false,
   isLoadingUsers: false,
@@ -89,7 +101,16 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       const data = await apiClient.get<ProfileResponse>("/users/me");
       if (data) {
         set((state) => ({
-          profile: { ...state.profile, ...data },
+          profile: (() => {
+            const nameValue = (data as { name?: string }).name?.trim() ?? "";
+            const nextProfile = { ...state.profile, ...data };
+            if (nameValue && (!nextProfile.firstName || !nextProfile.lastName)) {
+              const [firstName, ...rest] = nameValue.split(" ");
+              nextProfile.firstName = nextProfile.firstName || firstName;
+              nextProfile.lastName = nextProfile.lastName || rest.join(" ");
+            }
+            return nextProfile;
+          })(),
           statusMessage: undefined
         }));
       }
@@ -157,13 +178,26 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       const data = await apiClient.post<AdminUser>("/users", user);
       const created = data ?? {
         id: `u-${Date.now()}`,
-        name: user.name,
+        firstName: user.firstName,
+        lastName: user.lastName,
         email: user.email,
         role: user.role
       };
       set((state) => ({
         users: [...state.users, created],
         statusMessage: "User added"
+      }));
+    } finally {
+      set({ isLoadingUsers: false });
+    }
+  },
+  updateUser: async (id, updates) => {
+    set({ isLoadingUsers: true });
+    try {
+      const data = await apiClient.patch<AdminUser>(`/users/${id}`, updates);
+      set((state) => ({
+        users: state.users.map((user) => (user.id === id ? { ...user, ...updates, ...data } : user)),
+        statusMessage: "User updated"
       }));
     } finally {
       set({ isLoadingUsers: false });
@@ -194,6 +228,14 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       set({ isLoadingUsers: false });
     }
   },
+  setMicrosoftConnection: (payload) =>
+    set((state) => ({
+      profile: {
+        ...state.profile,
+        microsoftConnected: payload.connected,
+        microsoftAccountEmail: payload.email ?? state.profile.microsoftAccountEmail
+      }
+    })),
   setStatusMessage: (message) => set({ statusMessage: message }),
   reset: () => set({ ...createInitialState() })
 }));

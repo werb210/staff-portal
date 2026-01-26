@@ -10,7 +10,7 @@ export const saveBranding = (payload: BrandingSettingsState) =>
   apiClient.post<BrandingSettingsState>("/settings/branding", payload);
 
 export const fetchUsers = () => apiClient.get<AdminUser[]>("/users");
-export const createUser = (payload: Pick<AdminUser, "email" | "role" | "name"> & { phone?: string }) =>
+export const createUser = (payload: Pick<AdminUser, "email" | "role" | "firstName" | "lastName" | "phone">) =>
   apiClient.post<AdminUser>("/users", payload);
 export const updateUserRole = (id: string, role: AdminUser["role"]) =>
   apiClient.post<AdminUser>(`/users/${id}/role`, { role });

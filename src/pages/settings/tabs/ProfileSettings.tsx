@@ -1,7 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { BrowserAuthError, PublicClientApplication } from "@azure/msal-browser";
+import apiClient from "@/api/httpClient";
 import Button from "@/components/ui/Button";
 import ErrorBanner from "@/components/ui/ErrorBanner";
 import { useAuth } from "@/hooks/useAuth";
+import { microsoftAuthConfig } from "@/config/microsoftAuth";
 import { useSettingsStore } from "@/state/settings.store";
 import { getErrorMessage } from "@/utils/errors";
 import UserDetailsFields from "../components/UserDetailsFields";
@@ -11,21 +14,74 @@ const MAX_AVATAR_DIMENSION = 256;
 
 const ProfileSettings = () => {
   const { user } = useAuth();
-  const { profile, fetchProfile, saveProfile, statusMessage, isLoadingProfile } = useSettingsStore();
+  const {
+    profile,
+    fetchProfile,
+    saveProfile,
+    statusMessage,
+    isLoadingProfile,
+    setMicrosoftConnection
+  } = useSettingsStore();
   const [localProfile, setLocalProfile] = useState(profile);
   const [avatarError, setAvatarError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [microsoftError, setMicrosoftError] = useState<string | null>(null);
+  const [isLinkingMicrosoft, setIsLinkingMicrosoft] = useState(false);
+  const [hideMicrosoftButton, setHideMicrosoftButton] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     setLocalProfile(profile);
   }, [profile]);
 
+  useEffect(() => {
+    void fetchProfile();
+  }, [fetchProfile]);
+
+  const msalClient = useMemo(() => {
+    if (!microsoftAuthConfig?.clientId) return null;
+    return new PublicClientApplication({
+      auth: {
+        clientId: microsoftAuthConfig.clientId,
+        authority: microsoftAuthConfig.authority,
+        redirectUri: microsoftAuthConfig.redirectUri
+      },
+      cache: {
+        cacheLocation: "localStorage",
+        storeAuthStateInCookie: false
+      }
+    });
+  }, []);
+
+  const isMicrosoftConfigured = Boolean(microsoftAuthConfig?.clientId);
+
+  const validateProfile = () => {
+    const errors: Record<string, string> = {};
+    if (!localProfile.firstName.trim()) errors.firstName = "First name is required.";
+    if (!localProfile.lastName.trim()) errors.lastName = "Last name is required.";
+    if (!localProfile.email.trim()) {
+      errors.email = "Email is required.";
+    } else if (!localProfile.email.includes("@")) {
+      errors.email = "Enter a valid email.";
+    }
+    return errors;
+  };
+
   const onSave = async (event: React.FormEvent) => {
     event.preventDefault();
     setFormError(null);
+    const errors = validateProfile();
+    setFormErrors(errors);
+    if (Object.keys(errors).length > 0) return;
     try {
-      await saveProfile(localProfile);
+      await saveProfile({
+        firstName: localProfile.firstName,
+        lastName: localProfile.lastName,
+        email: localProfile.email,
+        phone: localProfile.phone,
+        profileImage: localProfile.profileImage
+      });
     } catch (error) {
       setFormError(getErrorMessage(error, "Unable to save profile."));
     }
@@ -84,6 +140,43 @@ const ProfileSettings = () => {
     }
   };
 
+  const handleMicrosoftConnect = async () => {
+    if (!msalClient || isLinkingMicrosoft) return;
+    setMicrosoftError(null);
+    setIsLinkingMicrosoft(true);
+    try {
+      const response = await msalClient.loginPopup({
+        scopes: microsoftAuthConfig.scopes
+      });
+      const tokenResponse = response.accessToken
+        ? response
+        : await msalClient.acquireTokenSilent({
+            scopes: microsoftAuthConfig.scopes,
+            account: response.account ?? undefined
+          });
+      const payload = {
+        accessToken: tokenResponse.accessToken,
+        accountEmail: response.account?.username
+      };
+      const exchange = await apiClient.post<{ email?: string; connected?: boolean }>("/auth/microsoft", payload);
+      const connectedEmail = exchange?.email ?? response.account?.username ?? "";
+      setMicrosoftConnection({ connected: true, email: connectedEmail });
+    } catch (error) {
+      const authError = error as Error;
+      const isSilentFailure =
+        error instanceof BrowserAuthError &&
+        ["popup_window_error", "empty_window_error", "monitor_window_timeout"].includes(error.errorCode);
+      if (isSilentFailure) {
+        setHideMicrosoftButton(true);
+      }
+      setMicrosoftError(getErrorMessage(authError, "Microsoft sign-in failed."));
+    } finally {
+      setIsLinkingMicrosoft(false);
+    }
+  };
+
+  const displayName = [localProfile.firstName, localProfile.lastName].filter(Boolean).join(" ").trim();
+
   return (
     <form className="settings-panel" onSubmit={onSave} aria-label="Profile settings">
       <header>
@@ -91,22 +184,27 @@ const ProfileSettings = () => {
         <p>Update your name, phone, and avatar. OAuth connections open in a new window.</p>
       </header>
       {formError && <ErrorBanner message={formError} />}
+      {microsoftError && <ErrorBanner message={microsoftError} />}
 
       <div className="profile-summary">
         <div>
           <p className="ui-field__label">Signed in as</p>
-          <div className="profile-summary__name">{user?.name ?? localProfile.name}</div>
+          <div className="profile-summary__name">{displayName || user?.name || "—"}</div>
           <div className="profile-summary__email">{localProfile.email}</div>
+          <div className="profile-summary__email">
+            Last login: {localProfile.lastLogin ? new Date(localProfile.lastLogin).toLocaleString() : "Unavailable"}
+          </div>
         </div>
       </div>
 
       <div className="settings-grid">
         <UserDetailsFields
-          name={localProfile.name}
+          firstName={localProfile.firstName}
+          lastName={localProfile.lastName}
           email={localProfile.email}
           phone={localProfile.phone}
+          errors={formErrors}
           onChange={(updates) => setLocalProfile((prev) => ({ ...prev, ...updates }))}
-          emailDisabled
         />
       </div>
 
@@ -134,12 +232,25 @@ const ProfileSettings = () => {
         <h3>Connected accounts</h3>
         <p>Connect optional services. OAuth prompts open in a new window.</p>
         <div className="connected-accounts__actions">
-          <Button type="button" variant="secondary">
-            Microsoft 365
-          </Button>
-          <Button type="button" variant="secondary">
-            LinkedIn
-          </Button>
+          {!hideMicrosoftButton && (
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={handleMicrosoftConnect}
+              disabled={!isMicrosoftConfigured || isLinkingMicrosoft}
+            >
+              {profile.microsoftConnected ? "Microsoft 365 connected" : "Connect Microsoft 365"}
+            </Button>
+          )}
+          {!isMicrosoftConfigured && (
+            <span className="text-xs text-slate-500">Microsoft OAuth is not configured.</span>
+          )}
+          {profile.microsoftConnected && profile.microsoftAccountEmail && (
+            <span className="text-xs text-emerald-600">Linked: {profile.microsoftAccountEmail}</span>
+          )}
+          {!hideMicrosoftButton && isLinkingMicrosoft && (
+            <span className="text-xs text-slate-500">Connecting…</span>
+          )}
         </div>
       </div>
 
