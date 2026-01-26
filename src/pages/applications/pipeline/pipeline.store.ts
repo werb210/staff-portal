@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import type { QueryClient } from "@tanstack/react-query";
-import type { PipelineFilters, PipelineStageId, PipelineApplication, PipelineDragEndEvent } from "./pipeline.types";
-import { PIPELINE_STAGES, canMoveCardToStage } from "./pipeline.types";
+import type { PipelineFilters, PipelineStageId, PipelineApplication, PipelineDragEndEvent, PipelineStage } from "./pipeline.types";
+import { PIPELINE_STAGE_ORDER, evaluateStageTransition, getStageById } from "./pipeline.types";
 import { pipelineApi } from "./pipeline.api";
 const STORAGE_KEY = "portal.application.pipeline";
 
@@ -63,7 +63,7 @@ const getInitialFilters = (): PipelineFilters => {
   return { ...defaultFilters, ...stored };
 };
 
-const defaultStageId: PipelineStageId = "received";
+const defaultStageId: PipelineStageId = PIPELINE_STAGE_ORDER[0];
 
 const getInitialStageId = (): PipelineStageId => readPipelineState().selectedStageId ?? defaultStageId;
 
@@ -181,23 +181,36 @@ export const pipelineQueryKeys = {
   column: (stage: PipelineStageId, filters: PipelineFilters) => ["pipeline", stage, ...filterKeyParts(filters)]
 };
 
-const getStageFromId = (stageId: PipelineStageId) => PIPELINE_STAGES.find((stage) => stage.id === stageId);
-
 export const createPipelineDragEndHandler = (options: {
   queryClient: QueryClient;
   filters: PipelineFilters;
+  stages: PipelineStage[];
+  onInvalidMove?: (message: string | null) => void;
 }) => {
-  const { queryClient, filters } = options;
+  const { queryClient, filters, stages, onInvalidMove } = options;
   return async (event: PipelineDragEndEvent) => {
     const destinationStageId = event.over?.id as PipelineStageId | undefined;
     const sourceStageId = event.active.data.current?.stageId ?? null;
     const card = event.active.data.current?.card ?? null;
     if (!destinationStageId || !card || !sourceStageId) return;
 
-    const destinationStage = getStageFromId(destinationStageId);
+    const destinationStage = getStageById(stages, destinationStageId);
     if (!destinationStage) return;
 
-    if (!canMoveCardToStage(card, sourceStageId, destinationStageId)) return;
+    const transition = evaluateStageTransition({
+      card,
+      fromStage: sourceStageId,
+      toStage: destinationStageId,
+      stages
+    });
+    if (!transition.allowed) {
+      if (transition.reason) {
+        onInvalidMove?.(transition.reason);
+      }
+      return;
+    }
+
+    onInvalidMove?.(null);
 
     await pipelineApi.moveCard(card.id, destinationStageId);
 

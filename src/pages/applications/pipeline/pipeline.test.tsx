@@ -6,15 +6,26 @@ import PipelinePage from "./PipelinePage";
 import { renderWithProviders } from "@/test/testUtils";
 import { pipelineApi } from "./pipeline.api";
 import { createPipelineDragEndHandler, usePipelineStore } from "./pipeline.store";
-import { PIPELINE_STAGE_LABELS, type PipelineApplication, type PipelineDragEndEvent } from "./pipeline.types";
+import { PIPELINE_STAGE_ORDER, type PipelineApplication, type PipelineDragEndEvent, type PipelineStage } from "./pipeline.types";
 import { useApplicationDrawerStore } from "@/state/applicationDrawer.store";
 
 vi.mock("./pipeline.api", () => {
   const fetchColumn = vi.fn().mockResolvedValue([]);
+  const fetchStages = vi.fn().mockResolvedValue([]);
   const moveCard = vi.fn().mockResolvedValue({});
   const fetchSummary = vi.fn();
-  return { pipelineApi: { fetchColumn, moveCard, fetchSummary } };
+  return { pipelineApi: { fetchColumn, fetchStages, moveCard, fetchSummary } };
 });
+
+const pipelineStages: PipelineStage[] = PIPELINE_STAGE_ORDER.map((stageId) => ({
+  id: stageId,
+  label: stageId
+    .toLowerCase()
+    .split("_")
+    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+    .join(" "),
+  terminal: stageId === "ACCEPTED" || stageId === "DECLINED"
+}));
 
 const sampleCard: PipelineApplication = {
   id: "app-1",
@@ -22,7 +33,7 @@ const sampleCard: PipelineApplication = {
   contactName: "John Doe",
   requestedAmount: 50000,
   productCategory: "startup",
-  stage: "received",
+  stage: "RECEIVED",
   status: "New",
   documents: { submitted: 1, required: 3 },
   bankingComplete: false,
@@ -43,6 +54,7 @@ describe("Pipeline foundation", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     (pipelineApi.fetchColumn as MockedFunction<typeof pipelineApi.fetchColumn>).mockResolvedValue([]);
+    (pipelineApi.fetchStages as MockedFunction<typeof pipelineApi.fetchStages>).mockResolvedValue(pipelineStages);
     usePipelineStore.getState().resetPipeline();
     useApplicationDrawerStore.setState({ selectedTab: "overview" });
     window.localStorage.clear();
@@ -51,8 +63,8 @@ describe("Pipeline foundation", () => {
   it("renders all BF pipeline columns", async () => {
     renderWithProviders(<PipelinePage />);
 
-    Object.values(PIPELINE_STAGE_LABELS).forEach((label) => {
-      const headers = screen.getAllByText(label, { selector: ".pipeline-column__title" });
+    pipelineStages.forEach((stage) => {
+      const headers = screen.getAllByText(stage.label, { selector: ".pipeline-column__title" });
       expect(headers.length).toBeGreaterThan(0);
     });
 
@@ -80,10 +92,10 @@ describe("Pipeline foundation", () => {
 
   it("prevents movement from terminal stages", async () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    const handler = createPipelineDragEndHandler({ queryClient, filters: {} });
+    const handler = createPipelineDragEndHandler({ queryClient, filters: {}, stages: pipelineStages });
     const terminalEvent = {
-      active: { id: sampleCard.id, data: { current: { card: { ...sampleCard, stage: "offer" }, stageId: "offer" } } },
-      over: { id: "received" }
+      active: { id: sampleCard.id, data: { current: { card: { ...sampleCard, stage: "ACCEPTED" }, stageId: "ACCEPTED" } } },
+      over: { id: "RECEIVED" }
     } as PipelineDragEndEvent;
 
     await handler(terminalEvent);
@@ -92,37 +104,37 @@ describe("Pipeline foundation", () => {
 
   it("invokes API when dragging to new stage", async () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    const handler = createPipelineDragEndHandler({ queryClient, filters: {} });
+    const handler = createPipelineDragEndHandler({ queryClient, filters: {}, stages: pipelineStages });
     const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
 
-    await handler(buildDragEvent("off_to_lender"));
+    await handler(buildDragEvent("DOCUMENTS_REQUIRED"));
 
-    expect(pipelineApi.moveCard).toHaveBeenCalledWith(sampleCard.id, "off_to_lender");
+    expect(pipelineApi.moveCard).toHaveBeenCalledWith(sampleCard.id, "DOCUMENTS_REQUIRED");
     expect(invalidateSpy).toHaveBeenCalled();
   });
 
   it("avoids refetch storms when dragging applications", async () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    const handler = createPipelineDragEndHandler({ queryClient, filters: {} });
+    const handler = createPipelineDragEndHandler({ queryClient, filters: {}, stages: pipelineStages });
     const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
 
-    await handler(buildDragEvent("in_review"));
+    await handler(buildDragEvent("DOCUMENTS_REQUIRED"));
 
     expect(invalidateSpy).toHaveBeenCalledTimes(4);
   });
 
   it("keeps queries in sync after drag", async () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    const handler = createPipelineDragEndHandler({ queryClient, filters: { searchTerm: "" } });
+    const handler = createPipelineDragEndHandler({ queryClient, filters: { searchTerm: "" }, stages: pipelineStages });
     const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
 
-    await handler(buildDragEvent("in_review"));
+    await handler(buildDragEvent("DOCUMENTS_REQUIRED"));
 
     expect(invalidateSpy).toHaveBeenCalledWith({
-      queryKey: ["pipeline", "received", "", "", "", "", "", "all", "any", "any", "newest"]
+      queryKey: ["pipeline", "RECEIVED", "", "", "", "", "", "all", "any", "any", "newest"]
     });
     expect(invalidateSpy).toHaveBeenCalledWith({
-      queryKey: ["pipeline", "in_review", "", "", "", "", "", "all", "any", "any", "newest"]
+      queryKey: ["pipeline", "DOCUMENTS_REQUIRED", "", "", "", "", "", "all", "any", "any", "newest"]
     });
   });
 });
@@ -131,6 +143,7 @@ describe("Pipeline determinism", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     (pipelineApi.fetchColumn as MockedFunction<typeof pipelineApi.fetchColumn>).mockResolvedValue([]);
+    (pipelineApi.fetchStages as MockedFunction<typeof pipelineApi.fetchStages>).mockResolvedValue(pipelineStages);
     usePipelineStore.getState().resetPipeline();
     useApplicationDrawerStore.setState({ selectedTab: "overview" });
     window.localStorage.clear();
@@ -138,14 +151,14 @@ describe("Pipeline determinism", () => {
 
   it("preserves selection across tab changes", () => {
     const { selectApplication } = usePipelineStore.getState();
-    selectApplication("app-1", "received");
+    selectApplication("app-1", "RECEIVED");
     useApplicationDrawerStore.getState().setTab("documents");
     expect(usePipelineStore.getState().selectedApplicationId).toBe("app-1");
   });
 
   it("preserves selection when stage still contains application", async () => {
     (pipelineApi.fetchColumn as MockedFunction<typeof pipelineApi.fetchColumn>).mockImplementation(async (stage) => {
-      if (stage === "received" || stage === "in_review") {
+      if (stage === "RECEIVED" || stage === "DOCUMENTS_REQUIRED") {
         return [{ ...sampleCard }];
       }
       return [];
@@ -154,16 +167,16 @@ describe("Pipeline determinism", () => {
     renderWithProviders(<PipelinePage />);
     await waitFor(() => expect(pipelineApi.fetchColumn).toHaveBeenCalled());
     await screen.findByLabelText(new RegExp(`${sampleCard.businessName} in Received`, "i"));
-    await screen.findByLabelText(new RegExp(`${sampleCard.businessName} in In Review`, "i"));
-    usePipelineStore.getState().selectApplication(sampleCard.id, "received");
-    usePipelineStore.getState().setSelectedStageId("in_review");
+    await screen.findByLabelText(new RegExp(`${sampleCard.businessName} in Documents Required`, "i"));
+    usePipelineStore.getState().selectApplication(sampleCard.id, "RECEIVED");
+    usePipelineStore.getState().setSelectedStageId("DOCUMENTS_REQUIRED");
 
     await waitFor(() => expect(usePipelineStore.getState().selectedApplicationId).toBe(sampleCard.id));
   });
 
   it("clears selection when stage no longer contains application", async () => {
     (pipelineApi.fetchColumn as MockedFunction<typeof pipelineApi.fetchColumn>).mockImplementation(async (stage) => {
-      if (stage === "received") {
+      if (stage === "RECEIVED") {
         return [{ ...sampleCard }];
       }
       return [];
@@ -172,14 +185,14 @@ describe("Pipeline determinism", () => {
     renderWithProviders(<PipelinePage />);
     await waitFor(() => expect(pipelineApi.fetchColumn).toHaveBeenCalled());
     await userEvent.click(await screen.findByText(sampleCard.businessName));
-    await userEvent.click(screen.getAllByRole("button", { name: /In Review/i })[0]);
+    await userEvent.click(screen.getAllByRole("button", { name: /Documents Required/i })[0]);
 
     expect(usePipelineStore.getState().selectedApplicationId).toBeNull();
   });
 
   it("keeps selection when closing drawer", () => {
     const { selectApplication, closeDrawer } = usePipelineStore.getState();
-    selectApplication("app-1", "received");
+    selectApplication("app-1", "RECEIVED");
     closeDrawer();
     expect(usePipelineStore.getState().selectedApplicationId).toBe("app-1");
   });
@@ -188,7 +201,7 @@ describe("Pipeline determinism", () => {
     window.localStorage.setItem(
       "portal.application.pipeline",
       JSON.stringify({
-        selectedStageId: "in_review",
+        selectedStageId: "DOCUMENTS_REQUIRED",
         selectedApplicationId: "app-55",
         filters: { searchTerm: "Atlas" },
         isDrawerOpen: true
@@ -197,7 +210,7 @@ describe("Pipeline determinism", () => {
 
     vi.resetModules();
     const { usePipelineStore: reloadedStore } = await import("./pipeline.store");
-    expect(reloadedStore.getState().selectedStageId).toBe("in_review");
+    expect(reloadedStore.getState().selectedStageId).toBe("DOCUMENTS_REQUIRED");
     expect(reloadedStore.getState().selectedApplicationId).toBe("app-55");
     expect(reloadedStore.getState().currentFilters.searchTerm).toBe("Atlas");
     expect(reloadedStore.getState().isDrawerOpen).toBe(true);

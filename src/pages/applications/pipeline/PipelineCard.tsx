@@ -1,7 +1,6 @@
 import { useDraggable } from "@dnd-kit/core";
 import clsx from "clsx";
 import type { PipelineApplication, PipelineStageId } from "./pipeline.types";
-import { PIPELINE_STAGE_LABELS, isTerminalStage } from "./pipeline.types";
 import { usePipelineStore } from "./pipeline.store";
 import { useAuth } from "@/hooks/useAuth";
 import { canAccessStaffPortal } from "@/utils/roles";
@@ -9,6 +8,8 @@ import { canAccessStaffPortal } from "@/utils/roles";
 type PipelineCardProps = {
   card: PipelineApplication;
   stageId: PipelineStageId;
+  stageLabel: string;
+  isTerminalStage: boolean;
   onClick: (id: string, stageId: PipelineStageId) => void;
 };
 
@@ -22,11 +23,11 @@ const resolveMatchScore = (card: PipelineApplication) => {
   return raw;
 };
 
-const PipelineCard = ({ card, stageId, onClick }: PipelineCardProps) => {
+const PipelineCard = ({ card, stageId, stageLabel, isTerminalStage, onClick }: PipelineCardProps) => {
   const { user } = useAuth();
   const setDragging = usePipelineStore((state) => state.setDragging);
 
-  const canDrag = canAccessStaffPortal(user?.role) && !isTerminalStage(stageId);
+  const canDrag = canAccessStaffPortal(user?.role) && !isTerminalStage;
   const draggable = useDraggable({
     id: card.id,
     disabled: !canDrag,
@@ -60,7 +61,7 @@ const PipelineCard = ({ card, stageId, onClick }: PipelineCardProps) => {
         "pipeline-card--dragging": isDragging,
         "pipeline-card--disabled": !canDrag
       })}
-      aria-label={`${card.businessName} in ${PIPELINE_STAGE_LABELS[stageId]}`}
+      aria-label={`${card.businessName} in ${stageLabel}`}
     >
       <div className="pipeline-card__header">
         <div>

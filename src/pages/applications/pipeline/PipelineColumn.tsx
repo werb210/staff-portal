@@ -6,7 +6,7 @@ import PipelineCard from "./PipelineCard";
 import { pipelineApi } from "./pipeline.api";
 import { pipelineQueryKeys } from "./pipeline.store";
 import type { PipelineApplication, PipelineFilters, PipelineStage, PipelineStageId } from "./pipeline.types";
-import { canMoveCardToStage } from "./pipeline.types";
+import { evaluateStageTransition } from "./pipeline.types";
 import { retryUnlessClientError } from "@/api/retryPolicy";
 import { getErrorMessage } from "@/utils/errors";
 import { emitUiTelemetry } from "@/utils/uiTelemetry";
@@ -29,6 +29,7 @@ const EmptyState = ({ label }: { label: string }) => (
 
 type PipelineColumnProps = {
   stage: PipelineStage;
+  stages: PipelineStage[];
   filters: PipelineFilters;
   onCardClick: (id: string, stageId: PipelineStageId) => void;
   onStageSelect: (stageId: PipelineStageId) => void;
@@ -48,7 +49,8 @@ const PipelineColumn = ({
   selectedApplicationId,
   selectedStageId,
   activeCard,
-  draggingFromStage
+  draggingFromStage,
+  stages
 }: PipelineColumnProps) => {
   const { setNodeRef, isOver } = useDroppable({ id: stage.id });
   const { data = [], isLoading, isFetching, error } = useQuery<PipelineApplication[]>({
@@ -82,7 +84,10 @@ const PipelineColumn = ({
     }
   }, [error, isFetching, isLoading, sortedData.length, stage.id]);
 
-  const canReceive = activeCard ? canMoveCardToStage(activeCard, draggingFromStage ?? null, stage.id) : true;
+  const transition = activeCard
+    ? evaluateStageTransition({ card: activeCard, fromStage: draggingFromStage ?? null, toStage: stage.id, stages })
+    : { allowed: true };
+  const canReceive = transition.allowed;
   const isSelectedStage = selectedStageId === stage.id;
 
   useEffect(() => {
@@ -145,6 +150,8 @@ const PipelineColumn = ({
             key={card.id}
             card={card}
             stageId={stage.id}
+            stageLabel={stage.label}
+            isTerminalStage={Boolean(stage.terminal)}
             onClick={onCardClick}
           />
         ))}
