@@ -11,7 +11,11 @@ export function ProtectedRoute({ children }: { children: JSX.Element }) {
   const location = useLocation();
   const requestId = getRequestId();
 
-  if (auth.authStatus === "loading") {
+  if (auth.authStatus === "loading" || auth.rolesStatus === "loading") {
+    return <LoadingScreen />;
+  }
+
+  if (auth.authStatus === "authenticated" && !auth.user) {
     return <LoadingScreen />;
   }
 

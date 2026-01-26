@@ -41,6 +41,7 @@ const AppRouter = () => (
           <Route path="lenders/new" element={<LendersPage />} />
           <Route path="lenders/:lenderId/edit" element={<LendersPage />} />
           <Route path="settings" element={<SettingsPage />} />
+          <Route path="settings/:tab" element={<SettingsPage />} />
           <Route path="unauthorized" element={<UnauthorizedPage />} />
           <Route
             path="admin/lenders"
