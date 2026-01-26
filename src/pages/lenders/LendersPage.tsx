@@ -10,6 +10,7 @@ import Select from "@/components/ui/Select";
 import Table from "@/components/ui/Table";
 import AppLoading from "@/components/layout/AppLoading";
 import RequireRole from "@/components/auth/RequireRole";
+import LenderProductModal, { type ProductFormValues } from "@/components/LenderProductModal";
 import {
   createLender,
   createLenderProduct,
@@ -52,29 +53,6 @@ type LenderFormValues = {
   primaryContactPhone: string;
   submissionMethod: SubmissionMethod;
   submissionEmail: string;
-};
-
-type ProductFormValues = {
-  lenderId: string;
-  productName: string;
-  active: boolean;
-  category: LenderProductCategory;
-  country: string;
-  currency: string;
-  minAmount: string;
-  maxAmount: string;
-  interestRateMin: string;
-  interestRateMax: string;
-  rateType: RateType;
-  termMin: string;
-  termMax: string;
-  termUnit: TermUnit;
-  minimumCreditScore: string;
-  ltv: string;
-  eligibilityRules: string;
-  minimumRevenue: string;
-  timeInBusinessMonths: string;
-  industryRestrictions: string;
 };
 
 const emptyLenderForm: LenderFormValues = {
@@ -506,6 +484,10 @@ const LendersContent = () => {
     }
   });
 
+  const updateProductForm = (updates: Partial<ProductFormValues>) => {
+    setProductFormValues((prev) => ({ ...prev, ...updates }));
+  };
+
   const openCreateLenderModal = () => {
     setEditingLender(null);
     setLenderFormValues(emptyLenderForm);
@@ -536,6 +518,11 @@ const LendersContent = () => {
   };
 
   const openEditProductModal = (product: LenderProduct) => {
+    const eligibilityFlags = product.eligibilityFlags ?? {
+      minimumRevenue: null,
+      timeInBusinessMonths: null,
+      industryRestrictions: null
+    };
     setEditingProduct(product);
     setProductFormValues({
       lenderId: product.lenderId,
@@ -555,9 +542,9 @@ const LendersContent = () => {
       minimumCreditScore: product.minimumCreditScore?.toString() ?? "",
       ltv: product.ltv?.toString() ?? "",
       eligibilityRules: product.eligibilityRules ?? "",
-      minimumRevenue: product.eligibilityFlags.minimumRevenue?.toString() ?? "",
-      timeInBusinessMonths: product.eligibilityFlags.timeInBusinessMonths?.toString() ?? "",
-      industryRestrictions: product.eligibilityFlags.industryRestrictions ?? ""
+      minimumRevenue: eligibilityFlags.minimumRevenue?.toString() ?? "",
+      timeInBusinessMonths: eligibilityFlags.timeInBusinessMonths?.toString() ?? "",
+      industryRestrictions: eligibilityFlags.industryRestrictions ?? ""
     });
     setProductFormErrors({});
     setIsProductModalOpen(true);
@@ -918,260 +905,44 @@ const LendersContent = () => {
       )}
 
       {isProductModalOpen && selectedLender && (
-        <Modal title={editingProduct ? "Edit product" : "Add product"} onClose={closeProductModal}>
-          {productMutationError && (
-            <ErrorBanner message={getErrorMessage(productMutationError, "Unable to save product.")} />
-          )}
-          {isSelectedLenderInactive && (
-            <p className="text-xs text-amber-600">
-              This lender is inactive. Products will remain inactive until the lender is active again.
-            </p>
-          )}
-          <form
-            className="management-form"
-            onSubmit={(event) => {
-              event.preventDefault();
-              const errors = validateProductForm(productFormValues);
-              setProductFormErrors(errors);
-              if (Object.keys(errors).length) return;
-              const payload = buildProductPayload(productFormValues);
-              if (editingProduct) {
-                updateProductMutation.mutate({ productId: editingProduct.id, payload });
-                return;
-              }
-              createProductMutation.mutate(payload);
-            }}
-          >
-            <div className="management-field">
-              <span className="management-field__label">Core details</span>
-              <Select
-                label="Lender"
-                value={productFormValues.lenderId}
-                onChange={(event) =>
-                  setProductFormValues((prev) => ({ ...prev, lenderId: event.target.value }))
-                }
-                disabled
-              >
-                <option value={selectedLender.id}>{selectedLender.name}</option>
-              </Select>
-              {productFormErrors.lenderId && <span className="ui-field__error">{productFormErrors.lenderId}</span>}
-              <Input
-                label="Product name"
-                value={productFormValues.productName}
-                onChange={(event) =>
-                  setProductFormValues((prev) => ({ ...prev, productName: event.target.value }))
-                }
-                error={productFormErrors.productName}
-              />
-              <label className="management-toggle">
-                <input
-                  type="checkbox"
-                  checked={productFormValues.active}
-                  onChange={(event) =>
-                    setProductFormValues((prev) => ({ ...prev, active: event.target.checked }))
-                  }
-                  disabled={productFormValues.category === "STARTUP_CAPITAL" || isSelectedLenderInactive}
-                />
-                <span>Active product</span>
-              </label>
-              {productFormErrors.active && <span className="ui-field__error">{productFormErrors.active}</span>}
-              <Select
-                label="Product category"
-                value={productFormValues.category}
-                onChange={(event) =>
-                  setProductFormValues((prev) => ({
-                    ...prev,
-                    category: event.target.value as LenderProductCategory
-                  }))
-                }
-              >
-                {buildCategoryOptions(productFormValues.country).map((option) => (
-                  <option key={option.value} value={option.value} disabled={option.disabled}>
-                    {option.label}
-                  </option>
-                ))}
-              </Select>
-              {productFormErrors.category && <span className="ui-field__error">{productFormErrors.category}</span>}
-              <div className="management-grid__row">
-                <Input
-                  label="Country"
-                  value={productFormValues.country}
-                  onChange={(event) =>
-                    setProductFormValues((prev) => ({ ...prev, country: event.target.value }))
-                  }
-                  error={productFormErrors.country}
-                />
-                <Input
-                  label="Currency"
-                  value={productFormValues.currency}
-                  onChange={(event) =>
-                    setProductFormValues((prev) => ({ ...prev, currency: event.target.value }))
-                  }
-                  error={productFormErrors.currency}
-                />
-              </div>
-              {productFormValues.category === "SBA_GOVERNMENT" && (
-                <div className="text-xs text-slate-500">Government Program (US only)</div>
-              )}
-              {productFormValues.category === "STARTUP_CAPITAL" && (
-                <div className="text-xs text-amber-600">
-                  Not Live — startup capital products remain inactive and internal-only.
-                </div>
-              )}
-            </div>
-
-            <div className="management-field">
-              <span className="management-field__label">Amount & pricing</span>
-              <div className="management-grid__row">
-                <Input
-                  label="Minimum amount"
-                  value={productFormValues.minAmount}
-                  onChange={(event) =>
-                    setProductFormValues((prev) => ({ ...prev, minAmount: event.target.value }))
-                  }
-                  error={productFormErrors.minAmount}
-                />
-                <Input
-                  label="Maximum amount"
-                  value={productFormValues.maxAmount}
-                  onChange={(event) =>
-                    setProductFormValues((prev) => ({ ...prev, maxAmount: event.target.value }))
-                  }
-                  error={productFormErrors.maxAmount}
-                />
-              </div>
-              <div className="management-grid__row">
-                <Input
-                  label="Interest rate min (%)"
-                  value={productFormValues.interestRateMin}
-                  onChange={(event) =>
-                    setProductFormValues((prev) => ({ ...prev, interestRateMin: event.target.value }))
-                  }
-                  error={productFormErrors.interestRateMin}
-                />
-                <Input
-                  label="Interest rate max (%)"
-                  value={productFormValues.interestRateMax}
-                  onChange={(event) =>
-                    setProductFormValues((prev) => ({ ...prev, interestRateMax: event.target.value }))
-                  }
-                  error={productFormErrors.interestRateMax}
-                />
-              </div>
-              <Select
-                label="Rate type"
-                value={productFormValues.rateType}
-                onChange={(event) =>
-                  setProductFormValues((prev) => ({ ...prev, rateType: event.target.value as RateType }))
-                }
-              >
-                {RATE_TYPES.map((rateType) => (
-                  <option key={rateType} value={rateType}>
-                    {formatRateType(rateType)}
-                  </option>
-                ))}
-              </Select>
-              {productFormErrors.rateType && <span className="ui-field__error">{productFormErrors.rateType}</span>}
-              <div className="management-grid__row">
-                <Input
-                  label="Term length min"
-                  value={productFormValues.termMin}
-                  onChange={(event) =>
-                    setProductFormValues((prev) => ({ ...prev, termMin: event.target.value }))
-                  }
-                  error={productFormErrors.termMin}
-                />
-                <Input
-                  label="Term length max"
-                  value={productFormValues.termMax}
-                  onChange={(event) =>
-                    setProductFormValues((prev) => ({ ...prev, termMax: event.target.value }))
-                  }
-                  error={productFormErrors.termMax}
-                />
-              </div>
-              <Select
-                label="Term unit"
-                value={productFormValues.termUnit}
-                onChange={(event) =>
-                  setProductFormValues((prev) => ({ ...prev, termUnit: event.target.value as TermUnit }))
-                }
-              >
-                {TERM_UNITS.map((unit) => (
-                  <option key={unit} value={unit}>
-                    {unit}
-                  </option>
-                ))}
-              </Select>
-              <div className="management-grid__row">
-                <Input
-                  label="Minimum credit score"
-                  value={productFormValues.minimumCreditScore}
-                  onChange={(event) =>
-                    setProductFormValues((prev) => ({ ...prev, minimumCreditScore: event.target.value }))
-                  }
-                  error={productFormErrors.minimumCreditScore}
-                />
-                <Input
-                  label="LTV (%)"
-                  value={productFormValues.ltv}
-                  onChange={(event) => setProductFormValues((prev) => ({ ...prev, ltv: event.target.value }))}
-                  error={productFormErrors.ltv}
-                />
-              </div>
-            </div>
-
-            <div className="management-field">
-              <span className="management-field__label">Eligibility requirements</span>
-              <label className="ui-field">
-                <span className="ui-field__label">Eligibility rules</span>
-                <textarea
-                  className="ui-input ui-textarea"
-                  value={productFormValues.eligibilityRules}
-                  onChange={(event) =>
-                    setProductFormValues((prev) => ({ ...prev, eligibilityRules: event.target.value }))
-                  }
-                  rows={3}
-                />
-              </label>
-              <div className="management-grid__row">
-                <Input
-                  label="Minimum revenue"
-                  value={productFormValues.minimumRevenue}
-                  onChange={(event) =>
-                    setProductFormValues((prev) => ({ ...prev, minimumRevenue: event.target.value }))
-                  }
-                  error={productFormErrors.minimumRevenue}
-                />
-                <Input
-                  label="Time in business (months)"
-                  value={productFormValues.timeInBusinessMonths}
-                  onChange={(event) =>
-                    setProductFormValues((prev) => ({ ...prev, timeInBusinessMonths: event.target.value }))
-                  }
-                  error={productFormErrors.timeInBusinessMonths}
-                />
-              </div>
-              <label className="ui-field">
-                <span className="ui-field__label">Industry restrictions</span>
-                <textarea
-                  className="ui-input ui-textarea"
-                  value={productFormValues.industryRestrictions}
-                  onChange={(event) =>
-                    setProductFormValues((prev) => ({ ...prev, industryRestrictions: event.target.value }))
-                  }
-                  rows={2}
-                />
-              </label>
-            </div>
-
-            <div className="management-actions">
-              <Button type="submit" disabled={productMutationLoading}>
-                {editingProduct ? "Save changes" : "Create product"}
-              </Button>
-            </div>
-          </form>
-        </Modal>
+        <LenderProductModal
+          isOpen={isProductModalOpen}
+          title={editingProduct ? "Edit product" : "Add product"}
+          selectedLender={selectedLender}
+          isSaving={productMutationLoading}
+          errorMessage={
+            productMutationError ? getErrorMessage(productMutationError, "Unable to save product.") : null
+          }
+          isSelectedLenderInactive={isSelectedLenderInactive}
+          formValues={productFormValues}
+          formErrors={productFormErrors}
+          categoryOptions={buildCategoryOptions(productFormValues.country)}
+          rateTypes={RATE_TYPES}
+          termUnits={TERM_UNITS}
+          formatRateType={formatRateType}
+          onChange={updateProductForm}
+          onSubmit={() => {
+            const errors = validateProductForm(productFormValues);
+            setProductFormErrors(errors);
+            if (Object.keys(errors).length) return;
+            const payload = buildProductPayload(productFormValues);
+            if (editingProduct) {
+              updateProductMutation.mutate({ productId: editingProduct.id, payload });
+              return;
+            }
+            createProductMutation.mutate(payload);
+          }}
+          onClose={closeProductModal}
+          onCancel={closeProductModal}
+          requiredDocuments={editingProduct?.requiredDocuments ?? []}
+          statusNote={
+            isSelectedLenderInactive ? (
+              <p className="text-xs text-amber-600">
+                This lender is inactive. Products will remain inactive until the lender is active again.
+              </p>
+            ) : null
+          }
+        />
       )}
     </div>
   );

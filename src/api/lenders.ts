@@ -259,12 +259,26 @@ export const retryLenderTransmission = (transmissionId: string) =>
 
 export async function fetchClientLenders(): Promise<ClientLender[]> {
   const res = await clientApi.get("/api/client/lenders");
-  return res.data.data;
+  const payload = res.data?.data ?? res.data;
+  if (Array.isArray(payload)) {
+    return payload as ClientLender[];
+  }
+  if (payload && typeof payload === "object" && Array.isArray((payload as { items?: unknown }).items)) {
+    return (payload as { items: ClientLender[] }).items;
+  }
+  return [];
 }
 
 export async function fetchClientLenderProducts(): Promise<ClientLenderProduct[]> {
   const res = await clientApi.get("/api/client/lender-products");
-  return res.data.data;
+  const payload = res.data?.data ?? res.data;
+  if (Array.isArray(payload)) {
+    return payload as ClientLenderProduct[];
+  }
+  if (payload && typeof payload === "object" && Array.isArray((payload as { items?: unknown }).items)) {
+    return (payload as { items: ClientLenderProduct[] }).items;
+  }
+  return [];
 }
 
 const normalizeRequirement = (requirement: LenderProductRequirementApi): LenderProductRequirement => ({

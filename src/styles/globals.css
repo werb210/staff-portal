@@ -493,6 +493,27 @@ a {
   flex-wrap: wrap;
 }
 
+.otp-inputs {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.otp-input {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid #cbd5f5;
+  padding: 12px 0;
+  text-align: center;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.otp-input:focus {
+  outline: 2px solid #1d4ed8;
+  outline-offset: 1px;
+}
+
 .user-table__name {
   font-weight: 600;
 }
@@ -596,7 +617,7 @@ a {
   border-radius: 16px;
   width: min(720px, 90vw);
   max-height: 90vh;
-  overflow-y: auto;
+  overflow: hidden;
   padding: 20px;
   z-index: 1;
   display: flex;
@@ -622,6 +643,12 @@ a {
   background: transparent;
   font-size: 24px;
   cursor: pointer;
+}
+
+.modal__body {
+  overflow-y: auto;
+  max-height: 70vh;
+  padding-right: 4px;
 }
 
 .modal-form {
@@ -708,6 +735,17 @@ a {
     grid-template-columns: 1fr;
   }
 
+  .settings-actions,
+  .management-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .settings-actions .ui-button,
+  .management-actions .ui-button {
+    width: 100%;
+  }
+
   .avatar-upload {
     grid-template-columns: 1fr;
   }
@@ -726,6 +764,15 @@ a {
   .ui-select,
   .ui-button {
     font-size: 16px;
+  }
+
+  .ui-table {
+    min-width: 0;
+  }
+
+  .ui-table th,
+  .ui-table td {
+    white-space: normal;
   }
 
   .modal__content {
@@ -1183,6 +1230,35 @@ a {
   flex-direction: column;
   gap: 12px;
   align-items: flex-start;
+}
+
+.error-panel {
+  margin: 24px auto;
+  max-width: 640px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 16px;
+  padding: 20px;
+  display: grid;
+  gap: 16px;
+  color: #7c2d12;
+}
+
+.error-panel h1 {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.error-panel p {
+  font-size: 14px;
+  margin: 0;
+}
+
+.error-panel__meta {
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+  color: #9a3412;
 }
 
 .api-status-banner {

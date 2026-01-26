@@ -23,10 +23,12 @@ class ErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryStat
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    const requestId = getRequestId();
+    const errorRequestId = (error as { requestId?: string }).requestId;
+    const requestId = errorRequestId ?? getRequestId();
     console.error("UI render failure", {
       requestId,
       error,
+      errorRequestId,
       componentStack: info.componentStack
     });
     setUiFailure({
@@ -38,22 +40,20 @@ class ErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryStat
 
   render() {
     if (this.state.hasError) {
-      const requestId = getRequestId();
+      const requestId = (this.state.error as { requestId?: string } | undefined)?.requestId ?? getRequestId();
       return (
-        <div className="min-h-screen flex items-center justify-center p-6">
-          <div className="max-w-md text-center space-y-3">
-            <h1 className="text-xl font-semibold">Something went wrong</h1>
-            <p className="text-sm text-slate-600">
-              The application ran into an error. Please try again or contact support.
-            </p>
-            <div className="text-xs text-slate-500 space-y-1">
-              <p>
-                <strong>Error ID:</strong> {this.state.errorId}
-              </p>
-              <p>
-                <strong>Request ID:</strong> {requestId}
-              </p>
-            </div>
+        <div className="error-panel" role="alert">
+          <div>
+            <h1>Something went wrong</h1>
+            <p>The application ran into an error. Please try again or contact support.</p>
+          </div>
+          <div className="error-panel__meta">
+            <span>
+              <strong>Error ID:</strong> {this.state.errorId}
+            </span>
+            <span>
+              <strong>Request ID:</strong> {requestId}
+            </span>
           </div>
         </div>
       );

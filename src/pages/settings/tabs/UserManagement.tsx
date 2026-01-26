@@ -85,8 +85,10 @@ const UserManagement = () => {
       <div className="user-management__table">
         <Table headers={["Name", "Role", "Status", "Actions"]}>
           {visibleUsers.map((user) => {
-            const displayName = user.name ?? user.email.split("@")[0];
+            const safeEmail = user.email ?? "";
+            const displayName = user.name ?? (safeEmail ? safeEmail.split("@")[0] : "Unknown user");
             const statusLabel = user.disabled ? "Disabled" : "Active";
+            const roleValue = user.role === "Admin" || user.role === "Staff" ? user.role : "Staff";
             return (
               <tr key={user.id}>
                 <td>
@@ -96,7 +98,7 @@ const UserManagement = () => {
                 <td>
                   <Select
                     label="Role"
-                    value={user.role}
+                    value={roleValue}
                     onChange={(e) => onUpdateRole(user.id, e.target.value as AdminUser["role"])}
                     options={[
                       { value: "Admin", label: "Admin" },
@@ -132,8 +134,10 @@ const UserManagement = () => {
 
       <div className="user-management__cards">
         {visibleUsers.map((user) => {
-          const displayName = user.name ?? user.email.split("@")[0];
+          const safeEmail = user.email ?? "";
+          const displayName = user.name ?? (safeEmail ? safeEmail.split("@")[0] : "Unknown user");
           const statusLabel = user.disabled ? "Disabled" : "Active";
+          const roleValue = user.role === "Admin" || user.role === "Staff" ? user.role : "Staff";
           return (
             <div key={user.id} className="user-card">
               <div className="user-card__header">
@@ -146,7 +150,7 @@ const UserManagement = () => {
               <div className="user-card__body">
                 <Select
                   label="Role"
-                  value={user.role}
+                  value={roleValue}
                   onChange={(e) => onUpdateRole(user.id, e.target.value as AdminUser["role"])}
                   options={[
                     { value: "Admin", label: "Admin" },

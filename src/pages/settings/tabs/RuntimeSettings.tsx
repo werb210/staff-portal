@@ -29,18 +29,33 @@ const RuntimeSettings = () => {
   const [lastChecked, setLastChecked] = useState<string>("");
   const [runtimeError, setRuntimeError] = useState<string | null>(null);
 
+  const normalizeStatus = (value: string) => {
+    const normalized = value.toLowerCase();
+    if (["ok", "healthy", "green", "pass"].some((token) => normalized.includes(token))) {
+      return "green";
+    }
+    if (["warn", "degraded", "yellow"].some((token) => normalized.includes(token))) {
+      return "yellow";
+    }
+    if (["fail", "error", "red"].some((token) => normalized.includes(token))) {
+      return "red";
+    }
+    return "yellow";
+  };
+
   const fetchRuntime = async () => {
     setRuntimeError(null);
     try {
       const healthData = await apiClient.get<Record<string, unknown>>("/_int/health");
       const versionData = await apiClient.get<Record<string, unknown>>("/_int/version");
+      const healthText = String(healthData?.status ?? healthData?.health ?? "Unknown");
       const nextRuntime: RuntimeData = {
-        health: String(healthData?.status ?? healthData?.health ?? "OK"),
+        health: healthText,
         schema: String(healthData?.schema ?? healthData?.schemaVersion ?? "Unknown"),
         cors: String(healthData?.cors ?? healthData?.corsStatus ?? "Unknown"),
         version: String(versionData?.version ?? versionData?.tag ?? "Unknown"),
         build: String(versionData?.build ?? versionData?.commit ?? "Unknown"),
-        status: healthData ? "green" : "red"
+        status: normalizeStatus(healthText)
       };
       setRuntime(nextRuntime);
       setLastChecked(new Date().toLocaleTimeString());
