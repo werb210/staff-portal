@@ -44,14 +44,26 @@ const PipelinePage = () => {
   const [activeCard, setActiveCard] = useState<PipelineApplication | null>(null);
   const [activeStage, setActiveStage] = useState<PipelineStageId | null>(null);
   const [dragError, setDragError] = useState<string | null>(null);
+  const [stagesWarning, setStagesWarning] = useState<string | null>(null);
 
   const {
     data: stages = [],
-    isLoading: stagesLoading,
-    error: stagesError
+    isLoading: stagesLoading
   } = useQuery<PipelineStage[]>({
     queryKey: ["pipeline", "stages"],
-    queryFn: ({ signal }) => pipelineApi.fetchStages({ signal }),
+    queryFn: async ({ signal }) => {
+      try {
+        const result = await pipelineApi.fetchStages({ signal });
+        setStagesWarning(null);
+        return result;
+      } catch (error) {
+        if (signal?.aborted) {
+          return [];
+        }
+        setStagesWarning("Pipeline stages are unavailable right now. Showing an empty pipeline.");
+        return [];
+      }
+    },
     staleTime: 60_000,
     refetchOnWindowFocus: false
   });
@@ -121,9 +133,7 @@ const PipelinePage = () => {
       <Card title="Application Pipeline">
         <PipelineFilters />
         {stagesLoading && <AppLoading />}
-        {stagesError && (
-          <ErrorBanner message="Unable to load pipeline stages from the server." />
-        )}
+        {stagesWarning && <p role="status">{stagesWarning}</p>}
         {dragError && <ErrorBanner message={dragError} />}
         <DndContext
           collisionDetection={closestCenter}

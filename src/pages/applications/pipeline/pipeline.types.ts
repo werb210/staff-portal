@@ -13,12 +13,8 @@ export type PipelineStage = {
 export type PipelineFilters = {
   searchTerm?: string;
   productCategory?: string;
-  assignedStaffId?: string;
   dateFrom?: string;
   dateTo?: string;
-  docsStatus?: "all" | "complete" | "missing";
-  bankingComplete?: boolean | null;
-  ocrComplete?: boolean | null;
   sort?: "newest" | "oldest" | "highest_amount" | "lowest_amount";
 };
 

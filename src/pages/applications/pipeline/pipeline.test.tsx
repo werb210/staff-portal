@@ -131,10 +131,10 @@ describe("Pipeline foundation", () => {
     await handler(buildDragEvent("DOCUMENTS_REQUIRED"));
 
     expect(invalidateSpy).toHaveBeenCalledWith({
-      queryKey: ["pipeline", "RECEIVED", "", "", "", "", "", "all", "any", "any", "newest"]
+      queryKey: ["pipeline", "RECEIVED", "", "", "", "newest"]
     });
     expect(invalidateSpy).toHaveBeenCalledWith({
-      queryKey: ["pipeline", "DOCUMENTS_REQUIRED", "", "", "", "", "", "all", "any", "any", "newest"]
+      queryKey: ["pipeline", "DOCUMENTS_REQUIRED", "", "", "", "newest"]
     });
   });
 });

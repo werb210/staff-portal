@@ -26,16 +26,6 @@ const PipelineFilters = () => {
           { value: "term-loan", label: "Term Loan" }
         ]}
       />
-      <Select
-        label="Assigned Staff"
-        value={filters.assignedStaffId ?? ""}
-        onChange={(event) => setFilters({ assignedStaffId: event.target.value || undefined })}
-        options={[
-          { value: "", label: "Anyone" },
-          { value: "me", label: "Me" },
-          { value: "team", label: "Team" }
-        ]}
-      />
       <div className="pipeline-filters__dates">
         <Input
           label="From"
@@ -50,42 +40,6 @@ const PipelineFilters = () => {
           onChange={(event) => setFilters({ dateTo: event.target.value || undefined })}
         />
       </div>
-      <Select
-        label="Documents"
-        value={filters.docsStatus ?? "all"}
-        onChange={(event) => setFilters({ docsStatus: event.target.value as typeof filters.docsStatus })}
-        options={[
-          { value: "all", label: "All" },
-          { value: "complete", label: "Complete" },
-          { value: "missing", label: "Missing" }
-        ]}
-      />
-      <Select
-        label="Banking"
-        value={filters.bankingComplete == null ? "any" : String(filters.bankingComplete)}
-        onChange={(event) => {
-          const value = event.target.value;
-          setFilters({ bankingComplete: value === "any" ? null : value === "true" });
-        }}
-        options={[
-          { value: "any", label: "Any" },
-          { value: "true", label: "Complete" },
-          { value: "false", label: "Requires Documents" }
-        ]}
-      />
-      <Select
-        label="OCR"
-        value={filters.ocrComplete == null ? "any" : String(filters.ocrComplete)}
-        onChange={(event) => {
-          const value = event.target.value;
-          setFilters({ ocrComplete: value === "any" ? null : value === "true" });
-        }}
-        options={[
-          { value: "any", label: "Any" },
-          { value: "true", label: "Complete" },
-          { value: "false", label: "Requires Documents" }
-        ]}
-      />
       <Select
         label="Sort"
         value={filters.sort ?? "newest"}
