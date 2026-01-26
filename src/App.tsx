@@ -12,11 +12,6 @@ import CalendarPage from "./pages/calendar/CalendarPage";
 import MarketingPage from "./pages/marketing/MarketingPage";
 import LendersPage from "./pages/lenders/LendersPage";
 import SettingsPage from "./pages/settings/SettingsPage";
-import ProfileSettings from "./pages/settings/tabs/ProfileSettings";
-import BrandingSettings from "./pages/settings/tabs/BrandingSettings";
-import UserManagement from "./pages/settings/tabs/UserManagement";
-import RuntimeSettings from "./pages/settings/tabs/RuntimeSettings";
-import SettingsSectionLayout from "./pages/settings/components/SettingsSectionLayout";
 import TaskPane from "./pages/tasks/TaskPane";
 import { emitUiTelemetry } from "./utils/uiTelemetry";
 import { useApiHealthCheck } from "./hooks/useApiHealthCheck";
@@ -142,46 +137,6 @@ export default function App() {
               }
             />
             <Route path="/settings" element={<SettingsPage />} />
-            <Route
-              path="/settings/profile"
-              element={
-                <RequireClientRole allow={["Admin", "Staff"]}>
-                  <SettingsSectionLayout>
-                    <ProfileSettings />
-                  </SettingsSectionLayout>
-                </RequireClientRole>
-              }
-            />
-            <Route
-              path="/settings/branding"
-              element={
-                <RequireClientRole allow={["Admin", "Staff"]}>
-                  <SettingsSectionLayout>
-                    <BrandingSettings />
-                  </SettingsSectionLayout>
-                </RequireClientRole>
-              }
-            />
-            <Route
-              path="/settings/runtime"
-              element={
-                <RequireClientRole allow={["Admin", "Staff"]}>
-                  <SettingsSectionLayout>
-                    <RuntimeSettings />
-                  </SettingsSectionLayout>
-                </RequireClientRole>
-              }
-            />
-            <Route
-              path="/settings/users"
-              element={
-                <RequireClientRole allow={["Admin"]}>
-                  <SettingsSectionLayout>
-                    <UserManagement />
-                  </SettingsSectionLayout>
-                </RequireClientRole>
-              }
-            />
           </Route>
         </Routes>
       </BrowserRouter>

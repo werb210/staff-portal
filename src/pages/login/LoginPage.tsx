@@ -12,8 +12,10 @@ export default function LoginPage() {
   const navigate = useNavigate();
 
   const [phone, setPhone] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [otpError, setOtpError] = useState<string | null>(null);
   const [errorDetails, setErrorDetails] = useState<{
     endpoint?: string;
     requestId?: string;
@@ -21,7 +23,8 @@ export default function LoginPage() {
   const [status, setStatus] = useState<string | null>(null);
   const [otpSent, setOtpSent] = useState(false);
   const [otpValue, setOtpValue] = useState("");
-  const isSubmittingRef = useRef(false);
+  const isSendingRef = useRef(false);
+  const isVerifyingRef = useRef(false);
 
   // 🚨 CRITICAL: redirect immediately once authenticated
   useEffect(() => {
@@ -31,10 +34,11 @@ export default function LoginPage() {
   }, [auth.authStatus, navigate]);
 
   const handleSendCode = async () => {
-    if (isSubmittingRef.current) return;
-    isSubmittingRef.current = true;
-    setLoading(true);
+    if (isSendingRef.current) return;
+    isSendingRef.current = true;
+    setIsSending(true);
     setError(null);
+    setOtpError(null);
     setErrorDetails(null);
     setStatus(null);
 
@@ -68,24 +72,25 @@ export default function LoginPage() {
       }
       setError("Failed to send code");
     } finally {
-      setLoading(false);
-      isSubmittingRef.current = false;
+      setIsSending(false);
+      isSendingRef.current = false;
     }
   };
 
   const handleVerifyCode = async (code: string) => {
-    if (isSubmittingRef.current) return;
-    if (!code) {
-      setError("Please enter the verification code.");
+    if (isVerifyingRef.current) return;
+    if (!code || code.length < 6) {
+      setOtpError("Please enter the 6-digit verification code.");
       return;
     }
 
     const targetPhone = auth.pendingPhoneNumber ?? phone;
     let normalizedPhone = targetPhone;
 
-    isSubmittingRef.current = true;
-    setLoading(true);
+    isVerifyingRef.current = true;
+    setIsVerifying(true);
     setError(null);
+    setOtpError(null);
     setErrorDetails(null);
     setStatus(null);
 
@@ -93,35 +98,35 @@ export default function LoginPage() {
       normalizedPhone = normalizeToE164(targetPhone);
       const ok = await auth.verifyOtp({ phone: normalizedPhone, code });
       if (!ok) {
-        setError(auth.error ?? "Invalid verification code");
+        setOtpError(auth.error ?? "Invalid verification code");
         setStatus(null);
       }
     } catch (err) {
       if (err instanceof Error && err.message === "Invalid phone number") {
-        setError("Please enter a valid phone number.");
+        setOtpError("Please enter a valid phone number.");
         return;
       }
       if (err instanceof ApiError) {
-        setError(err.message);
+        setOtpError(err.message);
         setErrorDetails({ endpoint: "/auth/otp/verify", requestId: err.requestId ?? getRequestId() });
         return;
       }
-      setError("Invalid verification code");
+      setOtpError("Invalid verification code");
     } finally {
-      setLoading(false);
-      isSubmittingRef.current = false;
+      setIsVerifying(false);
+      isVerifyingRef.current = false;
     }
   };
 
   const showOtpInput = Boolean(auth.pendingPhoneNumber) || otpSent;
 
   return (
-    <div
-      className="min-h-[100svh] flex items-center justify-center px-4 py-8"
-      style={{ paddingBottom: "max(env(safe-area-inset-bottom), 24px)" }}
-    >
-      <div className="w-full max-w-md space-y-4">
-        <h1 className="text-2xl font-bold">Staff Login</h1>
+    <div className="login-shell" style={{ paddingBottom: "max(env(safe-area-inset-bottom), 24px)" }}>
+      <div className="login-card">
+        <div className="login-header">
+          <h1>Staff Portal</h1>
+          <p>Sign in with your phone number to receive a secure one-time passcode.</p>
+        </div>
 
         {(error || auth.error) && (
           <div className="space-y-2">
@@ -140,7 +145,7 @@ export default function LoginPage() {
           </div>
         )}
 
-        <div className="space-y-4">
+        <div className="login-body">
           {!showOtpInput && (
             <label className="block">
               Phone number
@@ -148,7 +153,7 @@ export default function LoginPage() {
                 type="tel"
                 inputMode="tel"
                 autoComplete="tel"
-                className="border rounded px-3 py-2 w-full"
+                className="login-input"
                 value={phone}
                 onChange={(e) => {
                   setPhone(e.target.value);
@@ -156,34 +161,34 @@ export default function LoginPage() {
                   setErrorDetails(null);
                 }}
                 placeholder="+15555550100"
-                disabled={loading}
+                disabled={isSending}
               />
             </label>
           )}
 
           {showOtpInput && (
-            <div className="space-y-3">
-              <div>
-                <label className="block">Verification code</label>
-                <OtpInput
-                  value={otpValue}
-                  length={6}
-                  disabled={loading}
-                  onChange={(nextValue) => {
-                    setOtpValue(nextValue);
-                    setError(null);
-                    setErrorDetails(null);
-                  }}
-                  onComplete={(nextValue) => handleVerifyCode(nextValue)}
-                />
-              </div>
+            <div className="login-otp">
+              <label className="block">Verification code</label>
+              <OtpInput
+                value={otpValue}
+                length={6}
+                disabled={isVerifying}
+                onChange={(nextValue) => {
+                  setOtpValue(nextValue);
+                  setOtpError(null);
+                  setError(null);
+                  setErrorDetails(null);
+                }}
+                onComplete={(nextValue) => handleVerifyCode(nextValue)}
+              />
+              {otpError && <p className="text-sm text-red-600">{otpError}</p>}
               <button
                 type="button"
-                className="w-full border border-blue-600 text-blue-600 rounded px-4 py-2"
+                className="login-link"
                 onClick={handleSendCode}
-                disabled={loading}
+                disabled={isSending || isVerifying}
               >
-                {loading ? "Sending..." : "Resend code"}
+                {isSending ? "Sending new code..." : "Resend code"}
               </button>
             </div>
           )}
@@ -191,16 +196,14 @@ export default function LoginPage() {
           {!showOtpInput && (
             <button
               type="button"
-              className="w-full bg-blue-600 text-white rounded px-4 py-2"
+              className="login-primary"
               onClick={handleSendCode}
-              disabled={loading}
+              disabled={isSending}
             >
-              {loading ? "Sending..." : "Send code"}
+              {isSending ? "Sending..." : "Send code"}
             </button>
           )}
-          {loading && showOtpInput && (
-            <p className="text-xs text-slate-500">Verifying code…</p>
-          )}
+          {isVerifying && showOtpInput && <p className="text-xs text-slate-500">Verifying code…</p>}
         </div>
       </div>
     </div>

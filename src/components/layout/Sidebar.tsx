@@ -21,8 +21,7 @@ const baseNavigation: NavigationItem[] = [
   { label: "Communications", path: "/communications" },
   { label: "Calendar", path: "/calendar" },
   { label: "Marketing", path: "/marketing" },
-  { label: "Lenders", path: "/lenders" },
-  { label: "Settings", path: "/settings" }
+  { label: "Lenders", path: "/lenders" }
 ];
 
 const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
@@ -46,7 +45,7 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
           <NavLink
             key={item.path}
             to={item.path}
-            end={item.path === "/dashboard" || item.path === "/settings"}
+            end={item.path === "/dashboard"}
             className={({ isActive }) =>
               `sidebar__link ${isActive ? "sidebar__link--active" : ""}`
             }

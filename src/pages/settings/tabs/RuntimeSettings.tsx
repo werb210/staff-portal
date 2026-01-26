@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import apiClient from "@/api/httpClient";
 import Button from "@/components/ui/Button";
 import ErrorBanner from "@/components/ui/ErrorBanner";
@@ -7,21 +7,15 @@ import { getErrorMessage } from "@/utils/errors";
 type RuntimeStatus = "green" | "red" | "yellow";
 
 type RuntimeData = {
-  health: string;
-  schema: string;
-  cors: string;
-  version: string;
-  build: string;
-  status: RuntimeStatus;
+  api: { label: string; status: RuntimeStatus; detail?: string };
+  database: { label: string; status: RuntimeStatus; detail?: string };
+  auth: { label: string; status: RuntimeStatus; detail?: string };
 };
 
 const defaultRuntimeData: RuntimeData = {
-  health: "Unknown",
-  schema: "Unknown",
-  cors: "Unknown",
-  version: "Unknown",
-  build: "Unknown",
-  status: "yellow"
+  api: { label: "API health", status: "yellow", detail: "Unknown" },
+  database: { label: "Database", status: "yellow", detail: "Unknown" },
+  auth: { label: "Auth readiness", status: "yellow", detail: "Unknown" }
 };
 
 const RuntimeSettings = () => {
@@ -43,56 +37,90 @@ const RuntimeSettings = () => {
     return "yellow";
   };
 
-  const fetchRuntime = async () => {
+  const fetchRuntime = useCallback(async () => {
     setRuntimeError(null);
     try {
-      const healthData = await apiClient.get<Record<string, unknown>>("/_int/health");
-      const versionData = await apiClient.get<Record<string, unknown>>("/_int/version");
-      const healthText = String(healthData?.status ?? healthData?.health ?? "Unknown");
-      const nextRuntime: RuntimeData = {
-        health: healthText,
-        schema: String(healthData?.schema ?? healthData?.schemaVersion ?? "Unknown"),
-        cors: String(healthData?.cors ?? healthData?.corsStatus ?? "Unknown"),
-        version: String(versionData?.version ?? versionData?.tag ?? "Unknown"),
-        build: String(versionData?.build ?? versionData?.commit ?? "Unknown"),
-        status: normalizeStatus(healthText)
-      };
-      setRuntime(nextRuntime);
+      const [apiHealthResult, internalHealthResult] = await Promise.allSettled([
+        apiClient.get<Record<string, unknown>>("/health", { skipAuth: true }),
+        apiClient.get<Record<string, unknown>>("/_int/health")
+      ]);
+
+      const apiDetail =
+        apiHealthResult.status === "fulfilled"
+          ? String(apiHealthResult.value?.status ?? apiHealthResult.value?.health ?? "OK")
+          : "Error";
+      const apiStatus =
+        apiHealthResult.status === "fulfilled" ? normalizeStatus(apiDetail) : "red";
+
+      const internalData =
+        internalHealthResult.status === "fulfilled" ? internalHealthResult.value : null;
+      const dbDetail = String(
+        internalData?.database ?? internalData?.db ?? internalData?.dbStatus ?? "Unknown"
+      );
+      const authDetail = String(
+        internalData?.auth ?? internalData?.authStatus ?? internalData?.authReady ?? "Unknown"
+      );
+      const databaseStatus = internalData
+        ? normalizeStatus(dbDetail)
+        : internalHealthResult.status === "rejected"
+          ? "red"
+          : "yellow";
+      const authStatus = internalData
+        ? normalizeStatus(authDetail)
+        : internalHealthResult.status === "rejected"
+          ? "red"
+          : "yellow";
+
+      setRuntime({
+        api: { label: "API health", status: apiStatus, detail: apiDetail },
+        database: { label: "DB connection", status: databaseStatus, detail: dbDetail },
+        auth: { label: "Auth readiness", status: authStatus, detail: authDetail }
+      });
       setLastChecked(new Date().toLocaleTimeString());
-    } catch {
-      setRuntime((prev) => ({ ...prev, status: "red", health: "Error" }));
+    } catch (error) {
+      setRuntime((prev) => ({
+        api: { ...prev.api, status: "red", detail: "Error" },
+        database: { ...prev.database, status: "red", detail: "Error" },
+        auth: { ...prev.auth, status: "red", detail: "Error" }
+      }));
       setLastChecked(new Date().toLocaleTimeString());
-      setRuntimeError(getErrorMessage(null, "Unable to load runtime status."));
+      setRuntimeError(getErrorMessage(error, "Unable to load runtime status."));
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    void fetchRuntime();
+    const interval = window.setInterval(() => {
+      void fetchRuntime();
+    }, 30000);
+    return () => window.clearInterval(interval);
+  }, [fetchRuntime]);
 
   return (
     <section className="settings-panel" aria-label="Runtime status">
       <header>
         <h2>Runtime verification</h2>
-        <p>Read-only checks for health, schema, CORS, and build metadata.</p>
+        <p>Read-only checks for API health, database connectivity, and auth readiness.</p>
       </header>
       {runtimeError && <ErrorBanner message={runtimeError} />}
 
       <div className="runtime-status">
         <div className="runtime-status__row">
-          <span className="runtime-status__label">Health</span>
-          <span className={`runtime-status__indicator runtime-status__indicator--${runtime.status}`}>
-            {runtime.health}
+          <span className="runtime-status__label">{runtime.api.label}</span>
+          <span className={`runtime-status__indicator runtime-status__indicator--${runtime.api.status}`}>
+            {runtime.api.detail}
           </span>
         </div>
         <div className="runtime-status__row">
-          <span className="runtime-status__label">Schema</span>
-          <span className="runtime-status__value">{runtime.schema}</span>
+          <span className="runtime-status__label">{runtime.database.label}</span>
+          <span className={`runtime-status__indicator runtime-status__indicator--${runtime.database.status}`}>
+            {runtime.database.detail}
+          </span>
         </div>
         <div className="runtime-status__row">
-          <span className="runtime-status__label">CORS status</span>
-          <span className="runtime-status__value">{runtime.cors}</span>
-        </div>
-        <div className="runtime-status__row">
-          <span className="runtime-status__label">Build/version</span>
-          <span className="runtime-status__value">
-            {runtime.version} ({runtime.build})
+          <span className="runtime-status__label">{runtime.auth.label}</span>
+          <span className={`runtime-status__indicator runtime-status__indicator--${runtime.auth.status}`}>
+            {runtime.auth.detail}
           </span>
         </div>
       </div>
