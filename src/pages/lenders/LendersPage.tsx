@@ -181,6 +181,11 @@ const toOptionalNumber = (value: string) => {
   return parsed;
 };
 
+const toFormString = (value?: number | string | null) => {
+  if (value === null || value === undefined) return "";
+  return String(value);
+};
+
 const formatRateType = (value: RateType) => value.charAt(0).toUpperCase() + value.slice(1);
 
 const buildCategoryOptions = (country: string) => {
@@ -524,27 +529,33 @@ const LendersContent = () => {
       timeInBusinessMonths: null,
       industryRestrictions: null
     };
+    const termLength = product.termLength ?? {
+      min: 0,
+      max: 0,
+      unit: TERM_UNITS[0]
+    };
+    const resolvedCategory = product.category ?? LENDER_PRODUCT_CATEGORIES[0];
     setEditingProduct(product);
     setProductFormValues({
-      lenderId: product.lenderId,
-      productName: product.productName,
-      active: product.category === "STARTUP_CAPITAL" || isSelectedLenderInactive ? false : product.active,
-      category: product.category,
-      country: product.country,
-      currency: product.currency,
-      minAmount: product.minAmount.toString(),
-      maxAmount: product.maxAmount.toString(),
-      interestRateMin: product.interestRateMin.toString(),
-      interestRateMax: product.interestRateMax.toString(),
-      rateType: product.rateType,
-      termMin: product.termLength.min.toString(),
-      termMax: product.termLength.max.toString(),
-      termUnit: product.termLength.unit,
-      minimumCreditScore: product.minimumCreditScore?.toString() ?? "",
-      ltv: product.ltv?.toString() ?? "",
+      lenderId: product.lenderId ?? "",
+      productName: product.productName ?? "",
+      active: resolvedCategory === "STARTUP_CAPITAL" || isSelectedLenderInactive ? false : product.active,
+      category: resolvedCategory,
+      country: product.country ?? "",
+      currency: product.currency ?? "",
+      minAmount: toFormString(product.minAmount),
+      maxAmount: toFormString(product.maxAmount),
+      interestRateMin: toFormString(product.interestRateMin),
+      interestRateMax: toFormString(product.interestRateMax),
+      rateType: product.rateType ?? RATE_TYPES[0],
+      termMin: toFormString(termLength.min),
+      termMax: toFormString(termLength.max),
+      termUnit: termLength.unit ?? TERM_UNITS[0],
+      minimumCreditScore: toFormString(product.minimumCreditScore),
+      ltv: toFormString(product.ltv),
       eligibilityRules: product.eligibilityRules ?? "",
-      minimumRevenue: eligibilityFlags.minimumRevenue?.toString() ?? "",
-      timeInBusinessMonths: eligibilityFlags.timeInBusinessMonths?.toString() ?? "",
+      minimumRevenue: toFormString(eligibilityFlags.minimumRevenue),
+      timeInBusinessMonths: toFormString(eligibilityFlags.timeInBusinessMonths),
       industryRestrictions: eligibilityFlags.industryRestrictions ?? ""
     });
     setProductFormErrors({});

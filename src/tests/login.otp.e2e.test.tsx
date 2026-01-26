@@ -92,7 +92,7 @@ describe("OTP login flow end-to-end", () => {
       expect(startOtpSpy).toHaveBeenCalledWith({ phone: "+15555550100" });
     });
 
-    expect(await screen.findByLabelText(/Verification code/i)).toBeInTheDocument();
+    expect(await screen.findByLabelText(/OTP digit 1/i)).toBeInTheDocument();
   });
 
   it("TEST 3 — OTP VERIFY", async () => {
@@ -111,9 +111,8 @@ describe("OTP login flow end-to-end", () => {
     await user.type(screen.getByLabelText(/Phone number/i), "+15555550100");
     await user.click(screen.getByRole("button", { name: /Send code/i }));
 
-    const otpInput = await screen.findByLabelText(/Verification code/i);
+    const otpInput = await screen.findByLabelText(/OTP digit 1/i);
     await user.type(otpInput, "123456");
-    await user.click(screen.getByRole("button", { name: /Verify code/i }));
 
     await waitFor(() => {
       expect(verifyOtpSpy).toHaveBeenCalledTimes(1);
@@ -143,9 +142,8 @@ describe("OTP login flow end-to-end", () => {
     await user.type(screen.getByLabelText(/Phone number/i), "+15555550100");
     await user.click(screen.getByRole("button", { name: /Send code/i }));
 
-    const otpInput = await screen.findByLabelText(/Verification code/i);
+    const otpInput = await screen.findByLabelText(/OTP digit 1/i);
     await user.type(otpInput, "123456");
-    await user.click(screen.getByRole("button", { name: /Verify code/i }));
 
     await waitFor(() => {
       expect(meSpy).toHaveBeenCalled();

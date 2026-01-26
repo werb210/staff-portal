@@ -49,7 +49,7 @@ test("real otp login works end-to-end", async ({ page }) => {
   const startOtpResponse = await startOtpResponsePromise;
   expect([200, 204]).toContain(startOtpResponse.status());
 
-  await page.getByLabel("Verification code").fill(otp);
+  await page.getByLabel("OTP digit 1").fill(otp);
 
   const verifyOtpResponsePromise = page.waitForResponse(
     (response) =>
@@ -57,8 +57,6 @@ test("real otp login works end-to-end", async ({ page }) => {
       response.request().method() === "POST",
     { timeout: 15_000 }
   );
-
-  await page.getByRole("button", { name: /verify code/i }).click();
 
   const verifyOtpResponse = await verifyOtpResponsePromise;
   expect(verifyOtpResponse.status()).toBe(200);

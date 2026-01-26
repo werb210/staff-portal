@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BrowserAuthError, PublicClientApplication } from "@azure/msal-browser";
 import apiClient from "@/api/httpClient";
 import Button from "@/components/ui/Button";
@@ -36,11 +36,19 @@ const ProfileSettings = () => {
   }, [profile]);
 
   useEffect(() => {
-    void fetchProfile();
+    let isMounted = true;
+    fetchProfile().catch((error) => {
+      if (!isMounted) return;
+      setFormError(getErrorMessage(error, "Unable to load profile details."));
+    });
+    return () => {
+      isMounted = false;
+    };
   }, [fetchProfile]);
 
   const msalClient = useMemo(() => {
     if (!microsoftAuthConfig?.clientId) return null;
+    const isIos = typeof navigator !== "undefined" && /iphone|ipad|ipod/i.test(navigator.userAgent);
     return new PublicClientApplication({
       auth: {
         clientId: microsoftAuthConfig.clientId,
@@ -49,7 +57,7 @@ const ProfileSettings = () => {
       },
       cache: {
         cacheLocation: "localStorage",
-        storeAuthStateInCookie: false
+        storeAuthStateInCookie: isIos
       }
     });
   }, []);
@@ -140,11 +148,67 @@ const ProfileSettings = () => {
     }
   };
 
+  const preferRedirect =
+    typeof window !== "undefined" &&
+    (window.matchMedia?.("(display-mode: standalone)").matches ||
+      (navigator as { standalone?: boolean }).standalone ||
+      /iphone|ipad|ipod/i.test(navigator.userAgent));
+
+  const exchangeMicrosoftToken = useCallback(
+    async (accessToken: string, accountEmail?: string | null) => {
+      const payload = {
+        accessToken,
+        accountEmail: accountEmail ?? undefined
+      };
+      const exchange = await apiClient.post<{ email?: string; connected?: boolean }>("/auth/microsoft", payload);
+      const connectedEmail = exchange?.email ?? accountEmail ?? "";
+      setMicrosoftConnection({ connected: true, email: connectedEmail });
+    },
+    [setMicrosoftConnection]
+  );
+
+  useEffect(() => {
+    if (!msalClient) return;
+    let isMounted = true;
+    const handleRedirect = async () => {
+      try {
+        const response = await msalClient.handleRedirectPromise();
+        if (!response) return;
+        if (!isMounted) return;
+        setIsLinkingMicrosoft(true);
+        const tokenResponse = response.accessToken
+          ? response
+          : await msalClient.acquireTokenSilent({
+              scopes: microsoftAuthConfig.scopes,
+              account: response.account ?? undefined
+            });
+        await exchangeMicrosoftToken(tokenResponse.accessToken, response.account?.username);
+      } catch (error) {
+        if (!isMounted) return;
+        setMicrosoftError(getErrorMessage(error as Error, "Microsoft sign-in failed."));
+      } finally {
+        if (isMounted) {
+          setIsLinkingMicrosoft(false);
+        }
+      }
+    };
+    void handleRedirect();
+    return () => {
+      isMounted = false;
+    };
+  }, [exchangeMicrosoftToken, msalClient]);
+
   const handleMicrosoftConnect = async () => {
     if (!msalClient || isLinkingMicrosoft) return;
     setMicrosoftError(null);
     setIsLinkingMicrosoft(true);
     try {
+      if (preferRedirect) {
+        await msalClient.loginRedirect({
+          scopes: microsoftAuthConfig.scopes
+        });
+        return;
+      }
       const response = await msalClient.loginPopup({
         scopes: microsoftAuthConfig.scopes
       });
@@ -154,13 +218,7 @@ const ProfileSettings = () => {
             scopes: microsoftAuthConfig.scopes,
             account: response.account ?? undefined
           });
-      const payload = {
-        accessToken: tokenResponse.accessToken,
-        accountEmail: response.account?.username
-      };
-      const exchange = await apiClient.post<{ email?: string; connected?: boolean }>("/auth/microsoft", payload);
-      const connectedEmail = exchange?.email ?? response.account?.username ?? "";
-      setMicrosoftConnection({ connected: true, email: connectedEmail });
+      await exchangeMicrosoftToken(tokenResponse.accessToken, response.account?.username);
     } catch (error) {
       const authError = error as Error;
       const isSilentFailure =
@@ -168,6 +226,14 @@ const ProfileSettings = () => {
         ["popup_window_error", "empty_window_error", "monitor_window_timeout"].includes(error.errorCode);
       if (isSilentFailure) {
         setHideMicrosoftButton(true);
+        if (preferRedirect) {
+          try {
+            await msalClient.loginRedirect({ scopes: microsoftAuthConfig.scopes });
+            return;
+          } catch (redirectError) {
+            setMicrosoftError(getErrorMessage(redirectError as Error, "Microsoft sign-in failed."));
+          }
+        }
       }
       setMicrosoftError(getErrorMessage(authError, "Microsoft sign-in failed."));
     } finally {

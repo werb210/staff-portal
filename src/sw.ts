@@ -16,7 +16,7 @@ const isApiRequest = (request: Request) => {
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(APP_SHELL_CACHE).then((cache) =>
-      cache.addAll([OFFLINE_URL, "/"]).catch(() => undefined)
+      cache.addAll([OFFLINE_URL, "/", "/manifest.json", "/icons/icon.svg"]).catch(() => undefined)
     )
   );
   self.skipWaiting();
@@ -78,23 +78,41 @@ self.addEventListener("sync", (event) => {
 
 self.addEventListener("push", (event) => {
   if (!event.data) return;
-  const payload = event.data.json() as { title?: string; body?: string };
+  const payload = event.data.json() as { title?: string; body?: string; url?: string };
   event.waitUntil(
-    self.registration.showNotification(payload.title ?? "Staff Portal Update", {
-      body: payload.body ?? "New notification received.",
-      tag: "staff-portal"
-    })
+    Promise.all([
+      self.registration.showNotification(payload.title ?? "Staff Portal Update", {
+        body: payload.body ?? "New notification received.",
+        tag: "staff-portal",
+        badge: "/icons/icon.svg",
+        icon: "/icons/icon.svg",
+        vibrate: [80, 60, 80],
+        data: { url: payload.url ?? "/" }
+      }),
+      self.clients
+        .matchAll({ includeUncontrolled: true, type: "window" })
+        .then((clients) =>
+          clients.forEach((client) =>
+            client.postMessage({ type: "PUSH_NOTIFICATION", payload })
+          )
+        )
+    ])
   );
 });
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
+  const targetUrl = (event.notification.data as { url?: string } | undefined)?.url ?? "/";
   event.waitUntil(
     self.clients.matchAll({ type: "window" }).then((clients) => {
       if (clients.length > 0) {
-        clients[0].focus();
+        const client = clients[0];
+        if ("navigate" in client) {
+          (client as WindowClient).navigate(targetUrl).catch(() => undefined);
+        }
+        client.focus();
       } else {
-        self.clients.openWindow("/");
+        self.clients.openWindow(targetUrl);
       }
     })
   );

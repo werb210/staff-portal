@@ -99,12 +99,51 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    const playNotificationSound = () => {
+      if (typeof window === "undefined") return;
+      if (!("AudioContext" in window || "webkitAudioContext" in window)) return;
+      const AudioContextConstructor =
+        (window as Window & { webkitAudioContext?: typeof AudioContext }).AudioContext ||
+        (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (!AudioContextConstructor) return;
+      try {
+        const context = new AudioContextConstructor();
+        const oscillator = context.createOscillator();
+        const gain = context.createGain();
+        oscillator.type = "sine";
+        oscillator.frequency.value = 880;
+        gain.gain.value = 0.05;
+        oscillator.connect(gain);
+        gain.connect(context.destination);
+        oscillator.start();
+        oscillator.stop(context.currentTime + 0.2);
+        oscillator.onended = () => {
+          context.close().catch(() => undefined);
+        };
+      } catch {
+        // ignore audio errors
+      }
+    };
+
     const handleOnline = () => {
       void flushQueuedMutations();
     };
     const handleSyncMessage = (event: MessageEvent) => {
       if (event.data?.type === "SYNC_OFFLINE_QUEUE") {
         void flushQueuedMutations();
+        return;
+      }
+      if (event.data?.type === "PUSH_NOTIFICATION") {
+        if (typeof Notification !== "undefined" && Notification.permission !== "granted") return;
+        if ("setAppBadge" in navigator) {
+          (navigator as Navigator & { setAppBadge?: (value?: number) => Promise<void> })
+            .setAppBadge?.(1)
+            .catch(() => undefined);
+        }
+        if ("vibrate" in navigator) {
+          navigator.vibrate?.([80, 60, 80]);
+        }
+        playNotificationSound();
       }
     };
 

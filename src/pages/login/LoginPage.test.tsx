@@ -60,8 +60,7 @@ describe("LoginPage", () => {
 
     await waitFor(() => expect(startOtp).toHaveBeenCalledWith({ phone: "+15555550100" }));
 
-    fireEvent.change(screen.getByLabelText(/Verification code/i), { target: { value: "123456" } });
-    fireEvent.click(screen.getByRole("button", { name: /Verify code/i }));
+    fireEvent.change(screen.getByLabelText(/OTP digit 1/i), { target: { value: "123456" } });
 
     await waitFor(() => expect(verifyOtp).toHaveBeenCalledWith({ code: "123456", phone: "+15555550100" }));
   });
@@ -76,8 +75,7 @@ describe("LoginPage", () => {
 
     await waitFor(() => expect(startOtp).toHaveBeenCalledWith({ phone: "+15555550100" }));
 
-    fireEvent.change(screen.getByLabelText(/Verification code/i), { target: { value: "123456" } });
-    fireEvent.click(screen.getByRole("button", { name: /Verify code/i }));
+    fireEvent.change(screen.getByLabelText(/OTP digit 1/i), { target: { value: "123456" } });
 
     await waitFor(() => expect(verifyOtp).toHaveBeenCalledWith({ code: "123456", phone: "+15555550100" }));
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
@@ -94,11 +92,10 @@ describe("LoginPage", () => {
     fireEvent.click(screen.getByRole("button", { name: /Send code/i }));
     await waitFor(() => expect(startOtp).toHaveBeenCalled());
 
-    fireEvent.change(screen.getByLabelText(/Verification code/i), { target: { value: "000000" } });
-    fireEvent.click(screen.getByRole("button", { name: /Verify code/i }));
+    fireEvent.change(screen.getByLabelText(/OTP digit 1/i), { target: { value: "000000" } });
 
     await waitFor(() => expect(verifyOtp).toHaveBeenCalled());
-    await waitFor(() => expect(screen.getByText(/Invalid code/i)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/Invalid verification code/i)).toBeInTheDocument());
     expect(screen.getByText(/Request ID: req-401/i)).toBeInTheDocument();
     expect(screen.getByText(/Endpoint: \/auth\/otp\/verify/i)).toBeInTheDocument();
   });

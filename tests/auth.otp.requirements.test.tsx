@@ -92,7 +92,7 @@ describe("OTP auth requirements", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: /send code/i }));
 
-    expect(await screen.findByLabelText(/verification code/i)).toBeInTheDocument();
+    expect(await screen.findByLabelText(/otp digit 1/i)).toBeInTheDocument();
   });
 
   it("verifies OTP and allows dashboard access", async () => {
