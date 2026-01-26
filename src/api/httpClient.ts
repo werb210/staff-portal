@@ -3,6 +3,7 @@ import { ApiError, api } from "@/api/http";
 import { reportAuthFailure } from "@/auth/authEvents";
 import { attachRequestIdAndLog, logError, logResponse } from "@/utils/apiLogging";
 import { getAccessToken } from "@/lib/authToken";
+import { queueFailedMutation } from "@/utils/backgroundSyncQueue";
 
 export type RequestOptions = AxiosRequestConfig & {
   skipAuth?: boolean;
@@ -49,6 +50,16 @@ const ensureAccessToken = (options?: RequestOptions) => {
   }
 };
 
+const ensureOnlineForMutation = (path: string, method: "POST" | "PUT" | "PATCH" | "DELETE", data?: unknown) => {
+  if (typeof navigator === "undefined" || navigator.onLine) return;
+  queueFailedMutation({ path, method, body: data });
+  throw new ApiError({
+    status: 0,
+    message: "Offline: action queued for sync.",
+    details: { path, method }
+  });
+};
+
 const handleApiError = (error: unknown) => {
   if (error instanceof ApiError) {
     if (error.status === 401) {
@@ -83,37 +94,53 @@ export const apiClient = {
   },
   post: async <T>(path: string, data?: unknown, options?: RequestOptions) => {
     try {
+      ensureOnlineForMutation(path, "POST", data);
       ensureAccessToken(options);
       const response = await api.post<T>(path, data, buildConfig(options, { idempotent: true }));
       return ensureSuccess(response).data;
     } catch (error) {
+      if (typeof navigator !== "undefined" && !navigator.onLine) {
+        queueFailedMutation({ path, method: "POST", body: data });
+      }
       handleApiError(error);
     }
   },
   put: async <T>(path: string, data?: unknown, options?: RequestOptions) => {
     try {
+      ensureOnlineForMutation(path, "PUT", data);
       ensureAccessToken(options);
       const response = await api.put<T>(path, data, buildConfig(options, { idempotent: true }));
       return ensureSuccess(response).data;
     } catch (error) {
+      if (typeof navigator !== "undefined" && !navigator.onLine) {
+        queueFailedMutation({ path, method: "PUT", body: data });
+      }
       handleApiError(error);
     }
   },
   patch: async <T>(path: string, data?: unknown, options?: RequestOptions) => {
     try {
+      ensureOnlineForMutation(path, "PATCH", data);
       ensureAccessToken(options);
       const response = await api.patch<T>(path, data, buildConfig(options, { idempotent: true }));
       return ensureSuccess(response).data;
     } catch (error) {
+      if (typeof navigator !== "undefined" && !navigator.onLine) {
+        queueFailedMutation({ path, method: "PATCH", body: data });
+      }
       handleApiError(error);
     }
   },
   delete: async <T>(path: string, options?: RequestOptions) => {
     try {
+      ensureOnlineForMutation(path, "DELETE");
       ensureAccessToken(options);
       const response = await api.delete<T>(path, buildConfig(options, { idempotent: true }));
       return ensureSuccess(response).data;
     } catch (error) {
+      if (typeof navigator !== "undefined" && !navigator.onLine) {
+        queueFailedMutation({ path, method: "DELETE" });
+      }
       handleApiError(error);
     }
   },
@@ -215,9 +242,13 @@ export const lenderApiClient = {
   },
   post: async <T>(path: string, data?: unknown, options?: RequestOptions) => {
     try {
+      ensureOnlineForMutation(path, "POST", data);
       const response = await lenderApi.post<T>(path, data, buildLenderConfig(options));
       return response.data;
     } catch (error) {
+      if (typeof navigator !== "undefined" && !navigator.onLine) {
+        queueFailedMutation({ path, method: "POST", body: data });
+      }
       if (error instanceof AxiosError) {
         handleLenderError(error);
       }
@@ -226,9 +257,13 @@ export const lenderApiClient = {
   },
   put: async <T>(path: string, data?: unknown, options?: RequestOptions) => {
     try {
+      ensureOnlineForMutation(path, "PUT", data);
       const response = await lenderApi.put<T>(path, data, buildLenderConfig(options));
       return response.data;
     } catch (error) {
+      if (typeof navigator !== "undefined" && !navigator.onLine) {
+        queueFailedMutation({ path, method: "PUT", body: data });
+      }
       if (error instanceof AxiosError) {
         handleLenderError(error);
       }
@@ -237,9 +272,13 @@ export const lenderApiClient = {
   },
   patch: async <T>(path: string, data?: unknown, options?: RequestOptions) => {
     try {
+      ensureOnlineForMutation(path, "PATCH", data);
       const response = await lenderApi.patch<T>(path, data, buildLenderConfig(options));
       return response.data;
     } catch (error) {
+      if (typeof navigator !== "undefined" && !navigator.onLine) {
+        queueFailedMutation({ path, method: "PATCH", body: data });
+      }
       if (error instanceof AxiosError) {
         handleLenderError(error);
       }
@@ -248,9 +287,13 @@ export const lenderApiClient = {
   },
   delete: async <T>(path: string, options?: RequestOptions) => {
     try {
+      ensureOnlineForMutation(path, "DELETE");
       const response = await lenderApi.delete<T>(path, buildLenderConfig(options));
       return response.data;
     } catch (error) {
+      if (typeof navigator !== "undefined" && !navigator.onLine) {
+        queueFailedMutation({ path, method: "DELETE" });
+      }
       if (error instanceof AxiosError) {
         handleLenderError(error);
       }

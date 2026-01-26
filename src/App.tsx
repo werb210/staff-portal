@@ -22,6 +22,9 @@ import { runRouteAudit } from "./utils/routeAudit";
 import { RequireRole as RequireClientRole } from "./guards/RequireRole";
 import { fullStaffRoles } from "./utils/roles";
 import ErrorBoundary from "./components/ErrorBoundary";
+import OfflineBanner from "./components/OfflineBanner";
+import InstallPromptBanner from "./components/InstallPromptBanner";
+import { flushQueuedMutations, registerBackgroundSync } from "./utils/backgroundSyncQueue";
 
 const RouteChangeObserver = () => {
   const location = useLocation();
@@ -87,6 +90,7 @@ export default function App() {
     window.addEventListener("error", handleWindowError);
 
     void runRouteAudit();
+    void registerBackgroundSync();
 
     return () => {
       window.removeEventListener("unhandledrejection", handleUnhandledRejection);
@@ -94,9 +98,55 @@ export default function App() {
     };
   }, []);
 
+  useEffect(() => {
+    const handleOnline = () => {
+      void flushQueuedMutations();
+    };
+    const handleSyncMessage = (event: MessageEvent) => {
+      if (event.data?.type === "SYNC_OFFLINE_QUEUE") {
+        void flushQueuedMutations();
+      }
+    };
+
+    window.addEventListener("online", handleOnline);
+    navigator.serviceWorker?.addEventListener("message", handleSyncMessage);
+    void flushQueuedMutations();
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      navigator.serviceWorker?.removeEventListener("message", handleSyncMessage);
+    };
+  }, []);
+
+  useEffect(() => {
+    let lastTouchEnd = 0;
+    const handleTouchEnd = (event: TouchEvent) => {
+      const now = Date.now();
+      if (now - lastTouchEnd <= 300) {
+        event.preventDefault();
+      }
+      lastTouchEnd = now;
+    };
+    document.addEventListener("touchend", handleTouchEnd, { passive: false });
+    return () => document.removeEventListener("touchend", handleTouchEnd);
+  }, []);
+
+  useEffect(() => {
+    const handleSubmit = (event: SubmitEvent) => {
+      if (typeof navigator === "undefined" || navigator.onLine) return;
+      event.preventDefault();
+      event.stopPropagation();
+      console.info("Blocked submit while offline.");
+    };
+    document.addEventListener("submit", handleSubmit, true);
+    return () => document.removeEventListener("submit", handleSubmit, true);
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <UiFailureBanner />
+      <OfflineBanner />
+      <InstallPromptBanner />
       <ErrorBoundary>
         <BrowserRouter>
           <RouteChangeObserver />
@@ -105,38 +155,38 @@ export default function App() {
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route element={<ProtectedApp />}>
               <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/applications" element={<ApplicationsPage />} />
-            <Route path="/crm" element={<CRMPage />} />
-            <Route path="/communications" element={<CommunicationsPage />} />
-            <Route path="/comms" element={<CommunicationsPage />} />
-            <Route path="/calendar" element={<CalendarPage />} />
-            <Route path="/tasks" element={<TaskPane />} />
-            <Route path="/marketing" element={<MarketingPage />} />
-            <Route
-              path="/lenders"
-              element={
-                <RequireClientRole allow={["Admin", "Staff", "Lender"]}>
-                  <LendersPage />
-                </RequireClientRole>
-              }
-            />
-            <Route
-              path="/lenders/new"
-              element={
-                <RequireClientRole allow={["Admin", "Staff", "Lender"]}>
-                  <LendersPage />
-                </RequireClientRole>
-              }
-            />
-            <Route
-              path="/lenders/:lenderId/edit"
-              element={
-                <RequireClientRole allow={["Admin", "Staff", "Lender"]}>
-                  <LendersPage />
-                </RequireClientRole>
-              }
-            />
-            <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/applications" element={<ApplicationsPage />} />
+              <Route path="/crm" element={<CRMPage />} />
+              <Route path="/communications" element={<CommunicationsPage />} />
+              <Route path="/comms" element={<CommunicationsPage />} />
+              <Route path="/calendar" element={<CalendarPage />} />
+              <Route path="/tasks" element={<TaskPane />} />
+              <Route path="/marketing" element={<MarketingPage />} />
+              <Route
+                path="/lenders"
+                element={
+                  <RequireClientRole allow={["Admin", "Staff", "Lender"]}>
+                    <LendersPage />
+                  </RequireClientRole>
+                }
+              />
+              <Route
+                path="/lenders/new"
+                element={
+                  <RequireClientRole allow={["Admin", "Staff", "Lender"]}>
+                    <LendersPage />
+                  </RequireClientRole>
+                }
+              />
+              <Route
+                path="/lenders/:lenderId/edit"
+                element={
+                  <RequireClientRole allow={["Admin", "Staff", "Lender"]}>
+                    <LendersPage />
+                  </RequireClientRole>
+                }
+              />
+              <Route path="/settings" element={<SettingsPage />} />
           </Route>
         </Routes>
       </BrowserRouter>

@@ -9,13 +9,65 @@
   box-sizing: border-box;
 }
 
+html,
+body {
+  height: 100%;
+}
+
 body {
   margin: 0;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
+    env(safe-area-inset-left);
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#root {
+  min-height: 100%;
 }
 
 a {
   color: inherit;
   text-decoration: none;
+}
+
+button,
+a,
+[role="button"] {
+  touch-action: manipulation;
+}
+
+.offline-banner {
+  background: #0f172a;
+  color: #e2e8f0;
+  text-align: center;
+  padding: 10px 16px;
+  font-size: 14px;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+.install-banner {
+  position: fixed;
+  right: 16px;
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.18);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 360px;
+  z-index: 6;
+}
+
+.install-banner__actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .app-shell {
@@ -34,6 +86,7 @@ a {
   flex: 1;
   padding: 24px;
   background: linear-gradient(180deg, #f7f8fb 0%, #eef2f7 100%);
+  padding-bottom: calc(24px + env(safe-area-inset-bottom));
 }
 
 .sidebar {
@@ -89,7 +142,7 @@ a {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 24px;
+  padding: calc(16px + env(safe-area-inset-top)) 24px 16px;
   border-bottom: 1px solid #e5e7eb;
   background-color: #ffffff;
   position: sticky;
@@ -719,6 +772,28 @@ a {
   padding-right: 4px;
 }
 
+.booking-modal {
+  position: fixed;
+  inset: 0;
+  background: #ffffff;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+}
+
+.booking-modal__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.booking-modal__body {
+  overflow-y: auto;
+  margin-top: 12px;
+}
+
 .modal-form {
   width: 100%;
 }
@@ -855,6 +930,17 @@ a {
     top: 0;
     background: #ffffff;
     padding-bottom: 8px;
+  }
+
+  .install-banner {
+    left: 16px;
+    right: 16px;
+    bottom: calc(16px + env(safe-area-inset-bottom));
+    max-width: none;
+  }
+
+  .booking-modal {
+    padding: 16px;
   }
 
   .user-management__table {
