@@ -29,6 +29,9 @@ import api from "@/lib/api";
 import { setAuthTelemetryContext } from "@/utils/uiTelemetry";
 import type { UserRole } from "@/utils/roles";
 import { clearSession, readSession, writeSession } from "@/utils/sessionStore";
+import { buildNotification } from "@/utils/notifications";
+import { useNotificationsStore } from "@/state/notifications.store";
+import type { NotificationItem } from "@/types/notifications";
 export type AuthStatus = "loading" | "authenticated" | "unauthenticated";
 export type AuthState = AuthStatus;
 export type RolesStatus = "loading" | "resolved";
@@ -136,6 +139,19 @@ const getErrorStatus = (error: unknown): number | undefined => {
   return undefined;
 };
 
+const emitNotification = (payload: { title?: string; body?: string; url?: string; type?: string }) => {
+  const notification: NotificationItem = buildNotification(
+    {
+      title: payload.title,
+      body: payload.body,
+      url: payload.url,
+      type: payload.type as NotificationItem["type"]
+    },
+    "in_app"
+  );
+  useNotificationsStore.getState().addNotification(notification);
+};
+
 export function AuthProvider({ children }: PropsWithChildren<{}>) {
   const storedAccessToken = getAccessToken();
   const storedUser = storedAccessToken ? getStoredUser<AuthenticatedUser>() : null;
@@ -151,6 +167,7 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
   const [error, setError] = useState<string | null>(null);
   const [pendingPhoneNumber, setPendingPhoneNumber] = useState<string | null>(null);
   const previousStatus = useRef<AuthStatus | null>(null);
+  const previousRoleRef = useRef<UserRole | null>(null);
   const skipNextHydrationRef = useRef(false);
   const [isHydratingSession, setIsHydratingSession] = useState<boolean>(() => !hasAccessToken);
   const hasHydratedSessionRef = useRef(false);
@@ -241,7 +258,14 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
     setAuthStatus("loading");
     setRolesStatus("loading");
     setError(null);
-    await refreshUser();
+    const refreshed = await refreshUser();
+    if (refreshed) {
+      emitNotification({
+        title: "Login alert",
+        body: "You signed in to the Staff Portal.",
+        type: "auth_alert"
+      });
+    }
   }, [refreshUser]);
 
   useEffect(() => {
@@ -357,6 +381,42 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
   }, [authStatus, user]);
 
   useEffect(() => {
+    const role = (user as { role?: UserRole } | null)?.role ?? null;
+    if (previousRoleRef.current === null) {
+      previousRoleRef.current = role;
+      return;
+    }
+    if (role && previousRoleRef.current && role !== previousRoleRef.current) {
+      logAuthInfo("Role drift detected", user, {
+        previousRole: previousRoleRef.current,
+        nextRole: role
+      });
+      setTimeout(() => {
+        if (typeof window !== "undefined") {
+          window.location.reload();
+        }
+      }, 300);
+    }
+    previousRoleRef.current = role;
+  }, [user]);
+
+  useEffect(() => {
+    const handleResume = () => {
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
+      if (authStatus !== "authenticated") return;
+      void refreshUser();
+    };
+
+    window.addEventListener("pageshow", handleResume);
+    document.addEventListener("visibilitychange", handleResume);
+
+    return () => {
+      window.removeEventListener("pageshow", handleResume);
+      document.removeEventListener("visibilitychange", handleResume);
+    };
+  }, [authStatus, refreshUser]);
+
+  useEffect(() => {
     if (!previousStatus.current) {
       previousStatus.current = authStatus;
       return;
@@ -381,6 +441,11 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
       try {
         logAuthInfo("OTP start request fired", user, { phone });
         await startOtpService({ phone });
+        emitNotification({
+          title: "OTP code sent",
+          body: `We sent a one-time passcode to ${phone}.`,
+          type: "auth_alert"
+        });
         setPendingPhoneNumber(phone);
         setError(null);
         return true;
@@ -427,6 +492,11 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
         if (!refreshed && !getAccessToken()) {
           return false;
         }
+        emitNotification({
+          title: "Login verified",
+          body: "Your login was confirmed successfully.",
+          type: "auth_alert"
+        });
         return true;
       } catch (err: any) {
         const message = (err?.message as string) ?? "OTP verification failed";

@@ -10,6 +10,8 @@ import Select from "@/components/ui/Select";
 import Table from "@/components/ui/Table";
 import AppLoading from "@/components/layout/AppLoading";
 import RequireRole from "@/components/auth/RequireRole";
+import ActionGate from "@/components/auth/ActionGate";
+import { useAuthorization } from "@/hooks/useAuthorization";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import LenderProductModal, { type ProductFormValues } from "@/components/LenderProductModal";
 import {
@@ -222,6 +224,7 @@ const LendersContent = () => {
   const [editingProduct, setEditingProduct] = useState<LenderProduct | null>(null);
   const [productFormValues, setProductFormValues] = useState<ProductFormValues>(emptyProductForm(""));
   const [productFormErrors, setProductFormErrors] = useState<Record<string, string>>({});
+  const canManageLenders = useAuthorization({ roles: ["Admin", "Staff"] });
 
   const selectedLender = useMemo(
     () => safeLenders.find((lender) => lender.id === selectedLenderId) ?? null,
@@ -589,9 +592,18 @@ const LendersContent = () => {
         <Card
           title="Lenders"
           actions={
-            <Button type="button" variant="secondary" onClick={openCreateLenderModal}>
-              Create lender
-            </Button>
+            <ActionGate
+              roles={["Admin", "Staff"]}
+              fallback={
+                <Button type="button" variant="secondary" disabled>
+                  Create lender
+                </Button>
+              }
+            >
+              <Button type="button" variant="secondary" onClick={openCreateLenderModal}>
+                Create lender
+              </Button>
+            </ActionGate>
           }
         >
           {isLoading && <AppLoading />}
@@ -634,9 +646,18 @@ const LendersContent = () => {
                   </td>
                   <td>{lender.submissionConfig?.method || "—"}</td>
                   <td>
-                    <Button type="button" variant="ghost" onClick={() => openEditLenderModal(lender)}>
-                      Edit lender
-                    </Button>
+                    <ActionGate
+                      roles={["Admin", "Staff"]}
+                      fallback={
+                        <Button type="button" variant="ghost" disabled>
+                          Edit lender
+                        </Button>
+                      }
+                    >
+                      <Button type="button" variant="ghost" onClick={() => openEditLenderModal(lender)}>
+                        Edit lender
+                      </Button>
+                    </ActionGate>
                   </td>
                 </tr>
                 );
@@ -653,14 +674,23 @@ const LendersContent = () => {
         <Card
           title="Products"
           actions={
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={openCreateProductModal}
-              disabled={!selectedLender || isSelectedLenderInactive}
+            <ActionGate
+              roles={["Admin", "Staff"]}
+              fallback={
+                <Button type="button" variant="secondary" disabled>
+                  Add product
+                </Button>
+              }
             >
-              Add product
-            </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={openCreateProductModal}
+                disabled={!selectedLender || isSelectedLenderInactive}
+              >
+                Add product
+              </Button>
+            </ActionGate>
           }
         >
           {!selectedLender && (
@@ -754,6 +784,7 @@ const LendersContent = () => {
             className="management-form"
             onSubmit={(event) => {
               event.preventDefault();
+              if (!canManageLenders) return;
               const nextErrors = validateLenderForm(lenderFormValues);
               setLenderFormErrors(nextErrors);
               if (Object.keys(nextErrors).length) return;
@@ -959,6 +990,7 @@ const LendersContent = () => {
           formatRateType={formatRateType}
           onChange={updateProductForm}
           onSubmit={() => {
+            if (!canManageLenders) return;
             const errors = validateProductForm(productFormValues);
             setProductFormErrors(errors);
             if (Object.keys(errors).length) return;

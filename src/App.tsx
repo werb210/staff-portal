@@ -30,6 +30,10 @@ import DataReadyGuard from "./guards/DataReadyGuard";
 import UpdatePromptBanner from "./components/UpdatePromptBanner";
 import { useAuth } from "./auth/AuthContext";
 import { resetAuthState } from "./utils/authReset";
+import { useNotificationAudio } from "@/hooks/useNotificationAudio";
+import { useNotificationsStore } from "@/state/notifications.store";
+import { buildNotification } from "@/utils/notifications";
+import type { PushNotificationPayload } from "@/types/notifications";
 
 const RouteChangeObserver = () => {
   const location = useLocation();
@@ -62,6 +66,8 @@ const ProtectedApp = () => (
 export default function App() {
   useApiHealthCheck();
   const { accessToken } = useAuth();
+  const { playNotificationSound } = useNotificationAudio();
+  const addNotification = useNotificationsStore((state) => state.addNotification);
   const queryClient = useMemo(
     () =>
       new QueryClient({
@@ -105,7 +111,7 @@ export default function App() {
       window.removeEventListener("unhandledrejection", handleUnhandledRejection);
       window.removeEventListener("error", handleWindowError);
     };
-  }, []);
+  }, [addNotification, playNotificationSound]);
 
   useEffect(() => {
     if (previousTokenRef.current === accessToken) return;
@@ -115,32 +121,6 @@ export default function App() {
   }, [accessToken, queryClient]);
 
   useEffect(() => {
-    const playNotificationSound = () => {
-      if (typeof window === "undefined") return;
-      if (!("AudioContext" in window || "webkitAudioContext" in window)) return;
-      const AudioContextConstructor =
-        (window as Window & { webkitAudioContext?: typeof AudioContext }).AudioContext ||
-        (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-      if (!AudioContextConstructor) return;
-      try {
-        const context = new AudioContextConstructor();
-        const oscillator = context.createOscillator();
-        const gain = context.createGain();
-        oscillator.type = "sine";
-        oscillator.frequency.value = 880;
-        gain.gain.value = 0.05;
-        oscillator.connect(gain);
-        gain.connect(context.destination);
-        oscillator.start();
-        oscillator.stop(context.currentTime + 0.2);
-        oscillator.onended = () => {
-          context.close().catch(() => undefined);
-        };
-      } catch {
-        // ignore audio errors
-      }
-    };
-
     const handleOnline = () => {
       void flushQueuedMutations();
     };
@@ -150,7 +130,8 @@ export default function App() {
         return;
       }
       if (event.data?.type === "PUSH_NOTIFICATION") {
-        if (typeof Notification !== "undefined" && Notification.permission !== "granted") return;
+        const payload = event.data.payload as PushNotificationPayload;
+        addNotification(buildNotification(payload ?? {}, "push"));
         if ("setAppBadge" in navigator) {
           (navigator as Navigator & { setAppBadge?: (value?: number) => Promise<void> })
             .setAppBadge?.(1)

@@ -5,16 +5,19 @@ import AppLoading from "@/components/layout/AppLoading";
 import RouteSkeleton from "@/components/layout/RouteSkeleton";
 import { getRequestId } from "@/utils/requestId";
 import { recordRedirect } from "@/utils/redirectGuard";
-import { hasRequiredRole, type UserRole } from "@/utils/roles";
+import { type UserRole } from "@/utils/roles";
+import { canAccess, type Capability } from "@/utils/permissions";
 
 type PrivateRouteProps = {
   children: JSX.Element;
   allowedRoles?: UserRole[];
+  requiredCapabilities?: Capability[];
 };
 
 export default function PrivateRoute({
   children,
   allowedRoles = [],
+  requiredCapabilities = [],
 }: PrivateRouteProps) {
   const auth = useAuth();
   const location = useLocation();
@@ -44,8 +47,12 @@ export default function PrivateRoute({
   // Role restriction check
   if (
     auth.authStatus === "authenticated" &&
-    allowedRoles.length > 0 &&
-    !hasRequiredRole(auth.user?.role, allowedRoles)
+    !canAccess({
+      role: auth.user?.role ?? null,
+      allowedRoles,
+      requiredCapabilities,
+      userCapabilities: (auth.user as { capabilities?: Capability[] } | null)?.capabilities ?? null
+    })
   ) {
     console.info("Route guard decision", {
       requestId,

@@ -7,9 +7,11 @@ import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Select from "@/components/ui/Select";
 import ErrorBanner from "@/components/ui/ErrorBanner";
+import ActionGate from "@/components/auth/ActionGate";
 import RequireRole from "@/components/auth/RequireRole";
 import AppLoading from "@/components/layout/AppLoading";
 import { getErrorMessage } from "@/utils/errors";
+import { useAuthorization } from "@/hooks/useAuthorization";
 import {
   createLenderProduct,
   fetchLenderProducts,
@@ -106,6 +108,7 @@ const LenderProductsContent = () => {
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [formValues, setFormValues] = useState<ProductFormValues>(emptyProductForm(""));
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const canManageProducts = useAuthorization({ roles: ["Admin", "Staff"] });
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [countryFilter, setCountryFilter] = useState<string>("all");
   const isNewRoute = location.pathname.endsWith("/new");
@@ -273,7 +276,7 @@ const LenderProductsContent = () => {
 
   const mutationError = createMutation.error ?? updateMutation.error;
   const mutationLoading = createMutation.isPending || updateMutation.isPending;
-  const isFormDisabled = isLenderInactive || !isLenderSelected;
+  const isFormDisabled = isLenderInactive || !isLenderSelected || !canManageProducts;
 
   const validateForm = (values: ProductFormValues) => {
     const errors: Record<string, string> = {};
@@ -423,17 +426,26 @@ const LenderProductsContent = () => {
         <Card
           title="Products"
           actions={
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => {
-                if (!activeLenderId) return;
-                navigate(`/lender-products/new?lenderId=${activeLenderId}`);
-              }}
-              disabled={!isLenderSelected || isLenderInactive}
+            <ActionGate
+              roles={["Admin", "Staff"]}
+              fallback={
+                <Button type="button" variant="secondary" disabled>
+                  Add Product
+                </Button>
+              }
             >
-              Add Product
-            </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => {
+                  if (!activeLenderId || !canManageProducts) return;
+                  navigate(`/lender-products/new?lenderId=${activeLenderId}`);
+                }}
+                disabled={!isLenderSelected || isLenderInactive}
+              >
+                Add Product
+              </Button>
+            </ActionGate>
           }
         >
           <div className="management-grid__row" style={{ marginBottom: 12 }}>

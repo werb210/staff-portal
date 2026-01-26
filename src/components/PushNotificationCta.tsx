@@ -1,8 +1,18 @@
+import { useEffect } from "react";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { useAuth } from "@/hooks/useAuth";
 import Button from "@/components/ui/Button";
 
 const PushNotificationCta = () => {
-  const { permission, requestPermission, isSupported } = usePushNotifications();
+  const { user, authStatus } = useAuth();
+  const { permission, requestPermission, isSupported, hasPrompted, hydratePreference } =
+    usePushNotifications();
+
+  useEffect(() => {
+    if (authStatus !== "authenticated") return;
+    const userId = (user as { id?: string } | null)?.id ?? null;
+    hydratePreference(userId);
+  }, [authStatus, hydratePreference, user]);
 
   if (!isSupported) return null;
 
@@ -16,7 +26,7 @@ const PushNotificationCta = () => {
 
   return (
     <Button variant="ghost" onClick={() => void requestPermission()}>
-      Enable Notifications
+      {hasPrompted ? "Enable Notifications" : "Allow Notifications"}
     </Button>
   );
 };

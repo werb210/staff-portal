@@ -4,19 +4,32 @@ import AccessRestricted from "@/components/auth/AccessRestricted";
 import AppLoading from "@/components/layout/AppLoading";
 import { useAuth } from "@/hooks/useAuth";
 import { emitUiTelemetry } from "@/utils/uiTelemetry";
-import { hasRequiredRole, type UserRole } from "@/utils/roles";
+import { type UserRole } from "@/utils/roles";
+import { canAccess, type Capability } from "@/utils/permissions";
 
 const defaultMessage = "You do not have permission to view this page.";
 
 type RequireRoleProps = PropsWithChildren<{
   roles: UserRole[];
+  capabilities?: Capability[];
   fallback?: ReactNode;
   message?: string;
 }>;
 
-const RequireRole = ({ roles, children, fallback, message = defaultMessage }: RequireRoleProps) => {
+const RequireRole = ({
+  roles,
+  capabilities = [],
+  children,
+  fallback,
+  message = defaultMessage
+}: RequireRoleProps) => {
   const { user, authStatus } = useAuth();
-  const hasAccess = hasRequiredRole(user?.role, roles);
+  const hasAccess = canAccess({
+    role: user?.role ?? null,
+    allowedRoles: roles,
+    requiredCapabilities: capabilities,
+    userCapabilities: (user as { capabilities?: Capability[] } | null)?.capabilities ?? null
+  });
   const emittedRef = useRef(false);
 
   useEffect(() => {
