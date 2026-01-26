@@ -17,6 +17,7 @@ import LenderProductModal, { type ProductFormValues } from "@/components/LenderP
 import {
   createLender,
   createLenderProduct,
+  fetchLenderById,
   fetchLenderProducts,
   fetchLenders,
   updateLender,
@@ -216,10 +217,10 @@ const LendersContent = () => {
 
   const [selectedLenderId, setSelectedLenderId] = useState<string | null>(null);
   const [isLenderModalOpen, setIsLenderModalOpen] = useState(false);
+  const [editingLenderId, setEditingLenderId] = useState<string | null>(null);
   const [editingLender, setEditingLender] = useState<Lender | null>(null);
   const [lenderFormValues, setLenderFormValues] = useState<LenderFormValues>(emptyLenderForm);
   const [lenderFormErrors, setLenderFormErrors] = useState<Record<string, string>>({});
-  const [togglingLenderId, setTogglingLenderId] = useState<string | null>(null);
 
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<LenderProduct | null>(null);
@@ -233,6 +234,16 @@ const LendersContent = () => {
   );
 
   const isSelectedLenderInactive = Boolean(selectedLender && selectedLender.active === false);
+
+  const {
+    data: lenderDetail,
+    isLoading: lenderDetailLoading,
+    error: lenderDetailError
+  } = useQuery<Lender, Error>({
+    queryKey: ["lender-detail", editingLenderId ?? "none"],
+    queryFn: () => fetchLenderById(editingLenderId ?? ""),
+    enabled: Boolean(editingLenderId && isLenderModalOpen)
+  });
 
   const {
     data: products = [],
@@ -252,18 +263,17 @@ const LendersContent = () => {
   useEffect(() => {
     if (isNewRoute) {
       setEditingLender(null);
+      setEditingLenderId(null);
       setLenderFormValues(emptyLenderForm);
       setLenderFormErrors({});
       setIsLenderModalOpen(true);
       return;
     }
     if (!lenderId) return;
-    const matching = safeLenders.find((lender) => lender.id === lenderId);
-    if (!matching) return;
-    setSelectedLenderId(matching.id);
-    setEditingLender(matching);
+    setSelectedLenderId(lenderId);
+    setEditingLenderId(lenderId);
     setIsLenderModalOpen(true);
-  }, [isNewRoute, lenderId, safeLenders]);
+  }, [isNewRoute, lenderId]);
 
   useEffect(() => {
     if (!safeLenders.length) return;
@@ -271,6 +281,15 @@ const LendersContent = () => {
       setSelectedLenderId(safeLenders[0].id ?? null);
     }
   }, [safeLenders, selectedLenderId]);
+
+  useEffect(() => {
+    if (lenderDetail && editingLenderId && lenderDetail.id === editingLenderId) {
+      setEditingLender(lenderDetail);
+      queryClient.setQueryData<Lender[]>(["lenders"], (current = []) =>
+        current.map((lender) => (lender.id === lenderDetail.id ? lenderDetail : lender))
+      );
+    }
+  }, [editingLenderId, lenderDetail, queryClient]);
 
   useEffect(() => {
     if (editingLender) {
@@ -330,35 +349,20 @@ const LendersContent = () => {
   const updateLenderMutation = useMutation({
     mutationFn: ({ id, payload }: { id: string; payload: Partial<LenderPayload> }) =>
       updateLender(id, payload),
-    onSuccess: async () => {
+    onSuccess: async (updated) => {
+      if (updated?.id) {
+        queryClient.setQueryData<Lender[]>(["lenders"], (current = []) =>
+          current.map((lender) => (lender.id === updated.id ? updated : lender))
+        );
+      }
       await queryClient.invalidateQueries({ queryKey: ["lenders"] });
       setIsLenderModalOpen(false);
+      setEditingLenderId(null);
       setEditingLender(null);
       navigate("/lenders");
     }
   });
 
-  const toggleLenderStatusMutation = useMutation({
-    mutationFn: ({ id, active }: { id: string; active: boolean }) => updateLender(id, { active }),
-    onMutate: async ({ id, active }) => {
-      setTogglingLenderId(id);
-      await queryClient.cancelQueries({ queryKey: ["lenders"] });
-      const previous = queryClient.getQueryData<Lender[]>(["lenders"]);
-      queryClient.setQueryData<Lender[]>(["lenders"], (current = []) =>
-        current.map((lender) => (lender.id === id ? { ...lender, active } : lender))
-      );
-      return { previous };
-    },
-    onError: (_error, _variables, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(["lenders"], context.previous);
-      }
-    },
-    onSettled: async () => {
-      setTogglingLenderId(null);
-      await queryClient.invalidateQueries({ queryKey: ["lenders"] });
-    }
-  });
 
   const createProductMutation = useMutation({
     mutationFn: (payload: LenderProductPayload) => createLenderProduct(payload),
@@ -383,17 +387,11 @@ const LendersContent = () => {
   const mutationLoading = createLenderMutation.isPending || updateLenderMutation.isPending;
   const productMutationError = createProductMutation.error ?? updateProductMutation.error;
   const productMutationLoading = createProductMutation.isPending || updateProductMutation.isPending;
-  const statusToggleError = toggleLenderStatusMutation.error;
 
   const validateLenderForm = (values: LenderFormValues) => {
     const nextErrors: Record<string, string> = {};
     if (!values.name.trim()) nextErrors.name = "Name is required.";
-    if (!values.street.trim()) nextErrors.street = "Street is required.";
-    if (!values.city.trim()) nextErrors.city = "City is required.";
-    if (!values.region.trim()) nextErrors.region = "State/province is required.";
-    if (!values.postalCode.trim()) nextErrors.postalCode = "Postal code is required.";
     if (!values.country.trim()) nextErrors.country = "Country is required.";
-    if (!values.phone.trim()) nextErrors.phone = "Phone is required.";
     if (!values.primaryContactName.trim()) nextErrors.primaryContactName = "Primary contact name is required.";
     if (!values.primaryContactEmail.trim()) {
       nextErrors.primaryContactEmail = "Primary contact email is required.";
@@ -403,6 +401,8 @@ const LendersContent = () => {
     if (!values.submissionMethod) nextErrors.submissionMethod = "Submission method is required.";
     if (values.submissionMethod === "EMAIL" && !values.submissionEmail.trim()) {
       nextErrors.submissionEmail = "Submission email is required.";
+    } else if (values.submissionMethod === "EMAIL" && !isValidEmail(values.submissionEmail)) {
+      nextErrors.submissionEmail = "Enter a valid submission email.";
     }
     return nextErrors;
   };
@@ -422,8 +422,7 @@ const LendersContent = () => {
     contact_email: values.primaryContactEmail.trim(),
     contact_phone: values.primaryContactPhone.trim(),
     submission_method: values.submissionMethod,
-    submission_email:
-      values.submissionMethod === "EMAIL" ? optionalString(values.submissionEmail) : null
+    submission_email: values.submissionMethod === "EMAIL" ? values.submissionEmail.trim() : null
   });
 
   const validateProductForm = (values: ProductFormValues) => {
@@ -529,19 +528,24 @@ const LendersContent = () => {
 
   const openCreateLenderModal = () => {
     setEditingLender(null);
+    setEditingLenderId(null);
     setLenderFormValues(emptyLenderForm);
     setLenderFormErrors({});
     setIsLenderModalOpen(true);
   };
 
-  const openEditLenderModal = (lender: Lender) => {
-    if (!lender?.id) return;
-    setEditingLender(lender);
+  const openEditLenderModal = (lenderIdValue: string) => {
+    if (!lenderIdValue) return;
+    setSelectedLenderId(lenderIdValue);
+    setEditingLenderId(lenderIdValue);
+    setEditingLender(null);
+    setLenderFormErrors({});
     setIsLenderModalOpen(true);
   };
 
   const closeLenderModal = () => {
     setIsLenderModalOpen(false);
+    setEditingLenderId(null);
     setEditingLender(null);
     setLenderFormErrors({});
     if (isNewRoute || lenderId) {
@@ -615,6 +619,12 @@ const LendersContent = () => {
     }
   }, [error, isLoading, safeLenders.length]);
 
+  useEffect(() => {
+    if (lenderDetailError) {
+      console.error("Failed to load lender detail", { requestId: getRequestId(), error: lenderDetailError });
+    }
+  }, [lenderDetailError]);
+
   return (
     <div className="page">
       <div className="management-grid">
@@ -644,11 +654,8 @@ const LendersContent = () => {
               </Button>
             </div>
           )}
-          {statusToggleError && !error && (
-            <ErrorBanner message={getErrorMessage(statusToggleError, "Unable to update lender status.")} />
-          )}
           {!isLoading && !error && (
-            <Table headers={["Name", "Status", "Country", "Primary contact", "Submission", "Actions"]}>
+            <Table headers={["Name", "Status", "Country", "Primary contact"]}>
               {safeLenders.map((lender, index) => {
                 const lenderIdValue = lender.id ?? "";
                 const isActive = lender.active ?? true;
@@ -657,69 +664,37 @@ const LendersContent = () => {
                 return (
                   <tr
                     key={rowKey}
-                    className={isActive ? "management-row" : "management-row management-row--disabled"}
+                    className="management-row"
+                    role={lenderIdValue ? "button" : undefined}
+                    tabIndex={lenderIdValue ? 0 : undefined}
+                    onClick={() => lenderIdValue && openEditLenderModal(lenderIdValue)}
+                    onKeyDown={(event) => {
+                      if (!lenderIdValue) return;
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        openEditLenderModal(lenderIdValue);
+                      }
+                    }}
                   >
-                  <td>
-                    <button
-                      type="button"
-                      className="management-link"
-                      onClick={() => lenderIdValue && setSelectedLenderId(lenderIdValue)}
-                      disabled={!lenderIdValue}
-                    >
-                      {lenderName}
-                    </button>
-                  </td>
-                  <td>
-                    <span className={`status-pill status-pill--${isActive ? "active" : "paused"}`}>
-                      {isActive ? "Active" : "Inactive"}
-                    </span>
-                  </td>
-                  <td>{lender.address?.country || "—"}</td>
-                  <td>
-                    <div className="text-sm font-semibold">{lender.primaryContact?.name || "—"}</div>
-                    <div className="text-xs text-slate-500">{lender.primaryContact?.email || "—"}</div>
-                  </td>
-                  <td>{lender.submissionConfig?.method || "—"}</td>
-                  <td>
-                    <ActionGate
-                      roles={["Admin"]}
-                      fallback={
-                        <Button type="button" variant="ghost" disabled>
-                          {isActive ? "Deactivate" : "Activate"}
-                        </Button>
-                      }
-                    >
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        disabled={!lenderIdValue || togglingLenderId === lenderIdValue}
-                        onClick={() =>
-                          lenderIdValue &&
-                          toggleLenderStatusMutation.mutate({ id: lenderIdValue, active: !isActive })
-                        }
-                      >
-                        {isActive ? "Deactivate" : "Activate"}
-                      </Button>
-                    </ActionGate>
-                    <ActionGate
-                      roles={["Admin", "Staff"]}
-                      fallback={
-                        <Button type="button" variant="ghost" disabled>
-                          Edit lender
-                        </Button>
-                      }
-                    >
-                      <Button type="button" variant="ghost" onClick={() => openEditLenderModal(lender)}>
-                        Edit lender
-                      </Button>
-                    </ActionGate>
-                  </td>
-                </tr>
+                    <td>
+                      <span className="management-link">{lenderName}</span>
+                    </td>
+                    <td>
+                      <span className={`status-pill status-pill--${isActive ? "active" : "paused"}`}>
+                        {isActive ? "ACTIVE" : "INACTIVE"}
+                      </span>
+                    </td>
+                    <td>{lender.address?.country || "—"}</td>
+                    <td>
+                      <div className="text-sm font-semibold">{lender.primaryContact?.name || "—"}</div>
+                      <div className="text-xs text-slate-500">{lender.primaryContact?.email || "—"}</div>
+                    </td>
+                  </tr>
                 );
               })}
               {!safeLenders.length && (
                 <tr>
-                  <td colSpan={6}>
+                  <td colSpan={4}>
                     No lenders.
                   </td>
                 </tr>
@@ -839,6 +814,10 @@ const LendersContent = () => {
           title={editingLender ? "Edit lender" : "Create lender"}
           onClose={closeLenderModal}
         >
+          {lenderDetailLoading && editingLenderId && <AppLoading />}
+          {lenderDetailError && (
+            <ErrorBanner message={getErrorMessage(lenderDetailError, "Unable to load lender details.")} />
+          )}
           {mutationError && (
             <ErrorBanner message={getErrorMessage(mutationError, "Unable to save lender.")} />
           )}
