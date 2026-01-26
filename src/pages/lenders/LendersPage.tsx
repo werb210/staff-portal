@@ -206,10 +206,11 @@ const LendersContent = () => {
   const { lenderId } = useParams();
   const isNewRoute = location.pathname.endsWith("/new");
 
-  const { data: lenders = [], isLoading, error } = useQuery<Lender[], Error>({
+  const { data: lenders = [], isLoading, error, refetch: refetchLenders } = useQuery<Lender[], Error>({
     queryKey: ["lenders"],
     queryFn: ({ signal }) => fetchLenders({ signal })
   });
+  const safeLenders = Array.isArray(lenders) ? lenders : [];
 
   const [selectedLenderId, setSelectedLenderId] = useState<string | null>(null);
   const [isLenderModalOpen, setIsLenderModalOpen] = useState(false);
@@ -223,8 +224,8 @@ const LendersContent = () => {
   const [productFormErrors, setProductFormErrors] = useState<Record<string, string>>({});
 
   const selectedLender = useMemo(
-    () => lenders.find((lender) => lender.id === selectedLenderId) ?? null,
-    [lenders, selectedLenderId]
+    () => safeLenders.find((lender) => lender.id === selectedLenderId) ?? null,
+    [safeLenders, selectedLenderId]
   );
 
   const isSelectedLenderInactive = Boolean(selectedLender && selectedLender.active === false);
@@ -232,13 +233,15 @@ const LendersContent = () => {
   const {
     data: products = [],
     isLoading: productsLoading,
-    error: productsError
+    error: productsError,
+    refetch: refetchProducts
   } = useQuery<LenderProduct[], Error>({
     queryKey: ["lender-products", selectedLenderId ?? "none"],
     queryFn: () => fetchLenderProducts(selectedLenderId ?? ""),
     enabled: Boolean(selectedLenderId),
     placeholderData: (previousData) => previousData ?? []
   });
+  const safeProducts = Array.isArray(products) ? products : [];
 
   useEffect(() => {
     if (isNewRoute) {
@@ -249,19 +252,19 @@ const LendersContent = () => {
       return;
     }
     if (!lenderId) return;
-    const matching = lenders.find((lender) => lender.id === lenderId);
+    const matching = safeLenders.find((lender) => lender.id === lenderId);
     if (!matching) return;
     setSelectedLenderId(matching.id);
     setEditingLender(matching);
     setIsLenderModalOpen(true);
-  }, [isNewRoute, lenderId, lenders]);
+  }, [isNewRoute, lenderId, safeLenders]);
 
   useEffect(() => {
     if (selectedLenderId) return;
-    if (lenders.length) {
-      setSelectedLenderId(lenders[0].id);
+    if (safeLenders.length) {
+      setSelectedLenderId(safeLenders[0].id);
     }
-  }, [lenders, selectedLenderId]);
+  }, [safeLenders, selectedLenderId]);
 
   useEffect(() => {
     if (editingLender) {
@@ -576,9 +579,9 @@ const LendersContent = () => {
 
   useEffect(() => {
     if (!isLoading && !error) {
-      emitUiTelemetry("data_loaded", { view: "lenders", count: lenders.length });
+      emitUiTelemetry("data_loaded", { view: "lenders", count: safeLenders.length });
     }
-  }, [error, isLoading, lenders.length]);
+  }, [error, isLoading, safeLenders.length]);
 
   return (
     <div className="page">
@@ -592,10 +595,17 @@ const LendersContent = () => {
           }
         >
           {isLoading && <AppLoading />}
-          {error && <ErrorBanner message={getErrorMessage(error, "Unable to load lenders.")} />}
+          {error && (
+            <div className="space-y-2">
+              <ErrorBanner message={getErrorMessage(error, "Unable to load lenders.")} />
+              <Button type="button" variant="secondary" onClick={() => void refetchLenders()}>
+                Retry
+              </Button>
+            </div>
+          )}
           {!isLoading && !error && (
             <Table headers={["Name", "Status", "Country", "Primary contact", "Submission", "Actions"]}>
-              {lenders.map((lender) => {
+              {safeLenders.map((lender) => {
                 const isActive = lender.active ?? true;
                 const lenderName = lender.name?.trim() || "Unnamed lender";
                 return (
@@ -631,7 +641,7 @@ const LendersContent = () => {
                 </tr>
                 );
               })}
-              {!lenders.length && (
+              {!safeLenders.length && (
                 <tr>
                   <td colSpan={6}>No lenders</td>
                 </tr>
@@ -668,10 +678,17 @@ const LendersContent = () => {
             </div>
           )}
           {productsLoading && <AppLoading />}
-          {productsError && <ErrorBanner message={getErrorMessage(productsError, "Unable to load products.")} />}
+          {productsError && (
+            <div className="space-y-2">
+              <ErrorBanner message={getErrorMessage(productsError, "Unable to load products.")} />
+              <Button type="button" variant="secondary" onClick={() => void refetchProducts()}>
+                Retry
+              </Button>
+            </div>
+          )}
           {selectedLender && !productsLoading && !productsError && (
             <Table headers={["Name", "Category", "Country", "Currency", "Status", "Amount range"]}>
-              {products.map((product) => {
+              {safeProducts.map((product) => {
                 const productCategory = product.category ?? LENDER_PRODUCT_CATEGORIES[0];
                 const productActive =
                   productCategory === "STARTUP_CAPITAL" ? false : Boolean(product.active);
@@ -715,7 +732,7 @@ const LendersContent = () => {
                   </tr>
                 );
               })}
-              {!products.length && (
+              {!safeProducts.length && (
                 <tr>
                   <td colSpan={6}>No products for this lender.</td>
                 </tr>

@@ -46,6 +46,7 @@ export const renderWithProviders = (ui: ReactElement, options?: StaffRenderOptio
     authenticated: true,
     isAuthenticated: true,
     authReady: true,
+    isHydratingSession: false,
     pendingPhoneNumber: null,
     startOtp: async (_payload) => true,
     verifyOtp: async (_payload) => true,

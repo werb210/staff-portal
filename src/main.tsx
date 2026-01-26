@@ -18,6 +18,9 @@ if (import.meta.env.PROD && "serviceWorker" in navigator) {
       .register("/sw.js")
       .then((registration) => {
         console.info("Service worker registered", { scope: registration.scope });
+        if (registration.waiting) {
+          window.dispatchEvent(new CustomEvent("sw:update", { detail: { registration } }));
+        }
         registration.addEventListener("updatefound", () => {
           const installingWorker = registration.installing;
           if (!installingWorker) return;
@@ -25,6 +28,7 @@ if (import.meta.env.PROD && "serviceWorker" in navigator) {
             if (installingWorker.state === "installed") {
               if (navigator.serviceWorker.controller) {
                 console.info("Service worker update ready");
+                window.dispatchEvent(new CustomEvent("sw:update", { detail: { registration } }));
               } else {
                 console.info("Service worker installed");
               }

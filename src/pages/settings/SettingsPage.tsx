@@ -26,7 +26,8 @@ const SettingsPage = () => {
     [user?.role]
   );
 
-  const availableTabs = tabs.filter((tab) => tab.visible);
+  const safeTabs = Array.isArray(tabs) ? tabs : [];
+  const availableTabs = safeTabs.filter((tab) => tab.visible);
   const activeTabId = tabParam ?? searchParams.get("tab");
   const fallbackTabId = availableTabs[0]?.id ?? "profile";
   const resolvedTabId = availableTabs.some((tab) => tab.id === activeTabId) ? activeTabId : fallbackTabId;
@@ -49,6 +50,11 @@ const SettingsPage = () => {
         <SettingsSectionLayout>
           {showOverview ? (
             <SettingsOverview />
+          ) : availableTabs.length === 0 ? (
+            <div className="settings-panel" role="status">
+              <h2>Settings</h2>
+              <p>No settings sections are available for your account.</p>
+            </div>
           ) : (
             <div className="settings-layout">
               <div className="settings-tabs" role="tablist" aria-label="Settings tabs">

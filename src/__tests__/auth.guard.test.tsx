@@ -16,6 +16,7 @@ const buildAuthValue = (overrides: Partial<AuthContextValue>): AuthContextValue 
   authenticated: true,
   isAuthenticated: true,
   authReady: true,
+  isHydratingSession: false,
   pendingPhoneNumber: null,
   startOtp: async () => true,
   verifyOtp: async () => true,

@@ -64,7 +64,29 @@ a,
   z-index: 6;
 }
 
+.update-banner {
+  position: fixed;
+  right: 16px;
+  bottom: calc(96px + env(safe-area-inset-bottom));
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.18);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 360px;
+  z-index: 6;
+}
+
 .install-banner__actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.update-banner__actions {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
@@ -73,13 +95,13 @@ a,
 .app-shell {
   display: grid;
   grid-template-columns: 260px 1fr;
-  min-height: 100vh;
+  min-height: calc(var(--app-vh, 1vh) * 100);
 }
 
 .app-shell__content {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  min-height: calc(var(--app-vh, 1vh) * 100);
 }
 
 .app-shell__main {
@@ -1406,6 +1428,29 @@ a,
   display: flex;
   justify-content: center;
   padding: 48px;
+}
+
+.route-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 32px;
+}
+
+.route-skeleton__label {
+  font-size: 14px;
+  color: #64748b;
+}
+
+.route-skeleton__panel {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
 }
 
 .error-fallback {

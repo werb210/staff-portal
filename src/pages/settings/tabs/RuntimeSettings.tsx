@@ -130,7 +130,13 @@ const RuntimeSettings = () => {
       </div>
 
       <div className="settings-actions">
-        <Button type="button" variant="secondary" onClick={fetchRuntime} disabled={isFetching}>
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={fetchRuntime}
+          disabled={isFetching}
+          title={isFetching ? "Runtime status is refreshing." : undefined}
+        >
           {isFetching ? "Refreshing..." : "Refresh status"}
         </Button>
         {lastChecked && <span className="runtime-status__timestamp">Last checked at {lastChecked}</span>}

@@ -37,6 +37,8 @@ export default function LoginPage() {
   const [hideMicrosoftButton, setHideMicrosoftButton] = useState(false);
   const isSendingRef = useRef(false);
   const isVerifyingRef = useRef(false);
+  const hasNavigatedRef = useRef(false);
+  const redirectHandledRef = useRef(false);
 
   const msalClient = useMemo(() => {
     if (!microsoftAuthConfig?.clientId) return null;
@@ -69,7 +71,8 @@ export default function LoginPage() {
 
   // 🚨 CRITICAL: redirect immediately once authenticated
   useEffect(() => {
-    if (auth.authStatus === "authenticated") {
+    if (auth.authStatus === "authenticated" && !hasNavigatedRef.current) {
+      hasNavigatedRef.current = true;
       navigate("/dashboard", { replace: true });
     }
   }, [auth.authStatus, navigate]);
@@ -78,6 +81,8 @@ export default function LoginPage() {
     if (!msalClient) return;
     let isMounted = true;
     const handleRedirect = async () => {
+      if (redirectHandledRef.current) return;
+      redirectHandledRef.current = true;
       try {
         const response = await msalClient.handleRedirectPromise();
         if (!response) return;

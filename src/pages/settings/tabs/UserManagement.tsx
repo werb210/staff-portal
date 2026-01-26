@@ -34,6 +34,7 @@ const UserManagement = () => {
   const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
 
   const visibleUsers = useMemo(() => users, [users]);
+  const safeUsers = Array.isArray(visibleUsers) ? visibleUsers : [];
 
   const splitName = (name?: string) => {
     const normalized = name?.trim() ?? "";
@@ -126,12 +127,19 @@ const UserManagement = () => {
       {formError && <ErrorBanner message={formError} />}
 
       <div className="settings-actions">
-        <Button type="button" variant="secondary" onClick={onLoadUsers} disabled={isLoadingUsers}>
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={onLoadUsers}
+          disabled={isLoadingUsers}
+          title={isLoadingUsers ? "User list is refreshing." : undefined}
+        >
           {isLoadingUsers ? "Refreshing..." : "Refresh users"}
         </Button>
         <Button
           type="button"
           disabled={isLoadingUsers}
+          title={isLoadingUsers ? "User list is refreshing." : undefined}
           onClick={() => {
             setEditingUser(null);
             setFormErrors({});
@@ -145,7 +153,7 @@ const UserManagement = () => {
 
       <div className="user-management__table">
         <Table headers={["Name", "Role", "Status", "Actions"]}>
-          {visibleUsers.map((user) => {
+          {safeUsers.map((user) => {
             const safeEmail = user.email ?? "";
             const displayName =
               `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() ||
@@ -181,6 +189,7 @@ const UserManagement = () => {
                     variant="secondary"
                     onClick={() => onToggleDisabled(user.id, !user.disabled)}
                     disabled={isLoadingUsers}
+                    title={isLoadingUsers ? "User updates are refreshing." : undefined}
                   >
                     {user.disabled ? "Enable" : "Disable"}
                   </Button>
@@ -207,7 +216,7 @@ const UserManagement = () => {
               </tr>
             );
           })}
-          {visibleUsers.length === 0 && (
+          {safeUsers.length === 0 && (
             <tr>
               <td colSpan={4}>No users have been added yet.</td>
             </tr>
@@ -216,7 +225,7 @@ const UserManagement = () => {
       </div>
 
       <div className="user-management__cards">
-        {visibleUsers.map((user) => {
+        {safeUsers.map((user) => {
           const safeEmail = user.email ?? "";
           const displayName =
             `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() ||
@@ -250,6 +259,7 @@ const UserManagement = () => {
                     variant="secondary"
                     onClick={() => onToggleDisabled(user.id, !user.disabled)}
                     disabled={isLoadingUsers}
+                    title={isLoadingUsers ? "User updates are refreshing." : undefined}
                   >
                     {user.disabled ? "Enable" : "Disable"}
                   </Button>
@@ -277,7 +287,7 @@ const UserManagement = () => {
             </div>
           );
         })}
-        {visibleUsers.length === 0 && <div className="user-card user-card--empty">No users have been added yet.</div>}
+        {safeUsers.length === 0 && <div className="user-card user-card--empty">No users have been added yet.</div>}
       </div>
 
       {statusMessage && <div role="status">{statusMessage}</div>}
@@ -303,7 +313,7 @@ const UserManagement = () => {
               ]}
             />
             <div className="settings-actions">
-              <Button type="submit" disabled={isLoadingUsers}>
+              <Button type="submit" disabled={isLoadingUsers} title={isLoadingUsers ? "Saving user." : undefined}>
                 {isLoadingUsers ? "Saving..." : editingUser ? "Save changes" : "Add user"}
               </Button>
               <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}>

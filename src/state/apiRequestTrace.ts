@@ -13,3 +13,7 @@ export const setLastApiRequest = (trace: ApiRequestTrace) => {
 };
 
 export const getLastApiRequest = () => lastRequest;
+
+export const clearLastApiRequest = () => {
+  lastRequest = null;
+};
