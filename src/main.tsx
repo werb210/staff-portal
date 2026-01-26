@@ -12,6 +12,32 @@ const rootElement = document.getElementById("root") as HTMLElement;
 enforceRequestIdOnConsoleError();
 startUiHeartbeat(rootElement);
 
+if (import.meta.env.PROD && "serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker
+      .register("/sw.js")
+      .then((registration) => {
+        console.info("Service worker registered", { scope: registration.scope });
+        registration.addEventListener("updatefound", () => {
+          const installingWorker = registration.installing;
+          if (!installingWorker) return;
+          installingWorker.addEventListener("statechange", () => {
+            if (installingWorker.state === "installed") {
+              if (navigator.serviceWorker.controller) {
+                console.info("Service worker update ready");
+              } else {
+                console.info("Service worker installed");
+              }
+            }
+          });
+        });
+      })
+      .catch((error) => {
+        console.error("Service worker registration failed", error);
+      });
+  });
+}
+
 ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
     <AuthProvider>

@@ -4,6 +4,7 @@ import { useSettingsStore } from "@/state/settings.store";
 import { getRoleLabel } from "@/utils/roles";
 import Button from "../ui/Button";
 import SiloSelector from "./SiloSelector";
+import PushNotificationCta from "@/components/PushNotificationCta";
 
 type TopbarProps = {
   onToggleSidebar: () => void;
@@ -40,6 +41,7 @@ const Topbar = ({ onToggleSidebar }: TopbarProps) => {
       </div>
       <div className="topbar__right">
         <SiloSelector />
+        <PushNotificationCta />
         {user && (
           <div className="topbar__user">
             <div>
