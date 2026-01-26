@@ -52,9 +52,6 @@ export type PipelineStoreState = {
 };
 
 const defaultFilters: PipelineFilters = {
-  docsStatus: "all",
-  bankingComplete: null,
-  ocrComplete: null,
   sort: "newest"
 };
 
@@ -168,12 +165,8 @@ export const usePipelineStore = create<PipelineStore>((set) => {
 const filterKeyParts = (filters: PipelineFilters) => [
   filters.searchTerm ?? "",
   filters.productCategory ?? "",
-  filters.assignedStaffId ?? "",
   filters.dateFrom ?? "",
   filters.dateTo ?? "",
-  filters.docsStatus ?? "all",
-  filters.bankingComplete ?? "any",
-  filters.ocrComplete ?? "any",
   filters.sort ?? "newest"
 ];
 

@@ -6,12 +6,8 @@ const buildQueryParams = (filters: PipelineFilters, stage?: PipelineStageId): st
   if (stage) params.set("stage", stage);
   if (filters.searchTerm) params.set("search", filters.searchTerm);
   if (filters.productCategory) params.set("productCategory", filters.productCategory);
-  if (filters.assignedStaffId) params.set("assignedStaff", filters.assignedStaffId);
   if (filters.dateFrom) params.set("from", filters.dateFrom);
   if (filters.dateTo) params.set("to", filters.dateTo);
-  if (filters.docsStatus && filters.docsStatus !== "all") params.set("docsStatus", filters.docsStatus);
-  if (filters.bankingComplete != null) params.set("bankingComplete", String(filters.bankingComplete));
-  if (filters.ocrComplete != null) params.set("ocrComplete", String(filters.ocrComplete));
   if (filters.sort) params.set("sort", filters.sort);
   return params.toString();
 };
