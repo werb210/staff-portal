@@ -219,12 +219,20 @@ const LendersContent = () => {
   const [editingLender, setEditingLender] = useState<Lender | null>(null);
   const [lenderFormValues, setLenderFormValues] = useState<LenderFormValues>(emptyLenderForm);
   const [lenderFormErrors, setLenderFormErrors] = useState<Record<string, string>>({});
+  const [statusFilter, setStatusFilter] = useState<"active" | "inactive" | "all">("active");
+  const [togglingLenderId, setTogglingLenderId] = useState<string | null>(null);
 
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<LenderProduct | null>(null);
   const [productFormValues, setProductFormValues] = useState<ProductFormValues>(emptyProductForm(""));
   const [productFormErrors, setProductFormErrors] = useState<Record<string, string>>({});
   const canManageLenders = useAuthorization({ roles: ["Admin", "Staff"] });
+
+  const filteredLenders = useMemo(() => {
+    if (statusFilter === "all") return safeLenders;
+    const shouldBeActive = statusFilter === "active";
+    return safeLenders.filter((lender) => Boolean(lender.active ?? true) === shouldBeActive);
+  }, [safeLenders, statusFilter]);
 
   const selectedLender = useMemo(
     () => safeLenders.find((lender) => lender.id === selectedLenderId) ?? null,
@@ -263,12 +271,11 @@ const LendersContent = () => {
   }, [isNewRoute, lenderId, safeLenders]);
 
   useEffect(() => {
-    if (selectedLenderId) return;
-    const firstLender = safeLenders.find((lender) => Boolean(lender?.id));
-    if (firstLender?.id) {
-      setSelectedLenderId(firstLender.id);
+    if (!filteredLenders.length) return;
+    if (!selectedLenderId || !filteredLenders.some((lender) => lender.id === selectedLenderId)) {
+      setSelectedLenderId(filteredLenders[0].id ?? null);
     }
-  }, [safeLenders, selectedLenderId]);
+  }, [filteredLenders, selectedLenderId]);
 
   useEffect(() => {
     if (editingLender) {
@@ -335,6 +342,28 @@ const LendersContent = () => {
     }
   });
 
+  const toggleLenderStatusMutation = useMutation({
+    mutationFn: ({ id, active }: { id: string; active: boolean }) => updateLender(id, { active }),
+    onMutate: async ({ id, active }) => {
+      setTogglingLenderId(id);
+      await queryClient.cancelQueries({ queryKey: ["lenders"] });
+      const previous = queryClient.getQueryData<Lender[]>(["lenders"]);
+      queryClient.setQueryData<Lender[]>(["lenders"], (current = []) =>
+        current.map((lender) => (lender.id === id ? { ...lender, active } : lender))
+      );
+      return { previous };
+    },
+    onError: (_error, _variables, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(["lenders"], context.previous);
+      }
+    },
+    onSettled: async () => {
+      setTogglingLenderId(null);
+      await queryClient.invalidateQueries({ queryKey: ["lenders"] });
+    }
+  });
+
   const createProductMutation = useMutation({
     mutationFn: (payload: LenderProductPayload) => createLenderProduct(payload),
     onSuccess: async () => {
@@ -358,6 +387,7 @@ const LendersContent = () => {
   const mutationLoading = createLenderMutation.isPending || updateLenderMutation.isPending;
   const productMutationError = createProductMutation.error ?? updateProductMutation.error;
   const productMutationLoading = createProductMutation.isPending || updateProductMutation.isPending;
+  const statusToggleError = toggleLenderStatusMutation.error;
 
   const validateLenderForm = (values: LenderFormValues) => {
     const nextErrors: Record<string, string> = {};
@@ -618,9 +648,25 @@ const LendersContent = () => {
               </Button>
             </div>
           )}
+          {statusToggleError && !error && (
+            <ErrorBanner message={getErrorMessage(statusToggleError, "Unable to update lender status.")} />
+          )}
+          {!isLoading && !error && safeLenders.length > 0 && (
+            <div className="management-grid__row" style={{ marginBottom: 12 }}>
+              <Select
+                label="Status"
+                value={statusFilter}
+                onChange={(event) => setStatusFilter(event.target.value as "active" | "inactive" | "all")}
+              >
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+                <option value="all">All</option>
+              </Select>
+            </div>
+          )}
           {!isLoading && !error && (
             <Table headers={["Name", "Status", "Country", "Primary contact", "Submission", "Actions"]}>
-              {safeLenders.map((lender, index) => {
+              {filteredLenders.map((lender, index) => {
                 const lenderIdValue = lender.id ?? "";
                 const isActive = lender.active ?? true;
                 const lenderName = lender.name?.trim() || "Unnamed lender";
@@ -653,6 +699,26 @@ const LendersContent = () => {
                   <td>{lender.submissionConfig?.method || "—"}</td>
                   <td>
                     <ActionGate
+                      roles={["Admin"]}
+                      fallback={
+                        <Button type="button" variant="ghost" disabled>
+                          {isActive ? "Deactivate" : "Activate"}
+                        </Button>
+                      }
+                    >
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        disabled={!lenderIdValue || togglingLenderId === lenderIdValue}
+                        onClick={() =>
+                          lenderIdValue &&
+                          toggleLenderStatusMutation.mutate({ id: lenderIdValue, active: !isActive })
+                        }
+                      >
+                        {isActive ? "Deactivate" : "Activate"}
+                      </Button>
+                    </ActionGate>
+                    <ActionGate
                       roles={["Admin", "Staff"]}
                       fallback={
                         <Button type="button" variant="ghost" disabled>
@@ -668,9 +734,15 @@ const LendersContent = () => {
                 </tr>
                 );
               })}
-              {!safeLenders.length && (
+              {!filteredLenders.length && (
                 <tr>
-                  <td colSpan={6}>No lenders</td>
+                  <td colSpan={6}>
+                    {statusFilter === "active"
+                      ? "No active lenders."
+                      : statusFilter === "inactive"
+                        ? "No inactive lenders."
+                        : "No lenders"}
+                  </td>
                 </tr>
               )}
             </Table>

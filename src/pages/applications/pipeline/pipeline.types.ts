@@ -1,18 +1,13 @@
 import type { DragEndEvent } from "@dnd-kit/core";
 
-export type PipelineStageId =
-  | "received"
-  | "in_review"
-  | "docs_required"
-  | "additional_steps"
-  | "off_to_lender"
-  | "offer";
+export type PipelineStageId = string;
 
 export type PipelineStage = {
   id: PipelineStageId;
   label: string;
   description?: string;
   terminal?: boolean;
+  allowedTransitions?: PipelineStageId[];
 };
 
 export type PipelineFilters = {
@@ -61,31 +56,83 @@ export type PipelineDragEndEvent = DragEndEvent & {
   };
 };
 
-export const PIPELINE_STAGES: PipelineStage[] = [
-  { id: "received", label: "Received", description: "Application received" },
-  { id: "in_review", label: "In Review", description: "Team reviewing application" },
-  { id: "docs_required", label: "Documents Required", description: "Waiting on applicant documents" },
-  { id: "additional_steps", label: "Additional Steps", description: "Extra validation steps" },
-  { id: "off_to_lender", label: "Off to Lender", description: "Application submitted to lender" },
-  { id: "offer", label: "Offer", description: "Offer delivered", terminal: true }
-];
+export const PIPELINE_STAGE_ORDER = [
+  "RECEIVED",
+  "DOCUMENTS_REQUIRED",
+  "IN_REVIEW",
+  "START_UP",
+  "OFF_TO_LENDER",
+  "ACCEPTED",
+  "DECLINED"
+] as const;
 
-export const PIPELINE_STAGE_LABELS: Record<PipelineStageId, string> = PIPELINE_STAGES.reduce(
-  (acc, stage) => ({ ...acc, [stage.id]: stage.label }),
-  {} as Record<PipelineStageId, string>
-);
+export const sortPipelineStages = (stages: PipelineStage[]) => {
+  const orderIndex = new Map(PIPELINE_STAGE_ORDER.map((id, index) => [id, index]));
+  return stages
+    .filter((stage) => orderIndex.has(stage.id))
+    .sort((a, b) => (orderIndex.get(a.id) ?? 0) - (orderIndex.get(b.id) ?? 0));
+};
 
-export const findPipelineStage = (stageId: PipelineStageId) =>
-  PIPELINE_STAGES.find((stage) => stage.id === stageId);
+export const buildStageLabelMap = (stages: PipelineStage[]) =>
+  stages.reduce(
+    (acc, stage) => ({ ...acc, [stage.id]: stage.label }),
+    {} as Record<PipelineStageId, string>
+  );
 
-export const isTerminalStage = (stageId: PipelineStageId) => findPipelineStage(stageId)?.terminal ?? false;
+export const getStageById = (stages: PipelineStage[], stageId: PipelineStageId) =>
+  stages.find((stage) => stage.id === stageId);
 
-export const canMoveCardToStage = (
-  card: PipelineApplication | null,
-  fromStage: PipelineStageId | null,
-  toStage: PipelineStageId | null
-) => {
-  if (!card || !fromStage || !toStage || fromStage === toStage) return false;
-  if (isTerminalStage(fromStage)) return false;
-  return true;
+type StageTransitionResult = {
+  allowed: boolean;
+  reason?: string;
+};
+
+const buildTransitionMessage = (nextStageLabel: string | undefined) =>
+  nextStageLabel
+    ? `Applications can only move to ${nextStageLabel} from here.`
+    : "Applications can only move to the next stage from here.";
+
+export const evaluateStageTransition = ({
+  card,
+  fromStage,
+  toStage,
+  stages
+}: {
+  card: PipelineApplication | null;
+  fromStage: PipelineStageId | null;
+  toStage: PipelineStageId | null;
+  stages: PipelineStage[];
+}): StageTransitionResult => {
+  if (!card || !fromStage || !toStage || fromStage === toStage) {
+    return { allowed: false };
+  }
+
+  const fromStageConfig = getStageById(stages, fromStage);
+  if (!fromStageConfig) {
+    return { allowed: false, reason: "Applications cannot be moved from an unknown stage." };
+  }
+
+  if (fromStageConfig.terminal) {
+    return { allowed: false, reason: "Applications in terminal stages cannot be moved." };
+  }
+
+  if (fromStageConfig.allowedTransitions && fromStageConfig.allowedTransitions.length > 0) {
+    return fromStageConfig.allowedTransitions.includes(toStage)
+      ? { allowed: true }
+      : { allowed: false, reason: "That stage change is not allowed." };
+  }
+
+  const fromIndex = PIPELINE_STAGE_ORDER.indexOf(fromStage as (typeof PIPELINE_STAGE_ORDER)[number]);
+  const toIndex = PIPELINE_STAGE_ORDER.indexOf(toStage as (typeof PIPELINE_STAGE_ORDER)[number]);
+  if (fromIndex === -1 || toIndex === -1) {
+    return { allowed: false, reason: "That stage change is not supported." };
+  }
+
+  if (toIndex === fromIndex + 1) {
+    return { allowed: true };
+  }
+
+  const nextStage = PIPELINE_STAGE_ORDER[fromIndex + 1];
+  const nextStageLabel = nextStage ? buildStageLabelMap(stages)[nextStage] : undefined;
+  return { allowed: false, reason: buildTransitionMessage(nextStageLabel) };
 };
