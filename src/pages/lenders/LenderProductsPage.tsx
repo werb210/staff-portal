@@ -110,12 +110,16 @@ const LenderProductsContent = () => {
   const [countryFilter, setCountryFilter] = useState<string>("all");
   const isNewRoute = location.pathname.endsWith("/new");
 
-  const { data: lenders = [], isLoading: lendersLoading, error: lendersError } = useQuery<Lender[], Error>({
+  const { data: lenders = [], isLoading: lendersLoading, error: lendersError, refetch: refetchLenders } = useQuery<
+    Lender[],
+    Error
+  >({
     queryKey: ["lenders"],
     queryFn: ({ signal }) => fetchLenders({ signal }),
     staleTime: 30_000,
     refetchOnWindowFocus: false
   });
+  const safeLenders = Array.isArray(lenders) ? lenders : [];
 
   useEffect(() => {
     if (activeLenderId) return;
@@ -124,23 +128,24 @@ const LenderProductsContent = () => {
       setActiveLenderId(requestedLenderId);
       return;
     }
-    if (lenders.length) {
-      setActiveLenderId(lenders[0].id);
+    if (safeLenders.length) {
+      setActiveLenderId(safeLenders[0].id);
     }
-  }, [activeLenderId, lenders, searchParams]);
+  }, [activeLenderId, safeLenders, searchParams]);
 
   const activeLender = useMemo(
-    () => lenders.find((lender) => lender.id === activeLenderId) ?? null,
-    [activeLenderId, lenders]
+    () => safeLenders.find((lender) => lender.id === activeLenderId) ?? null,
+    [activeLenderId, safeLenders]
   );
   const isLenderInactive = Boolean(activeLender && !activeLender.active);
-  const hasLenders = lenders.length > 0;
+  const hasLenders = safeLenders.length > 0;
   const isLenderSelected = Boolean(activeLenderId);
 
   const {
     data: products = [],
     isLoading: productsLoading,
-    error: productsError
+    error: productsError,
+    refetch: refetchProducts
   } = useQuery<LenderProduct[], Error>({
     queryKey: ["lender-products", activeLenderId || "all"],
     queryFn: () => fetchLenderProducts(activeLenderId || undefined),
@@ -148,10 +153,11 @@ const LenderProductsContent = () => {
     staleTime: 30_000,
     refetchOnWindowFocus: false
   });
+  const safeProducts = Array.isArray(products) ? products : [];
 
   const selectedProduct = useMemo(
-    () => products.find((product) => product.id === selectedProductId) ?? null,
-    [products, selectedProductId]
+    () => safeProducts.find((product) => product.id === selectedProductId) ?? null,
+    [safeProducts, selectedProductId]
   );
 
   useEffect(() => {
@@ -162,13 +168,13 @@ const LenderProductsContent = () => {
   }, [activeLenderId, selectedProduct]);
 
   const filteredProducts = useMemo(() => {
-    return products.filter((product) => {
+    return safeProducts.filter((product) => {
       const lenderMatch = !activeLenderId || product.lenderId === activeLenderId;
       const categoryMatch = categoryFilter === "all" || product.category === categoryFilter;
       const countryMatch = countryFilter === "all" || product.country === countryFilter;
       return lenderMatch && categoryMatch && countryMatch;
     });
-  }, [activeLenderId, categoryFilter, countryFilter, products]);
+  }, [activeLenderId, categoryFilter, countryFilter, safeProducts]);
 
   useEffect(() => {
     if (isNewRoute) {
@@ -186,39 +192,47 @@ const LenderProductsContent = () => {
 
   const availableCountries = useMemo(() => {
     const countries = new Set<string>();
-    products.forEach((product) => {
+    safeProducts.forEach((product) => {
       if (product.country) countries.add(product.country);
     });
     return Array.from(countries).sort();
-  }, [products]);
+  }, [safeProducts]);
 
   useEffect(() => {
     if (!activeLenderId) return;
     if (selectedProduct) {
       setFormValues({
         lenderId: selectedProduct.lenderId,
-        productName: selectedProduct.productName,
+        productName: selectedProduct.productName ?? "",
         active:
           selectedProduct.category === "STARTUP_CAPITAL" || isLenderInactive
             ? false
             : selectedProduct.active,
-        category: selectedProduct.category,
-        country: selectedProduct.country,
-        currency: selectedProduct.currency,
-        minAmount: selectedProduct.minAmount.toString(),
-        maxAmount: selectedProduct.maxAmount.toString(),
-        interestRateMin: selectedProduct.interestRateMin.toString(),
-        interestRateMax: selectedProduct.interestRateMax.toString(),
-        rateType: selectedProduct.rateType,
-        termMin: selectedProduct.termLength.min.toString(),
-        termMax: selectedProduct.termLength.max.toString(),
-        termUnit: selectedProduct.termLength.unit,
+        category: selectedProduct.category ?? LENDER_PRODUCT_CATEGORIES[0],
+        country: selectedProduct.country ?? "",
+        currency: selectedProduct.currency ?? "",
+        minAmount: Number.isFinite(selectedProduct.minAmount)
+          ? selectedProduct.minAmount.toString()
+          : "",
+        maxAmount: Number.isFinite(selectedProduct.maxAmount)
+          ? selectedProduct.maxAmount.toString()
+          : "",
+        interestRateMin: Number.isFinite(selectedProduct.interestRateMin)
+          ? selectedProduct.interestRateMin.toString()
+          : "",
+        interestRateMax: Number.isFinite(selectedProduct.interestRateMax)
+          ? selectedProduct.interestRateMax.toString()
+          : "",
+        rateType: selectedProduct.rateType ?? RATE_TYPES[0],
+        termMin: selectedProduct.termLength?.min?.toString?.() ?? "",
+        termMax: selectedProduct.termLength?.max?.toString?.() ?? "",
+        termUnit: selectedProduct.termLength?.unit ?? TERM_UNITS[0],
         minimumCreditScore: selectedProduct.minimumCreditScore?.toString() ?? "",
         ltv: selectedProduct.ltv?.toString() ?? "",
         eligibilityRules: selectedProduct.eligibilityRules ?? "",
-        minimumRevenue: selectedProduct.eligibilityFlags.minimumRevenue?.toString() ?? "",
-        timeInBusinessMonths: selectedProduct.eligibilityFlags.timeInBusinessMonths?.toString() ?? "",
-        industryRestrictions: selectedProduct.eligibilityFlags.industryRestrictions ?? ""
+        minimumRevenue: selectedProduct.eligibilityFlags?.minimumRevenue?.toString() ?? "",
+        timeInBusinessMonths: selectedProduct.eligibilityFlags?.timeInBusinessMonths?.toString() ?? "",
+        industryRestrictions: selectedProduct.eligibilityFlags?.industryRestrictions ?? ""
       });
       setFormErrors({});
       return;
@@ -364,7 +378,14 @@ const LenderProductsContent = () => {
     <div className="page">
       <Card title="Lender Products">
         {lendersLoading && <AppLoading />}
-        {lendersError && <ErrorBanner message={getErrorMessage(lendersError, "Unable to load lenders.")} />}
+        {lendersError && (
+          <div className="space-y-2">
+            <ErrorBanner message={getErrorMessage(lendersError, "Unable to load lenders.")} />
+            <Button type="button" variant="secondary" onClick={() => void refetchLenders()}>
+              Retry
+            </Button>
+          </div>
+        )}
         {!lendersLoading && !lendersError && hasLenders && (
           <Select
             label="Filter by lender"
@@ -375,7 +396,7 @@ const LenderProductsContent = () => {
             }}
           >
             <option value="">All lenders</option>
-            {lenders.map((lender) => (
+            {safeLenders.map((lender) => (
               <option key={lender.id} value={lender.id}>
                 {lender.name}
               </option>
@@ -444,7 +465,14 @@ const LenderProductsContent = () => {
             </Select>
           </div>
           {productsLoading && <AppLoading />}
-          {productsError && <ErrorBanner message={getErrorMessage(productsError, "Unable to load products.")} />}
+          {productsError && (
+            <div className="space-y-2">
+              <ErrorBanner message={getErrorMessage(productsError, "Unable to load products.")} />
+              <Button type="button" variant="secondary" onClick={() => void refetchProducts()}>
+                Retry
+              </Button>
+            </div>
+          )}
           {!productsLoading && !productsError && (
             <Table
               headers={[
@@ -458,6 +486,8 @@ const LenderProductsContent = () => {
             >
               {filteredProducts.map((product) => {
                 const productActive = product.category === "STARTUP_CAPITAL" ? false : product.active;
+                const minAmount = Number.isFinite(product.minAmount) ? product.minAmount : 0;
+                const maxAmount = Number.isFinite(product.maxAmount) ? product.maxAmount : 0;
                 return (
                 <tr
                   key={product.id}
@@ -493,7 +523,7 @@ const LenderProductsContent = () => {
                     </span>
                   </td>
                   <td>
-                    ${product.minAmount.toLocaleString()} - ${product.maxAmount.toLocaleString()}
+                    ${minAmount.toLocaleString()} - ${maxAmount.toLocaleString()}
                   </td>
                 </tr>
               );})}
@@ -554,7 +584,7 @@ const LenderProductsContent = () => {
                   disabled={Boolean(selectedProduct)}
                 >
                   <option value="">Select lender</option>
-                  {lenders.map((lender) => (
+                  {safeLenders.map((lender) => (
                     <option key={lender.id} value={lender.id}>
                       {lender.name}
                     </option>

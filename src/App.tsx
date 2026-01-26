@@ -27,6 +27,9 @@ import InstallPromptBanner from "./components/InstallPromptBanner";
 import { flushQueuedMutations, registerBackgroundSync } from "./utils/backgroundSyncQueue";
 import { getDisplayMode } from "./utils/pwa";
 import DataReadyGuard from "./guards/DataReadyGuard";
+import UpdatePromptBanner from "./components/UpdatePromptBanner";
+import { useAuth } from "./auth/AuthContext";
+import { resetAuthState } from "./utils/authReset";
 
 const RouteChangeObserver = () => {
   const location = useLocation();
@@ -58,6 +61,7 @@ const ProtectedApp = () => (
 
 export default function App() {
   useApiHealthCheck();
+  const { accessToken } = useAuth();
   const queryClient = useMemo(
     () =>
       new QueryClient({
@@ -68,6 +72,7 @@ export default function App() {
       }),
     []
   );
+  const previousTokenRef = useRef<string | null>(accessToken);
 
   useEffect(() => {
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
@@ -101,6 +106,13 @@ export default function App() {
       window.removeEventListener("error", handleWindowError);
     };
   }, []);
+
+  useEffect(() => {
+    if (previousTokenRef.current === accessToken) return;
+    previousTokenRef.current = accessToken;
+    queryClient.clear();
+    void resetAuthState();
+  }, [accessToken, queryClient]);
 
   useEffect(() => {
     const playNotificationSound = () => {
@@ -179,6 +191,25 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+    const updateViewport = () => {
+      const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
+      document.documentElement.style.setProperty("--app-vh", `${viewportHeight * 0.01}px`);
+    };
+    updateViewport();
+    window.addEventListener("resize", updateViewport);
+    window.addEventListener("orientationchange", updateViewport);
+    window.visualViewport?.addEventListener("resize", updateViewport);
+    window.visualViewport?.addEventListener("scroll", updateViewport);
+    return () => {
+      window.removeEventListener("resize", updateViewport);
+      window.removeEventListener("orientationchange", updateViewport);
+      window.visualViewport?.removeEventListener("resize", updateViewport);
+      window.visualViewport?.removeEventListener("scroll", updateViewport);
+    };
+  }, []);
+
+  useEffect(() => {
     let lastTouchEnd = 0;
     const handleTouchEnd = (event: TouchEvent) => {
       const now = Date.now();
@@ -207,6 +238,7 @@ export default function App() {
       <UiFailureBanner />
       <OfflineBanner />
       <InstallPromptBanner />
+      <UpdatePromptBanner />
       <ErrorBoundary>
         <BrowserRouter>
           <RouteChangeObserver />

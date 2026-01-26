@@ -20,6 +20,7 @@ vi.mock("@/auth/AuthContext", () => ({
     authenticated: false,
     isAuthenticated: false,
     authReady: true,
+    isHydratingSession: false,
     pendingPhoneNumber: null,
     startOtp: (...args: Parameters<typeof startOtpMock>) => startOtpMock(...args),
     verifyOtp: (...args: Parameters<typeof verifyOtpMock>) => verifyOtpMock(...args),

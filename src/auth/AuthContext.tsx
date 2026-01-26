@@ -20,6 +20,7 @@ import { setUiFailure } from "@/utils/uiFailureStore";
 import {
   clearStoredAuth,
   setStoredAccessToken,
+  getStoredUser,
   setStoredUser
 } from "@/services/token";
 import { getAccessToken } from "@/lib/authToken";
@@ -55,6 +56,7 @@ export interface AuthContextValue {
   authenticated: boolean;
   isAuthenticated: boolean;
   authReady: boolean;
+  isHydratingSession: boolean;
   pendingPhoneNumber: string | null;
   startOtp: (payload: StartOtpPayload | string) => Promise<boolean>;
   verifyOtp: (payload: VerifyOtpPayload | string, code?: string) => Promise<boolean>;
@@ -85,6 +87,7 @@ const buildFallbackAuthContext = (): AuthContextValue => {
     authenticated: fallbackAuthState === "authenticated",
     isAuthenticated: fallbackAuthState === "authenticated",
     authReady: fallbackAuthState !== "loading",
+    isHydratingSession: false,
     pendingPhoneNumber: null,
     startOtp: async () => false,
     verifyOtp: async () => false,
@@ -135,19 +138,22 @@ const getErrorStatus = (error: unknown): number | undefined => {
 
 export function AuthProvider({ children }: PropsWithChildren<{}>) {
   const storedAccessToken = getAccessToken();
+  const storedUser = storedAccessToken ? getStoredUser<AuthenticatedUser>() : null;
   const hasAccessToken = Boolean(storedAccessToken);
   const [authStatus, setAuthStatus] = useState<AuthStatus>(() =>
-    hasAccessToken ? "loading" : "unauthenticated"
+    storedUser ? "authenticated" : hasAccessToken ? "loading" : "unauthenticated"
   );
   const [rolesStatus, setRolesStatus] = useState<RolesStatus>(() =>
-    hasAccessToken ? "loading" : "resolved"
+    storedUser ? "resolved" : hasAccessToken ? "loading" : "resolved"
   );
-  const [user, setUserState] = useState<AuthenticatedUser | null>(null);
+  const [user, setUserState] = useState<AuthenticatedUser | null>(storedUser ?? null);
   const [accessToken, setAccessTokenState] = useState<string | null>(() => storedAccessToken);
   const [error, setError] = useState<string | null>(null);
   const [pendingPhoneNumber, setPendingPhoneNumber] = useState<string | null>(null);
   const previousStatus = useRef<AuthStatus | null>(null);
   const skipNextHydrationRef = useRef(false);
+  const [isHydratingSession, setIsHydratingSession] = useState<boolean>(() => !hasAccessToken);
+  const hasHydratedSessionRef = useRef(false);
 
   const setUser = useCallback((nextUser: AuthenticatedUser | null) => {
     setUserState(nextUser ?? null);
@@ -163,6 +169,7 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
     setRolesStatus("resolved");
     setError(null);
     setPendingPhoneNumber(null);
+    setIsHydratingSession(false);
   }, []);
 
   const clearAuth = useCallback(() => {
@@ -246,6 +253,9 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
         return;
       }
       if (!accessToken) {
+        if (isHydratingSession) {
+          return;
+        }
         if (!isMounted) return;
         setUserState(null);
         setAuthStatus("unauthenticated");
@@ -254,9 +264,12 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
         return;
       }
       if (!isMounted) return;
-      setAuthStatus("loading");
-      setRolesStatus("loading");
-      setUserState(null);
+      const hasSnapshot = Boolean(user);
+      if (!hasSnapshot) {
+        setAuthStatus("loading");
+        setRolesStatus("loading");
+        setUserState(null);
+      }
       try {
         const response = await api.get<AuthenticatedUser>("/auth/me");
         if (!isMounted) return;
@@ -271,8 +284,8 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
         if (status === 401) {
           clearAuthState();
         } else {
-          setAuthStatus("loading");
-          setRolesStatus("loading");
+          setAuthStatus(hasSnapshot ? "authenticated" : "loading");
+          setRolesStatus(hasSnapshot ? "resolved" : "loading");
           setError("Authentication temporarily unavailable.");
           setUiFailure({
             message: "Authentication failed while validating credentials.",
@@ -288,20 +301,31 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
     return () => {
       isMounted = false;
     };
-  }, [accessToken, clearAuthState, setUser]);
+  }, [accessToken, clearAuthState, isHydratingSession, setUser, user]);
 
   useEffect(() => {
-    if (accessToken) return;
+    if (accessToken) {
+      setIsHydratingSession(false);
+      return;
+    }
+    if (hasHydratedSessionRef.current) {
+      setIsHydratingSession(false);
+      return;
+    }
     let isMounted = true;
+    setIsHydratingSession(true);
+    hasHydratedSessionRef.current = true;
     const hydrateFromIndexedDb = async () => {
       const session = await readSession();
-      if (!session?.accessToken) return;
       if (!isMounted) return;
-      setStoredAccessToken(session.accessToken);
-      setAccessTokenState(session.accessToken);
-      setUserState(session.user ?? null);
-      setAuthStatus("loading");
-      setRolesStatus("loading");
+      if (session?.accessToken) {
+        setStoredAccessToken(session.accessToken);
+        setAccessTokenState(session.accessToken);
+        setUserState(session.user ?? null);
+        setAuthStatus(session.user ? "authenticated" : "loading");
+        setRolesStatus(session.user ? "resolved" : "loading");
+      }
+      setIsHydratingSession(false);
     };
     void hydrateFromIndexedDb();
     return () => {
@@ -434,7 +458,8 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
       error,
       authenticated: isAuthenticated,
       isAuthenticated,
-      authReady: authStatus !== "loading",
+      authReady: authStatus !== "loading" && !isHydratingSession,
+      isHydratingSession,
       pendingPhoneNumber,
       startOtp,
       verifyOtp,
@@ -454,6 +479,7 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
       accessToken,
       error,
       isAuthenticated,
+      isHydratingSession,
       pendingPhoneNumber,
       startOtp,
       verifyOtp,

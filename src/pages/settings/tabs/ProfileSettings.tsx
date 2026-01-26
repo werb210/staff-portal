@@ -30,6 +30,7 @@ const ProfileSettings = () => {
   const [isLinkingMicrosoft, setIsLinkingMicrosoft] = useState(false);
   const [hideMicrosoftButton, setHideMicrosoftButton] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const redirectHandledRef = useRef(false);
 
   useEffect(() => {
     setLocalProfile(profile);
@@ -171,6 +172,8 @@ const ProfileSettings = () => {
     if (!msalClient) return;
     let isMounted = true;
     const handleRedirect = async () => {
+      if (redirectHandledRef.current) return;
+      redirectHandledRef.current = true;
       try {
         const response = await msalClient.handleRedirectPromise();
         if (!response) return;
@@ -242,6 +245,13 @@ const ProfileSettings = () => {
   };
 
   const displayName = [localProfile.firstName, localProfile.lastName].filter(Boolean).join(" ").trim();
+  const microsoftDisabledReason = !isMicrosoftConfigured
+    ? "Microsoft OAuth is not configured."
+    : hideMicrosoftButton
+      ? "Microsoft sign-in requires a pop-up or redirect."
+      : isLinkingMicrosoft
+        ? "Microsoft sign-in is in progress."
+        : "";
 
   return (
     <form className="settings-panel" onSubmit={onSave} aria-label="Profile settings">
@@ -303,6 +313,11 @@ const ProfileSettings = () => {
             variant="secondary"
             onClick={handleMicrosoftConnect}
             disabled={!isMicrosoftConfigured || isLinkingMicrosoft || hideMicrosoftButton}
+            title={
+              !isMicrosoftConfigured || isLinkingMicrosoft || hideMicrosoftButton
+                ? microsoftDisabledReason
+                : undefined
+            }
           >
             {profile.microsoftConnected ? "Microsoft 365 connected" : "Connect Microsoft 365"}
           </Button>
@@ -324,10 +339,20 @@ const ProfileSettings = () => {
       </div>
 
       <div className="settings-actions">
-        <Button type="button" variant="secondary" onClick={onLoadProfile} disabled={isLoadingProfile}>
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={onLoadProfile}
+          disabled={isLoadingProfile}
+          title={isLoadingProfile ? "Profile is refreshing." : undefined}
+        >
           {isLoadingProfile ? "Refreshing..." : "Refresh profile"}
         </Button>
-        <Button type="submit" disabled={isLoadingProfile}>
+        <Button
+          type="submit"
+          disabled={isLoadingProfile}
+          title={isLoadingProfile ? "Profile is saving." : undefined}
+        >
           {isLoadingProfile ? "Saving..." : "Save changes"}
         </Button>
         {statusMessage && <span role="status">{statusMessage}</span>}

@@ -5,6 +5,7 @@ import App from "@/App";
 import LoginPage from "@/pages/login/LoginPage";
 import SettingsPage from "@/pages/settings/SettingsPage";
 import LendersPage from "@/pages/lenders/LendersPage";
+import LenderProductsPage from "@/pages/lenders/LenderProductsPage";
 import { renderWithProviders } from "@/test/testUtils";
 
 vi.mock("@/hooks/useApiHealthCheck", () => ({
@@ -68,6 +69,17 @@ describe("staff portal smoke checks", () => {
     expect(await screen.findByText("Lenders")).toBeInTheDocument();
   });
 
+  it("loads the products page", async () => {
+    renderWithProviders(
+      <MemoryRouter initialEntries={["/lender-products"]}>
+        <Routes>
+          <Route path="/lender-products" element={<LenderProductsPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+    expect(await screen.findByText("Lender Products")).toBeInTheDocument();
+  });
+
   it("renders core pages without runtime errors", () => {
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
 
@@ -89,6 +101,14 @@ describe("staff portal smoke checks", () => {
       <MemoryRouter initialEntries={["/lenders"]}>
         <Routes>
           <Route path="/lenders" element={<LendersPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    renderWithProviders(
+      <MemoryRouter initialEntries={["/lender-products"]}>
+        <Routes>
+          <Route path="/lender-products" element={<LenderProductsPage />} />
         </Routes>
       </MemoryRouter>
     );

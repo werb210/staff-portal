@@ -2,6 +2,7 @@ import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/auth/AuthContext";
 import AccessRestricted from "@/components/auth/AccessRestricted";
 import AppLoading from "@/components/layout/AppLoading";
+import RouteSkeleton from "@/components/layout/RouteSkeleton";
 import { getRequestId } from "@/utils/requestId";
 import { recordRedirect } from "@/utils/redirectGuard";
 import { hasRequiredRole, type UserRole } from "@/utils/roles";
@@ -19,8 +20,8 @@ export default function PrivateRoute({
   const location = useLocation();
   const requestId = getRequestId();
 
-  if (auth.authStatus === "loading" || auth.rolesStatus === "loading") {
-    return <AppLoading />;
+  if (!auth.authReady || auth.authStatus === "loading" || auth.rolesStatus === "loading") {
+    return <RouteSkeleton label="Loading secure content" />;
   }
 
   if (auth.authStatus === "authenticated" && !auth.user) {

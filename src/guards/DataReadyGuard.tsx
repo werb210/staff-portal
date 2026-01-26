@@ -1,12 +1,13 @@
 import type { PropsWithChildren } from "react";
 import AppLoading from "@/components/layout/AppLoading";
+import RouteSkeleton from "@/components/layout/RouteSkeleton";
 import { useAuth } from "@/auth/AuthContext";
 
 const DataReadyGuard = ({ children }: PropsWithChildren) => {
-  const { authStatus, rolesStatus, user } = useAuth();
+  const { authStatus, rolesStatus, user, authReady } = useAuth();
 
-  if (authStatus === "loading" || rolesStatus === "loading") {
-    return <AppLoading />;
+  if (!authReady || authStatus === "loading" || rolesStatus === "loading") {
+    return <RouteSkeleton label="Loading staff portal" />;
   }
 
   if (authStatus === "authenticated" && !user) {

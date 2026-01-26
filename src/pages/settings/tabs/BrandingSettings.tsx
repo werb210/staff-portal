@@ -125,11 +125,22 @@ const BrandingSettings = () => {
       </div>
 
       <div className="settings-actions">
-        <Button type="button" variant="secondary" onClick={onLoadBranding} disabled={isLoadingBranding}>
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={onLoadBranding}
+          disabled={isLoadingBranding}
+          title={isLoadingBranding ? "Branding is refreshing." : undefined}
+        >
           {isLoadingBranding ? "Refreshing..." : "Refresh branding"}
         </Button>
         {isAdmin && (
-          <Button type="button" onClick={onSave} disabled={isLoadingBranding}>
+          <Button
+            type="button"
+            onClick={onSave}
+            disabled={isLoadingBranding}
+            title={isLoadingBranding ? "Branding is saving." : undefined}
+          >
             {isLoadingBranding ? "Saving..." : "Save branding"}
           </Button>
         )}
