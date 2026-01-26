@@ -95,9 +95,8 @@ describe("login contract flow", () => {
     );
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
 
-    const otpInput = await screen.findByLabelText(/Verification code/i);
+    const otpInput = await screen.findByLabelText(/OTP digit 1/i);
     await user.type(otpInput, "123456");
-    await user.click(screen.getByRole("button", { name: /Verify code/i }));
 
     await waitFor(() => {
       expect(verifyOtpSpy).toHaveBeenCalledTimes(1);

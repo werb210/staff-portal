@@ -27,6 +27,7 @@ import { registerAuthFailureHandler } from "@/auth/authEvents";
 import api from "@/lib/api";
 import { setAuthTelemetryContext } from "@/utils/uiTelemetry";
 import type { UserRole } from "@/utils/roles";
+import { clearSession, readSession, writeSession } from "@/utils/sessionStore";
 export type AuthStatus = "loading" | "authenticated" | "unauthenticated";
 export type AuthState = AuthStatus;
 export type RolesStatus = "loading" | "resolved";
@@ -154,6 +155,7 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
 
   const clearAuthState = useCallback(() => {
     clearStoredAuth();
+    void clearSession();
     setAccessTokenState(null);
     setUserState(null);
     setAuthStatus("unauthenticated");
@@ -281,6 +283,33 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
       isMounted = false;
     };
   }, [accessToken, clearAuthState, setUser]);
+
+  useEffect(() => {
+    if (accessToken) return;
+    let isMounted = true;
+    const hydrateFromIndexedDb = async () => {
+      const session = await readSession();
+      if (!session?.accessToken) return;
+      if (!isMounted) return;
+      setStoredAccessToken(session.accessToken);
+      setAccessTokenState(session.accessToken);
+      setUserState(session.user ?? null);
+      setAuthStatus("loading");
+      setRolesStatus("loading");
+    };
+    void hydrateFromIndexedDb();
+    return () => {
+      isMounted = false;
+    };
+  }, [accessToken]);
+
+  useEffect(() => {
+    if (!accessToken && !user) {
+      void clearSession();
+      return;
+    }
+    void writeSession({ accessToken, user });
+  }, [accessToken, user]);
 
   useEffect(() => {
     const unregister = registerAuthFailureHandler((reason) => {

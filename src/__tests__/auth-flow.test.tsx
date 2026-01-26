@@ -154,9 +154,8 @@ describe("auth flow", () => {
     fireEvent.change(screen.getByLabelText(/Phone number/i), { target: { value: "+1 555 555 0100" } });
     fireEvent.click(screen.getByRole("button", { name: /Send code/i }));
 
-    const otpInput = await screen.findByLabelText(/verification code/i);
+    const otpInput = await screen.findByLabelText(/otp digit 1/i);
     fireEvent.change(otpInput, { target: { value: "123456" } });
-    fireEvent.click(screen.getByRole("button", { name: /Verify code/i }));
 
     await waitFor(() => {
       expect(screen.getByTestId("location")).toHaveTextContent("/login");
@@ -236,8 +235,7 @@ describe("auth flow", () => {
 
     if (code !== "missing_idempotency_key") {
       await waitFor(() => expect(mockedStartOtp).toHaveBeenCalled());
-      fireEvent.change(screen.getByLabelText(/Verification code/i), { target: { value: "000000" } });
-      fireEvent.click(screen.getByRole("button", { name: /Verify code/i }));
+      fireEvent.change(screen.getByLabelText(/OTP digit 1/i), { target: { value: "000000" } });
     }
 
     await waitFor(() => expect(screen.getByText(/failed/i)).toBeInTheDocument());

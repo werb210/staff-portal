@@ -94,11 +94,19 @@ export default function LoginPage() {
     setErrorDetails(null);
     setStatus(null);
 
+    const normalizeOtpError = (message?: string | null) => {
+      const normalized = message?.toLowerCase() ?? "";
+      if (normalized.includes("expired")) {
+        return "Verification code expired. Request a new one.";
+      }
+      return "Invalid verification code";
+    };
+
     try {
       normalizedPhone = normalizeToE164(targetPhone);
       const ok = await auth.verifyOtp({ phone: normalizedPhone, code });
       if (!ok) {
-        setOtpError(auth.error ?? "Invalid verification code");
+        setOtpError(normalizeOtpError(auth.error));
         setStatus(null);
       }
     } catch (err) {
@@ -107,7 +115,7 @@ export default function LoginPage() {
         return;
       }
       if (err instanceof ApiError) {
-        setOtpError(err.message);
+        setOtpError(normalizeOtpError(err.message));
         setErrorDetails({ endpoint: "/auth/otp/verify", requestId: err.requestId ?? getRequestId() });
         return;
       }
@@ -181,7 +189,7 @@ export default function LoginPage() {
                 }}
                 onComplete={(nextValue) => handleVerifyCode(nextValue)}
               />
-              {otpError && <p className="text-sm text-red-600">{otpError}</p>}
+              {otpError && <ErrorBanner message={otpError} />}
               <button
                 type="button"
                 className="login-link"

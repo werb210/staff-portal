@@ -43,7 +43,14 @@ const UserManagement = () => {
   };
 
   useEffect(() => {
-    void fetchUsers();
+    let isMounted = true;
+    fetchUsers().catch((error) => {
+      if (!isMounted) return;
+      setFormError(getErrorMessage(error, "Unable to load users."));
+    });
+    return () => {
+      isMounted = false;
+    };
   }, [fetchUsers]);
 
   const validateUserForm = () => {

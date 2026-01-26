@@ -101,9 +101,8 @@ describe("portal auth routing smoke tests", () => {
     await user.type(screen.getByLabelText(/phone number/i), "+15555550100");
     await user.click(screen.getByRole("button", { name: /send code/i }));
 
-    const otpInput = await screen.findByLabelText(/verification code/i);
+    const otpInput = await screen.findByLabelText(/otp digit 1/i);
     await user.type(otpInput, "123456");
-    await user.click(screen.getByRole("button", { name: /verify code/i }));
 
     await waitFor(() => {
       expect(window.location.pathname).toBe("/dashboard");

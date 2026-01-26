@@ -110,7 +110,7 @@ describe("auth server contract", () => {
       expect(startOtpSpy).toHaveBeenCalledWith({ phone: "+15555550100" });
     });
 
-    expect(await screen.findByLabelText(/verification code/i)).toBeInTheDocument();
+    expect(await screen.findByLabelText(/otp digit 1/i)).toBeInTheDocument();
   });
 
   it("TEST 3 — CODE ENTRY UI", async () => {
@@ -121,7 +121,7 @@ describe("auth server contract", () => {
     await user.type(screen.getByLabelText(/phone number/i), "+15555550100");
     await user.click(screen.getByRole("button", { name: /send code/i }));
 
-    expect(await screen.findByLabelText(/verification code/i)).toBeInTheDocument();
+    expect(await screen.findByLabelText(/otp digit 1/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /resend code/i })).toBeInTheDocument();
     expect(screen.queryByLabelText(/phone number/i)).not.toBeInTheDocument();
   });
@@ -134,9 +134,8 @@ describe("auth server contract", () => {
     await user.type(screen.getByLabelText(/phone number/i), "+15555550100");
     await user.click(screen.getByRole("button", { name: /send code/i }));
 
-    const otpInput = await screen.findByLabelText(/verification code/i);
+    const otpInput = await screen.findByLabelText(/otp digit 1/i);
     await user.type(otpInput, "123456");
-    await user.click(screen.getByRole("button", { name: /verify code/i }));
 
     await waitFor(() => {
       expect(verifyOtpSpy).toHaveBeenCalledTimes(1);

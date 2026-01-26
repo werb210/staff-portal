@@ -19,6 +19,17 @@ const BrandingSettings = () => {
     setLocalBranding(branding);
   }, [branding]);
 
+  useEffect(() => {
+    let isMounted = true;
+    fetchBranding().catch((error) => {
+      if (!isMounted) return;
+      setFormError(getErrorMessage(error, "Unable to load branding settings."));
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, [fetchBranding]);
+
   const handleLogo = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;

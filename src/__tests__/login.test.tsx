@@ -53,8 +53,7 @@ describe("login flow", () => {
 
     await waitFor(() => expect(mockedStartOtp).toHaveBeenCalled());
 
-    fireEvent.change(screen.getByLabelText(/Verification code/i), { target: { value: "123456" } });
-    fireEvent.click(screen.getByRole("button", { name: /Verify code/i }));
+    fireEvent.change(screen.getByLabelText(/OTP digit 1/i), { target: { value: "123456" } });
 
     await waitFor(() => expect(mockedVerifyOtp).toHaveBeenCalled());
     await waitFor(() => expect(screen.getByText("Dashboard")).toBeInTheDocument());

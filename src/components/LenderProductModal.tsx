@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useMemo, type ReactNode } from "react";
 import Button from "@/components/ui/Button";
 import ErrorBanner from "@/components/ui/ErrorBanner";
 import Input from "@/components/ui/Input";
@@ -78,6 +78,34 @@ const LenderProductModal = ({
   if (!isOpen) return null;
 
   const submissionConfig = selectedLender.submissionConfig;
+  const normalizedDocuments = useMemo(() => {
+    const unique = new Map<string, ProductDocumentRequirement>();
+    requiredDocuments.forEach((doc) => {
+      if (!doc) return;
+      const categoryName = doc.category?.trim() || "Other";
+      const key = categoryName.toLowerCase();
+      const existing = unique.get(key);
+      if (!existing) {
+        unique.set(key, {
+          ...doc,
+          category: categoryName,
+          required: Boolean(doc.required),
+          description: doc.description ?? ""
+        });
+        return;
+      }
+      if (doc.required) {
+        existing.required = true;
+      }
+      if (!existing.description && doc.description) {
+        existing.description = doc.description;
+      }
+    });
+    return Array.from(unique.values()).sort((a, b) => {
+      if (a.required !== b.required) return a.required ? -1 : 1;
+      return a.category.localeCompare(b.category);
+    });
+  }, [requiredDocuments]);
 
   return (
     <Modal title={title} onClose={onClose}>
@@ -275,10 +303,10 @@ const LenderProductModal = ({
 
         <div className="management-field">
           <span className="management-field__label">Required docs</span>
-          {requiredDocuments.length ? (
+          {normalizedDocuments.length ? (
             <div className="management-docs">
-              {requiredDocuments.map((doc) => (
-                <div key={`${doc.category}-${doc.required}`}>
+              {normalizedDocuments.map((doc) => (
+                <div key={doc.category}>
                   <span className="management-docs__title">{doc.category}</span>
                   <p className="text-xs text-slate-500">
                     {doc.required ? "Required" : "Optional"}
