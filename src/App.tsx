@@ -25,6 +25,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import OfflineBanner from "./components/OfflineBanner";
 import InstallPromptBanner from "./components/InstallPromptBanner";
 import { flushQueuedMutations, registerBackgroundSync } from "./utils/backgroundSyncQueue";
+import { getDisplayMode } from "./utils/pwa";
 
 const RouteChangeObserver = () => {
   const location = useLocation();
@@ -158,6 +159,23 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    const applyDisplayMode = () => {
+      document.documentElement.dataset.displayMode = getDisplayMode();
+    };
+
+    applyDisplayMode();
+    window.addEventListener("resize", applyDisplayMode);
+    window.addEventListener("pageshow", applyDisplayMode);
+    document.addEventListener("visibilitychange", applyDisplayMode);
+
+    return () => {
+      window.removeEventListener("resize", applyDisplayMode);
+      window.removeEventListener("pageshow", applyDisplayMode);
+      document.removeEventListener("visibilitychange", applyDisplayMode);
+    };
+  }, []);
+
+  useEffect(() => {
     let lastTouchEnd = 0;
     const handleTouchEnd = (event: TouchEvent) => {
       const now = Date.now();
@@ -197,7 +215,6 @@ export default function App() {
               <Route path="/applications" element={<ApplicationsPage />} />
               <Route path="/crm" element={<CRMPage />} />
               <Route path="/communications" element={<CommunicationsPage />} />
-              <Route path="/comms" element={<CommunicationsPage />} />
               <Route path="/calendar" element={<CalendarPage />} />
               <Route path="/tasks" element={<TaskPane />} />
               <Route path="/marketing" element={<MarketingPage />} />
@@ -226,6 +243,7 @@ export default function App() {
                 }
               />
               <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/settings/:tab" element={<SettingsPage />} />
           </Route>
         </Routes>
       </BrowserRouter>

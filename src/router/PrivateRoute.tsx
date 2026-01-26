@@ -19,7 +19,11 @@ export default function PrivateRoute({
   const location = useLocation();
   const requestId = getRequestId();
 
-  if (auth.authStatus === "loading") {
+  if (auth.authStatus === "loading" || auth.rolesStatus === "loading") {
+    return <AppLoading />;
+  }
+
+  if (auth.authStatus === "authenticated" && !auth.user) {
     return <AppLoading />;
   }
 

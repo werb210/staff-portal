@@ -9,6 +9,7 @@ vi.stubEnv("VITE_API_BASE_URL", "http://localhost/api");
 api.defaults.baseURL = "http://localhost/api";
 clientApi.defaults.baseURL = "http://localhost/api";
 
+
 const blockSkip = (label: string) => {
   return () => {
     throw new Error(`Skipped tests are not allowed (${label}).`);

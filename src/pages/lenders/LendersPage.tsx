@@ -597,6 +597,7 @@ const LendersContent = () => {
             <Table headers={["Name", "Status", "Country", "Primary contact", "Submission", "Actions"]}>
               {lenders.map((lender) => {
                 const isActive = lender.active ?? true;
+                const lenderName = lender.name?.trim() || "Unnamed lender";
                 return (
                   <tr
                     key={lender.id}
@@ -608,7 +609,7 @@ const LendersContent = () => {
                       className="management-link"
                       onClick={() => setSelectedLenderId(lender.id)}
                     >
-                      {lender.name}
+                      {lenderName}
                     </button>
                   </td>
                   <td>
@@ -671,7 +672,11 @@ const LendersContent = () => {
           {selectedLender && !productsLoading && !productsError && (
             <Table headers={["Name", "Category", "Country", "Currency", "Status", "Amount range"]}>
               {products.map((product) => {
-                const productActive = product.category === "STARTUP_CAPITAL" ? false : product.active;
+                const productCategory = product.category ?? LENDER_PRODUCT_CATEGORIES[0];
+                const productActive =
+                  productCategory === "STARTUP_CAPITAL" ? false : Boolean(product.active);
+                const minAmount = Number.isFinite(product.minAmount) ? product.minAmount : 0;
+                const maxAmount = Number.isFinite(product.maxAmount) ? product.maxAmount : 0;
                 return (
                   <tr
                     key={product.id}
@@ -683,29 +688,29 @@ const LendersContent = () => {
                         className="management-link"
                         onClick={() => openEditProductModal(product)}
                       >
-                        {product.productName}
+                        {product.productName || "Untitled product"}
                       </button>
                     </td>
                     <td>
                       <div className="text-sm font-semibold">
-                        {LENDER_PRODUCT_CATEGORY_LABELS[product.category]}
+                        {LENDER_PRODUCT_CATEGORY_LABELS[productCategory]}
                       </div>
-                      {product.category === "SBA_GOVERNMENT" && (
+                      {productCategory === "SBA_GOVERNMENT" && (
                         <div className="text-xs text-slate-500">Government Program</div>
                       )}
-                      {product.category === "STARTUP_CAPITAL" && (
+                      {productCategory === "STARTUP_CAPITAL" && (
                         <div className="text-xs text-amber-600">Not Live</div>
                       )}
                     </td>
-                    <td>{product.country}</td>
-                    <td>{product.currency}</td>
+                    <td>{product.country || "—"}</td>
+                    <td>{product.currency || "—"}</td>
                     <td>
                       <span className={`status-pill status-pill--${productActive ? "active" : "paused"}`}>
                         {productActive ? "Active" : "Inactive"}
                       </span>
                     </td>
                     <td>
-                      ${product.minAmount.toLocaleString()} - ${product.maxAmount.toLocaleString()}
+                      ${minAmount.toLocaleString()} - ${maxAmount.toLocaleString()}
                     </td>
                   </tr>
                 );

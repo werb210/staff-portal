@@ -5,6 +5,14 @@ import path from "path";
 export default defineConfig({
   plugins: [react()],
   base: "/",                 // REQUIRED for Azure App Service
+  resolve: {
+    alias: {
+      ...(process.env.VITEST
+        ? { "@azure/msal-browser": path.resolve(__dirname, "src/test/msalBrowserMock.ts") }
+        : {}),
+      "@": path.resolve(__dirname, "./src"),
+    },
+  },
   build: {
     outDir: "dist",
     emptyOutDir: true,
@@ -24,11 +32,6 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: ["src/test/setupTests.ts"],
     exclude: ["node_modules/**", "tests/e2e/**"]
-  },
-  resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
-    },
   },
   server: {
     proxy: {},
