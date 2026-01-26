@@ -140,10 +140,13 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   fetchUsers: async () => {
     set({ isLoadingUsers: true });
     try {
-      const data = await apiClient.get<UsersResponse>("/users");
-      if (data) {
-        set({ users: data, statusMessage: undefined });
-      }
+      const data = await apiClient.get<UsersResponse | { users?: UsersResponse }>("/users");
+      const nextUsers = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.users)
+          ? data.users
+          : [];
+      set({ users: nextUsers, statusMessage: undefined });
     } finally {
       set({ isLoadingUsers: false });
     }
