@@ -330,6 +330,12 @@ export default function LoginPage() {
                 onComplete={(nextValue) => handleVerifyCode(nextValue)}
               />
               {otpError && <ErrorBanner message={otpError} />}
+              {otpError && errorDetails && (
+                <div className="text-xs text-red-600 space-y-0.5">
+                  <div>Request ID: {errorDetails.requestId ?? ""}</div>
+                  <div>Endpoint: {errorDetails.endpoint}</div>
+                </div>
+              )}
               <button
                 type="button"
                 className="login-link"
@@ -359,18 +365,25 @@ export default function LoginPage() {
             </div>
           )}
 
-          {!showOtpInput && !hideMicrosoftButton && (
-            <button
-              type="button"
-              className="login-secondary"
-              onClick={handleMicrosoftLogin}
-              disabled={!isMicrosoftConfigured || isMicrosoftLoading}
-            >
-              {isMicrosoftLoading ? "Connecting to Microsoft 365..." : "Continue with Microsoft 365"}
-            </button>
-          )}
-          {!showOtpInput && !isMicrosoftConfigured && (
-            <p className="text-xs text-slate-500">Microsoft sign-in is not configured.</p>
+          {!showOtpInput && (
+            <>
+              <button
+                type="button"
+                className="login-secondary"
+                onClick={handleMicrosoftLogin}
+                disabled={!isMicrosoftConfigured || isMicrosoftLoading || hideMicrosoftButton}
+              >
+                {isMicrosoftLoading ? "Connecting to Microsoft 365..." : "Continue with Microsoft 365"}
+              </button>
+              {!isMicrosoftConfigured && (
+                <p className="text-xs text-slate-500">Microsoft sign-in is not configured.</p>
+              )}
+              {hideMicrosoftButton && (
+                <p className="text-xs text-amber-600">
+                  Microsoft sign-in requires a new window. Use OTP if pop-ups are blocked.
+                </p>
+              )}
+            </>
           )}
         </div>
       </div>

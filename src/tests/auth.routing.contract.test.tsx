@@ -110,7 +110,7 @@ describe("auth routing contract", () => {
       authState: "authenticated",
       authStatus: "authenticated",
       rolesStatus: "resolved",
-      user: null,
+      user: { id: "u1", role: "Staff", email: "staff@example.com" },
       accessToken: null,
       error: null,
       authenticated: true,

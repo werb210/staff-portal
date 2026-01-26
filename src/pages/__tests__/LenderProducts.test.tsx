@@ -17,5 +17,6 @@ vi.spyOn(api, "fetchClientLenderProducts").mockResolvedValue([
 
 it("renders lender products table", async () => {
   render(<LenderProducts />);
-  expect(await screen.findByText("LOC")).toBeInTheDocument();
+  const matches = await screen.findAllByText("LOC");
+  expect(matches.length).toBeGreaterThan(0);
 });

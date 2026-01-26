@@ -3,7 +3,7 @@
 exports[`portal role & permission guards > matches role snapshots 1`] = `
 <div>
   <aside
-    class="sidebar"
+    class="sidebar "
   >
     <div
       class="sidebar__header"
@@ -24,8 +24,7 @@ exports[`portal role & permission guards > matches role snapshots 1`] = `
       class="sidebar__nav"
     >
       <a
-        aria-current="page"
-        class="sidebar__link sidebar__link--active"
+        class="sidebar__link "
         href="/dashboard"
       >
         Dashboard
@@ -80,7 +79,7 @@ exports[`portal role & permission guards > matches role snapshots 1`] = `
 exports[`portal role & permission guards > matches role snapshots 2`] = `
 <div>
   <aside
-    class="sidebar"
+    class="sidebar "
   >
     <div
       class="sidebar__header"
@@ -101,8 +100,7 @@ exports[`portal role & permission guards > matches role snapshots 2`] = `
       class="sidebar__nav"
     >
       <a
-        aria-current="page"
-        class="sidebar__link sidebar__link--active"
+        class="sidebar__link "
         href="/dashboard"
       >
         Dashboard
@@ -259,7 +257,7 @@ exports[`portal role & permission guards > matches role snapshots 3`] = `
 exports[`portal role & permission guards > matches role snapshots 4`] = `
 <div>
   <aside
-    class="sidebar"
+    class="sidebar "
   >
     <div
       class="sidebar__header"

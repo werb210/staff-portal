@@ -10,6 +10,7 @@ type OtpInputProps = {
 
 const OtpInput = ({ value, length = 6, disabled = false, onChange, onComplete }: OtpInputProps) => {
   const inputsRef = useRef<Array<HTMLInputElement | null>>([]);
+  const lastCompletedRef = useRef<string | null>(null);
 
   const normalizedValue = useMemo(() => value.replace(/\D/g, "").slice(0, length), [length, value]);
   const digits = useMemo(
@@ -34,8 +35,13 @@ const OtpInput = ({ value, length = 6, disabled = false, onChange, onComplete }:
   useEffect(() => {
     if (disabled) return;
     if (normalizedValue.length === length && onComplete) {
-      onComplete(normalizedValue);
+      if (lastCompletedRef.current !== normalizedValue) {
+        lastCompletedRef.current = normalizedValue;
+        onComplete(normalizedValue);
+      }
+      return;
     }
+    lastCompletedRef.current = null;
   }, [disabled, length, normalizedValue, onComplete]);
 
   const updateValueAt = (index: number, nextDigit: string) => {

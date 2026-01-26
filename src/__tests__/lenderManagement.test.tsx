@@ -194,7 +194,8 @@ describe("lender management flows", () => {
     await userEvent.type(screen.getByLabelText(/Contact name/i), "Primary Contact");
     await userEvent.type(screen.getByLabelText(/Contact email/i), "primary@example.com");
 
-    fireEvent.click(screen.getByRole("button", { name: /Create lender/i }));
+    const createButtons = screen.getAllByRole("button", { name: /Create lender/i });
+    fireEvent.click(createButtons[createButtons.length - 1]);
 
     await waitFor(() => {
       expect(createLenderMock).toHaveBeenCalled();
@@ -255,7 +256,7 @@ describe("lender management flows", () => {
     await userEvent.type(screen.getByLabelText(/Term length min/i), "6");
     await userEvent.type(screen.getByLabelText(/Term length max/i), "60");
 
-    fireEvent.click(screen.getByRole("button", { name: /Create product/i }));
+    fireEvent.click(screen.getByRole("button", { name: /(Save product|Saving\.\.\.)/i }));
 
     await waitFor(() => {
       expect(createLenderProductMock).toHaveBeenCalled();
@@ -287,10 +288,11 @@ describe("lender management flows", () => {
 
     renderWithProviders("/lenders/new");
 
-    const createButton = await screen.findByRole("button", { name: /Create lender/i });
+    const modal = await screen.findByRole("dialog");
+    const createButton = within(modal).getByRole("button", { name: /Create lender/i });
     fireEvent.click(createButton);
 
-    const errorMessage = await screen.findByText(/State\/province is required/i);
+    const errorMessage = await within(modal).findByText(/State\/province is required/i);
     expect(errorMessage).toBeInTheDocument();
   });
 

@@ -131,6 +131,7 @@ const UserManagement = () => {
         </Button>
         <Button
           type="button"
+          disabled={isLoadingUsers}
           onClick={() => {
             setEditingUser(null);
             setFormErrors({});
@@ -186,7 +187,7 @@ const UserManagement = () => {
                   <Button
                     type="button"
                     variant="ghost"
-                  onClick={() => {
+                    onClick={() => {
                       const fallbackName = splitName(user.name);
                       setEditingUser(user);
                       setFormErrors({});
@@ -255,7 +256,7 @@ const UserManagement = () => {
                   <Button
                     type="button"
                     variant="ghost"
-                  onClick={() => {
+                    onClick={() => {
                       const fallbackName = splitName(user.name);
                       setEditingUser(user);
                       setFormErrors({});

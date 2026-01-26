@@ -298,18 +298,21 @@ const ProfileSettings = () => {
         <h3>Connected accounts</h3>
         <p>Connect optional services. OAuth prompts open in a new window.</p>
         <div className="connected-accounts__actions">
-          {!hideMicrosoftButton && (
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={handleMicrosoftConnect}
-              disabled={!isMicrosoftConfigured || isLinkingMicrosoft}
-            >
-              {profile.microsoftConnected ? "Microsoft 365 connected" : "Connect Microsoft 365"}
-            </Button>
-          )}
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={handleMicrosoftConnect}
+            disabled={!isMicrosoftConfigured || isLinkingMicrosoft || hideMicrosoftButton}
+          >
+            {profile.microsoftConnected ? "Microsoft 365 connected" : "Connect Microsoft 365"}
+          </Button>
           {!isMicrosoftConfigured && (
             <span className="text-xs text-slate-500">Microsoft OAuth is not configured.</span>
+          )}
+          {hideMicrosoftButton && (
+            <span className="text-xs text-amber-600">
+              Microsoft sign-in needs a popup or redirect. Use a browser that allows pop-ups.
+            </span>
           )}
           {profile.microsoftConnected && profile.microsoftAccountEmail && (
             <span className="text-xs text-emerald-600">Linked: {profile.microsoftAccountEmail}</span>

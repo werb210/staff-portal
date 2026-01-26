@@ -147,6 +147,7 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
   const [error, setError] = useState<string | null>(null);
   const [pendingPhoneNumber, setPendingPhoneNumber] = useState<string | null>(null);
   const previousStatus = useRef<AuthStatus | null>(null);
+  const skipNextHydrationRef = useRef(false);
 
   const setUser = useCallback((nextUser: AuthenticatedUser | null) => {
     setUserState(nextUser ?? null);
@@ -227,6 +228,7 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
   }, [clearAuthState, setUser, user]);
 
   const login = useCallback(async (token: string): Promise<void> => {
+    skipNextHydrationRef.current = true;
     setStoredAccessToken(token);
     setAccessTokenState(token);
     setAuthStatus("loading");
@@ -239,6 +241,10 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
     let isMounted = true;
 
     const initializeAuth = async () => {
+      if (skipNextHydrationRef.current) {
+        skipNextHydrationRef.current = false;
+        return;
+      }
       if (!accessToken) {
         if (!isMounted) return;
         setUserState(null);
@@ -385,6 +391,7 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
           setError("OTP verification missing access token");
           return false;
         }
+        skipNextHydrationRef.current = true;
         setStoredAccessToken(response.accessToken);
         setAccessTokenState(response.accessToken);
         setUser(null);

@@ -22,6 +22,7 @@ const RuntimeSettings = () => {
   const [runtime, setRuntime] = useState<RuntimeData>(defaultRuntimeData);
   const [lastChecked, setLastChecked] = useState<string>("");
   const [runtimeError, setRuntimeError] = useState<string | null>(null);
+  const [isFetching, setIsFetching] = useState(false);
 
   const normalizeStatus = (value: string) => {
     const normalized = value.toLowerCase();
@@ -38,6 +39,7 @@ const RuntimeSettings = () => {
   };
 
   const fetchRuntime = useCallback(async () => {
+    setIsFetching(true);
     setRuntimeError(null);
     try {
       const [apiHealthResult, internalHealthResult] = await Promise.allSettled([
@@ -85,6 +87,8 @@ const RuntimeSettings = () => {
       }));
       setLastChecked(new Date().toLocaleTimeString());
       setRuntimeError(getErrorMessage(error, "Unable to load runtime status."));
+    } finally {
+      setIsFetching(false);
     }
   }, []);
 
@@ -126,8 +130,8 @@ const RuntimeSettings = () => {
       </div>
 
       <div className="settings-actions">
-        <Button type="button" variant="secondary" onClick={fetchRuntime}>
-          Refresh status
+        <Button type="button" variant="secondary" onClick={fetchRuntime} disabled={isFetching}>
+          {isFetching ? "Refreshing..." : "Refresh status"}
         </Button>
         {lastChecked && <span className="runtime-status__timestamp">Last checked at {lastChecked}</span>}
       </div>

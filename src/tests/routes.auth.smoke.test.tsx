@@ -82,11 +82,10 @@ describe("portal auth routing smoke tests", () => {
     renderApp("/");
 
     await waitFor(() => {
-      expect(window.location.pathname).not.toBe("/login");
+      expect(window.location.pathname).toBe("/dashboard");
     });
 
     expect(await screen.findByText(/dashboard overview/i)).toBeInTheDocument();
-    expect(window.location.pathname).toBe("/");
   });
 
   it("navigates away from /login after OTP login", async () => {
