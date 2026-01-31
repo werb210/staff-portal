@@ -62,11 +62,27 @@ export const PIPELINE_STAGE_ORDER = [
   "DECLINED"
 ] as const;
 
+export const PIPELINE_STAGE_LABELS: Record<(typeof PIPELINE_STAGE_ORDER)[number], string> = {
+  RECEIVED: "Received",
+  DOCUMENTS_REQUIRED: "Documents Required",
+  IN_REVIEW: "In Review",
+  START_UP: "Start-Up",
+  OFF_TO_LENDER: "Off to Lender",
+  ACCEPTED: "Accepted",
+  DECLINED: "Declined"
+};
+
+export const DEFAULT_PIPELINE_STAGES: PipelineStage[] = PIPELINE_STAGE_ORDER.map((id) => ({
+  id,
+  label: PIPELINE_STAGE_LABELS[id]
+}));
+
 export const sortPipelineStages = (stages: PipelineStage[]) => {
   const orderIndex = new Map(PIPELINE_STAGE_ORDER.map((id, index) => [id, index]));
-  return stages
+  const ordered = stages
     .filter((stage) => orderIndex.has(stage.id))
     .sort((a, b) => (orderIndex.get(a.id) ?? 0) - (orderIndex.get(b.id) ?? 0));
+  return ordered.length ? ordered : DEFAULT_PIPELINE_STAGES;
 };
 
 export const buildStageLabelMap = (stages: PipelineStage[]) =>

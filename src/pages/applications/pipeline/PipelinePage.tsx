@@ -105,7 +105,11 @@ const PipelinePage = () => {
   );
 
   const handleDragEnd = async (event: PipelineDragEndEvent) => {
-    await dragEndHandler(event);
+    try {
+      await dragEndHandler(event);
+    } catch (error) {
+      console.error("Pipeline drag end failed", { error });
+    }
     setActiveCard(null);
     setActiveStage(null);
     clearDraggingState(setDragging)();

@@ -205,14 +205,19 @@ export const createPipelineDragEndHandler = (options: {
 
     onInvalidMove?.(null);
 
-    await pipelineApi.moveCard(card.id, destinationStageId);
+    try {
+      await pipelineApi.moveCard(card.id, destinationStageId);
 
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: pipelineQueryKeys.column(sourceStageId, filters) }),
-      queryClient.invalidateQueries({ queryKey: pipelineQueryKeys.column(destinationStageId, filters) }),
-      queryClient.invalidateQueries({ queryKey: ["applications", card.id, "details"] }),
-      queryClient.invalidateQueries({ queryKey: ["applications", card.id, "audit"] })
-    ]);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: pipelineQueryKeys.column(sourceStageId, filters) }),
+        queryClient.invalidateQueries({ queryKey: pipelineQueryKeys.column(destinationStageId, filters) }),
+        queryClient.invalidateQueries({ queryKey: ["applications", card.id, "details"] }),
+        queryClient.invalidateQueries({ queryKey: ["applications", card.id, "audit"] })
+      ]);
+    } catch (error) {
+      console.error("Failed to move pipeline card", { error, cardId: card.id, destinationStageId });
+      onInvalidMove?.("Unable to move this application right now.");
+    }
   };
 };
 
