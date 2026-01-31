@@ -52,6 +52,7 @@ export type LenderPayload = {
   phone: string;
   website: string | null;
   description: string | null;
+  internal_notes?: string | null;
   street: string;
   city: string;
   region: string;
@@ -96,6 +97,7 @@ export type LenderProduct = {
   interestRateMax: number;
   rateType: RateType;
   termLength: LenderProductTermLength;
+  fees: string | null;
   minimumCreditScore: number | null;
   ltv: number | null;
   eligibilityRules: string | null;

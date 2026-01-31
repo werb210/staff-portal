@@ -20,21 +20,21 @@ export type PipelineFilters = {
 
 export type PipelineApplication = {
   id: string;
-  businessName: string;
-  contactName: string;
-  requestedAmount: number;
-  productCategory: string;
+  businessName?: string;
+  contactName?: string;
+  requestedAmount?: number;
+  productCategory?: string;
   stage: PipelineStageId;
-  status: string;
+  status?: string;
   matchPercentage?: number | string | null;
   matchPercent?: number | string | null;
   matchScore?: number | string | null;
-  documents: {
-    submitted: number;
-    required: number;
+  documents?: {
+    submitted?: number;
+    required?: number;
   };
-  bankingComplete: boolean;
-  ocrComplete: boolean;
+  bankingComplete?: boolean;
+  ocrComplete?: boolean;
   assignedStaff?: string;
   createdAt: string;
 };

@@ -8,15 +8,17 @@ import type { LenderProductCategory, RateType } from "@/types/lenderManagement.t
 
 export type ProductFormValues = {
   lenderId: string;
+  productName: string;
   category: LenderProductCategory;
   country: string;
   minAmount: string;
   maxAmount: string;
+  minTerm: string;
+  maxTerm: string;
   rateType: RateType;
-  fixedRate: string;
-  primeRate: string;
-  rateSpread: string;
-  termMonths: string;
+  interestMin: string;
+  interestMax: string;
+  fees: string;
   requiredDocuments: string[];
   active: boolean;
 };
@@ -30,7 +32,6 @@ type LenderProductModalProps = {
   formValues: ProductFormValues;
   formErrors: Record<string, string>;
   lenderOptions: Array<{ value: string; label: string }>;
-  isSelectedLenderInactive: boolean;
   categoryOptions: Array<{ value: LenderProductCategory; label: string; disabled?: boolean }>;
   rateTypes: RateType[];
   documentOptions: Array<{ value: string; label: string; locked?: boolean }>;
@@ -48,7 +49,6 @@ const LenderProductModal = ({
   isSaving,
   isSubmitDisabled = false,
   errorMessage,
-  isSelectedLenderInactive,
   formValues,
   formErrors,
   lenderOptions,
@@ -90,12 +90,17 @@ const LenderProductModal = ({
             ))}
           </Select>
           {formErrors.lenderId && <span className="ui-field__error">{formErrors.lenderId}</span>}
+          <Input
+            label="Product name"
+            value={formValues.productName}
+            onChange={(event) => onChange({ productName: event.target.value })}
+            error={formErrors.productName}
+          />
           <label className="management-toggle">
             <input
               type="checkbox"
               checked={formValues.active}
               onChange={(event) => onChange({ active: event.target.checked })}
-              disabled={formValues.category === "STARTUP_CAPITAL" || isSelectedLenderInactive}
             />
             <span>Active product</span>
           </label>
@@ -127,14 +132,6 @@ const LenderProductModal = ({
             </Select>
           </div>
           {formErrors.country && <span className="ui-field__error">{formErrors.country}</span>}
-          {formValues.category === "SBA_GOVERNMENT" && (
-            <div className="text-xs text-slate-500">Government Program (US only)</div>
-          )}
-          {formValues.category === "STARTUP_CAPITAL" && (
-            <div className="text-xs text-amber-600">
-              Not Live — startup capital products remain inactive and internal-only.
-            </div>
-          )}
         </div>
 
         <div className="management-field">
@@ -156,6 +153,24 @@ const LenderProductModal = ({
         </div>
 
         <div className="management-field">
+          <span className="management-field__label">Terms</span>
+          <div className="management-grid__row">
+            <Input
+              label="Min term (months)"
+              value={formValues.minTerm}
+              onChange={(event) => onChange({ minTerm: event.target.value })}
+              error={formErrors.minTerm}
+            />
+            <Input
+              label="Max term (months)"
+              value={formValues.maxTerm}
+              onChange={(event) => onChange({ maxTerm: event.target.value })}
+              error={formErrors.maxTerm}
+            />
+          </div>
+        </div>
+
+        <div className="management-field">
           <span className="management-field__label">Pricing &amp; terms</span>
           <Select
             label="Rate type"
@@ -169,37 +184,28 @@ const LenderProductModal = ({
             ))}
           </Select>
           {formErrors.rateType && <span className="ui-field__error">{formErrors.rateType}</span>}
-          {formValues.rateType === "variable" ? (
-            <div className="management-grid__row">
-              <Input
-                label="Prime rate (%)"
-                value={formValues.primeRate}
-                onChange={(event) => onChange({ primeRate: event.target.value })}
-                error={formErrors.primeRate}
-              />
-              <Input
-                label="+ Spread (%)"
-                value={formValues.rateSpread}
-                onChange={(event) => onChange({ rateSpread: event.target.value })}
-                error={formErrors.rateSpread}
-              />
-            </div>
-          ) : (
-            <Input
-              label="Fixed rate (%)"
-              value={formValues.fixedRate}
-              onChange={(event) => onChange({ fixedRate: event.target.value })}
-              error={formErrors.fixedRate}
-            />
-          )}
           <div className="management-grid__row">
             <Input
-              label="Term (months)"
-              value={formValues.termMonths}
-              onChange={(event) => onChange({ termMonths: event.target.value })}
-              error={formErrors.termMonths}
+              label={formValues.rateType === "variable" ? "Interest min (Prime + %)" : "Interest min (%)"}
+              value={formValues.interestMin}
+              onChange={(event) => onChange({ interestMin: event.target.value })}
+              error={formErrors.interestMin}
+            />
+            <Input
+              label={formValues.rateType === "variable" ? "Interest max (Prime + %)" : "Interest max (%)"}
+              value={formValues.interestMax}
+              onChange={(event) => onChange({ interestMax: event.target.value })}
+              error={formErrors.interestMax}
             />
           </div>
+          <label className="ui-field">
+            <span className="ui-field__label">Fees (optional)</span>
+            <textarea
+              className="ui-input ui-textarea"
+              value={formValues.fees}
+              onChange={(event) => onChange({ fees: event.target.value })}
+            />
+          </label>
         </div>
 
         <div className="management-field">
