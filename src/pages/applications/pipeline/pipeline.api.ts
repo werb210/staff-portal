@@ -55,7 +55,7 @@ const parseStage = (item: unknown): PipelineStage | null => {
 
 export const pipelineApi = {
   fetchStages: async (options?: { signal?: AbortSignal }) => {
-    const res = await apiClient.get<unknown>("/portal/applications/stages", options);
+    const res = await apiClient.get<unknown>("/applications/stages", options);
     if (!res) return [];
     const rawItems = Array.isArray(res)
       ? res

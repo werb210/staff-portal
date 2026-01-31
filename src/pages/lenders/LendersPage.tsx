@@ -54,6 +54,8 @@ type LenderFormValues = {
   primaryContactName: string;
   primaryContactEmail: string;
   primaryContactPhone: string;
+  website: string;
+  internalNotes: string;
   submissionMethod: SubmissionMethod;
   submissionEmail: string;
 };
@@ -65,6 +67,8 @@ const emptyLenderForm: LenderFormValues = {
   primaryContactName: "",
   primaryContactEmail: "",
   primaryContactPhone: "",
+  website: "",
+  internalNotes: "",
   submissionMethod: "EMAIL",
   submissionEmail: ""
 };
@@ -72,15 +76,17 @@ const emptyLenderForm: LenderFormValues = {
 const emptyProductForm = (lenderId: string): ProductFormValues => ({
   lenderId,
   active: true,
+  productName: deriveProductName(LENDER_PRODUCT_CATEGORIES[0]),
   category: LENDER_PRODUCT_CATEGORIES[0],
   country: "",
   minAmount: "",
   maxAmount: "",
+  minTerm: "",
+  maxTerm: "",
   rateType: "fixed",
-  fixedRate: "",
-  primeRate: "",
-  rateSpread: "",
-  termMonths: "",
+  interestMin: "",
+  interestMax: "",
+  fees: "",
   requiredDocuments: getDefaultRequiredDocuments()
 });
 
@@ -100,13 +106,9 @@ const toFormString = (value?: number | string | null) => {
 const formatRateType = (value: RateType) => value.charAt(0).toUpperCase() + value.slice(1);
 
 const buildCategoryOptions = (country: string) => {
-  const normalizedCountry = country.trim().toUpperCase();
-  const isUs = normalizedCountry === "US" || normalizedCountry === "BOTH";
-  const isCa = normalizedCountry === "CA" || normalizedCountry === "BOTH";
   return LENDER_PRODUCT_CATEGORIES.map((category) => ({
     value: category,
-    label: LENDER_PRODUCT_CATEGORY_LABELS[category],
-    disabled: (category === "SBA_GOVERNMENT" && !isUs) || (category === "STARTUP_CAPITAL" && !isCa)
+    label: LENDER_PRODUCT_CATEGORY_LABELS[category]
   }));
 };
 
@@ -128,6 +130,8 @@ const mapLenderToFormValues = (lender: Lender): LenderFormValues => {
     primaryContactName: primaryContact.name ?? "",
     primaryContactEmail: primaryContact.email ?? "",
     primaryContactPhone: primaryContact.phone ?? "",
+    website: lender.website ?? "",
+    internalNotes: lender.internalNotes ?? "",
     submissionMethod: submissionConfig.method === "API" ? "API" : "EMAIL",
     submissionEmail: submissionConfig.submissionEmail ?? ""
   };
@@ -256,9 +260,9 @@ const LendersContent = () => {
             country: payload.country
           },
           phone: payload.phone,
-          website: null,
+          website: payload.website,
           description: null,
-          internalNotes: null,
+          internalNotes: payload.internal_notes ?? null,
           processingNotes: null,
           primaryContact: {
             name: payload.contact_name,
@@ -317,6 +321,8 @@ const LendersContent = () => {
                   country: payload.country ?? lender.address?.country
                 },
                 phone: payload.phone ?? lender.phone,
+                website: payload.website ?? lender.website,
+                internalNotes: payload.internal_notes ?? lender.internalNotes,
                 primaryContact: {
                   ...lender.primaryContact,
                   name: payload.contact_name ?? lender.primaryContact?.name,
@@ -409,6 +415,7 @@ const LendersContent = () => {
   const productMutationError = createProductMutation.error ?? updateProductMutation.error;
   const productMutationLoading = createProductMutation.isPending || updateProductMutation.isPending;
   const rateTypeOptions: RateType[] = ["fixed", "variable"];
+  const apiConfig = editingLender?.submissionConfig ?? lenderDetail?.submissionConfig ?? null;
 
   const validateLenderForm = (values: LenderFormValues) => {
     const nextErrors: Record<string, string> = {};
@@ -433,8 +440,9 @@ const LendersContent = () => {
     name: values.name.trim(),
     active: values.active,
     phone: values.primaryContactPhone.trim(),
-    website: null,
+    website: values.website.trim() ? values.website.trim() : null,
     description: null,
+    internal_notes: values.internalNotes.trim() ? values.internalNotes.trim() : null,
     street: "",
     city: "",
     region: "",
@@ -450,6 +458,7 @@ const LendersContent = () => {
   const validateProductForm = (values: ProductFormValues) => {
     const errors: Record<string, string> = {};
     if (!values.lenderId) errors.lenderId = "Lender is required.";
+    if (!values.productName.trim()) errors.productName = "Product name is required.";
     if (!values.category) errors.category = "Product category is required.";
     if (!values.country.trim()) errors.country = "Country is required.";
     if (!values.minAmount) errors.minAmount = "Minimum amount is required.";
@@ -461,41 +470,30 @@ const LendersContent = () => {
     if (!Number.isNaN(minAmount) && !Number.isNaN(maxAmount) && minAmount > maxAmount) {
       errors.maxAmount = "Maximum amount must be greater than minimum.";
     }
+    if (!values.minTerm) errors.minTerm = "Minimum term is required.";
+    if (!values.maxTerm) errors.maxTerm = "Maximum term is required.";
+    const minTerm = Number(values.minTerm);
+    const maxTerm = Number(values.maxTerm);
+    if (Number.isNaN(minTerm)) errors.minTerm = "Minimum term must be a number.";
+    if (Number.isNaN(maxTerm)) errors.maxTerm = "Maximum term must be a number.";
+    if (!Number.isNaN(minTerm) && !Number.isNaN(maxTerm) && minTerm > maxTerm) {
+      errors.maxTerm = "Maximum term must be greater than minimum.";
+    }
     if (!values.rateType) errors.rateType = "Rate type is required.";
-    const resolvedRateType = resolveRateType(values.rateType);
-    if (resolvedRateType === "variable") {
-      if (!values.primeRate.trim()) errors.primeRate = "Prime rate is required.";
-      if (!values.rateSpread.trim()) errors.rateSpread = "Spread is required.";
-      const primeRate = Number(values.primeRate);
-      const spread = Number(values.rateSpread);
-      if (Number.isNaN(primeRate)) errors.primeRate = "Prime rate must be a number.";
-      if (Number.isNaN(spread)) errors.rateSpread = "Spread must be a number.";
-      if (!Number.isNaN(primeRate) && primeRate < 0) {
-        errors.primeRate = "Prime rate must be positive.";
-      }
-      if (!Number.isNaN(spread) && spread < 0) {
-        errors.rateSpread = "Spread must be positive.";
-      }
-    } else {
-      if (!values.fixedRate.trim()) errors.fixedRate = "Fixed rate is required.";
-      const fixedRate = Number(values.fixedRate);
-      if (Number.isNaN(fixedRate)) errors.fixedRate = "Fixed rate must be a number.";
-      if (!Number.isNaN(fixedRate) && fixedRate < 0) {
-        errors.fixedRate = "Fixed rate must be positive.";
-      }
+    if (!values.interestMin) errors.interestMin = "Interest minimum is required.";
+    if (!values.interestMax) errors.interestMax = "Interest maximum is required.";
+    const interestMin = Number(values.interestMin);
+    const interestMax = Number(values.interestMax);
+    if (Number.isNaN(interestMin)) errors.interestMin = "Interest minimum must be a number.";
+    if (Number.isNaN(interestMax)) errors.interestMax = "Interest maximum must be a number.";
+    if (!Number.isNaN(interestMin) && interestMin < 0) {
+      errors.interestMin = "Interest minimum must be positive.";
     }
-    if (!values.termMonths.trim()) errors.termMonths = "Term is required.";
-    const termMonths = Number(values.termMonths);
-    if (Number.isNaN(termMonths)) errors.termMonths = "Term must be a number.";
-    const normalizedCountry = values.country.trim().toUpperCase();
-    if (values.category === "SBA_GOVERNMENT" && normalizedCountry !== "US" && normalizedCountry !== "BOTH") {
-      errors.category = "SBA products must be limited to US lenders.";
+    if (!Number.isNaN(interestMax) && interestMax < 0) {
+      errors.interestMax = "Interest maximum must be positive.";
     }
-    if (values.category === "STARTUP_CAPITAL" && normalizedCountry !== "CA" && normalizedCountry !== "BOTH") {
-      errors.category = "Startup capital is limited to Canada.";
-    }
-    if (values.category === "STARTUP_CAPITAL" && values.active) {
-      errors.active = "Startup capital products must remain inactive.";
+    if (!Number.isNaN(interestMin) && !Number.isNaN(interestMax) && interestMin > interestMax) {
+      errors.interestMax = "Interest maximum must be greater than minimum.";
     }
     return errors;
   };
@@ -503,42 +501,29 @@ const LendersContent = () => {
   const buildProductPayload = (values: ProductFormValues, existing?: LenderProduct | null): LenderProductPayload => {
     const normalizedCountry = values.country.trim();
     const resolvedRateType = resolveRateType(values.rateType);
-    const primeRate = Number(values.primeRate);
-    const spread = Number(values.rateSpread);
-    const fixedRate = Number(values.fixedRate);
-    const interestRateMin =
-      resolvedRateType === "variable"
-        ? Number.isNaN(primeRate)
-          ? 0
-          : primeRate
-        : Number.isNaN(fixedRate)
-          ? 0
-          : fixedRate;
-    const interestRateMax =
-      resolvedRateType === "variable"
-        ? Number.isNaN(primeRate) || Number.isNaN(spread)
-          ? interestRateMin
-          : primeRate + spread
-        : interestRateMin;
-    const termMonths = Number(values.termMonths);
+    const interestRateMin = Number(values.interestMin);
+    const interestRateMax = Number(values.interestMax);
+    const minTerm = Number(values.minTerm);
+    const maxTerm = Number(values.maxTerm);
     const resolvedCurrency = deriveCurrency(normalizedCountry, existing?.currency ?? null);
     return {
       lenderId: values.lenderId,
-      productName: existing?.productName ?? deriveProductName(values.category),
-      active: values.category === "STARTUP_CAPITAL" || isSelectedLenderInactive ? false : values.active,
+      productName: values.productName.trim() || existing?.productName || deriveProductName(values.category),
+      active: values.active,
       category: values.category,
       country: normalizedCountry,
       currency: resolvedCurrency,
       minAmount: Number(values.minAmount),
       maxAmount: Number(values.maxAmount),
-      interestRateMin,
-      interestRateMax,
+      interestRateMin: Number.isNaN(interestRateMin) ? 0 : interestRateMin,
+      interestRateMax: Number.isNaN(interestRateMax) ? 0 : interestRateMax,
       rateType: resolvedRateType,
       termLength: {
-        min: Number.isNaN(termMonths) ? 0 : termMonths,
-        max: Number.isNaN(termMonths) ? 0 : termMonths,
+        min: Number.isNaN(minTerm) ? 0 : minTerm,
+        max: Number.isNaN(maxTerm) ? 0 : maxTerm,
         unit: "months"
       },
+      fees: values.fees.trim() ? values.fees.trim() : null,
       minimumCreditScore: existing?.minimumCreditScore ?? null,
       ltv: existing?.ltv ?? null,
       eligibilityRules: existing?.eligibilityRules ?? null,
@@ -594,20 +579,21 @@ const LendersContent = () => {
     if (!product?.id) return;
     const resolvedCategory = product.category ?? LENDER_PRODUCT_CATEGORIES[0];
     const rateDefaults = getRateDefaults(product);
-    const termMonths = product.termLength?.min ?? product.termLength?.max ?? 0;
     setEditingProduct(product);
     setProductFormValues({
       lenderId: product.lenderId ?? "",
-      active: resolvedCategory === "STARTUP_CAPITAL" || isSelectedLenderInactive ? false : product.active,
+      active: product.active,
+      productName: product.productName ?? "",
       category: resolvedCategory,
       country: product.country ?? "",
       minAmount: toFormString(product.minAmount),
       maxAmount: toFormString(product.maxAmount),
       rateType: rateDefaults.rateType,
-      fixedRate: rateDefaults.fixedRate,
-      primeRate: rateDefaults.primeRate,
-      rateSpread: rateDefaults.rateSpread,
-      termMonths: termMonths ? String(termMonths) : "",
+      interestMin: rateDefaults.interestMin,
+      interestMax: rateDefaults.interestMax,
+      minTerm: toFormString(product.termLength?.min),
+      maxTerm: toFormString(product.termLength?.max),
+      fees: product.fees ?? "",
       requiredDocuments: mapRequiredDocumentsToValues(product.requiredDocuments)
     });
     setProductFormErrors({});
@@ -762,12 +748,11 @@ const LendersContent = () => {
             </div>
           )}
           {!productsLoading && !productsError && (
-            <Table headers={["Name", "Category", "Country", "Currency", "Status", "Amount range"]}>
+            <Table headers={["Name", "Category", "Country", "Status", "Amount range"]}>
               {productsToRender.map((product, index) => {
                 const productIdValue = product.id ?? "";
                 const productCategory = product.category ?? LENDER_PRODUCT_CATEGORIES[0];
-                const productActive =
-                  productCategory === "STARTUP_CAPITAL" ? false : Boolean(product.active);
+                const productActive = Boolean(product.active);
                 const minAmount = Number.isFinite(product.minAmount) ? product.minAmount : 0;
                 const maxAmount = Number.isFinite(product.maxAmount) ? product.maxAmount : 0;
                 const rowKey = productIdValue || `product-${index}`;
@@ -790,15 +775,8 @@ const LendersContent = () => {
                       <div className="text-sm font-semibold">
                         {LENDER_PRODUCT_CATEGORY_LABELS[productCategory]}
                       </div>
-                      {productCategory === "SBA_GOVERNMENT" && (
-                        <div className="text-xs text-slate-500">Government Program</div>
-                      )}
-                      {productCategory === "STARTUP_CAPITAL" && (
-                        <div className="text-xs text-amber-600">Not Live</div>
-                      )}
                     </td>
                     <td>{product.country || "—"}</td>
-                    <td>{product.currency || "—"}</td>
                     <td>
                       <span className={`status-pill status-pill--${productActive ? "active" : "paused"}`}>
                         {productActive ? "Active" : "Inactive"}
@@ -812,7 +790,7 @@ const LendersContent = () => {
               })}
               {!productsToRender.length && (
                 <tr>
-                  <td colSpan={6}>
+                  <td colSpan={5}>
                     {hasSelectedLender ? "No products for this lender." : "Select a lender to view products."}
                   </td>
                 </tr>
@@ -923,6 +901,25 @@ const LendersContent = () => {
             </div>
 
             <div className="management-field">
+              <span className="management-field__label">Additional details</span>
+              <Input
+                label="Website"
+                value={lenderFormValues.website}
+                onChange={(event) => setLenderFormValues((prev) => ({ ...prev, website: event.target.value }))}
+              />
+              <label className="ui-field">
+                <span className="ui-field__label">Notes (internal only)</span>
+                <textarea
+                  className="ui-input ui-textarea"
+                  value={lenderFormValues.internalNotes}
+                  onChange={(event) =>
+                    setLenderFormValues((prev) => ({ ...prev, internalNotes: event.target.value }))
+                  }
+                />
+              </label>
+            </div>
+
+            <div className="management-field">
               <span className="management-field__label">Submission configuration</span>
               <Select
                 label="Submission method"
@@ -953,6 +950,31 @@ const LendersContent = () => {
                   error={lenderFormErrors.submissionEmail}
                 />
               )}
+              {lenderFormValues.submissionMethod === "API" && (
+                <div className="space-y-3">
+                  <Input
+                    label="API Base URL"
+                    value={apiConfig?.apiBaseUrl ?? ""}
+                    placeholder="Not configured"
+                    disabled
+                  />
+                  <Input
+                    label="API Client ID"
+                    value={apiConfig?.apiClientId ?? ""}
+                    placeholder="Not configured"
+                    disabled
+                  />
+                  <Input
+                    label="API Username"
+                    value={apiConfig?.apiUsername ?? ""}
+                    placeholder="Not configured"
+                    disabled
+                  />
+                  <p className="text-xs text-slate-500">
+                    API configuration is managed in the backend and is display-only here.
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="management-actions">
@@ -972,7 +994,6 @@ const LendersContent = () => {
           errorMessage={
             productMutationError ? getErrorMessage(productMutationError, "Unable to save product.") : null
           }
-          isSelectedLenderInactive={isSelectedLenderInactive}
           lenderOptions={[{ value: selectedLender.id, label: selectedLender.name }]}
           formValues={productFormValues}
           formErrors={productFormErrors}

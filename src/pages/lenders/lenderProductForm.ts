@@ -67,21 +67,9 @@ export const getRateDefaults = (product?: LenderProduct | null) => {
   const resolvedRateType = resolveRateType(product?.rateType);
   const minRate = typeof product?.interestRateMin === "number" ? product.interestRateMin : null;
   const maxRate = typeof product?.interestRateMax === "number" ? product.interestRateMax : null;
-  if (resolvedRateType === "variable") {
-    const baseRate = minRate ?? 0;
-    const spread = maxRate !== null && minRate !== null ? maxRate - minRate : 0;
-    return {
-      rateType: resolvedRateType,
-      fixedRate: "",
-      primeRate: baseRate ? String(baseRate) : "",
-      rateSpread: spread ? String(spread) : ""
-    };
-  }
-  const fixed = minRate ?? maxRate ?? 0;
   return {
     rateType: resolvedRateType,
-    fixedRate: fixed ? String(fixed) : "",
-    primeRate: "",
-    rateSpread: ""
+    interestMin: minRate !== null ? String(minRate) : "",
+    interestMax: maxRate !== null ? String(maxRate) : ""
   };
 };

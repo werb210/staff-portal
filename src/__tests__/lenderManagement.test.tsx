@@ -140,6 +140,7 @@ const baseProduct: LenderProduct = {
     max: 60,
     unit: "months"
   },
+  fees: null,
   minimumCreditScore: 650,
   ltv: 80,
   eligibilityRules: "None",
@@ -247,14 +248,13 @@ describe("lender management flows", () => {
     await userEvent.type(nameInput, "Term loan");
     await userEvent.selectOptions(screen.getByLabelText(/Product category/i), "TERM_LOAN");
     const countryInputs = screen.getAllByLabelText(/^Country$/i);
-    await userEvent.type(countryInputs[countryInputs.length - 1], "US");
-    await userEvent.type(screen.getAllByLabelText(/Currency/i)[0], "USD");
+    await userEvent.selectOptions(countryInputs[countryInputs.length - 1], "US");
     await userEvent.type(screen.getAllByLabelText(/Minimum amount/i)[0], "10000");
     await userEvent.type(screen.getAllByLabelText(/Maximum amount/i)[0], "500000");
-    await userEvent.type(screen.getByLabelText(/Interest rate min/i), "6.5");
-    await userEvent.type(screen.getByLabelText(/Interest rate max/i), "10.25");
-    await userEvent.type(screen.getByLabelText(/Term length min/i), "6");
-    await userEvent.type(screen.getByLabelText(/Term length max/i), "60");
+    await userEvent.type(screen.getByLabelText(/Interest min/i), "6.5");
+    await userEvent.type(screen.getByLabelText(/Interest max/i), "10.25");
+    await userEvent.type(screen.getByLabelText(/Min term/i), "6");
+    await userEvent.type(screen.getByLabelText(/Max term/i), "60");
 
     fireEvent.click(screen.getByRole("button", { name: /(Save product|Saving\.\.\.)/i }));
 
