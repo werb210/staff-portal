@@ -1,0 +1,35 @@
+.btn-primary {
+  @apply bg-brand-primary text-white px-4 py-2 rounded-md hover:opacity-90 disabled:opacity-50;
+}
+
+.btn-secondary {
+  @apply bg-white border border-border text-text-primary px-4 py-2 rounded-md;
+}
+
+.btn-danger {
+  @apply bg-status-danger text-white px-4 py-2 rounded-md;
+}
+
+.input {
+  @apply w-full border border-border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-primary;
+}
+
+.select {
+  @apply input;
+}
+
+.card {
+  @apply bg-bg-card rounded-lg border border-border;
+}
+
+.modal {
+  @apply bg-bg-modal rounded-lg shadow-xl;
+}
+
+.table th {
+  @apply text-left text-text-secondary text-sm;
+}
+
+.table td {
+  @apply text-text-primary;
+}
