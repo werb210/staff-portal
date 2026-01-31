@@ -1,5 +1,6 @@
 import { apiClient } from "@/api/httpClient";
 import type { PipelineApplication, PipelineFilters, PipelineStage, PipelineStageId } from "./pipeline.types";
+import { PIPELINE_STAGE_LABELS } from "./pipeline.types";
 
 const buildQueryParams = (filters: PipelineFilters, stage?: PipelineStageId): string => {
   const params = new URLSearchParams();
@@ -23,7 +24,8 @@ const parseStage = (item: unknown): PipelineStage | null => {
   if (typeof item === "string") {
     const trimmed = item.trim();
     if (!trimmed) return null;
-    return { id: trimmed, label: toTitleCase(trimmed) };
+    const label = PIPELINE_STAGE_LABELS[trimmed as keyof typeof PIPELINE_STAGE_LABELS] ?? toTitleCase(trimmed);
+    return { id: trimmed, label };
   }
   if (!item || typeof item !== "object") return null;
   const record = item as Record<string, unknown>;
@@ -34,7 +36,7 @@ const parseStage = (item: unknown): PipelineStage | null => {
       ? record.label
       : typeof record.name === "string"
         ? record.name
-        : toTitleCase(id);
+        : PIPELINE_STAGE_LABELS[id as keyof typeof PIPELINE_STAGE_LABELS] ?? toTitleCase(id);
   const description = typeof record.description === "string" ? record.description : undefined;
   const terminal = typeof record.terminal === "boolean" ? record.terminal : undefined;
   const allowedTransitions = Array.isArray(record.allowedTransitions)

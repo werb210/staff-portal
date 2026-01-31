@@ -34,24 +34,23 @@ import { SUBMISSION_METHODS, type SubmissionMethod } from "@/types/lenderManagem
 import {
   LENDER_PRODUCT_CATEGORIES,
   LENDER_PRODUCT_CATEGORY_LABELS,
-  RATE_TYPES,
-  TERM_UNITS,
-  type LenderProductCategory,
-  type RateType,
-  type TermUnit
+  type RateType
 } from "@/types/lenderManagement.types";
+import {
+  PRODUCT_DOCUMENT_OPTIONS,
+  buildRequiredDocumentsPayload,
+  deriveCurrency,
+  deriveProductName,
+  getDefaultRequiredDocuments,
+  getRateDefaults,
+  mapRequiredDocumentsToValues,
+  resolveRateType
+} from "./lenderProductForm";
 
 type LenderFormValues = {
   name: string;
   active: boolean;
-  street: string;
-  city: string;
-  region: string;
-  postalCode: string;
   country: string;
-  phone: string;
-  website: string;
-  description: string;
   primaryContactName: string;
   primaryContactEmail: string;
   primaryContactPhone: string;
@@ -62,127 +61,36 @@ type LenderFormValues = {
 const emptyLenderForm: LenderFormValues = {
   name: "",
   active: true,
-  street: "",
-  city: "",
-  region: "",
-  postalCode: "",
   country: "CA",
-  phone: "",
-  website: "",
-  description: "",
   primaryContactName: "",
   primaryContactEmail: "",
   primaryContactPhone: "",
-  submissionMethod: "MANUAL",
+  submissionMethod: "EMAIL",
   submissionEmail: ""
 };
 
 const emptyProductForm = (lenderId: string): ProductFormValues => ({
   lenderId,
-  productName: "",
   active: true,
   category: LENDER_PRODUCT_CATEGORIES[0],
   country: "",
-  currency: "",
   minAmount: "",
   maxAmount: "",
-  interestRateMin: "",
-  interestRateMax: "",
-  rateType: RATE_TYPES[0],
-  termMin: "",
-  termMax: "",
-  termUnit: TERM_UNITS[0],
-  minimumCreditScore: "",
-  ltv: "",
-  eligibilityRules: "",
-  minimumRevenue: "",
-  timeInBusinessMonths: "",
-  industryRestrictions: ""
+  rateType: "fixed",
+  fixedRate: "",
+  primeRate: "",
+  rateSpread: "",
+  termMonths: "",
+  requiredDocuments: getDefaultRequiredDocuments()
 });
 
-const optionalString = (value: string) => (value.trim() ? value.trim() : null);
 const isValidEmail = (value: string) => value.includes("@");
 
 const COUNTRIES = [
   { value: "CA", label: "Canada" },
-  { value: "US", label: "United States" }
+  { value: "US", label: "United States" },
+  { value: "BOTH", label: "Both" }
 ];
-
-const PROVINCES = [
-  { value: "AB", label: "Alberta" },
-  { value: "BC", label: "British Columbia" },
-  { value: "MB", label: "Manitoba" },
-  { value: "NB", label: "New Brunswick" },
-  { value: "NL", label: "Newfoundland and Labrador" },
-  { value: "NS", label: "Nova Scotia" },
-  { value: "NT", label: "Northwest Territories" },
-  { value: "NU", label: "Nunavut" },
-  { value: "ON", label: "Ontario" },
-  { value: "PE", label: "Prince Edward Island" },
-  { value: "QC", label: "Quebec" },
-  { value: "SK", label: "Saskatchewan" },
-  { value: "YT", label: "Yukon" }
-];
-
-const STATES = [
-  { value: "AL", label: "Alabama" },
-  { value: "AK", label: "Alaska" },
-  { value: "AZ", label: "Arizona" },
-  { value: "AR", label: "Arkansas" },
-  { value: "CA", label: "California" },
-  { value: "CO", label: "Colorado" },
-  { value: "CT", label: "Connecticut" },
-  { value: "DE", label: "Delaware" },
-  { value: "FL", label: "Florida" },
-  { value: "GA", label: "Georgia" },
-  { value: "HI", label: "Hawaii" },
-  { value: "ID", label: "Idaho" },
-  { value: "IL", label: "Illinois" },
-  { value: "IN", label: "Indiana" },
-  { value: "IA", label: "Iowa" },
-  { value: "KS", label: "Kansas" },
-  { value: "KY", label: "Kentucky" },
-  { value: "LA", label: "Louisiana" },
-  { value: "ME", label: "Maine" },
-  { value: "MD", label: "Maryland" },
-  { value: "MA", label: "Massachusetts" },
-  { value: "MI", label: "Michigan" },
-  { value: "MN", label: "Minnesota" },
-  { value: "MS", label: "Mississippi" },
-  { value: "MO", label: "Missouri" },
-  { value: "MT", label: "Montana" },
-  { value: "NE", label: "Nebraska" },
-  { value: "NV", label: "Nevada" },
-  { value: "NH", label: "New Hampshire" },
-  { value: "NJ", label: "New Jersey" },
-  { value: "NM", label: "New Mexico" },
-  { value: "NY", label: "New York" },
-  { value: "NC", label: "North Carolina" },
-  { value: "ND", label: "North Dakota" },
-  { value: "OH", label: "Ohio" },
-  { value: "OK", label: "Oklahoma" },
-  { value: "OR", label: "Oregon" },
-  { value: "PA", label: "Pennsylvania" },
-  { value: "RI", label: "Rhode Island" },
-  { value: "SC", label: "South Carolina" },
-  { value: "SD", label: "South Dakota" },
-  { value: "TN", label: "Tennessee" },
-  { value: "TX", label: "Texas" },
-  { value: "UT", label: "Utah" },
-  { value: "VT", label: "Vermont" },
-  { value: "VA", label: "Virginia" },
-  { value: "WA", label: "Washington" },
-  { value: "WV", label: "West Virginia" },
-  { value: "WI", label: "Wisconsin" },
-  { value: "WY", label: "Wyoming" }
-];
-
-const toOptionalNumber = (value: string) => {
-  if (!value.trim()) return null;
-  const parsed = Number(value);
-  if (Number.isNaN(parsed)) return null;
-  return parsed;
-};
 
 const toFormString = (value?: number | string | null) => {
   if (value === null || value === undefined) return "";
@@ -193,13 +101,36 @@ const formatRateType = (value: RateType) => value.charAt(0).toUpperCase() + valu
 
 const buildCategoryOptions = (country: string) => {
   const normalizedCountry = country.trim().toUpperCase();
-  const isUs = normalizedCountry === "US";
-  const isCa = normalizedCountry === "CA";
+  const isUs = normalizedCountry === "US" || normalizedCountry === "BOTH";
+  const isCa = normalizedCountry === "CA" || normalizedCountry === "BOTH";
   return LENDER_PRODUCT_CATEGORIES.map((category) => ({
     value: category,
     label: LENDER_PRODUCT_CATEGORY_LABELS[category],
     disabled: (category === "SBA_GOVERNMENT" && !isUs) || (category === "STARTUP_CAPITAL" && !isCa)
   }));
+};
+
+const mapLenderToFormValues = (lender: Lender): LenderFormValues => {
+  const primaryContact = lender.primaryContact ?? {
+    name: "",
+    email: "",
+    phone: ""
+  };
+  const submissionConfig = lender.submissionConfig ?? {
+    method: "EMAIL",
+    submissionEmail: ""
+  };
+  return {
+    ...emptyLenderForm,
+    name: lender.name ?? "",
+    active: lender.active === true,
+    country: lender.address?.country ?? "CA",
+    primaryContactName: primaryContact.name ?? "",
+    primaryContactEmail: primaryContact.email ?? "",
+    primaryContactPhone: primaryContact.phone ?? "",
+    submissionMethod: submissionConfig.method === "API" ? "API" : "EMAIL",
+    submissionEmail: submissionConfig.submissionEmail ?? ""
+  };
 };
 
 const LendersContent = () => {
@@ -292,51 +223,73 @@ const LendersContent = () => {
   }, [editingLenderId, lenderDetail, queryClient]);
 
   useEffect(() => {
+    if (!editingLenderId || !selectedLender || editingLender) return;
+    setLenderFormValues(mapLenderToFormValues(selectedLender));
+  }, [editingLender, editingLenderId, selectedLender]);
+
+  useEffect(() => {
     if (editingLender) {
-      const address = editingLender.address ?? {
-        street: "",
-        city: "",
-        stateProvince: "",
-        postalCode: "",
-        country: "CA"
-      };
-      const primaryContact = editingLender.primaryContact ?? {
-        name: "",
-        email: "",
-        phone: ""
-      };
-      const submissionConfig = editingLender.submissionConfig ?? {
-        method: "MANUAL",
-        submissionEmail: ""
-      };
-      setLenderFormValues({
-        ...emptyLenderForm,
-        name: editingLender.name ?? "",
-        active: editingLender.active ?? true,
-        street: address.street ?? "",
-        city: address.city ?? "",
-        region: address.stateProvince ?? "",
-        postalCode: address.postalCode ?? "",
-        country: address.country ?? "CA",
-        phone: editingLender.phone ?? "",
-        website: editingLender.website ?? "",
-        description: editingLender.description ?? "",
-        primaryContactName: primaryContact.name ?? "",
-        primaryContactEmail: primaryContact.email ?? "",
-        primaryContactPhone: primaryContact.phone ?? "",
-        submissionMethod: submissionConfig.method ?? "MANUAL",
-        submissionEmail: submissionConfig.submissionEmail ?? ""
-      });
+      setLenderFormValues(mapLenderToFormValues(editingLender));
       setLenderFormErrors({});
       return;
     }
-    if (!isLenderModalOpen) return;
+    if (!isLenderModalOpen || editingLenderId) return;
     setLenderFormValues(emptyLenderForm);
     setLenderFormErrors({});
-  }, [editingLender, isLenderModalOpen]);
+  }, [editingLender, editingLenderId, isLenderModalOpen]);
 
   const createLenderMutation = useMutation({
     mutationFn: (payload: LenderPayload) => createLender(payload),
+    onMutate: async (payload) => {
+      await queryClient.cancelQueries({ queryKey: ["lenders"] });
+      const previous = queryClient.getQueryData<Lender[]>(["lenders"]);
+      queryClient.setQueryData<Lender[]>(["lenders"], (current = []) => [
+        {
+          id: `temp-${Date.now()}`,
+          name: payload.name,
+          active: payload.active,
+          address: {
+            street: "",
+            city: "",
+            stateProvince: "",
+            postalCode: "",
+            country: payload.country
+          },
+          phone: payload.phone,
+          website: null,
+          description: null,
+          internalNotes: null,
+          processingNotes: null,
+          primaryContact: {
+            name: payload.contact_name,
+            email: payload.contact_email,
+            phone: payload.contact_phone,
+            mobilePhone: ""
+          },
+          submissionConfig: {
+            method: payload.submission_method,
+            apiBaseUrl: null,
+            apiClientId: null,
+            apiUsername: null,
+            apiPassword: null,
+            submissionEmail: payload.submission_email
+          },
+          operationalLimits: {
+            maxLendingLimit: null,
+            maxLtv: null,
+            maxLoanTerm: null,
+            maxAmortization: null
+          }
+        },
+        ...current
+      ]);
+      return { previous };
+    },
+    onError: (_error, _payload, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(["lenders"], context.previous);
+      }
+    },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["lenders"] });
       await refetchLenders();
@@ -349,6 +302,43 @@ const LendersContent = () => {
   const updateLenderMutation = useMutation({
     mutationFn: ({ id, payload }: { id: string; payload: Partial<LenderPayload> }) =>
       updateLender(id, payload),
+    onMutate: async ({ id, payload }) => {
+      await queryClient.cancelQueries({ queryKey: ["lenders"] });
+      const previous = queryClient.getQueryData<Lender[]>(["lenders"]);
+      queryClient.setQueryData<Lender[]>(["lenders"], (current = []) =>
+        current.map((lender) =>
+          lender.id === id
+            ? {
+                ...lender,
+                name: payload.name ?? lender.name,
+                active: payload.active ?? lender.active,
+                address: {
+                  ...lender.address,
+                  country: payload.country ?? lender.address?.country
+                },
+                phone: payload.phone ?? lender.phone,
+                primaryContact: {
+                  ...lender.primaryContact,
+                  name: payload.contact_name ?? lender.primaryContact?.name,
+                  email: payload.contact_email ?? lender.primaryContact?.email,
+                  phone: payload.contact_phone ?? lender.primaryContact?.phone
+                },
+                submissionConfig: {
+                  ...lender.submissionConfig,
+                  method: payload.submission_method ?? lender.submissionConfig?.method,
+                  submissionEmail: payload.submission_email ?? lender.submissionConfig?.submissionEmail
+                }
+              }
+            : lender
+        )
+      );
+      return { previous };
+    },
+    onError: (_error, _payload, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(["lenders"], context.previous);
+      }
+    },
     onSuccess: async (updated) => {
       if (updated?.id) {
         queryClient.setQueryData<Lender[]>(["lenders"], (current = []) =>
@@ -366,6 +356,24 @@ const LendersContent = () => {
 
   const createProductMutation = useMutation({
     mutationFn: (payload: LenderProductPayload) => createLenderProduct(payload),
+    onMutate: async (payload) => {
+      await queryClient.cancelQueries({ queryKey: ["lender-products"] });
+      const previous = queryClient.getQueryData<LenderProduct[]>(["lender-products", selectedLenderId ?? "none"]);
+      queryClient.setQueryData<LenderProduct[]>(["lender-products", selectedLenderId ?? "none"], (current = []) => [
+        {
+          ...payload,
+          id: `temp-${Date.now()}`,
+          requiredDocuments: payload.required_documents ?? []
+        } as LenderProduct,
+        ...current
+      ]);
+      return { previous };
+    },
+    onError: (_error, _payload, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(["lender-products", selectedLenderId ?? "none"], context.previous);
+      }
+    },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["lender-products"] });
       setIsProductModalOpen(false);
@@ -376,6 +384,19 @@ const LendersContent = () => {
   const updateProductMutation = useMutation({
     mutationFn: ({ productId, payload }: { productId: string; payload: Partial<LenderProductPayload> }) =>
       updateLenderProduct(productId, payload),
+    onMutate: async ({ productId, payload }) => {
+      await queryClient.cancelQueries({ queryKey: ["lender-products"] });
+      const previous = queryClient.getQueryData<LenderProduct[]>(["lender-products", selectedLenderId ?? "none"]);
+      queryClient.setQueryData<LenderProduct[]>(["lender-products", selectedLenderId ?? "none"], (current = []) =>
+        current.map((product) => (product.id === productId ? { ...product, ...payload } : product))
+      );
+      return { previous };
+    },
+    onError: (_error, _payload, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(["lender-products", selectedLenderId ?? "none"], context.previous);
+      }
+    },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["lender-products"] });
       setIsProductModalOpen(false);
@@ -387,6 +408,7 @@ const LendersContent = () => {
   const mutationLoading = createLenderMutation.isPending || updateLenderMutation.isPending;
   const productMutationError = createProductMutation.error ?? updateProductMutation.error;
   const productMutationLoading = createProductMutation.isPending || updateProductMutation.isPending;
+  const rateTypeOptions: RateType[] = ["fixed", "variable"];
 
   const validateLenderForm = (values: LenderFormValues) => {
     const nextErrors: Record<string, string> = {};
@@ -410,14 +432,14 @@ const LendersContent = () => {
   const buildLenderPayload = (values: LenderFormValues): LenderPayload => ({
     name: values.name.trim(),
     active: values.active,
-    phone: values.phone.trim(),
-    website: optionalString(values.website),
-    description: optionalString(values.description),
-    street: values.street.trim(),
-    city: values.city.trim(),
-    region: values.region.trim(),
+    phone: values.primaryContactPhone.trim(),
+    website: null,
+    description: null,
+    street: "",
+    city: "",
+    region: "",
     country: values.country.trim(),
-    postal_code: values.postalCode.trim(),
+    postal_code: "",
     contact_name: values.primaryContactName.trim(),
     contact_email: values.primaryContactEmail.trim(),
     contact_phone: values.primaryContactPhone.trim(),
@@ -428,10 +450,8 @@ const LendersContent = () => {
   const validateProductForm = (values: ProductFormValues) => {
     const errors: Record<string, string> = {};
     if (!values.lenderId) errors.lenderId = "Lender is required.";
-    if (!values.productName.trim()) errors.productName = "Product name is required.";
     if (!values.category) errors.category = "Product category is required.";
     if (!values.country.trim()) errors.country = "Country is required.";
-    if (!values.currency.trim()) errors.currency = "Currency is required.";
     if (!values.minAmount) errors.minAmount = "Minimum amount is required.";
     if (!values.maxAmount) errors.maxAmount = "Maximum amount is required.";
     const minAmount = Number(values.minAmount);
@@ -441,52 +461,37 @@ const LendersContent = () => {
     if (!Number.isNaN(minAmount) && !Number.isNaN(maxAmount) && minAmount > maxAmount) {
       errors.maxAmount = "Maximum amount must be greater than minimum.";
     }
-    const rateMin = Number(values.interestRateMin);
-    const rateMax = Number(values.interestRateMax);
-    if (!values.interestRateMin) errors.interestRateMin = "Minimum rate is required.";
-    if (!values.interestRateMax) errors.interestRateMax = "Maximum rate is required.";
-    if (Number.isNaN(rateMin)) errors.interestRateMin = "Minimum rate must be a number.";
-    if (Number.isNaN(rateMax)) errors.interestRateMax = "Maximum rate must be a number.";
-    if (!Number.isNaN(rateMin) && !Number.isNaN(rateMax) && rateMin > rateMax) {
-      errors.interestRateMax = "Maximum rate must be greater than minimum.";
-    }
-    if (rateMin < 0 || rateMax < 0) {
-      errors.interestRateMin = "Rates must be positive.";
-    }
     if (!values.rateType) errors.rateType = "Rate type is required.";
-    if (!values.termMin) errors.termMin = "Minimum term is required.";
-    if (!values.termMax) errors.termMax = "Maximum term is required.";
-    const termMin = Number(values.termMin);
-    const termMax = Number(values.termMax);
-    if (Number.isNaN(termMin)) errors.termMin = "Minimum term must be a number.";
-    if (Number.isNaN(termMax)) errors.termMax = "Maximum term must be a number.";
-    if (!Number.isNaN(termMin) && !Number.isNaN(termMax) && termMin > termMax) {
-      errors.termMax = "Maximum term must be greater than minimum.";
+    const resolvedRateType = resolveRateType(values.rateType);
+    if (resolvedRateType === "variable") {
+      if (!values.primeRate.trim()) errors.primeRate = "Prime rate is required.";
+      if (!values.rateSpread.trim()) errors.rateSpread = "Spread is required.";
+      const primeRate = Number(values.primeRate);
+      const spread = Number(values.rateSpread);
+      if (Number.isNaN(primeRate)) errors.primeRate = "Prime rate must be a number.";
+      if (Number.isNaN(spread)) errors.rateSpread = "Spread must be a number.";
+      if (!Number.isNaN(primeRate) && primeRate < 0) {
+        errors.primeRate = "Prime rate must be positive.";
+      }
+      if (!Number.isNaN(spread) && spread < 0) {
+        errors.rateSpread = "Spread must be positive.";
+      }
+    } else {
+      if (!values.fixedRate.trim()) errors.fixedRate = "Fixed rate is required.";
+      const fixedRate = Number(values.fixedRate);
+      if (Number.isNaN(fixedRate)) errors.fixedRate = "Fixed rate must be a number.";
+      if (!Number.isNaN(fixedRate) && fixedRate < 0) {
+        errors.fixedRate = "Fixed rate must be positive.";
+      }
     }
-    const creditScore = toOptionalNumber(values.minimumCreditScore);
-    if (values.minimumCreditScore.trim() && creditScore === null) {
-      errors.minimumCreditScore = "Minimum credit score must be a number.";
-    }
-    const ltv = toOptionalNumber(values.ltv);
-    if (values.ltv.trim() && ltv === null) {
-      errors.ltv = "LTV must be a number.";
-    }
-    if (ltv !== null && (ltv < 0 || ltv > 100)) {
-      errors.ltv = "LTV must be between 0 and 100.";
-    }
-    const minRevenue = toOptionalNumber(values.minimumRevenue);
-    if (values.minimumRevenue.trim() && minRevenue === null) {
-      errors.minimumRevenue = "Minimum revenue must be a number.";
-    }
-    const timeInBusiness = toOptionalNumber(values.timeInBusinessMonths);
-    if (values.timeInBusinessMonths.trim() && timeInBusiness === null) {
-      errors.timeInBusinessMonths = "Time in business must be a number.";
-    }
+    if (!values.termMonths.trim()) errors.termMonths = "Term is required.";
+    const termMonths = Number(values.termMonths);
+    if (Number.isNaN(termMonths)) errors.termMonths = "Term must be a number.";
     const normalizedCountry = values.country.trim().toUpperCase();
-    if (values.category === "SBA_GOVERNMENT" && normalizedCountry !== "US") {
+    if (values.category === "SBA_GOVERNMENT" && normalizedCountry !== "US" && normalizedCountry !== "BOTH") {
       errors.category = "SBA products must be limited to US lenders.";
     }
-    if (values.category === "STARTUP_CAPITAL" && normalizedCountry !== "CA") {
+    if (values.category === "STARTUP_CAPITAL" && normalizedCountry !== "CA" && normalizedCountry !== "BOTH") {
       errors.category = "Startup capital is limited to Canada.";
     }
     if (values.category === "STARTUP_CAPITAL" && values.active) {
@@ -495,32 +500,56 @@ const LendersContent = () => {
     return errors;
   };
 
-  const buildProductPayload = (values: ProductFormValues): LenderProductPayload => ({
-    lenderId: values.lenderId,
-    productName: values.productName.trim(),
-    active: values.category === "STARTUP_CAPITAL" || isSelectedLenderInactive ? false : values.active,
-    category: values.category,
-    country: values.country.trim(),
-    currency: values.currency.trim(),
-    minAmount: Number(values.minAmount),
-    maxAmount: Number(values.maxAmount),
-    interestRateMin: Number(values.interestRateMin),
-    interestRateMax: Number(values.interestRateMax),
-    rateType: values.rateType,
-    termLength: {
-      min: Number(values.termMin),
-      max: Number(values.termMax),
-      unit: values.termUnit
-    },
-    minimumCreditScore: toOptionalNumber(values.minimumCreditScore),
-    ltv: toOptionalNumber(values.ltv),
-    eligibilityRules: values.eligibilityRules.trim() ? values.eligibilityRules.trim() : null,
-    eligibilityFlags: {
-      minimumRevenue: toOptionalNumber(values.minimumRevenue),
-      timeInBusinessMonths: toOptionalNumber(values.timeInBusinessMonths),
-      industryRestrictions: values.industryRestrictions.trim() ? values.industryRestrictions.trim() : null
-    }
-  });
+  const buildProductPayload = (values: ProductFormValues, existing?: LenderProduct | null): LenderProductPayload => {
+    const normalizedCountry = values.country.trim();
+    const resolvedRateType = resolveRateType(values.rateType);
+    const primeRate = Number(values.primeRate);
+    const spread = Number(values.rateSpread);
+    const fixedRate = Number(values.fixedRate);
+    const interestRateMin =
+      resolvedRateType === "variable"
+        ? Number.isNaN(primeRate)
+          ? 0
+          : primeRate
+        : Number.isNaN(fixedRate)
+          ? 0
+          : fixedRate;
+    const interestRateMax =
+      resolvedRateType === "variable"
+        ? Number.isNaN(primeRate) || Number.isNaN(spread)
+          ? interestRateMin
+          : primeRate + spread
+        : interestRateMin;
+    const termMonths = Number(values.termMonths);
+    const resolvedCurrency = deriveCurrency(normalizedCountry, existing?.currency ?? null);
+    return {
+      lenderId: values.lenderId,
+      productName: existing?.productName ?? deriveProductName(values.category),
+      active: values.category === "STARTUP_CAPITAL" || isSelectedLenderInactive ? false : values.active,
+      category: values.category,
+      country: normalizedCountry,
+      currency: resolvedCurrency,
+      minAmount: Number(values.minAmount),
+      maxAmount: Number(values.maxAmount),
+      interestRateMin,
+      interestRateMax,
+      rateType: resolvedRateType,
+      termLength: {
+        min: Number.isNaN(termMonths) ? 0 : termMonths,
+        max: Number.isNaN(termMonths) ? 0 : termMonths,
+        unit: "months"
+      },
+      minimumCreditScore: existing?.minimumCreditScore ?? null,
+      ltv: existing?.ltv ?? null,
+      eligibilityRules: existing?.eligibilityRules ?? null,
+      eligibilityFlags: existing?.eligibilityFlags ?? {
+        minimumRevenue: null,
+        timeInBusinessMonths: null,
+        industryRestrictions: null
+      },
+      required_documents: buildRequiredDocumentsPayload(values.requiredDocuments)
+    };
+  };
 
   const updateProductForm = (updates: Partial<ProductFormValues>) => {
     setProductFormValues((prev) => ({ ...prev, ...updates }));
@@ -563,39 +592,23 @@ const LendersContent = () => {
 
   const openEditProductModal = (product: LenderProduct) => {
     if (!product?.id) return;
-    const eligibilityFlags = product.eligibilityFlags ?? {
-      minimumRevenue: null,
-      timeInBusinessMonths: null,
-      industryRestrictions: null
-    };
-    const termLength = product.termLength ?? {
-      min: 0,
-      max: 0,
-      unit: TERM_UNITS[0]
-    };
     const resolvedCategory = product.category ?? LENDER_PRODUCT_CATEGORIES[0];
+    const rateDefaults = getRateDefaults(product);
+    const termMonths = product.termLength?.min ?? product.termLength?.max ?? 0;
     setEditingProduct(product);
     setProductFormValues({
       lenderId: product.lenderId ?? "",
-      productName: product.productName ?? "",
       active: resolvedCategory === "STARTUP_CAPITAL" || isSelectedLenderInactive ? false : product.active,
       category: resolvedCategory,
       country: product.country ?? "",
-      currency: product.currency ?? "",
       minAmount: toFormString(product.minAmount),
       maxAmount: toFormString(product.maxAmount),
-      interestRateMin: toFormString(product.interestRateMin),
-      interestRateMax: toFormString(product.interestRateMax),
-      rateType: product.rateType ?? RATE_TYPES[0],
-      termMin: toFormString(termLength.min),
-      termMax: toFormString(termLength.max),
-      termUnit: termLength.unit ?? TERM_UNITS[0],
-      minimumCreditScore: toFormString(product.minimumCreditScore),
-      ltv: toFormString(product.ltv),
-      eligibilityRules: product.eligibilityRules ?? "",
-      minimumRevenue: toFormString(eligibilityFlags.minimumRevenue),
-      timeInBusinessMonths: toFormString(eligibilityFlags.timeInBusinessMonths),
-      industryRestrictions: eligibilityFlags.industryRestrictions ?? ""
+      rateType: rateDefaults.rateType,
+      fixedRate: rateDefaults.fixedRate,
+      primeRate: rateDefaults.primeRate,
+      rateSpread: rateDefaults.rateSpread,
+      termMonths: termMonths ? String(termMonths) : "",
+      requiredDocuments: mapRequiredDocumentsToValues(product.requiredDocuments)
     });
     setProductFormErrors({});
     setIsProductModalOpen(true);
@@ -658,7 +671,7 @@ const LendersContent = () => {
             <Table headers={["Name", "Status", "Country", "Primary contact"]}>
               {safeLenders.map((lender, index) => {
                 const lenderIdValue = lender.id ?? "";
-                const isActive = lender.active ?? true;
+                const isActive = lender.active === true;
                 const lenderName = lender.name?.trim() || "Unnamed lender";
                 const rowKey = lenderIdValue || `lender-${index}`;
                 return (
@@ -844,13 +857,30 @@ const LendersContent = () => {
             }}
           >
             <div className="management-field">
-              <span className="management-field__label">Lender profile</span>
+              <span className="management-field__label">Lender details</span>
               <Input
-                label="Name"
+                label="Lender name"
                 value={lenderFormValues.name}
                 onChange={(event) => setLenderFormValues((prev) => ({ ...prev, name: event.target.value }))}
                 error={lenderFormErrors.name}
               />
+              <Select
+                label="Country"
+                value={lenderFormValues.country}
+                onChange={(event) =>
+                  setLenderFormValues((prev) => ({
+                    ...prev,
+                    country: event.target.value
+                  }))
+                }
+              >
+                {COUNTRIES.map((country) => (
+                  <option key={country.value} value={country.value}>
+                    {country.label}
+                  </option>
+                ))}
+              </Select>
+              {lenderFormErrors.country && <span className="ui-field__error">{lenderFormErrors.country}</span>}
               <label className="management-toggle">
                 <input
                   type="checkbox"
@@ -861,89 +891,6 @@ const LendersContent = () => {
                 />
                 <span>Active lender</span>
               </label>
-              <Input
-                label="Phone"
-                value={lenderFormValues.phone}
-                onChange={(event) => setLenderFormValues((prev) => ({ ...prev, phone: event.target.value }))}
-                error={lenderFormErrors.phone}
-              />
-              <Input
-                label="Website"
-                value={lenderFormValues.website}
-                onChange={(event) => setLenderFormValues((prev) => ({ ...prev, website: event.target.value }))}
-              />
-              <label className="ui-field">
-                <span className="ui-field__label">Description</span>
-                <textarea
-                  className="ui-input ui-textarea"
-                  value={lenderFormValues.description}
-                  onChange={(event) =>
-                    setLenderFormValues((prev) => ({ ...prev, description: event.target.value }))
-                  }
-                  rows={3}
-                />
-              </label>
-            </div>
-
-            <div className="management-field">
-              <span className="management-field__label">Address</span>
-              <Input
-                label="Street"
-                value={lenderFormValues.street}
-                onChange={(event) => setLenderFormValues((prev) => ({ ...prev, street: event.target.value }))}
-                error={lenderFormErrors.street}
-              />
-              <div className="management-grid__row">
-                <Input
-                  label="City"
-                  value={lenderFormValues.city}
-                  onChange={(event) => setLenderFormValues((prev) => ({ ...prev, city: event.target.value }))}
-                  error={lenderFormErrors.city}
-                />
-                <Select
-                  label="State / Province"
-                  value={lenderFormValues.region}
-                  onChange={(event) => setLenderFormValues((prev) => ({ ...prev, region: event.target.value }))}
-                >
-                  <option value="">
-                    Select {lenderFormValues.country === "US" ? "state" : "province"}
-                  </option>
-                  {(lenderFormValues.country === "US" ? STATES : PROVINCES).map((region) => (
-                    <option key={region.value} value={region.value}>
-                      {region.label}
-                    </option>
-                  ))}
-                </Select>
-                {lenderFormErrors.region && <span className="ui-field__error">{lenderFormErrors.region}</span>}
-              </div>
-              <div className="management-grid__row">
-                <Input
-                  label="Postal code"
-                  value={lenderFormValues.postalCode}
-                  onChange={(event) =>
-                    setLenderFormValues((prev) => ({ ...prev, postalCode: event.target.value }))
-                  }
-                  error={lenderFormErrors.postalCode}
-                />
-                <Select
-                  label="Country"
-                  value={lenderFormValues.country}
-                  onChange={(event) =>
-                    setLenderFormValues((prev) => ({
-                      ...prev,
-                      country: event.target.value,
-                      region: prev.country === event.target.value ? prev.region : ""
-                    }))
-                  }
-                >
-                  {COUNTRIES.map((country) => (
-                    <option key={country.value} value={country.value}>
-                      {country.label}
-                    </option>
-                  ))}
-                </Select>
-                {lenderFormErrors.country && <span className="ui-field__error">{lenderFormErrors.country}</span>}
-              </div>
             </div>
 
             <div className="management-field">
@@ -987,7 +934,7 @@ const LendersContent = () => {
                   }))
                 }
               >
-                {SUBMISSION_METHODS.map((method) => (
+                {SUBMISSION_METHODS.filter((method) => method !== "MANUAL").map((method) => (
                   <option key={method} value={method}>
                     {method}
                   </option>
@@ -1021,17 +968,17 @@ const LendersContent = () => {
         <LenderProductModal
           isOpen={isProductModalOpen}
           title={editingProduct ? "Edit product" : "Add product"}
-          selectedLender={selectedLender}
           isSaving={productMutationLoading}
           errorMessage={
             productMutationError ? getErrorMessage(productMutationError, "Unable to save product.") : null
           }
           isSelectedLenderInactive={isSelectedLenderInactive}
+          lenderOptions={[{ value: selectedLender.id, label: selectedLender.name }]}
           formValues={productFormValues}
           formErrors={productFormErrors}
           categoryOptions={buildCategoryOptions(productFormValues.country)}
-          rateTypes={RATE_TYPES}
-          termUnits={TERM_UNITS}
+          rateTypes={rateTypeOptions}
+          documentOptions={PRODUCT_DOCUMENT_OPTIONS}
           formatRateType={formatRateType}
           onChange={updateProductForm}
           onSubmit={() => {
@@ -1039,12 +986,12 @@ const LendersContent = () => {
             const errors = validateProductForm(productFormValues);
             setProductFormErrors(errors);
             if (Object.keys(errors).length) return;
-            const payload = buildProductPayload(productFormValues);
-            if (editingProduct) {
-              if (!editingProduct.id) {
-                setProductFormErrors({ productName: "Missing product id. Please refresh and try again." });
-                return;
-              }
+            const payload = buildProductPayload(productFormValues, editingProduct);
+              if (editingProduct) {
+                if (!editingProduct.id) {
+                  setProductFormErrors({ category: "Missing product id. Please refresh and try again." });
+                  return;
+                }
               updateProductMutation.mutate({ productId: editingProduct.id, payload });
               return;
             }

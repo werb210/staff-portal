@@ -1,111 +1,68 @@
-import { useMemo, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import Button from "@/components/ui/Button";
 import ErrorBanner from "@/components/ui/ErrorBanner";
 import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
 import Select from "@/components/ui/Select";
-import type { Lender, ProductDocumentRequirement } from "@/types/lenderManagement.models";
-import type {
-  LenderProductCategory,
-  RateType,
-  TermUnit
-} from "@/types/lenderManagement.types";
+import type { LenderProductCategory, RateType } from "@/types/lenderManagement.types";
 
 export type ProductFormValues = {
   lenderId: string;
-  productName: string;
-  active: boolean;
   category: LenderProductCategory;
   country: string;
-  currency: string;
   minAmount: string;
   maxAmount: string;
-  interestRateMin: string;
-  interestRateMax: string;
   rateType: RateType;
-  termMin: string;
-  termMax: string;
-  termUnit: TermUnit;
-  minimumCreditScore: string;
-  ltv: string;
-  eligibilityRules: string;
-  minimumRevenue: string;
-  timeInBusinessMonths: string;
-  industryRestrictions: string;
+  fixedRate: string;
+  primeRate: string;
+  rateSpread: string;
+  termMonths: string;
+  requiredDocuments: string[];
+  active: boolean;
 };
 
 type LenderProductModalProps = {
   isOpen: boolean;
   title: string;
-  selectedLender: Lender;
   isSaving: boolean;
+  isSubmitDisabled?: boolean;
   errorMessage?: string | null;
-  isSelectedLenderInactive: boolean;
   formValues: ProductFormValues;
   formErrors: Record<string, string>;
+  lenderOptions: Array<{ value: string; label: string }>;
+  isSelectedLenderInactive: boolean;
   categoryOptions: Array<{ value: LenderProductCategory; label: string; disabled?: boolean }>;
   rateTypes: RateType[];
-  termUnits: TermUnit[];
+  documentOptions: Array<{ value: string; label: string; locked?: boolean }>;
   formatRateType: (value: RateType) => string;
   onChange: (updates: Partial<ProductFormValues>) => void;
   onSubmit: () => void;
   onClose: () => void;
   onCancel: () => void;
-  requiredDocuments?: ProductDocumentRequirement[];
   statusNote?: ReactNode;
 };
 
 const LenderProductModal = ({
   isOpen,
   title,
-  selectedLender,
   isSaving,
+  isSubmitDisabled = false,
   errorMessage,
   isSelectedLenderInactive,
   formValues,
   formErrors,
+  lenderOptions,
   categoryOptions,
   rateTypes,
-  termUnits,
+  documentOptions,
   formatRateType,
   onChange,
   onSubmit,
   onClose,
   onCancel,
-  requiredDocuments = [],
   statusNote
 }: LenderProductModalProps) => {
   if (!isOpen) return null;
-
-  const submissionConfig = selectedLender.submissionConfig;
-  const normalizedDocuments = useMemo(() => {
-    const unique = new Map<string, ProductDocumentRequirement>();
-    requiredDocuments.forEach((doc) => {
-      if (!doc) return;
-      const categoryName = doc.category?.trim() || "Other";
-      const key = categoryName.toLowerCase();
-      const existing = unique.get(key);
-      if (!existing) {
-        unique.set(key, {
-          ...doc,
-          category: categoryName,
-          required: Boolean(doc.required),
-          description: doc.description ?? ""
-        });
-        return;
-      }
-      if (doc.required) {
-        existing.required = true;
-      }
-      if (!existing.description && doc.description) {
-        existing.description = doc.description;
-      }
-    });
-    return Array.from(unique.values()).sort((a, b) => {
-      if (a.required !== b.required) return a.required ? -1 : 1;
-      return a.category.localeCompare(b.category);
-    });
-  }, [requiredDocuments]);
 
   return (
     <Modal title={title} onClose={onClose}>
@@ -120,16 +77,19 @@ const LenderProductModal = ({
       >
         <div className="management-field">
           <span className="management-field__label">Core details</span>
-          <Select label="Lender" value={formValues.lenderId} onChange={() => {}} disabled>
-            <option value={selectedLender.id}>{selectedLender.name}</option>
+          <Select
+            label="Lender"
+            value={formValues.lenderId}
+            onChange={(event) => onChange({ lenderId: event.target.value })}
+          >
+            <option value="">Select lender</option>
+            {lenderOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
           </Select>
           {formErrors.lenderId && <span className="ui-field__error">{formErrors.lenderId}</span>}
-          <Input
-            label="Product name"
-            value={formValues.productName}
-            onChange={(event) => onChange({ productName: event.target.value })}
-            error={formErrors.productName}
-          />
           <label className="management-toggle">
             <input
               type="checkbox"
@@ -155,19 +115,18 @@ const LenderProductModal = ({
           </Select>
           {formErrors.category && <span className="ui-field__error">{formErrors.category}</span>}
           <div className="management-grid__row">
-            <Input
+            <Select
               label="Country"
               value={formValues.country}
               onChange={(event) => onChange({ country: event.target.value })}
-              error={formErrors.country}
-            />
-            <Input
-              label="Currency"
-              value={formValues.currency}
-              onChange={(event) => onChange({ currency: event.target.value })}
-              error={formErrors.currency}
-            />
+            >
+              <option value="">Select country</option>
+              <option value="CA">CA</option>
+              <option value="US">US</option>
+              <option value="BOTH">Both</option>
+            </Select>
           </div>
+          {formErrors.country && <span className="ui-field__error">{formErrors.country}</span>}
           {formValues.category === "SBA_GOVERNMENT" && (
             <div className="text-xs text-slate-500">Government Program (US only)</div>
           )}
@@ -179,7 +138,7 @@ const LenderProductModal = ({
         </div>
 
         <div className="management-field">
-          <span className="management-field__label">Amount &amp; limits</span>
+          <span className="management-field__label">Amount</span>
           <div className="management-grid__row">
             <Input
               label="Minimum amount"
@@ -194,38 +153,10 @@ const LenderProductModal = ({
               error={formErrors.maxAmount}
             />
           </div>
-          <div className="management-grid__row">
-            <Input
-              label="Minimum credit score"
-              value={formValues.minimumCreditScore}
-              onChange={(event) => onChange({ minimumCreditScore: event.target.value })}
-              error={formErrors.minimumCreditScore}
-            />
-            <Input
-              label="LTV (%)"
-              value={formValues.ltv}
-              onChange={(event) => onChange({ ltv: event.target.value })}
-              error={formErrors.ltv}
-            />
-          </div>
         </div>
 
         <div className="management-field">
           <span className="management-field__label">Pricing &amp; terms</span>
-          <div className="management-grid__row">
-            <Input
-              label="Interest rate min (%)"
-              value={formValues.interestRateMin}
-              onChange={(event) => onChange({ interestRateMin: event.target.value })}
-              error={formErrors.interestRateMin}
-            />
-            <Input
-              label="Interest rate max (%)"
-              value={formValues.interestRateMax}
-              onChange={(event) => onChange({ interestRateMax: event.target.value })}
-              error={formErrors.interestRateMax}
-            />
-          </div>
           <Select
             label="Rate type"
             value={formValues.rateType}
@@ -238,102 +169,67 @@ const LenderProductModal = ({
             ))}
           </Select>
           {formErrors.rateType && <span className="ui-field__error">{formErrors.rateType}</span>}
-          <div className="management-grid__row">
-            <Input
-              label="Term length min"
-              value={formValues.termMin}
-              onChange={(event) => onChange({ termMin: event.target.value })}
-              error={formErrors.termMin}
-            />
-            <Input
-              label="Term length max"
-              value={formValues.termMax}
-              onChange={(event) => onChange({ termMax: event.target.value })}
-              error={formErrors.termMax}
-            />
-          </div>
-          <Select
-            label="Term unit"
-            value={formValues.termUnit}
-            onChange={(event) => onChange({ termUnit: event.target.value as TermUnit })}
-          >
-            {termUnits.map((unit) => (
-              <option key={unit} value={unit}>
-                {unit}
-              </option>
-            ))}
-          </Select>
-        </div>
-
-        <div className="management-field">
-          <span className="management-field__label">Eligibility</span>
-          <label className="ui-field">
-            <span className="ui-field__label">Eligibility rules</span>
-            <textarea
-              className="ui-input ui-textarea"
-              value={formValues.eligibilityRules}
-              onChange={(event) => onChange({ eligibilityRules: event.target.value })}
-              rows={3}
-            />
-          </label>
-          <div className="management-grid__row">
-            <Input
-              label="Minimum revenue"
-              value={formValues.minimumRevenue}
-              onChange={(event) => onChange({ minimumRevenue: event.target.value })}
-              error={formErrors.minimumRevenue}
-            />
-            <Input
-              label="Time in business (months)"
-              value={formValues.timeInBusinessMonths}
-              onChange={(event) => onChange({ timeInBusinessMonths: event.target.value })}
-              error={formErrors.timeInBusinessMonths}
-            />
-          </div>
-          <label className="ui-field">
-            <span className="ui-field__label">Industry restrictions</span>
-            <textarea
-              className="ui-input ui-textarea"
-              value={formValues.industryRestrictions}
-              onChange={(event) => onChange({ industryRestrictions: event.target.value })}
-              rows={2}
-            />
-          </label>
-        </div>
-
-        <div className="management-field">
-          <span className="management-field__label">Required docs</span>
-          {normalizedDocuments.length ? (
-            <div className="management-docs">
-              {normalizedDocuments.map((doc) => (
-                <div key={doc.category}>
-                  <span className="management-docs__title">{doc.category}</span>
-                  <p className="text-xs text-slate-500">
-                    {doc.required ? "Required" : "Optional"}
-                    {doc.description ? ` • ${doc.description}` : ""}
-                  </p>
-                </div>
-              ))}
+          {formValues.rateType === "variable" ? (
+            <div className="management-grid__row">
+              <Input
+                label="Prime rate (%)"
+                value={formValues.primeRate}
+                onChange={(event) => onChange({ primeRate: event.target.value })}
+                error={formErrors.primeRate}
+              />
+              <Input
+                label="+ Spread (%)"
+                value={formValues.rateSpread}
+                onChange={(event) => onChange({ rateSpread: event.target.value })}
+                error={formErrors.rateSpread}
+              />
             </div>
           ) : (
-            <p className="text-sm text-slate-500">No document requirements have been configured.</p>
+            <Input
+              label="Fixed rate (%)"
+              value={formValues.fixedRate}
+              onChange={(event) => onChange({ fixedRate: event.target.value })}
+              error={formErrors.fixedRate}
+            />
           )}
+          <div className="management-grid__row">
+            <Input
+              label="Term (months)"
+              value={formValues.termMonths}
+              onChange={(event) => onChange({ termMonths: event.target.value })}
+              error={formErrors.termMonths}
+            />
+          </div>
         </div>
 
         <div className="management-field">
-          <span className="management-field__label">Submission config</span>
-          <div className="management-grid__row">
-            <Input label="Method" value={submissionConfig?.method ?? "MANUAL"} disabled />
-            <Input
-              label="Submission email"
-              value={submissionConfig?.submissionEmail ?? ""}
-              disabled
-            />
+          <span className="management-field__label">Required documents</span>
+          <div className="management-docs">
+            {documentOptions.map((doc) => {
+              const checked = formValues.requiredDocuments.includes(doc.value);
+              return (
+                <label key={doc.value} className="management-toggle">
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={(event) => {
+                      if (doc.locked) return;
+                      const next = event.target.checked
+                        ? [...formValues.requiredDocuments, doc.value]
+                        : formValues.requiredDocuments.filter((value) => value !== doc.value);
+                      onChange({ requiredDocuments: next });
+                    }}
+                    disabled={doc.locked}
+                  />
+                  <span>{doc.label}</span>
+                </label>
+              );
+            })}
           </div>
         </div>
 
         <div className="management-actions">
-          <Button type="submit" disabled={isSaving}>
+          <Button type="submit" disabled={isSaving || isSubmitDisabled}>
             {isSaving ? "Saving..." : "Save product"}
           </Button>
           <Button type="button" variant="ghost" onClick={onCancel} disabled={isSaving}>
