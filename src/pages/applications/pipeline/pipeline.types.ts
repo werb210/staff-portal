@@ -66,7 +66,7 @@ export const PIPELINE_STAGE_LABELS: Record<(typeof PIPELINE_STAGE_ORDER)[number]
   RECEIVED: "Received",
   DOCUMENTS_REQUIRED: "Documents Required",
   IN_REVIEW: "In Review",
-  START_UP: "Start-Up",
+  START_UP: "Start Up",
   OFF_TO_LENDER: "Off to Lender",
   ACCEPTED: "Accepted",
   DECLINED: "Declined"

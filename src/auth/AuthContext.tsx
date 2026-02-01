@@ -69,7 +69,7 @@ export interface AuthContextValue {
   setAuthenticated: () => void;
   setAuthState: (state: AuthState) => void;
   clearAuth: () => void;
-  refreshUser: () => Promise<boolean>;
+  refreshUser: (options?: { allowLogout?: boolean }) => Promise<boolean>;
   logout: () => Promise<void>;
 }
 
@@ -197,14 +197,6 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
     clearAuthState();
   }, [clearAuthState]);
 
-  const forceLogout = useCallback(
-    async (reason: string) => {
-      logAuthInfo("Auth forced logout", user, { reason });
-      clearAuthState();
-    },
-    [clearAuthState, user]
-  );
-
   const setAuth = useCallback(
     ({ user: newUser }: SetAuthPayload) => {
       setUser(newUser ?? null);
@@ -227,59 +219,79 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
     setError(null);
   }, []);
 
-  const refreshUser = useCallback(async (): Promise<boolean> => {
-    if (refreshInFlightRef.current) {
-      return refreshInFlightRef.current;
-    }
-    const refreshPromise = (async () => {
-      if (!getAccessToken()) {
-        clearAuthState();
-        return false;
+  const refreshUser = useCallback(
+    async (options?: { allowLogout?: boolean }): Promise<boolean> => {
+      const allowLogout = options?.allowLogout !== false;
+      const priorAuthStatus = authStatus;
+      const priorRolesStatus = rolesStatus;
+      const priorUser = user;
+      if (refreshInFlightRef.current) {
+        return refreshInFlightRef.current;
       }
-      setAuthStatus("loading");
-      setRolesStatus("loading");
-      try {
-        const response = await api.get<AuthenticatedUser>("/auth/me");
-        const data = response.data;
-        setUser(data ?? null);
-        setAuthStatus("authenticated");
-        setRolesStatus("resolved");
-        refreshRetryRef.current = 0;
-        return true;
-      } catch (fetchError) {
-        const status = getErrorStatus(fetchError);
-        logAuthError("/api/auth/me failed", user, { error: fetchError, status });
-        if (status === 401) {
-          if (refreshRetryRef.current < 1) {
-            refreshRetryRef.current += 1;
-            try {
-              const retryResponse = await api.get<AuthenticatedUser>("/auth/me");
-              const retryData = retryResponse.data;
-              setUser(retryData ?? null);
-              setAuthStatus("authenticated");
-              setRolesStatus("resolved");
-              refreshRetryRef.current = 0;
-              return true;
-            } catch (retryError) {
-              logAuthError("/api/auth/me retry failed", user, { error: retryError });
-            }
-          }
+      const refreshPromise = (async () => {
+        if (!getAccessToken()) {
           clearAuthState();
-        } else {
+          return false;
+        }
+        if (allowLogout) {
           setAuthStatus("loading");
           setRolesStatus("loading");
-          setError("Authentication temporarily unavailable.");
         }
-        return false;
+        try {
+          const response = await api.get<AuthenticatedUser>("/auth/me");
+          const data = response.data;
+          setUser(data ?? null);
+          setAuthStatus("authenticated");
+          setRolesStatus("resolved");
+          refreshRetryRef.current = 0;
+          return true;
+        } catch (fetchError) {
+          const status = getErrorStatus(fetchError);
+          logAuthError("/api/auth/me failed", user, { error: fetchError, status });
+          if (status === 401) {
+            if (refreshRetryRef.current < 1) {
+              refreshRetryRef.current += 1;
+              try {
+                const retryResponse = await api.get<AuthenticatedUser>("/auth/me");
+                const retryData = retryResponse.data;
+                setUser(retryData ?? null);
+                setAuthStatus("authenticated");
+                setRolesStatus("resolved");
+                refreshRetryRef.current = 0;
+                return true;
+              } catch (retryError) {
+                logAuthError("/api/auth/me retry failed", user, { error: retryError });
+              }
+            }
+            if (allowLogout) {
+              clearAuthState();
+            } else {
+              setAuthStatus(priorUser ? "authenticated" : priorAuthStatus);
+              setRolesStatus(priorUser ? "resolved" : priorRolesStatus);
+              setError("Authentication temporarily unavailable.");
+            }
+          } else {
+            if (allowLogout) {
+              setAuthStatus("loading");
+              setRolesStatus("loading");
+            } else {
+              setAuthStatus(priorUser ? "authenticated" : priorAuthStatus);
+              setRolesStatus(priorUser ? "resolved" : priorRolesStatus);
+            }
+            setError("Authentication temporarily unavailable.");
+          }
+          return false;
+        }
+      })();
+      refreshInFlightRef.current = refreshPromise;
+      try {
+        return await refreshPromise;
+      } finally {
+        refreshInFlightRef.current = null;
       }
-    })();
-    refreshInFlightRef.current = refreshPromise;
-    try {
-      return await refreshPromise;
-    } finally {
-      refreshInFlightRef.current = null;
-    }
-  }, [clearAuthState, setUser, user]);
+    },
+    [authStatus, clearAuthState, rolesStatus, setUser, user]
+  );
 
   const login = useCallback(async (token: string): Promise<void> => {
     skipNextHydrationRef.current = true;
@@ -421,15 +433,12 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
       authFailureInFlightRef.current = true;
       void (async () => {
         try {
-          const refreshed = await refreshUser();
+          const refreshed = await refreshUser({ allowLogout: false });
           if (refreshed) {
             return;
           }
           if (reason === "missing-token") {
             return;
-          }
-          if (!getAccessToken()) {
-            await forceLogout(reason);
           }
         } finally {
           authFailureInFlightRef.current = false;
@@ -439,7 +448,7 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
     return () => {
       unregister();
     };
-  }, [authStatus, forceLogout, refreshUser]);
+  }, [authStatus, refreshUser]);
 
   useEffect(() => {
     const role = (user as { role?: UserRole } | null)?.role ?? null;

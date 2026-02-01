@@ -107,12 +107,17 @@ const normalizeLenderCountry = (value?: string | null) => {
 
 const normalizeLender = (raw: LenderSummary): Lender | null => {
   if (!raw?.id || typeof raw.id !== "string") return null;
-  const active = typeof (raw as Lender).active === "boolean" ? (raw as Lender).active : false;
-  const status = normalizeLenderStatus(raw.status ?? (raw as Lender).status);
+  const active =
+    typeof (raw as Lender).active === "boolean"
+      ? (raw as Lender).active
+      : typeof (raw as { active?: unknown }).active === "boolean"
+        ? (raw as { active: boolean }).active
+        : false;
+  const status = normalizeLenderStatus(raw.status ?? (raw as Lender).status ?? (raw as { status?: unknown }).status);
 
   const rawCountry =
-    typeof (raw as Lender).country === "string"
-      ? (raw as Lender).country
+    typeof (raw as { country?: unknown }).country === "string"
+      ? (raw as { country: string }).country
       : isRecord((raw as Lender).address)
         ? (raw as Lender).address.country
         : "";
@@ -123,7 +128,9 @@ const normalizeLender = (raw: LenderSummary): Lender | null => {
         stateProvince:
           typeof (raw as Lender).address.stateProvince === "string"
             ? (raw as Lender).address.stateProvince
-            : "",
+            : typeof (raw as { region?: unknown }).region === "string"
+              ? (raw as { region: string }).region
+              : "",
         postalCode:
           typeof (raw as Lender).address.postalCode === "string"
             ? (raw as Lender).address.postalCode
@@ -131,10 +138,18 @@ const normalizeLender = (raw: LenderSummary): Lender | null => {
         country: normalizeLenderCountry(rawCountry)
       }
     : {
-        street: "",
-        city: "",
-        stateProvince: "",
-        postalCode: "",
+        street: typeof (raw as { street?: unknown }).street === "string" ? (raw as { street: string }).street : "",
+        city: typeof (raw as { city?: unknown }).city === "string" ? (raw as { city: string }).city : "",
+        stateProvince:
+          typeof (raw as { region?: unknown }).region === "string"
+            ? (raw as { region: string }).region
+            : typeof (raw as { stateProvince?: unknown }).stateProvince === "string"
+              ? (raw as { stateProvince: string }).stateProvince
+              : "",
+        postalCode:
+          typeof (raw as { postal_code?: unknown }).postal_code === "string"
+            ? (raw as { postal_code: string }).postal_code
+            : "",
         country: normalizeLenderCountry(rawCountry)
       };
 
@@ -152,9 +167,24 @@ const normalizeLender = (raw: LenderSummary): Lender | null => {
             : ""
       }
     : {
-        name: "",
-        email: "",
-        phone: "",
+        name:
+          typeof (raw as { contact_name?: unknown }).contact_name === "string"
+            ? (raw as { contact_name: string }).contact_name
+            : typeof (raw as { primary_contact_name?: unknown }).primary_contact_name === "string"
+              ? (raw as { primary_contact_name: string }).primary_contact_name
+              : "",
+        email:
+          typeof (raw as { contact_email?: unknown }).contact_email === "string"
+            ? (raw as { contact_email: string }).contact_email
+            : typeof (raw as { primary_contact_email?: unknown }).primary_contact_email === "string"
+              ? (raw as { primary_contact_email: string }).primary_contact_email
+              : "",
+        phone:
+          typeof (raw as { contact_phone?: unknown }).contact_phone === "string"
+            ? (raw as { contact_phone: string }).contact_phone
+            : typeof (raw as { primary_contact_phone?: unknown }).primary_contact_phone === "string"
+              ? (raw as { primary_contact_phone: string }).primary_contact_phone
+              : "",
         mobilePhone: ""
       };
 
@@ -173,12 +203,19 @@ const normalizeLender = (raw: LenderSummary): Lender | null => {
         submissionEmail: (raw as Lender).submissionConfig.submissionEmail ?? null
       }
     : {
-        method: "MANUAL",
+        method:
+          typeof (raw as { submission_method?: unknown }).submission_method === "string" &&
+          ["API", "EMAIL", "MANUAL"].includes((raw as { submission_method: string }).submission_method)
+            ? ((raw as { submission_method: string }).submission_method as Lender["submissionConfig"]["method"])
+            : "MANUAL",
         apiBaseUrl: null,
         apiClientId: null,
         apiUsername: null,
         apiPassword: null,
-        submissionEmail: null
+        submissionEmail:
+          typeof (raw as { submission_email?: unknown }).submission_email === "string"
+            ? (raw as { submission_email: string }).submission_email
+            : null
       };
 
   const operationalLimits = isRecord((raw as Lender).operationalLimits)
@@ -204,7 +241,7 @@ const normalizeLender = (raw: LenderSummary): Lender | null => {
     phone: typeof (raw as Lender).phone === "string" ? (raw as Lender).phone : "",
     website: (raw as Lender).website ?? null,
     description: (raw as Lender).description ?? null,
-    internalNotes: (raw as Lender).internalNotes ?? null,
+    internalNotes: (raw as Lender).internalNotes ?? (raw as { internal_notes?: unknown }).internal_notes ?? null,
     processingNotes: (raw as Lender).processingNotes ?? null,
     primaryContact,
     submissionConfig,
@@ -221,8 +258,9 @@ export const fetchLenders = async (options?: RequestOptions) => {
 };
 
 export const fetchLenderById = async (id: string) => {
-  const lender = await apiClient.get<Lender>(`/lenders/${id}`);
-  return ensureEntityHasId(lender, "lender", id);
+  const lender = await apiClient.get<unknown>(`/lenders/${id}`);
+  const normalized = normalizeLender(ensureEntityHasId((lender ?? {}) as LenderSummary, "lender", id));
+  return ensureEntityHasId(normalized ?? (lender as Lender), "lender", id);
 };
 
 export const createLender = async (payload: LenderPayload) => {
