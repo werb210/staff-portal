@@ -36,6 +36,7 @@ import {
   getRateDefaults,
   isValidVariableRate,
   mapRequiredDocumentsToValues,
+  normalizeProductCountry,
   normalizeInterestInput,
   resolveRateType
 } from "./lenderProductForm";
@@ -234,7 +235,7 @@ const LenderProductsContent = () => {
       active: selectedProduct.active,
       productName: selectedProduct.productName ?? "",
       category: resolvedCategory,
-      country: selectedProduct.country ?? "",
+      country: normalizeProductCountry(selectedProduct.country),
       minAmount: toFormString(selectedProduct.minAmount),
       maxAmount: toFormString(selectedProduct.maxAmount),
       rateType: rateDefaults.rateType,
@@ -395,7 +396,7 @@ const LenderProductsContent = () => {
   };
 
   const buildPayload = (values: ProductFormValues, existing?: LenderProduct | null): LenderProductPayload => {
-    const normalizedCountry = values.country.trim();
+    const normalizedCountry = normalizeProductCountry(values.country);
     const resolvedRateType = resolveRateType(values.rateType);
     const interestRateMin = formatInterestPayload(resolvedRateType, values.interestMin);
     const interestRateMax = formatInterestPayload(resolvedRateType, values.interestMax);

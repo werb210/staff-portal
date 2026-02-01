@@ -60,6 +60,16 @@ export const deriveCurrency = (country: string, fallback?: string | null) => {
   return fallback ?? "USD";
 };
 
+export const normalizeProductCountry = (value?: string | null) => {
+  const trimmed = typeof value === "string" ? value.trim() : "";
+  if (!trimmed) return "";
+  const normalized = trimmed.toUpperCase();
+  if (normalized === "CA" || normalized === "CANADA") return "CA";
+  if (normalized === "US" || normalized === "USA" || normalized === "UNITED STATES") return "US";
+  if (normalized === "BOTH") return "BOTH";
+  return trimmed;
+};
+
 export const resolveRateType = (rateType?: RateType) =>
   rateType === "variable" || rateType === "fixed" ? rateType : "fixed";
 

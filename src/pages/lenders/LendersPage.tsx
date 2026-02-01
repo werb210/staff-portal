@@ -47,6 +47,7 @@ import {
   getRateDefaults,
   isValidVariableRate,
   mapRequiredDocumentsToValues,
+  normalizeProductCountry,
   normalizeInterestInput,
   resolveRateType
 } from "./lenderProductForm";
@@ -638,7 +639,7 @@ const LendersContent = () => {
   };
 
   const buildProductPayload = (values: ProductFormValues, existing?: LenderProduct | null): LenderProductPayload => {
-    const normalizedCountry = values.country.trim();
+    const normalizedCountry = normalizeProductCountry(values.country);
     const resolvedRateType = resolveRateType(values.rateType);
     const interestRateMin = formatInterestPayload(resolvedRateType, values.interestMin);
     const interestRateMax = formatInterestPayload(resolvedRateType, values.interestMax);
@@ -776,7 +777,7 @@ const LendersContent = () => {
       active: product.active,
       productName: product.productName ?? "",
       category: resolvedCategory,
-      country: product.country ?? "",
+      country: normalizeProductCountry(product.country),
       minAmount: toFormString(product.minAmount),
       maxAmount: toFormString(product.maxAmount),
       rateType: rateDefaults.rateType,
@@ -854,6 +855,7 @@ const LendersContent = () => {
                 const lenderName = lender.name?.trim() || "Unnamed lender";
                 const statusLabel = lender.status ?? "—";
                 const statusVariant = statusLabel === "ACTIVE" ? "active" : "paused";
+                const countryLabel = normalizeLenderCountryValue(lender.address?.country);
                 const rowKey = lenderIdValue || `lender-${index}`;
                 return (
                   <tr
@@ -878,7 +880,7 @@ const LendersContent = () => {
                         {statusLabel}
                       </span>
                     </td>
-                    <td>{lender.address?.country || "—"}</td>
+                    <td>{countryLabel || "—"}</td>
                     <td>
                       <div className="text-sm font-semibold">{lender.primaryContact?.name || "—"}</div>
                       <div className="text-xs text-slate-500">{lender.primaryContact?.email || "—"}</div>
@@ -927,7 +929,7 @@ const LendersContent = () => {
               <span className={`status-pill status-pill--${selectedLender.active ? "active" : "paused"}`}>
                 {selectedLender.active ? "Lender active" : "Lender inactive"}
               </span>
-              <span>{selectedLender.address?.country || "—"}</span>
+              <span>{normalizeLenderCountryValue(selectedLender.address?.country) || "—"}</span>
               {!selectedLender.active && (
                 <span className="text-xs text-amber-600">Inactive lenders cannot publish products.</span>
               )}
