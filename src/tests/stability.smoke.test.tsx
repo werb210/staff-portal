@@ -10,7 +10,7 @@ import { renderWithProviders } from "@/test/testUtils";
 
 vi.mock("@/api/lenders", () => ({
   fetchLenders: vi.fn().mockResolvedValue([
-    { id: "l-1", name: "Atlas Lending", active: true, address: { country: "US" } }
+    { id: "l-1", name: "Atlas Lending", active: true, status: "ACTIVE", address: { country: "US" } }
   ]),
   fetchLenderProducts: vi.fn().mockResolvedValue([]),
   createLender: vi.fn(),

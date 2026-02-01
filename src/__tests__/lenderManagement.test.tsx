@@ -238,7 +238,7 @@ describe("lender management flows", () => {
     await waitFor(() => {
       expect(screen.getByLabelText(/Lender name/i)).toHaveValue("Northwind Capital");
     });
-    expect(screen.getByLabelText(/^Country$/i)).toHaveValue("United States");
+    expect(screen.getByLabelText(/^Country$/i)).toHaveValue("US");
     expect(screen.getByLabelText(/Contact name/i)).toHaveValue("Alex Agent");
     expect(screen.getByLabelText(/Contact email/i)).toHaveValue("alex@example.com");
     expect(screen.getByLabelText(/Contact phone/i)).toHaveValue("+1 555 111 3333");

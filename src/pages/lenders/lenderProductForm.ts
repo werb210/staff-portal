@@ -27,9 +27,9 @@ export const getDefaultRequiredDocuments = () =>
   PRODUCT_DOCUMENT_OPTIONS.filter((option) => option.locked).map((option) => option.value);
 
 export const mapRequiredDocumentsToValues = (docs: ProductDocumentRequirement[] = []) => {
-  if (!docs.length) return getDefaultRequiredDocuments();
+  if (!docs.length) return [];
   const optionMap = new Map(PRODUCT_DOCUMENT_OPTIONS.map((option) => [normalizeDocKey(option.label), option.value]));
-  const selected = new Set(getDefaultRequiredDocuments());
+  const selected = new Set<string>();
   docs.forEach((doc) => {
     const label = doc.category?.trim() || "";
     const mapped = optionMap.get(normalizeDocKey(label));
@@ -39,8 +39,7 @@ export const mapRequiredDocumentsToValues = (docs: ProductDocumentRequirement[] 
 };
 
 export const buildRequiredDocumentsPayload = (values: string[]): ProductDocumentRequirement[] => {
-  const selections = new Set([...getDefaultRequiredDocuments(), ...values]);
-  return Array.from(selections).map((value) => {
+  return values.map((value) => {
     const option = PRODUCT_DOCUMENT_OPTIONS.find((item) => item.value === value);
     return {
       category: option?.label ?? value,

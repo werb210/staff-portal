@@ -54,6 +54,115 @@ const parseStage = (item: unknown): PipelineStage | null => {
   };
 };
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const normalizePipelineApplication = (value: unknown): PipelineApplication | null => {
+  if (!isRecord(value)) return null;
+  const id =
+    typeof value.id === "string"
+      ? value.id
+      : typeof value.application_id === "string"
+        ? value.application_id
+        : "";
+  if (!id) return null;
+  const createdAt =
+    typeof value.createdAt === "string"
+      ? value.createdAt
+      : typeof value.created_at === "string"
+        ? value.created_at
+        : "";
+  const documents = isRecord(value.documents)
+    ? {
+        submitted:
+          typeof value.documents.submitted === "number" ? value.documents.submitted : undefined,
+        required:
+          typeof value.documents.required === "number" ? value.documents.required : undefined
+      }
+    : {
+        submitted:
+          typeof value.documents_submitted === "number" ? value.documents_submitted : undefined,
+        required:
+          typeof value.documents_required === "number" ? value.documents_required : undefined
+      };
+  return {
+    id,
+    businessName:
+      typeof value.businessName === "string"
+        ? value.businessName
+        : typeof value.business_name === "string"
+          ? value.business_name
+          : undefined,
+    contactName:
+      typeof value.contactName === "string"
+        ? value.contactName
+        : typeof value.contact_name === "string"
+          ? value.contact_name
+          : undefined,
+    requestedAmount:
+      typeof value.requestedAmount === "number"
+        ? value.requestedAmount
+        : typeof value.requested_amount === "number"
+          ? value.requested_amount
+          : undefined,
+    productCategory:
+      typeof value.productCategory === "string"
+        ? value.productCategory
+        : typeof value.product_category === "string"
+          ? value.product_category
+          : undefined,
+    stage:
+      typeof value.stage === "string"
+        ? value.stage
+        : typeof value.current_stage === "string"
+          ? value.current_stage
+          : "",
+    status: typeof value.status === "string" ? value.status : undefined,
+    matchPercentage: value.matchPercentage ?? value.match_percentage ?? undefined,
+    matchPercent: value.matchPercent ?? value.match_percent ?? undefined,
+    matchScore: value.matchScore ?? value.match_score ?? undefined,
+    documents,
+    bankingComplete:
+      typeof value.bankingComplete === "boolean"
+        ? value.bankingComplete
+        : typeof value.banking_complete === "boolean"
+          ? value.banking_complete
+          : undefined,
+    ocrComplete:
+      typeof value.ocrComplete === "boolean"
+        ? value.ocrComplete
+        : typeof value.ocr_complete === "boolean"
+          ? value.ocr_complete
+          : undefined,
+    assignedStaff:
+      typeof value.assignedStaff === "string"
+        ? value.assignedStaff
+        : typeof value.assigned_staff === "string"
+          ? value.assigned_staff
+          : undefined,
+    createdAt
+  };
+};
+
+const parsePipelineApplications = (data: unknown): PipelineApplication[] => {
+  if (Array.isArray(data)) {
+    return data
+      .map((item) => normalizePipelineApplication(item))
+      .filter((item): item is PipelineApplication => Boolean(item));
+  }
+  if (isRecord(data)) {
+    const items = Array.isArray(data.items)
+      ? data.items
+      : Array.isArray((data as { data?: unknown }).data)
+        ? (data as { data: unknown[] }).data
+        : [];
+    return items
+      .map((item) => normalizePipelineApplication(item))
+      .filter((item): item is PipelineApplication => Boolean(item));
+  }
+  return [];
+};
+
 export const pipelineApi = {
   fetchStages: async (options?: { signal?: AbortSignal }) => {
     const res = await apiClient.get<unknown>("/portal/applications/stages", options);
@@ -68,8 +177,8 @@ export const pipelineApi = {
   fetchColumn: async (stage: PipelineStageId, filters: PipelineFilters, options?: { signal?: AbortSignal }) => {
     const query = buildQueryParams(filters, stage);
     const path = query ? `/portal/applications?${query}` : "/portal/applications";
-    const res = await apiClient.getList<PipelineApplication>(path, options);
-    return res.items;
+    const res = await apiClient.get<unknown>(path, options);
+    return parsePipelineApplications(res);
   },
   moveCard: async (applicationId: string, newStage: PipelineStageId) => {
     return apiClient.patch<PipelineApplication>(`/applications/${applicationId}/status`, { stage: newStage });

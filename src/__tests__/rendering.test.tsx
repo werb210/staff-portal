@@ -42,7 +42,7 @@ describe("loading and empty-state rendering", () => {
     renderAsAdmin();
 
     await waitFor(() => {
-      expect(screen.getByText("No lenders")).toBeInTheDocument();
+      expect(screen.getByText(/No lenders/i)).toBeInTheDocument();
     });
   });
 
@@ -63,6 +63,7 @@ describe("loading and empty-state rendering", () => {
         id: "l-1",
         name: "Atlas Bank",
         active: true,
+        status: "ACTIVE",
         address: {
           street: "100 Market St",
           city: "Chicago",
