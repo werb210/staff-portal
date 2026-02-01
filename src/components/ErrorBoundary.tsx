@@ -44,8 +44,8 @@ class ErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryStat
       return (
         <div className="error-panel" role="alert">
           <div>
-            <h1>Something went wrong</h1>
-            <p>The application ran into an error. Please try again or contact support.</p>
+            <h1>Unexpected error</h1>
+            <p>We hit an unexpected error while rendering this page. Please try again or contact support.</p>
           </div>
           <div className="error-panel__meta">
             <span>

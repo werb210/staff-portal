@@ -9,6 +9,7 @@ import RequireRole from "@/components/auth/RequireRole";
 import AppLoading from "@/components/layout/AppLoading";
 import LenderProductModal, { type ProductFormValues } from "@/components/LenderProductModal";
 import { getErrorMessage } from "@/utils/errors";
+import { ApiError } from "@/lib/api";
 import { useAuthorization } from "@/hooks/useAuthorization";
 import {
   createLenderProduct,
@@ -30,9 +31,12 @@ import {
   buildRequiredDocumentsPayload,
   deriveCurrency,
   deriveProductName,
+  formatInterestPayload,
   getDefaultRequiredDocuments,
   getRateDefaults,
+  isValidVariableRate,
   mapRequiredDocumentsToValues,
+  normalizeInterestInput,
   resolveRateType
 } from "./lenderProductForm";
 
@@ -70,6 +74,53 @@ const toFormString = (value?: number | string | null) => {
 
 const formatRateType = (value: RateType) => value.charAt(0).toUpperCase() + value.slice(1);
 
+const getApiErrorStatus = (error: unknown) => {
+  if (error instanceof ApiError) {
+    return error.status;
+  }
+  if (error && typeof error === "object" && "status" in error) {
+    const status = (error as { status?: unknown }).status;
+    return typeof status === "number" ? status : undefined;
+  }
+  return undefined;
+};
+
+const getApiErrorDetails = (error: unknown) => {
+  if (error instanceof ApiError) return error.details;
+  if (error && typeof error === "object" && "details" in error) {
+    return (error as { details?: unknown }).details;
+  }
+  return undefined;
+};
+
+const extractValidationErrors = (error: unknown, fieldMap: Record<string, string>) => {
+  const status = getApiErrorStatus(error);
+  if (status !== 400 && status !== 422) return null;
+  const details = getApiErrorDetails(error);
+  if (!details || typeof details !== "object") return {};
+  const rawErrors =
+    (details as { errors?: Record<string, unknown> }).errors ??
+    (details as { fieldErrors?: Record<string, unknown> }).fieldErrors ??
+    (details as { fields?: Record<string, unknown> }).fields ??
+    details;
+  if (!rawErrors || typeof rawErrors !== "object") return {};
+  const nextErrors: Record<string, string> = {};
+  Object.entries(rawErrors as Record<string, unknown>).forEach(([key, value]) => {
+    const mappedKey = fieldMap[key] ?? fieldMap[key.toLowerCase()] ?? key;
+    const message = Array.isArray(value)
+      ? value.filter((item): item is string => typeof item === "string" && item.trim()).join(", ")
+      : typeof value === "string"
+        ? value
+        : typeof value === "object" && value && "message" in value
+          ? String((value as { message?: unknown }).message ?? "")
+          : "";
+    if (mappedKey && message) {
+      nextErrors[mappedKey] = message;
+    }
+  });
+  return nextErrors;
+};
+
 const LenderProductsContent = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -82,6 +133,7 @@ const LenderProductsContent = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formValues, setFormValues] = useState<ProductFormValues>(emptyProductForm(""));
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const canManageProducts = useAuthorization({ roles: ["Admin", "Staff"] });
   const isNewRoute = location.pathname.endsWith("/new");
 
@@ -196,9 +248,31 @@ const LenderProductsContent = () => {
     setFormErrors({});
   }, [activeLenderId, isModalOpen, isNewRoute, selectedProduct]);
 
+  const productFieldMap = useMemo(
+    () => ({
+      lender_id: "lenderId",
+      lenderId: "lenderId",
+      name: "productName",
+      product_name: "productName",
+      category: "category",
+      product_category: "category",
+      country: "country",
+      min_amount: "minAmount",
+      max_amount: "maxAmount",
+      interest_type: "rateType",
+      interest_min: "interestMin",
+      interest_max: "interestMax",
+      term_min_months: "minTerm",
+      term_max_months: "maxTerm"
+    }),
+    []
+  );
+
   const createMutation = useMutation({
     mutationFn: (payload: LenderProductPayload) => createLenderProduct(payload),
     onMutate: async (payload) => {
+      setSubmitError(null);
+      setFormErrors({});
       await queryClient.cancelQueries({ queryKey: ["lender-products"] });
       const previous = queryClient.getQueryData<LenderProduct[]>(["lender-products", activeLenderId || "all"]);
       queryClient.setQueryData<LenderProduct[]>(["lender-products", activeLenderId || "all"], (current = []) => [
@@ -211,10 +285,16 @@ const LenderProductsContent = () => {
       ]);
       return { previous };
     },
-    onError: (_error, _payload, context) => {
+    onError: (error, _payload, context) => {
       if (context?.previous) {
         queryClient.setQueryData(["lender-products", activeLenderId || "all"], context.previous);
       }
+      const validationErrors = extractValidationErrors(error, productFieldMap);
+      if (validationErrors && Object.keys(validationErrors).length) {
+        setFormErrors(validationErrors);
+        return;
+      }
+      setSubmitError(getErrorMessage(error, "Unable to save product. Please retry."));
     },
     onSuccess: async (created) => {
       await queryClient.invalidateQueries({ queryKey: ["lender-products"] });
@@ -222,6 +302,7 @@ const LenderProductsContent = () => {
         setSelectedProductId(created.id);
         navigate(`/lender-products/${created.id}/edit?lenderId=${created.lenderId}`);
       }
+      setSubmitError(null);
     }
   });
 
@@ -229,6 +310,8 @@ const LenderProductsContent = () => {
     mutationFn: ({ productId, payload }: { productId: string; payload: Partial<LenderProductPayload> }) =>
       updateLenderProduct(productId, payload),
     onMutate: async ({ productId, payload }) => {
+      setSubmitError(null);
+      setFormErrors({});
       await queryClient.cancelQueries({ queryKey: ["lender-products"] });
       const previous = queryClient.getQueryData<LenderProduct[]>(["lender-products", activeLenderId || "all"]);
       queryClient.setQueryData<LenderProduct[]>(["lender-products", activeLenderId || "all"], (current = []) =>
@@ -236,20 +319,26 @@ const LenderProductsContent = () => {
       );
       return { previous };
     },
-    onError: (_error, _payload, context) => {
+    onError: (error, _payload, context) => {
       if (context?.previous) {
         queryClient.setQueryData(["lender-products", activeLenderId || "all"], context.previous);
       }
+      const validationErrors = extractValidationErrors(error, productFieldMap);
+      if (validationErrors && Object.keys(validationErrors).length) {
+        setFormErrors(validationErrors);
+        return;
+      }
+      setSubmitError(getErrorMessage(error, "Unable to save product. Please retry."));
     },
     onSuccess: async (updated) => {
       await queryClient.invalidateQueries({ queryKey: ["lender-products"] });
       if (updated?.id && updated?.lenderId) {
         navigate(`/lender-products/${updated.id}/edit?lenderId=${updated.lenderId}`);
       }
+      setSubmitError(null);
     }
   });
 
-  const mutationError = createMutation.error ?? updateMutation.error;
   const mutationLoading = createMutation.isPending || updateMutation.isPending;
   const isFormDisabled = !activeLender || !canManageProducts;
 
@@ -280,18 +369,27 @@ const LenderProductsContent = () => {
     if (!values.rateType) errors.rateType = "Rate type is required.";
     if (!values.interestMin) errors.interestMin = "Interest minimum is required.";
     if (!values.interestMax) errors.interestMax = "Interest maximum is required.";
-    const interestMin = Number(values.interestMin);
-    const interestMax = Number(values.interestMax);
-    if (Number.isNaN(interestMin)) errors.interestMin = "Interest minimum must be a number.";
-    if (Number.isNaN(interestMax)) errors.interestMax = "Interest maximum must be a number.";
-    if (!Number.isNaN(interestMin) && interestMin < 0) {
-      errors.interestMin = "Interest minimum must be positive.";
-    }
-    if (!Number.isNaN(interestMax) && interestMax < 0) {
-      errors.interestMax = "Interest maximum must be positive.";
-    }
-    if (!Number.isNaN(interestMin) && !Number.isNaN(interestMax) && interestMin > interestMax) {
-      errors.interestMax = "Interest maximum must be greater than minimum.";
+    if (values.rateType === "variable") {
+      if (values.interestMin && !isValidVariableRate(values.interestMin)) {
+        errors.interestMin = "Use format P + X.";
+      }
+      if (values.interestMax && !isValidVariableRate(values.interestMax)) {
+        errors.interestMax = "Use format P + Y.";
+      }
+    } else {
+      const interestMin = Number(values.interestMin);
+      const interestMax = Number(values.interestMax);
+      if (Number.isNaN(interestMin)) errors.interestMin = "Interest minimum must be a number.";
+      if (Number.isNaN(interestMax)) errors.interestMax = "Interest maximum must be a number.";
+      if (!Number.isNaN(interestMin) && interestMin < 0) {
+        errors.interestMin = "Interest minimum must be positive.";
+      }
+      if (!Number.isNaN(interestMax) && interestMax < 0) {
+        errors.interestMax = "Interest maximum must be positive.";
+      }
+      if (!Number.isNaN(interestMin) && !Number.isNaN(interestMax) && interestMin > interestMax) {
+        errors.interestMax = "Interest maximum must be greater than minimum.";
+      }
     }
     return errors;
   };
@@ -299,8 +397,8 @@ const LenderProductsContent = () => {
   const buildPayload = (values: ProductFormValues, existing?: LenderProduct | null): LenderProductPayload => {
     const normalizedCountry = values.country.trim();
     const resolvedRateType = resolveRateType(values.rateType);
-    const interestRateMin = Number(values.interestMin);
-    const interestRateMax = Number(values.interestMax);
+    const interestRateMin = formatInterestPayload(resolvedRateType, values.interestMin);
+    const interestRateMax = formatInterestPayload(resolvedRateType, values.interestMax);
     const minTerm = Number(values.minTerm);
     const maxTerm = Number(values.maxTerm);
     return {
@@ -312,8 +410,8 @@ const LenderProductsContent = () => {
       currency: deriveCurrency(normalizedCountry, existing?.currency ?? null),
       minAmount: Number(values.minAmount),
       maxAmount: Number(values.maxAmount),
-      interestRateMin: Number.isNaN(interestRateMin) ? 0 : interestRateMin,
-      interestRateMax: Number.isNaN(interestRateMax) ? 0 : interestRateMax,
+      interestRateMin,
+      interestRateMax,
       rateType: resolvedRateType,
       termLength: {
         min: Number.isNaN(minTerm) ? 0 : minTerm,
@@ -362,6 +460,7 @@ const LenderProductsContent = () => {
     setEditingProduct(null);
     setFormValues(emptyProductForm(activeLender.id));
     setFormErrors({});
+    setSubmitError(null);
     setIsModalOpen(true);
   };
 
@@ -369,7 +468,25 @@ const LenderProductsContent = () => {
     setIsModalOpen(false);
     setEditingProduct(null);
     setFormErrors({});
+    setSubmitError(null);
     navigate("/lender-products");
+  };
+
+  const handleSubmit = () => {
+    if (isFormDisabled) return;
+    const errors = validateForm(formValues);
+    setFormErrors(errors);
+    if (Object.keys(errors).length) return;
+    const payload = buildPayload(formValues, editingProduct);
+    if (editingProduct) {
+      if (!editingProduct.id) {
+        setFormErrors({ category: "Missing product id. Please refresh and try again." });
+        return;
+      }
+      updateMutation.mutate({ productId: editingProduct.id, payload });
+      return;
+    }
+    createMutation.mutate(payload);
   };
 
   return (
@@ -405,7 +522,7 @@ const LenderProductsContent = () => {
                 ))}
               </select>
             </label>
-            {!activeLenders.length && <p className="text-sm text-slate-500">No active lenders available.</p>}
+            {!activeLenders.length && <p className="text-sm text-amber-600">No active lenders available.</p>}
           </div>
         )}
         {activeLender && (
@@ -526,7 +643,7 @@ const LenderProductsContent = () => {
           title={editingProduct ? "Edit product" : "Create product"}
           isSaving={mutationLoading}
           isSubmitDisabled={isFormDisabled}
-          errorMessage={mutationError ? getErrorMessage(mutationError, "Unable to save product.") : null}
+          errorMessage={submitError}
           lenderOptions={activeLenders.map((lender) => ({ value: lender.id, label: lender.name || "Unnamed lender" }))}
           formValues={formValues}
           formErrors={formErrors}
@@ -535,29 +652,35 @@ const LenderProductsContent = () => {
           documentOptions={PRODUCT_DOCUMENT_OPTIONS}
           formatRateType={formatRateType}
           onChange={(updates) => {
-            setFormValues((prev) => ({ ...prev, ...updates }));
+            setFormValues((prev) => {
+              const next = { ...prev, ...updates };
+              const resolvedRateType = next.rateType ?? prev.rateType;
+              if (updates.interestMin !== undefined) {
+                next.interestMin = normalizeInterestInput(resolvedRateType, updates.interestMin);
+              }
+              if (updates.interestMax !== undefined) {
+                next.interestMax = normalizeInterestInput(resolvedRateType, updates.interestMax);
+              }
+              if (updates.rateType && updates.rateType === "variable") {
+                next.interestMin = normalizeInterestInput("variable", next.interestMin);
+                next.interestMax = normalizeInterestInput("variable", next.interestMax);
+              }
+              return next;
+            });
             if (updates.lenderId) {
               setActiveLenderId(updates.lenderId);
             }
           }}
-          onSubmit={() => {
-            if (isFormDisabled) return;
-            const errors = validateForm(formValues);
-            setFormErrors(errors);
-            if (Object.keys(errors).length) return;
-            const payload = buildPayload(formValues, editingProduct);
-            if (editingProduct) {
-              if (!editingProduct.id) {
-                setFormErrors({ category: "Missing product id. Please refresh and try again." });
-                return;
-              }
-              updateMutation.mutate({ productId: editingProduct.id, payload });
-              return;
-            }
-            createMutation.mutate(payload);
-          }}
+          onSubmit={handleSubmit}
           onClose={closeModal}
           onCancel={closeModal}
+          statusNote={
+            submitError ? (
+              <Button type="button" variant="secondary" onClick={handleSubmit} disabled={mutationLoading}>
+                Retry save
+              </Button>
+            ) : null
+          }
         />
       )}
     </div>

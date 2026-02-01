@@ -1,6 +1,6 @@
 import axios, { AxiosError, type AxiosRequestConfig, type AxiosResponse } from "axios";
 import { attachRequestIdAndLog, logError, logResponse } from "@/utils/apiLogging";
-import { clearAccessToken, getAccessToken } from "@/lib/authToken";
+import { getAccessToken } from "@/lib/authToken";
 import { getApiBaseUrl } from "@/config/api";
 
 export type ApiErrorOptions = {
@@ -60,7 +60,6 @@ api.interceptors.request.use((config: AuthRequestConfig) => {
 
 const handleUnauthorized = (url?: string | null) => {
   if (shouldBypassAuthRedirect(url)) return;
-  clearAccessToken();
 };
 
 api.interceptors.response.use(

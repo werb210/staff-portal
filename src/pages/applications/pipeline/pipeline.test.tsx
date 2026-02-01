@@ -6,7 +6,13 @@ import PipelinePage from "./PipelinePage";
 import { renderWithProviders } from "@/test/testUtils";
 import { pipelineApi } from "./pipeline.api";
 import { createPipelineDragEndHandler, usePipelineStore } from "./pipeline.store";
-import { PIPELINE_STAGE_ORDER, type PipelineApplication, type PipelineDragEndEvent, type PipelineStage } from "./pipeline.types";
+import {
+  PIPELINE_STAGE_LABELS,
+  PIPELINE_STAGE_ORDER,
+  type PipelineApplication,
+  type PipelineDragEndEvent,
+  type PipelineStage
+} from "./pipeline.types";
 import { useApplicationDrawerStore } from "@/state/applicationDrawer.store";
 
 vi.mock("./pipeline.api", () => {
@@ -19,11 +25,7 @@ vi.mock("./pipeline.api", () => {
 
 const pipelineStages: PipelineStage[] = PIPELINE_STAGE_ORDER.map((stageId) => ({
   id: stageId,
-  label: stageId
-    .toLowerCase()
-    .split("_")
-    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
-    .join(" "),
+  label: PIPELINE_STAGE_LABELS[stageId],
   terminal: stageId === "ACCEPTED" || stageId === "DECLINED"
 }));
 
@@ -90,6 +92,18 @@ describe("Pipeline foundation", () => {
     );
   });
 
+  it("resets filters without breaking the pipeline view", async () => {
+    renderWithProviders(<PipelinePage />);
+    const searchInput = screen.getByLabelText(/Search/i);
+    await userEvent.type(searchInput, "Atlas");
+
+    await userEvent.click(screen.getByRole("button", { name: /Reset Filters/i }));
+
+    await waitFor(() => {
+      expect(searchInput).toHaveValue("");
+    });
+  });
+
   it("prevents movement from terminal stages", async () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const handler = createPipelineDragEndHandler({ queryClient, filters: {}, stages: pipelineStages });
@@ -131,10 +145,10 @@ describe("Pipeline foundation", () => {
     await handler(buildDragEvent("DOCUMENTS_REQUIRED"));
 
     expect(invalidateSpy).toHaveBeenCalledWith({
-      queryKey: ["pipeline", "RECEIVED", "", "", "", "newest"]
+      queryKey: ["pipeline", "RECEIVED", "", "", "", "", "newest"]
     });
     expect(invalidateSpy).toHaveBeenCalledWith({
-      queryKey: ["pipeline", "DOCUMENTS_REQUIRED", "", "", "", "newest"]
+      queryKey: ["pipeline", "DOCUMENTS_REQUIRED", "", "", "", "", "newest"]
     });
   });
 });

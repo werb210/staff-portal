@@ -4,7 +4,7 @@ import Button from "../ui/Button";
 
 const ErrorFallback = ({ error, resetErrorBoundary }: { error: Error; resetErrorBoundary: () => void }) => (
   <div className="error-fallback">
-    <h2>Something went wrong</h2>
+    <h2>Unexpected error</h2>
     <p>{error.message}</p>
     <Button onClick={resetErrorBoundary}>Retry</Button>
   </div>
