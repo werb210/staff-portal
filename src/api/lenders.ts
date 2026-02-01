@@ -99,21 +99,24 @@ const normalizeLenderCountry = (value?: string | null) => {
   const trimmed = typeof value === "string" ? value.trim() : "";
   if (!trimmed) return "";
   const normalized = trimmed.toUpperCase();
-  if (normalized === "CA" || normalized === "CANADA") return "Canada";
-  if (normalized === "US" || normalized === "USA" || normalized === "UNITED STATES") return "United States";
-  if (normalized === "BOTH") return "Both";
+  if (normalized === "CA" || normalized === "CANADA") return "CA";
+  if (normalized === "US" || normalized === "USA" || normalized === "UNITED STATES") return "US";
+  if (normalized === "BOTH") return "BOTH";
   return trimmed;
 };
 
 const normalizeLender = (raw: LenderSummary): Lender | null => {
   if (!raw?.id || typeof raw.id !== "string") return null;
+  const status = normalizeLenderStatus(raw.status ?? (raw as Lender).status ?? (raw as { status?: unknown }).status);
   const active =
     typeof (raw as Lender).active === "boolean"
       ? (raw as Lender).active
       : typeof (raw as { active?: unknown }).active === "boolean"
         ? (raw as { active: boolean }).active
-        : false;
-  const status = normalizeLenderStatus(raw.status ?? (raw as Lender).status ?? (raw as { status?: unknown }).status);
+        : status
+          ? status === "ACTIVE"
+          : false;
+  const resolvedStatus = status ?? (active ? "ACTIVE" : "INACTIVE");
 
   const rawCountry =
     typeof (raw as { country?: unknown }).country === "string"
@@ -236,7 +239,7 @@ const normalizeLender = (raw: LenderSummary): Lender | null => {
     id: raw.id,
     name: typeof raw.name === "string" ? raw.name : "",
     active,
-    status,
+    status: resolvedStatus,
     address,
     phone: typeof (raw as Lender).phone === "string" ? (raw as Lender).phone : "",
     website: (raw as Lender).website ?? null,
