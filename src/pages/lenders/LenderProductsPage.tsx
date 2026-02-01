@@ -75,6 +75,16 @@ const toFormString = (value?: number | string | null) => {
 
 const formatRateType = (value: RateType) => value.charAt(0).toUpperCase() + value.slice(1);
 
+const formatLenderCountryLabel = (value?: string | null) => {
+  const trimmed = typeof value === "string" ? value.trim() : "";
+  if (!trimmed) return "";
+  const normalized = trimmed.toUpperCase();
+  if (normalized === "CA" || normalized === "CANADA") return "Canada";
+  if (normalized === "US" || normalized === "USA" || normalized === "UNITED STATES") return "United States";
+  if (normalized === "BOTH") return "Both";
+  return trimmed;
+};
+
 const getApiErrorStatus = (error: unknown) => {
   if (error instanceof ApiError) {
     return error.status;
@@ -346,6 +356,10 @@ const LenderProductsContent = () => {
   const validateForm = (values: ProductFormValues) => {
     const errors: Record<string, string> = {};
     if (!values.lenderId) errors.lenderId = "Lender is required.";
+    const isActiveLender = activeLenders.some((lender) => lender.id === values.lenderId);
+    if (values.lenderId && !isActiveLender) {
+      errors.lenderId = "Lender must be active.";
+    }
     if (!values.productName.trim()) errors.productName = "Product name is required.";
     if (!values.category) errors.category = "Product category is required.";
     if (!values.country.trim()) errors.country = "Country is required.";
@@ -529,7 +543,7 @@ const LenderProductsContent = () => {
         {activeLender && (
           <div className="management-note">
             <span className="status-pill status-pill--active">Lender active</span>
-            <span>{activeLender.address?.country || "—"}</span>
+            <span>{formatLenderCountryLabel(activeLender.address?.country) || "—"}</span>
           </div>
         )}
       </Card>
@@ -616,7 +630,7 @@ const LenderProductsContent = () => {
                                   {product.productName || "Untitled product"}
                                 </button>
                               </td>
-                              <td>{product.country || "—"}</td>
+                              <td>{formatLenderCountryLabel(product.country) || "—"}</td>
                               <td>
                                 <span className={`status-pill status-pill--${productActive ? "active" : "paused"}`}>
                                   {productActive ? "Active" : "Inactive"}

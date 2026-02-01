@@ -68,7 +68,7 @@ type LenderFormValues = {
 const emptyLenderForm: LenderFormValues = {
   name: "",
   active: true,
-  country: "Canada",
+  country: "CA",
   primaryContactName: "",
   primaryContactEmail: "",
   primaryContactPhone: "",
@@ -145,19 +145,25 @@ const extractValidationErrors = (error: unknown, fieldMap: Record<string, string
 };
 
 const COUNTRIES = [
-  { value: "Canada", label: "Canada" },
-  { value: "United States", label: "United States" },
-  { value: "Both", label: "Both" }
+  { value: "CA", label: "Canada" },
+  { value: "US", label: "United States" },
+  { value: "BOTH", label: "Both" }
 ];
 
 const normalizeLenderCountryValue = (value?: string | null) => {
   const trimmed = typeof value === "string" ? value.trim() : "";
-  if (!trimmed) return COUNTRIES[0].value;
+  if (!trimmed) return "";
   const normalized = trimmed.toUpperCase();
-  if (normalized === "CA" || normalized === "CANADA") return "Canada";
-  if (normalized === "US" || normalized === "USA" || normalized === "UNITED STATES") return "United States";
-  if (normalized === "BOTH") return "Both";
+  if (normalized === "CA" || normalized === "CANADA") return "CA";
+  if (normalized === "US" || normalized === "USA" || normalized === "UNITED STATES") return "US";
+  if (normalized === "BOTH") return "BOTH";
   return trimmed;
+};
+
+const formatLenderCountryLabel = (value?: string | null) => {
+  const normalized = normalizeLenderCountryValue(value);
+  if (!normalized) return "";
+  return COUNTRIES.find((country) => country.value === normalized)?.label ?? value ?? "";
 };
 
 const toFormString = (value?: number | string | null) => {
@@ -188,7 +194,7 @@ const mapLenderToFormValues = (lender: Lender): LenderFormValues => {
     ...emptyLenderForm,
     name: lender.name ?? "",
     active: lender.active === true,
-    country: normalizeLenderCountryValue(lender.address?.country ?? ""),
+    country: normalizeLenderCountryValue(lender.address?.country ?? "") || COUNTRIES[0].value,
     primaryContactName: primaryContact.name ?? "",
     primaryContactEmail: primaryContact.email ?? "",
     primaryContactPhone: primaryContact.phone ?? "",
@@ -351,6 +357,7 @@ const LendersContent = () => {
           id: `temp-${Date.now()}`,
           name: payload.name,
           active: payload.active,
+          status: payload.status ?? (payload.active ? "ACTIVE" : "INACTIVE"),
           address: {
             street: "",
             city: "",
@@ -424,6 +431,9 @@ const LendersContent = () => {
                 ...lender,
                 name: payload.name ?? lender.name,
                 active: payload.active ?? lender.active,
+                status:
+                  payload.status ??
+                  (payload.active !== undefined ? (payload.active ? "ACTIVE" : "INACTIVE") : lender.status),
                 address: {
                   ...lender.address,
                   country: payload.country ?? lender.address?.country
@@ -570,6 +580,7 @@ const LendersContent = () => {
   const buildLenderPayload = (values: LenderFormValues): LenderPayload => ({
     name: values.name.trim(),
     active: values.active,
+    status: values.active ? "ACTIVE" : "INACTIVE",
     phone: values.primaryContactPhone.trim(),
     website: values.website.trim() ? values.website.trim() : null,
     description: null,
@@ -589,6 +600,10 @@ const LendersContent = () => {
   const validateProductForm = (values: ProductFormValues) => {
     const errors: Record<string, string> = {};
     if (!values.lenderId) errors.lenderId = "Lender is required.";
+    const isActiveLender = safeLenders.some((lender) => lender.id === values.lenderId && lender.active);
+    if (values.lenderId && !isActiveLender) {
+      errors.lenderId = "Lender must be active.";
+    }
     if (!values.productName.trim()) errors.productName = "Product name is required.";
     if (!values.category) errors.category = "Product category is required.";
     if (!values.country.trim()) errors.country = "Country is required.";
@@ -853,9 +868,9 @@ const LendersContent = () => {
               {safeLenders.map((lender, index) => {
                 const lenderIdValue = lender.id ?? "";
                 const lenderName = lender.name?.trim() || "Unnamed lender";
-                const statusLabel = lender.status ?? "—";
+                const statusLabel = lender.status ?? (lender.active ? "ACTIVE" : "INACTIVE");
                 const statusVariant = statusLabel === "ACTIVE" ? "active" : "paused";
-                const countryLabel = normalizeLenderCountryValue(lender.address?.country);
+                const countryLabel = formatLenderCountryLabel(lender.address?.country);
                 const rowKey = lenderIdValue || `lender-${index}`;
                 return (
                   <tr
@@ -929,7 +944,7 @@ const LendersContent = () => {
               <span className={`status-pill status-pill--${selectedLender.active ? "active" : "paused"}`}>
                 {selectedLender.active ? "Lender active" : "Lender inactive"}
               </span>
-              <span>{normalizeLenderCountryValue(selectedLender.address?.country) || "—"}</span>
+              <span>{formatLenderCountryLabel(selectedLender.address?.country) || "—"}</span>
               {!selectedLender.active && (
                 <span className="text-xs text-amber-600">Inactive lenders cannot publish products.</span>
               )}
@@ -973,7 +988,7 @@ const LendersContent = () => {
                         {LENDER_PRODUCT_CATEGORY_LABELS[productCategory]}
                       </div>
                     </td>
-                    <td>{product.country || "—"}</td>
+                    <td>{formatLenderCountryLabel(product.country) || "—"}</td>
                     <td>
                       <span className={`status-pill status-pill--${productActive ? "active" : "paused"}`}>
                         {productActive ? "Active" : "Inactive"}
@@ -1178,6 +1193,7 @@ const LendersContent = () => {
           isOpen={isProductModalOpen}
           title={editingProduct ? "Edit product" : "Add product"}
           isSaving={productMutationLoading}
+          isSubmitDisabled={isSelectedLenderInactive}
           errorMessage={productSubmitError}
           lenderOptions={[{ value: selectedLender.id, label: selectedLender.name }]}
           formValues={productFormValues}
@@ -1190,7 +1206,6 @@ const LendersContent = () => {
           onSubmit={handleProductSubmit}
           onClose={closeProductModal}
           onCancel={closeProductModal}
-          requiredDocuments={editingProduct?.requiredDocuments ?? []}
           statusNote={
             <div className="space-y-2">
               {isSelectedLenderInactive && (

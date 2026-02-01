@@ -8,6 +8,7 @@ export type PipelineStage = {
   description?: string;
   terminal?: boolean;
   allowedTransitions?: PipelineStageId[];
+  order?: number;
 };
 
 export type PipelineFilters = {
@@ -52,39 +53,15 @@ export type PipelineDragEndEvent = DragEndEvent & {
   };
 };
 
-export const PIPELINE_STAGE_ORDER = [
-  "RECEIVED",
-  "DOCUMENTS_REQUIRED",
-  "IN_REVIEW",
-  "START_UP",
-  "OFF_TO_LENDER",
-  "ACCEPTED",
-  "DECLINED"
-] as const;
-
-export const PIPELINE_STAGE_LABELS: Record<(typeof PIPELINE_STAGE_ORDER)[number], string> = {
-  RECEIVED: "Received",
-  DOCUMENTS_REQUIRED: "Documents Required",
-  IN_REVIEW: "In Review",
-  START_UP: "Start Up",
-  OFF_TO_LENDER: "Off to Lender",
-  ACCEPTED: "Accepted",
-  DECLINED: "Declined"
-};
-
-export const DEFAULT_PIPELINE_STAGES: PipelineStage[] = PIPELINE_STAGE_ORDER.map((id) => ({
-  id,
-  label: PIPELINE_STAGE_LABELS[id]
-}));
-
 export const sortPipelineStages = (stages: PipelineStage[]) => {
-  if (!stages.length) return DEFAULT_PIPELINE_STAGES;
-  const orderIndex = new Map(PIPELINE_STAGE_ORDER.map((id, index) => [id, index]));
-  return stages
+  if (!stages.length) return [];
+  const hasOrder = stages.some((stage) => typeof stage.order === "number");
+  if (!hasOrder) return stages;
+  return [...stages]
     .map((stage, index) => ({ stage, index }))
     .sort((a, b) => {
-      const aOrder = orderIndex.has(a.stage.id) ? (orderIndex.get(a.stage.id) as number) : Number.POSITIVE_INFINITY;
-      const bOrder = orderIndex.has(b.stage.id) ? (orderIndex.get(b.stage.id) as number) : Number.POSITIVE_INFINITY;
+      const aOrder = typeof a.stage.order === "number" ? a.stage.order : Number.POSITIVE_INFINITY;
+      const bOrder = typeof b.stage.order === "number" ? b.stage.order : Number.POSITIVE_INFINITY;
       if (aOrder !== bOrder) {
         return aOrder - bOrder;
       }
@@ -142,8 +119,9 @@ export const evaluateStageTransition = ({
       : { allowed: false, reason: "That stage change is not allowed." };
   }
 
-  const fromIndex = PIPELINE_STAGE_ORDER.indexOf(fromStage as (typeof PIPELINE_STAGE_ORDER)[number]);
-  const toIndex = PIPELINE_STAGE_ORDER.indexOf(toStage as (typeof PIPELINE_STAGE_ORDER)[number]);
+  const orderedStageIds = stages.map((stage) => stage.id);
+  const fromIndex = orderedStageIds.indexOf(fromStage);
+  const toIndex = orderedStageIds.indexOf(toStage);
   if (fromIndex === -1 || toIndex === -1) {
     return { allowed: false, reason: "That stage change is not supported." };
   }
@@ -152,7 +130,7 @@ export const evaluateStageTransition = ({
     return { allowed: true };
   }
 
-  const nextStage = PIPELINE_STAGE_ORDER[fromIndex + 1];
+  const nextStage = orderedStageIds[fromIndex + 1];
   const nextStageLabel = nextStage ? buildStageLabelMap(stages)[nextStage] : undefined;
   return { allowed: false, reason: buildTransitionMessage(nextStageLabel) };
 };

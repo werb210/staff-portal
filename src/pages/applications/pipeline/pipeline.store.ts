@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import type { QueryClient } from "@tanstack/react-query";
 import type { PipelineFilters, PipelineStageId, PipelineApplication, PipelineDragEndEvent, PipelineStage } from "./pipeline.types";
-import { PIPELINE_STAGE_ORDER, evaluateStageTransition, getStageById } from "./pipeline.types";
+import { evaluateStageTransition, getStageById } from "./pipeline.types";
 import { pipelineApi } from "./pipeline.api";
 const STORAGE_KEY = "portal.application.pipeline";
 
@@ -60,9 +60,7 @@ const getInitialFilters = (): PipelineFilters => {
   return { ...defaultFilters, ...stored };
 };
 
-const defaultStageId: PipelineStageId = PIPELINE_STAGE_ORDER[0];
-
-const getInitialStageId = (): PipelineStageId => readPipelineState().selectedStageId ?? defaultStageId;
+const getInitialStageId = (): PipelineStageId | null => readPipelineState().selectedStageId ?? null;
 
 const getInitialSelectedApplicationId = (): string | null => readPipelineState().selectedApplicationId ?? null;
 
@@ -142,7 +140,7 @@ export const usePipelineStore = create<PipelineStore>((set) => {
           ...state,
           currentFilters: { ...defaultFilters },
           selectedApplicationId: null,
-          selectedStageId: defaultStageId,
+          selectedStageId: null,
           isDrawerOpen: false
         };
         persistPipelineState(nextState);
@@ -152,7 +150,7 @@ export const usePipelineStore = create<PipelineStore>((set) => {
       clearPipelineState();
       set({
         selectedApplicationId: null,
-        selectedStageId: defaultStageId,
+        selectedStageId: null,
         isDrawerOpen: false,
         draggingCardId: null,
         draggingFromStage: null,

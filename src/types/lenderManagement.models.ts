@@ -50,6 +50,7 @@ export type Lender = {
 export type LenderPayload = {
   name: string;
   active: boolean;
+  status?: "ACTIVE" | "INACTIVE";
   phone: string;
   website: string | null;
   description: string | null;

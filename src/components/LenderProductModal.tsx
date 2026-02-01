@@ -126,8 +126,8 @@ const LenderProductModal = ({
               onChange={(event) => onChange({ country: event.target.value })}
             >
               <option value="">Select country</option>
-              <option value="CA">CA</option>
-              <option value="US">US</option>
+              <option value="CA">Canada</option>
+              <option value="US">United States</option>
               <option value="BOTH">Both</option>
             </Select>
           </div>
@@ -198,14 +198,6 @@ const LenderProductModal = ({
               error={formErrors.interestMax}
             />
           </div>
-          <label className="ui-field">
-            <span className="ui-field__label">Fees (optional)</span>
-            <textarea
-              className="ui-input ui-textarea"
-              value={formValues.fees}
-              onChange={(event) => onChange({ fees: event.target.value })}
-            />
-          </label>
         </div>
 
         <div className="management-field">

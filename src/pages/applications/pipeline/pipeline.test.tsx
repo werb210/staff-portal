@@ -6,13 +6,7 @@ import PipelinePage from "./PipelinePage";
 import { renderWithProviders } from "@/test/testUtils";
 import { pipelineApi } from "./pipeline.api";
 import { createPipelineDragEndHandler, usePipelineStore } from "./pipeline.store";
-import {
-  PIPELINE_STAGE_LABELS,
-  PIPELINE_STAGE_ORDER,
-  type PipelineApplication,
-  type PipelineDragEndEvent,
-  type PipelineStage
-} from "./pipeline.types";
+import { type PipelineApplication, type PipelineDragEndEvent, type PipelineStage } from "./pipeline.types";
 import { useApplicationDrawerStore } from "@/state/applicationDrawer.store";
 
 vi.mock("./pipeline.api", () => {
@@ -23,11 +17,15 @@ vi.mock("./pipeline.api", () => {
   return { pipelineApi: { fetchColumn, fetchStages, moveCard, fetchSummary } };
 });
 
-const pipelineStages: PipelineStage[] = PIPELINE_STAGE_ORDER.map((stageId) => ({
-  id: stageId,
-  label: PIPELINE_STAGE_LABELS[stageId],
-  terminal: stageId === "ACCEPTED" || stageId === "DECLINED"
-}));
+const pipelineStages: PipelineStage[] = [
+  { id: "RECEIVED", label: "Received" },
+  { id: "DOCUMENTS_REQUIRED", label: "Documents Required" },
+  { id: "IN_REVIEW", label: "In Review" },
+  { id: "START_UP", label: "Start Up" },
+  { id: "OFF_TO_LENDER", label: "Off to Lender" },
+  { id: "ACCEPTED", label: "Accepted", terminal: true },
+  { id: "DECLINED", label: "Declined", terminal: true }
+];
 
 const sampleCard: PipelineApplication = {
   id: "app-1",
