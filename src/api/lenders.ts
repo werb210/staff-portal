@@ -1,4 +1,4 @@
-import { apiClient, type ListResponse, type RequestOptions } from "./httpClient";
+import { apiClient, type RequestOptions } from "./httpClient";
 import { clientApi } from "./client";
 import type {
   Lender,
@@ -7,6 +7,7 @@ import type {
   LenderProductPayload,
   LenderProductRequirement
 } from "@/types/lenderManagement.models";
+import { LENDER_PRODUCT_CATEGORIES, isLenderProductCategory, type RateType } from "@/types/lenderManagement.types";
 
 type LenderStatus = "ACTIVE" | "INACTIVE";
 
@@ -95,6 +96,15 @@ const normalizeLenderStatus = (value: unknown): LenderStatus | undefined => {
   return undefined;
 };
 
+const normalizeRateType = (value: unknown): RateType => {
+  if (typeof value !== "string") return "fixed";
+  const normalized = value.trim().toLowerCase();
+  if (normalized === "fixed" || normalized === "variable" || normalized === "factor") {
+    return normalized as RateType;
+  }
+  return "fixed";
+};
+
 const normalizeLenderCountry = (value?: string | null) => {
   const trimmed = typeof value === "string" ? value.trim() : "";
   if (!trimmed) return "";
@@ -105,18 +115,60 @@ const normalizeLenderCountry = (value?: string | null) => {
   return trimmed;
 };
 
+const parseListItems = <T>(data: unknown): T[] => {
+  if (Array.isArray(data)) {
+    return data as T[];
+  }
+  if (isRecord(data) && Array.isArray(data.items)) {
+    return data.items as T[];
+  }
+  return [];
+};
+
+const normalizeInterestValue = (rateType: RateType, value: unknown): number | string => {
+  if (rateType === "variable") {
+    if (typeof value === "string") return value;
+    if (typeof value === "number" && Number.isFinite(value)) return String(value);
+    return "";
+  }
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string") {
+    const numeric = Number(value);
+    return Number.isNaN(numeric) ? 0 : numeric;
+  }
+  return 0;
+};
+
+const normalizeRequiredDocuments = (value: unknown) => {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((entry) => {
+      if (typeof entry === "string") {
+        return { category: entry, required: true, description: null };
+      }
+      if (!isRecord(entry)) return null;
+      const category = typeof entry.category === "string" ? entry.category : "";
+      if (!category) return null;
+      return {
+        category,
+        required: typeof entry.required === "boolean" ? entry.required : true,
+        description: typeof entry.description === "string" ? entry.description : null
+      };
+    })
+    .filter((entry): entry is LenderProduct["requiredDocuments"][number] => Boolean(entry));
+};
+
 const normalizeLender = (raw: LenderSummary): Lender | null => {
   if (!raw?.id || typeof raw.id !== "string") return null;
   const status = normalizeLenderStatus(raw.status ?? (raw as Lender).status ?? (raw as { status?: unknown }).status);
-  const active =
+  const activeValue =
     typeof (raw as Lender).active === "boolean"
       ? (raw as Lender).active
       : typeof (raw as { active?: unknown }).active === "boolean"
         ? (raw as { active: boolean }).active
-        : status
-          ? status === "ACTIVE"
-          : false;
-  const resolvedStatus = status ?? (active ? "ACTIVE" : "INACTIVE");
+        : undefined;
+  const resolvedStatus = status ?? (activeValue !== undefined ? (activeValue ? "ACTIVE" : "INACTIVE") : "INACTIVE");
+  const active = activeValue ?? resolvedStatus === "ACTIVE";
 
   const rawCountry =
     typeof (raw as { country?: unknown }).country === "string"
@@ -252,6 +304,97 @@ const normalizeLender = (raw: LenderSummary): Lender | null => {
   };
 };
 
+const normalizeLenderProduct = (raw: unknown): LenderProduct | null => {
+  if (!isRecord(raw)) return null;
+  const id = typeof raw.id === "string" ? raw.id : "";
+  if (!id) return null;
+  const lenderId =
+    typeof raw.lenderId === "string"
+      ? raw.lenderId
+      : typeof raw.lender_id === "string"
+        ? raw.lender_id
+        : "";
+  const productName =
+    typeof raw.productName === "string"
+      ? raw.productName
+      : typeof raw.product_name === "string"
+        ? raw.product_name
+        : typeof raw.name === "string"
+          ? raw.name
+          : "";
+  const active = typeof raw.active === "boolean" ? raw.active : true;
+  const rawCategory =
+    typeof raw.category === "string"
+      ? raw.category
+      : typeof raw.product_category === "string"
+        ? raw.product_category
+        : "";
+  const category = isLenderProductCategory(rawCategory) ? rawCategory : LENDER_PRODUCT_CATEGORIES[0];
+  const country = normalizeLenderCountry(typeof raw.country === "string" ? raw.country : "") as LenderProduct["country"];
+  const currency =
+    typeof raw.currency === "string"
+      ? raw.currency
+      : country === "CA"
+        ? "CAD"
+        : country === "US"
+          ? "USD"
+          : "CAD/USD";
+  const rateType = normalizeRateType(raw.rateType ?? raw.rate_type ?? raw.interest_type);
+  const minAmount = typeof raw.minAmount === "number" ? raw.minAmount : Number(raw.min_amount ?? raw.minAmount ?? 0);
+  const maxAmount = typeof raw.maxAmount === "number" ? raw.maxAmount : Number(raw.max_amount ?? raw.maxAmount ?? 0);
+  const interestRateMin = normalizeInterestValue(rateType, raw.interestRateMin ?? raw.interest_min);
+  const interestRateMax = normalizeInterestValue(rateType, raw.interestRateMax ?? raw.interest_max);
+  const termLength = isRecord(raw.termLength)
+    ? {
+        min: typeof raw.termLength.min === "number" ? raw.termLength.min : Number(raw.termLength.min ?? 0),
+        max: typeof raw.termLength.max === "number" ? raw.termLength.max : Number(raw.termLength.max ?? 0),
+        unit: typeof raw.termLength.unit === "string" ? raw.termLength.unit : "months"
+      }
+    : {
+        min: Number(raw.term_min_months ?? raw.termMin ?? 0),
+        max: Number(raw.term_max_months ?? raw.termMax ?? 0),
+        unit: "months"
+      };
+  const eligibilityFlags = isRecord(raw.eligibilityFlags)
+    ? {
+        minimumRevenue: raw.eligibilityFlags.minimumRevenue ?? null,
+        timeInBusinessMonths: raw.eligibilityFlags.timeInBusinessMonths ?? null,
+        industryRestrictions: raw.eligibilityFlags.industryRestrictions ?? null
+      }
+    : {
+        minimumRevenue: null,
+        timeInBusinessMonths: null,
+        industryRestrictions: null
+      };
+  const requiredDocuments = normalizeRequiredDocuments(raw.requiredDocuments ?? raw.required_documents);
+
+  return {
+    id,
+    lenderId,
+    productName,
+    active,
+    category,
+    country: country || "US",
+    currency,
+    minAmount: Number.isNaN(minAmount) ? 0 : minAmount,
+    maxAmount: Number.isNaN(maxAmount) ? 0 : maxAmount,
+    interestRateMin,
+    interestRateMax,
+    rateType,
+    termLength: {
+      min: Number.isNaN(termLength.min) ? 0 : termLength.min,
+      max: Number.isNaN(termLength.max) ? 0 : termLength.max,
+      unit: termLength.unit === "years" || termLength.unit === "months" ? termLength.unit : "months"
+    },
+    fees: typeof raw.fees === "string" ? raw.fees : null,
+    minimumCreditScore: typeof raw.minimumCreditScore === "number" ? raw.minimumCreditScore : null,
+    ltv: typeof raw.ltv === "number" ? raw.ltv : null,
+    eligibilityRules: typeof raw.eligibilityRules === "string" ? raw.eligibilityRules : null,
+    eligibilityFlags,
+    requiredDocuments
+  };
+};
+
 export const fetchLenders = async (options?: RequestOptions) => {
   const res = await apiClient.get<unknown>("/lenders", options);
   const lenders = parseLendersResponse(res)
@@ -267,37 +410,44 @@ export const fetchLenderById = async (id: string) => {
 };
 
 export const createLender = async (payload: LenderPayload) => {
-  const lender = await apiClient.post<Lender>(`/lenders`, payload);
-  return ensureEntityHasId(lender, "lender");
+  const lender = await apiClient.post<unknown>(`/lenders`, payload);
+  const normalized = normalizeLender(ensureEntityHasId((lender ?? {}) as LenderSummary, "lender"));
+  return ensureEntityHasId(normalized ?? (lender as Lender), "lender");
 };
 
 export const updateLender = async (id: string, payload: Partial<LenderPayload>) => {
-  const lender = await apiClient.patch<Lender>(`/lenders/${id}`, payload);
-  return ensureEntityHasId(lender, "lender", id);
+  const lender = await apiClient.patch<unknown>(`/lenders/${id}`, payload);
+  const normalized = normalizeLender(ensureEntityHasId((lender ?? {}) as LenderSummary, "lender", id));
+  return ensureEntityHasId(normalized ?? (lender as Lender), "lender", id);
 };
 
 export const fetchLenderProducts = async (lenderId?: string, options?: RequestOptions) => {
-  const res: ListResponse<LenderProduct> = await apiClient.getList<LenderProduct>(`/lender-products`, {
+  const res = await apiClient.get<unknown>(`/lender-products`, {
     params: lenderId ? { lenderId } : undefined,
     ...options
   });
-  const items = Array.isArray(res.items) ? res.items : [];
-  return items.map((item) => ensureEntityHasId(item, "lender product", item.id));
+  const items = parseListItems<unknown>(res);
+  return items
+    .map((item) => normalizeLenderProduct(item))
+    .filter((item): item is LenderProduct => Boolean(item));
 };
 
 export const fetchLenderProductById = async (productId: string) => {
-  const product = await apiClient.get<LenderProduct>(`/lender-products/${productId}`);
-  return ensureEntityHasId(product, "lender product", productId);
+  const product = await apiClient.get<unknown>(`/lender-products/${productId}`);
+  const normalized = normalizeLenderProduct(ensureEntityHasId((product ?? {}) as { id?: string }, "lender product", productId));
+  return ensureEntityHasId(normalized ?? (product as LenderProduct), "lender product", productId);
 };
 
 export const createLenderProduct = async (payload: LenderProductPayload) => {
-  const product = await apiClient.post<LenderProduct>(`/lender-products`, payload);
-  return ensureEntityHasId(product, "lender product");
+  const product = await apiClient.post<unknown>(`/lender-products`, payload);
+  const normalized = normalizeLenderProduct(ensureEntityHasId((product ?? {}) as { id?: string }, "lender product"));
+  return ensureEntityHasId(normalized ?? (product as LenderProduct), "lender product");
 };
 
 export const updateLenderProduct = async (productId: string, payload: Partial<LenderProductPayload>) => {
-  const product = await apiClient.put<LenderProduct>(`/lender-products/${productId}`, payload);
-  return ensureEntityHasId(product, "lender product", productId);
+  const product = await apiClient.put<unknown>(`/lender-products/${productId}`, payload);
+  const normalized = normalizeLenderProduct(ensureEntityHasId((product ?? {}) as { id?: string }, "lender product", productId));
+  return ensureEntityHasId(normalized ?? (product as LenderProduct), "lender product", productId);
 };
 
 export const fetchLenderMatches = (applicationId: string, options?: RequestOptions) =>

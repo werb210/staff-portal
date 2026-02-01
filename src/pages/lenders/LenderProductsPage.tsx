@@ -85,6 +85,15 @@ const formatLenderCountryLabel = (value?: string | null) => {
   return trimmed;
 };
 
+const getLenderStatus = (lender?: Lender | null) => {
+  if (!lender) return "INACTIVE";
+  if (lender.status) return lender.status;
+  if (typeof lender.active === "boolean") return lender.active ? "ACTIVE" : "INACTIVE";
+  return "INACTIVE";
+};
+
+const isLenderActive = (lender?: Lender | null) => getLenderStatus(lender) === "ACTIVE";
+
 const getApiErrorStatus = (error: unknown) => {
   if (error instanceof ApiError) {
     return error.status;
@@ -158,7 +167,7 @@ const LenderProductsContent = () => {
     refetchOnWindowFocus: false
   });
   const safeLenders = Array.isArray(lenders) ? lenders : [];
-  const activeLenders = safeLenders.filter((lender) => lender.active);
+  const activeLenders = safeLenders.filter((lender) => isLenderActive(lender));
 
   useEffect(() => {
     if (activeLenderId) return;
@@ -281,25 +290,11 @@ const LenderProductsContent = () => {
 
   const createMutation = useMutation({
     mutationFn: (payload: LenderProductPayload) => createLenderProduct(payload),
-    onMutate: async (payload) => {
+    onMutate: () => {
       setSubmitError(null);
       setFormErrors({});
-      await queryClient.cancelQueries({ queryKey: ["lender-products"] });
-      const previous = queryClient.getQueryData<LenderProduct[]>(["lender-products", activeLenderId || "all"]);
-      queryClient.setQueryData<LenderProduct[]>(["lender-products", activeLenderId || "all"], (current = []) => [
-        {
-          ...payload,
-          id: `temp-${Date.now()}`,
-          requiredDocuments: payload.required_documents ?? []
-        } as LenderProduct,
-        ...current
-      ]);
-      return { previous };
     },
     onError: (error, _payload, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(["lender-products", activeLenderId || "all"], context.previous);
-      }
       const validationErrors = extractValidationErrors(error, productFieldMap);
       if (validationErrors && Object.keys(validationErrors).length) {
         setFormErrors(validationErrors);
@@ -309,6 +304,7 @@ const LenderProductsContent = () => {
     },
     onSuccess: async (created) => {
       await queryClient.invalidateQueries({ queryKey: ["lender-products"] });
+      await refetchProducts();
       if (created?.id && created?.lenderId) {
         setSelectedProductId(created.id);
         navigate(`/lender-products/${created.id}/edit?lenderId=${created.lenderId}`);
@@ -320,20 +316,11 @@ const LenderProductsContent = () => {
   const updateMutation = useMutation({
     mutationFn: ({ productId, payload }: { productId: string; payload: Partial<LenderProductPayload> }) =>
       updateLenderProduct(productId, payload),
-    onMutate: async ({ productId, payload }) => {
+    onMutate: () => {
       setSubmitError(null);
       setFormErrors({});
-      await queryClient.cancelQueries({ queryKey: ["lender-products"] });
-      const previous = queryClient.getQueryData<LenderProduct[]>(["lender-products", activeLenderId || "all"]);
-      queryClient.setQueryData<LenderProduct[]>(["lender-products", activeLenderId || "all"], (current = []) =>
-        current.map((product) => (product.id === productId ? { ...product, ...payload } : product))
-      );
-      return { previous };
     },
     onError: (error, _payload, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(["lender-products", activeLenderId || "all"], context.previous);
-      }
       const validationErrors = extractValidationErrors(error, productFieldMap);
       if (validationErrors && Object.keys(validationErrors).length) {
         setFormErrors(validationErrors);
@@ -343,6 +330,7 @@ const LenderProductsContent = () => {
     },
     onSuccess: async (updated) => {
       await queryClient.invalidateQueries({ queryKey: ["lender-products"] });
+      await refetchProducts();
       if (updated?.id && updated?.lenderId) {
         navigate(`/lender-products/${updated.id}/edit?lenderId=${updated.lenderId}`);
       }

@@ -34,8 +34,8 @@ export type LenderOperationalLimits = {
 export type Lender = {
   id: string;
   name: string;
-  active: boolean;
-  status?: "ACTIVE" | "INACTIVE";
+  status: "ACTIVE" | "INACTIVE";
+  active?: boolean;
   address: LenderAddress;
   phone: string;
   website: string | null;
@@ -49,8 +49,7 @@ export type Lender = {
 
 export type LenderPayload = {
   name: string;
-  active: boolean;
-  status?: "ACTIVE" | "INACTIVE";
+  status: "ACTIVE" | "INACTIVE";
   phone: string;
   website: string | null;
   description: string | null;
@@ -91,7 +90,7 @@ export type LenderProduct = {
   productName: string;
   active: boolean;
   category: LenderProductCategory;
-  country: string;
+  country: "CA" | "US" | "BOTH";
   currency: string;
   minAmount: number;
   maxAmount: number;

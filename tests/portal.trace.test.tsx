@@ -35,7 +35,7 @@ describe("portal traceability", () => {
       </ErrorBoundary>
     );
 
-    expect(screen.getByText("Something went wrong")).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent(/Unexpected error/i);
     expect(errorSpy).toHaveBeenCalledWith(
       "UI render failure",
       expect.objectContaining({ requestId: getRequestId() })

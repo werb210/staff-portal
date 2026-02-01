@@ -63,9 +63,11 @@ describe("Pipeline foundation", () => {
   it("renders all BF pipeline columns", async () => {
     renderWithProviders(<PipelinePage />);
 
-    pipelineStages.forEach((stage) => {
-      const headers = screen.getAllByText(stage.label, { selector: ".pipeline-column__title" });
-      expect(headers.length).toBeGreaterThan(0);
+    await waitFor(() => {
+      pipelineStages.forEach((stage) => {
+        const headers = screen.getAllByText(stage.label, { selector: ".pipeline-column__title" });
+        expect(headers.length).toBeGreaterThan(0);
+      });
     });
 
     await waitFor(() => expect(pipelineApi.fetchColumn).toHaveBeenCalled());

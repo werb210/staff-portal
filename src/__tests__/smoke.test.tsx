@@ -124,7 +124,7 @@ describe("smoke coverage", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText("No lenders")).toBeInTheDocument();
+      expect(screen.getByText(/No lenders/i)).toBeInTheDocument();
     });
   });
 });

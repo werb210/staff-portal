@@ -180,6 +180,15 @@ const buildCategoryOptions = (country: string) => {
   }));
 };
 
+const getLenderStatus = (lender?: Lender | null) => {
+  if (!lender) return "INACTIVE";
+  if (lender.status) return lender.status;
+  if (typeof lender.active === "boolean") return lender.active ? "ACTIVE" : "INACTIVE";
+  return "INACTIVE";
+};
+
+const isLenderActive = (lender?: Lender | null) => getLenderStatus(lender) === "ACTIVE";
+
 const mapLenderToFormValues = (lender: Lender): LenderFormValues => {
   const primaryContact = lender.primaryContact ?? {
     name: "",
@@ -193,7 +202,7 @@ const mapLenderToFormValues = (lender: Lender): LenderFormValues => {
   return {
     ...emptyLenderForm,
     name: lender.name ?? "",
-    active: lender.active === true,
+    active: isLenderActive(lender),
     country: normalizeLenderCountryValue(lender.address?.country ?? "") || COUNTRIES[0].value,
     primaryContactName: primaryContact.name ?? "",
     primaryContactEmail: primaryContact.email ?? "",
@@ -238,7 +247,7 @@ const LendersContent = () => {
     [safeLenders, selectedLenderId]
   );
 
-  const isSelectedLenderInactive = Boolean(selectedLender && selectedLender.active === false);
+  const isSelectedLenderInactive = !isLenderActive(selectedLender);
 
   const {
     data: lenderDetail,
@@ -347,58 +356,11 @@ const LendersContent = () => {
 
   const createLenderMutation = useMutation({
     mutationFn: (payload: LenderPayload) => createLender(payload),
-    onMutate: async (payload) => {
+    onMutate: () => {
       setLenderSubmitError(null);
       setLenderFormErrors({});
-      await queryClient.cancelQueries({ queryKey: ["lenders"] });
-      const previous = queryClient.getQueryData<Lender[]>(["lenders"]);
-      queryClient.setQueryData<Lender[]>(["lenders"], (current = []) => [
-        {
-          id: `temp-${Date.now()}`,
-          name: payload.name,
-          active: payload.active,
-          status: payload.status ?? (payload.active ? "ACTIVE" : "INACTIVE"),
-          address: {
-            street: "",
-            city: "",
-            stateProvince: "",
-            postalCode: "",
-            country: payload.country
-          },
-          phone: payload.phone,
-          website: payload.website,
-          description: null,
-          internalNotes: payload.internal_notes ?? null,
-          processingNotes: null,
-          primaryContact: {
-            name: payload.contact_name,
-            email: payload.contact_email,
-            phone: payload.contact_phone,
-            mobilePhone: ""
-          },
-          submissionConfig: {
-            method: payload.submission_method,
-            apiBaseUrl: null,
-            apiClientId: null,
-            apiUsername: null,
-            apiPassword: null,
-            submissionEmail: payload.submission_email
-          },
-          operationalLimits: {
-            maxLendingLimit: null,
-            maxLtv: null,
-            maxLoanTerm: null,
-            maxAmortization: null
-          }
-        },
-        ...current
-      ]);
-      return { previous };
     },
     onError: (error, _payload, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(["lenders"], context.previous);
-      }
       const validationErrors = extractValidationErrors(error, lenderFieldMap);
       if (validationErrors && Object.keys(validationErrors).length) {
         setLenderFormErrors(validationErrors);
@@ -419,49 +381,11 @@ const LendersContent = () => {
   const updateLenderMutation = useMutation({
     mutationFn: ({ id, payload }: { id: string; payload: Partial<LenderPayload> }) =>
       updateLender(id, payload),
-    onMutate: async ({ id, payload }) => {
+    onMutate: () => {
       setLenderSubmitError(null);
       setLenderFormErrors({});
-      await queryClient.cancelQueries({ queryKey: ["lenders"] });
-      const previous = queryClient.getQueryData<Lender[]>(["lenders"]);
-      queryClient.setQueryData<Lender[]>(["lenders"], (current = []) =>
-        current.map((lender) =>
-          lender.id === id
-            ? {
-                ...lender,
-                name: payload.name ?? lender.name,
-                active: payload.active ?? lender.active,
-                status:
-                  payload.status ??
-                  (payload.active !== undefined ? (payload.active ? "ACTIVE" : "INACTIVE") : lender.status),
-                address: {
-                  ...lender.address,
-                  country: payload.country ?? lender.address?.country
-                },
-                phone: payload.phone ?? lender.phone,
-                website: payload.website ?? lender.website,
-                internalNotes: payload.internal_notes ?? lender.internalNotes,
-                primaryContact: {
-                  ...lender.primaryContact,
-                  name: payload.contact_name ?? lender.primaryContact?.name,
-                  email: payload.contact_email ?? lender.primaryContact?.email,
-                  phone: payload.contact_phone ?? lender.primaryContact?.phone
-                },
-                submissionConfig: {
-                  ...lender.submissionConfig,
-                  method: payload.submission_method ?? lender.submissionConfig?.method,
-                  submissionEmail: payload.submission_email ?? lender.submissionConfig?.submissionEmail
-                }
-              }
-            : lender
-        )
-      );
-      return { previous };
     },
     onError: (error, _payload, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(["lenders"], context.previous);
-      }
       const validationErrors = extractValidationErrors(error, lenderFieldMap);
       if (validationErrors && Object.keys(validationErrors).length) {
         setLenderFormErrors(validationErrors);
@@ -469,13 +393,9 @@ const LendersContent = () => {
       }
       setLenderSubmitError(getErrorMessage(error, "Unable to save lender. Please retry."));
     },
-    onSuccess: async (updated) => {
-      if (updated?.id) {
-        queryClient.setQueryData<Lender[]>(["lenders"], (current = []) =>
-          current.map((lender) => (lender.id === updated.id ? updated : lender))
-        );
-      }
+    onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["lenders"] });
+      await refetchLenders();
       setIsLenderModalOpen(false);
       setEditingLenderId(null);
       setEditingLender(null);
@@ -487,25 +407,11 @@ const LendersContent = () => {
 
   const createProductMutation = useMutation({
     mutationFn: (payload: LenderProductPayload) => createLenderProduct(payload),
-    onMutate: async (payload) => {
+    onMutate: () => {
       setProductSubmitError(null);
       setProductFormErrors({});
-      await queryClient.cancelQueries({ queryKey: ["lender-products"] });
-      const previous = queryClient.getQueryData<LenderProduct[]>(["lender-products", selectedLenderId ?? "none"]);
-      queryClient.setQueryData<LenderProduct[]>(["lender-products", selectedLenderId ?? "none"], (current = []) => [
-        {
-          ...payload,
-          id: `temp-${Date.now()}`,
-          requiredDocuments: payload.required_documents ?? []
-        } as LenderProduct,
-        ...current
-      ]);
-      return { previous };
     },
     onError: (error, _payload, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(["lender-products", selectedLenderId ?? "none"], context.previous);
-      }
       const validationErrors = extractValidationErrors(error, productFieldMap);
       if (validationErrors && Object.keys(validationErrors).length) {
         setProductFormErrors(validationErrors);
@@ -515,6 +421,7 @@ const LendersContent = () => {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["lender-products"] });
+      await refetchProducts();
       setIsProductModalOpen(false);
       setEditingProduct(null);
       setProductSubmitError(null);
@@ -524,20 +431,11 @@ const LendersContent = () => {
   const updateProductMutation = useMutation({
     mutationFn: ({ productId, payload }: { productId: string; payload: Partial<LenderProductPayload> }) =>
       updateLenderProduct(productId, payload),
-    onMutate: async ({ productId, payload }) => {
+    onMutate: () => {
       setProductSubmitError(null);
       setProductFormErrors({});
-      await queryClient.cancelQueries({ queryKey: ["lender-products"] });
-      const previous = queryClient.getQueryData<LenderProduct[]>(["lender-products", selectedLenderId ?? "none"]);
-      queryClient.setQueryData<LenderProduct[]>(["lender-products", selectedLenderId ?? "none"], (current = []) =>
-        current.map((product) => (product.id === productId ? { ...product, ...payload } : product))
-      );
-      return { previous };
     },
     onError: (error, _payload, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(["lender-products", selectedLenderId ?? "none"], context.previous);
-      }
       const validationErrors = extractValidationErrors(error, productFieldMap);
       if (validationErrors && Object.keys(validationErrors).length) {
         setProductFormErrors(validationErrors);
@@ -547,6 +445,7 @@ const LendersContent = () => {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["lender-products"] });
+      await refetchProducts();
       setIsProductModalOpen(false);
       setEditingProduct(null);
       setProductSubmitError(null);
@@ -579,7 +478,6 @@ const LendersContent = () => {
 
   const buildLenderPayload = (values: LenderFormValues): LenderPayload => ({
     name: values.name.trim(),
-    active: values.active,
     status: values.active ? "ACTIVE" : "INACTIVE",
     phone: values.primaryContactPhone.trim(),
     website: values.website.trim() ? values.website.trim() : null,
@@ -600,7 +498,7 @@ const LendersContent = () => {
   const validateProductForm = (values: ProductFormValues) => {
     const errors: Record<string, string> = {};
     if (!values.lenderId) errors.lenderId = "Lender is required.";
-    const isActiveLender = safeLenders.some((lender) => lender.id === values.lenderId && lender.active);
+    const isActiveLender = safeLenders.some((lender) => lender.id === values.lenderId && isLenderActive(lender));
     if (values.lenderId && !isActiveLender) {
       errors.lenderId = "Lender must be active.";
     }
@@ -868,7 +766,7 @@ const LendersContent = () => {
               {safeLenders.map((lender, index) => {
                 const lenderIdValue = lender.id ?? "";
                 const lenderName = lender.name?.trim() || "Unnamed lender";
-                const statusLabel = lender.status ?? (lender.active ? "ACTIVE" : "INACTIVE");
+                const statusLabel = getLenderStatus(lender);
                 const statusVariant = statusLabel === "ACTIVE" ? "active" : "paused";
                 const countryLabel = formatLenderCountryLabel(lender.address?.country);
                 const rowKey = lenderIdValue || `lender-${index}`;
@@ -941,11 +839,11 @@ const LendersContent = () => {
           )}
           {selectedLender && (
             <div className="management-note">
-              <span className={`status-pill status-pill--${selectedLender.active ? "active" : "paused"}`}>
-                {selectedLender.active ? "Lender active" : "Lender inactive"}
+              <span className={`status-pill status-pill--${isLenderActive(selectedLender) ? "active" : "paused"}`}>
+                {isLenderActive(selectedLender) ? "Lender active" : "Lender inactive"}
               </span>
               <span>{formatLenderCountryLabel(selectedLender.address?.country) || "—"}</span>
-              {!selectedLender.active && (
+              {!isLenderActive(selectedLender) && (
                 <span className="text-xs text-amber-600">Inactive lenders cannot publish products.</span>
               )}
             </div>
