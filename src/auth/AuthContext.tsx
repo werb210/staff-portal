@@ -171,6 +171,8 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
   const skipNextHydrationRef = useRef(false);
   const initAuthRef = useRef<string | null>(null);
   const refreshInFlightRef = useRef<Promise<boolean> | null>(null);
+  const refreshRetryRef = useRef(0);
+  const authFailureInFlightRef = useRef(false);
   const [isHydratingSession, setIsHydratingSession] = useState<boolean>(() => !hasAccessToken);
   const hasHydratedSessionRef = useRef(false);
 
@@ -242,11 +244,26 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
         setUser(data ?? null);
         setAuthStatus("authenticated");
         setRolesStatus("resolved");
+        refreshRetryRef.current = 0;
         return true;
       } catch (fetchError) {
         const status = getErrorStatus(fetchError);
         logAuthError("/api/auth/me failed", user, { error: fetchError, status });
         if (status === 401) {
+          if (refreshRetryRef.current < 1) {
+            refreshRetryRef.current += 1;
+            try {
+              const retryResponse = await api.get<AuthenticatedUser>("/auth/me");
+              const retryData = retryResponse.data;
+              setUser(retryData ?? null);
+              setAuthStatus("authenticated");
+              setRolesStatus("resolved");
+              refreshRetryRef.current = 0;
+              return true;
+            } catch (retryError) {
+              logAuthError("/api/auth/me retry failed", user, { error: retryError });
+            }
+          }
           clearAuthState();
         } else {
           setAuthStatus("loading");
@@ -323,6 +340,21 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
         const status = getErrorStatus(fetchError);
         logAuthError("/api/auth/me failed", null, { error: fetchError, status });
         if (status === 401) {
+          if (refreshRetryRef.current < 1) {
+            refreshRetryRef.current += 1;
+            try {
+              const retryResponse = await api.get<AuthenticatedUser>("/auth/me");
+              if (!isMounted) return;
+              const retryData = retryResponse.data;
+              setUser(retryData ?? null);
+              setAuthStatus("authenticated");
+              setRolesStatus("resolved");
+              refreshRetryRef.current = 0;
+              return;
+            } catch (retryError) {
+              logAuthError("/api/auth/me retry failed", null, { error: retryError });
+            }
+          }
           clearAuthState();
         } else {
           setAuthStatus(hasSnapshot ? "authenticated" : "loading");
@@ -384,12 +416,30 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
 
   useEffect(() => {
     const unregister = registerAuthFailureHandler((reason) => {
-      void forceLogout(reason);
+      if (authFailureInFlightRef.current) return;
+      if (authStatus !== "authenticated") return;
+      authFailureInFlightRef.current = true;
+      void (async () => {
+        try {
+          const refreshed = await refreshUser();
+          if (refreshed) {
+            return;
+          }
+          if (reason === "missing-token") {
+            return;
+          }
+          if (!getAccessToken()) {
+            await forceLogout(reason);
+          }
+        } finally {
+          authFailureInFlightRef.current = false;
+        }
+      })();
     });
     return () => {
       unregister();
     };
-  }, [forceLogout]);
+  }, [authStatus, forceLogout, refreshUser]);
 
   useEffect(() => {
     const role = (user as { role?: UserRole } | null)?.role ?? null;

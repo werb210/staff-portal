@@ -186,13 +186,13 @@ const LenderProductModal = ({
           {formErrors.rateType && <span className="ui-field__error">{formErrors.rateType}</span>}
           <div className="management-grid__row">
             <Input
-              label={formValues.rateType === "variable" ? "Interest min (Prime + %)" : "Interest min (%)"}
+              label={formValues.rateType === "variable" ? "Interest min (P + X)" : "Interest min (%)"}
               value={formValues.interestMin}
               onChange={(event) => onChange({ interestMin: event.target.value })}
               error={formErrors.interestMin}
             />
             <Input
-              label={formValues.rateType === "variable" ? "Interest max (Prime + %)" : "Interest max (%)"}
+              label={formValues.rateType === "variable" ? "Interest max (P + Y)" : "Interest max (%)"}
               value={formValues.interestMax}
               onChange={(event) => onChange({ interestMax: event.target.value })}
               error={formErrors.interestMax}

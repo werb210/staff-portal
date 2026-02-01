@@ -1,4 +1,4 @@
-import { clearAccessToken, getAccessToken } from "@/lib/authToken";
+import { getAccessToken } from "@/lib/authToken";
 import { reportAuthFailure } from "@/auth/authEvents";
 
 export async function fetchWithAuth(
@@ -20,7 +20,6 @@ export async function fetchWithAuth(
   });
 
   if (response.status === 401) {
-    clearAccessToken();
     reportAuthFailure("unauthorized");
   }
 

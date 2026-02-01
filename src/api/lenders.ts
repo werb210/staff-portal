@@ -8,7 +8,7 @@ import type {
   LenderProductRequirement
 } from "@/types/lenderManagement.models";
 
-type LenderStatus = "active" | "inactive";
+type LenderStatus = "ACTIVE" | "INACTIVE";
 
 type LenderSummary = {
   id: string;
@@ -88,14 +88,34 @@ const parseLendersResponse = (data: unknown): LenderSummary[] => {
   return [];
 };
 
+const normalizeLenderStatus = (value: unknown): LenderStatus | undefined => {
+  if (typeof value !== "string") return undefined;
+  const normalized = value.trim().toUpperCase();
+  if (normalized === "ACTIVE" || normalized === "INACTIVE") return normalized;
+  return undefined;
+};
+
+const normalizeLenderCountry = (value?: string | null) => {
+  const trimmed = typeof value === "string" ? value.trim() : "";
+  if (!trimmed) return "";
+  const normalized = trimmed.toUpperCase();
+  if (normalized === "CA" || normalized === "CANADA") return "Canada";
+  if (normalized === "US" || normalized === "USA" || normalized === "UNITED STATES") return "United States";
+  if (normalized === "BOTH") return "Both";
+  return trimmed;
+};
+
 const normalizeLender = (raw: LenderSummary): Lender | null => {
   if (!raw?.id || typeof raw.id !== "string") return null;
-  const status = raw.status;
-  const active =
-    typeof (raw as Lender).active === "boolean"
-      ? (raw as Lender).active
-      : status === "active";
+  const active = typeof (raw as Lender).active === "boolean" ? (raw as Lender).active : false;
+  const status = normalizeLenderStatus(raw.status ?? (raw as Lender).status);
 
+  const rawCountry =
+    typeof (raw as Lender).country === "string"
+      ? (raw as Lender).country
+      : isRecord((raw as Lender).address)
+        ? (raw as Lender).address.country
+        : "";
   const address = isRecord((raw as Lender).address)
     ? {
         street: typeof (raw as Lender).address.street === "string" ? (raw as Lender).address.street : "",
@@ -108,14 +128,14 @@ const normalizeLender = (raw: LenderSummary): Lender | null => {
           typeof (raw as Lender).address.postalCode === "string"
             ? (raw as Lender).address.postalCode
             : "",
-        country: typeof (raw as Lender).address.country === "string" ? (raw as Lender).address.country : ""
+        country: normalizeLenderCountry(rawCountry)
       }
     : {
         street: "",
         city: "",
         stateProvince: "",
         postalCode: "",
-        country: ""
+        country: normalizeLenderCountry(rawCountry)
       };
 
   const primaryContact = isRecord((raw as Lender).primaryContact)
@@ -179,6 +199,7 @@ const normalizeLender = (raw: LenderSummary): Lender | null => {
     id: raw.id,
     name: typeof raw.name === "string" ? raw.name : "",
     active,
+    status,
     address,
     phone: typeof (raw as Lender).phone === "string" ? (raw as Lender).phone : "",
     website: (raw as Lender).website ?? null,

@@ -18,6 +18,7 @@ import type { Lender, LenderProduct } from "@/types/lenderManagement.models";
 import {
   createLender,
   createLenderProduct,
+  fetchLenderById,
   fetchLenderProducts,
   fetchLenders,
   updateLender
@@ -26,6 +27,7 @@ import { clearStoredAuth, setStoredAccessToken } from "@/services/token";
 
 vi.mock("@/api/lenders", () => ({
   fetchLenders: vi.fn(),
+  fetchLenderById: vi.fn(),
   createLender: vi.fn(),
   updateLender: vi.fn(),
   fetchLenderProducts: vi.fn(),
@@ -88,6 +90,7 @@ const baseLender: Lender = {
   id: "l-1",
   name: "Northwind Capital",
   active: true,
+  status: "ACTIVE",
   address: {
     street: "1 Main St",
     city: "Austin",
@@ -158,6 +161,7 @@ describe("lender management flows", () => {
     setStoredAccessToken("test-token");
     const fetchSpy = vi.fn().mockResolvedValue(createJsonResponse({ id: "u1", role: "Admin" }));
     vi.stubGlobal("fetch", fetchSpy);
+    vi.mocked(fetchLenderProducts).mockResolvedValue([]);
   });
 
   afterEach(() => {
@@ -179,21 +183,18 @@ describe("lender management flows", () => {
 
   it("creates a new lender", async () => {
     const fetchLendersMock = vi.mocked(fetchLenders);
-    fetchLendersMock.mockResolvedValueOnce([]);
+    fetchLendersMock.mockResolvedValueOnce([]).mockResolvedValue([baseLender]);
     const createLenderMock = vi.mocked(createLender);
     createLenderMock.mockResolvedValueOnce(baseLender);
 
     renderWithProviders("/lenders/new");
 
-    const nameInput = await screen.findByLabelText(/^Name$/i);
+    const nameInput = await screen.findByLabelText(/Lender name/i);
     await userEvent.type(nameInput, "Northwind Capital");
-    await userEvent.type(screen.getByLabelText(/Street/i), "1 Main St");
-    await userEvent.type(screen.getByLabelText(/City/i), "Toronto");
-    await userEvent.selectOptions(screen.getByLabelText("State / Province"), "ON");
-    await userEvent.type(screen.getByLabelText(/Postal code/i), "M5J 2N1");
-    await userEvent.type(screen.getByLabelText(/^Phone$/i), "+1 555 111 2222");
+    await userEvent.selectOptions(screen.getByLabelText(/^Country$/i), "United States");
     await userEvent.type(screen.getByLabelText(/Contact name/i), "Primary Contact");
     await userEvent.type(screen.getByLabelText(/Contact email/i), "primary@example.com");
+    await userEvent.type(screen.getByLabelText(/Submission email/i), "submissions@example.com");
 
     const createButtons = screen.getAllByRole("button", { name: /Create lender/i });
     fireEvent.click(createButtons[createButtons.length - 1]);
@@ -201,17 +202,22 @@ describe("lender management flows", () => {
     await waitFor(() => {
       expect(createLenderMock).toHaveBeenCalled();
     });
+    await waitFor(() => {
+      expect(fetchLendersMock.mock.calls.length).toBeGreaterThanOrEqual(2);
+    });
   });
 
   it("updates lender info", async () => {
     const fetchLendersMock = vi.mocked(fetchLenders);
     fetchLendersMock.mockResolvedValueOnce([baseLender]);
+    const fetchLenderByIdMock = vi.mocked(fetchLenderById);
+    fetchLenderByIdMock.mockResolvedValueOnce(baseLender);
     const updateLenderMock = vi.mocked(updateLender);
     updateLenderMock.mockResolvedValueOnce(baseLender);
 
     renderWithProviders("/lenders/l-1/edit");
 
-    const nameInput = await screen.findByLabelText(/^Name$/i);
+    const nameInput = await screen.findByLabelText(/Lender name/i);
     await userEvent.clear(nameInput);
     await userEvent.type(nameInput, "Northwind Updated");
     fireEvent.click(screen.getByRole("button", { name: /Save changes/i }));
@@ -219,6 +225,25 @@ describe("lender management flows", () => {
     await waitFor(() => {
       expect(updateLenderMock).toHaveBeenCalled();
     });
+  });
+
+  it("loads all lender fields on edit", async () => {
+    const fetchLendersMock = vi.mocked(fetchLenders);
+    fetchLendersMock.mockResolvedValueOnce([baseLender]);
+    const fetchLenderByIdMock = vi.mocked(fetchLenderById);
+    fetchLenderByIdMock.mockResolvedValueOnce(baseLender);
+
+    renderWithProviders("/lenders/l-1/edit");
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/Lender name/i)).toHaveValue("Northwind Capital");
+    });
+    expect(screen.getByLabelText(/^Country$/i)).toHaveValue("United States");
+    expect(screen.getByLabelText(/Contact name/i)).toHaveValue("Alex Agent");
+    expect(screen.getByLabelText(/Contact email/i)).toHaveValue("alex@example.com");
+    expect(screen.getByLabelText(/Contact phone/i)).toHaveValue("+1 555 111 3333");
+    expect(screen.getByLabelText(/Submission method/i)).toHaveValue("API");
+    expect(screen.getByRole("checkbox", { name: /Active lender/i })).toBeChecked();
   });
 
   it("renders lender products", async () => {
@@ -247,8 +272,7 @@ describe("lender management flows", () => {
     const nameInput = await screen.findByLabelText(/Product name/i);
     await userEvent.type(nameInput, "Term loan");
     await userEvent.selectOptions(screen.getByLabelText(/Product category/i), "TERM_LOAN");
-    const countryInputs = screen.getAllByLabelText(/^Country$/i);
-    await userEvent.selectOptions(countryInputs[countryInputs.length - 1], "US");
+    await userEvent.selectOptions(screen.getByLabelText(/^Country$/i), "US");
     await userEvent.type(screen.getAllByLabelText(/Minimum amount/i)[0], "10000");
     await userEvent.type(screen.getAllByLabelText(/Maximum amount/i)[0], "500000");
     await userEvent.type(screen.getByLabelText(/Interest min/i), "6.5");
@@ -292,7 +316,7 @@ describe("lender management flows", () => {
     const createButton = within(modal).getByRole("button", { name: /Create lender/i });
     fireEvent.click(createButton);
 
-    const errorMessage = await within(modal).findByText(/State\/province is required/i);
+    const errorMessage = await within(modal).findByText(/Submission email is required/i);
     expect(errorMessage).toBeInTheDocument();
   });
 

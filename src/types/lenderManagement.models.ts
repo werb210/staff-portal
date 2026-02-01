@@ -35,6 +35,7 @@ export type Lender = {
   id: string;
   name: string;
   active: boolean;
+  status?: "ACTIVE" | "INACTIVE";
   address: LenderAddress;
   phone: string;
   website: string | null;
@@ -93,8 +94,8 @@ export type LenderProduct = {
   currency: string;
   minAmount: number;
   maxAmount: number;
-  interestRateMin: number;
-  interestRateMax: number;
+  interestRateMin: number | string;
+  interestRateMax: number | string;
   rateType: RateType;
   termLength: LenderProductTermLength;
   fees: string | null;

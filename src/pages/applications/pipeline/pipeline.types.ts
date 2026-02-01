@@ -78,11 +78,19 @@ export const DEFAULT_PIPELINE_STAGES: PipelineStage[] = PIPELINE_STAGE_ORDER.map
 }));
 
 export const sortPipelineStages = (stages: PipelineStage[]) => {
+  if (!stages.length) return DEFAULT_PIPELINE_STAGES;
   const orderIndex = new Map(PIPELINE_STAGE_ORDER.map((id, index) => [id, index]));
-  const ordered = stages
-    .filter((stage) => orderIndex.has(stage.id))
-    .sort((a, b) => (orderIndex.get(a.id) ?? 0) - (orderIndex.get(b.id) ?? 0));
-  return ordered.length ? ordered : DEFAULT_PIPELINE_STAGES;
+  return stages
+    .map((stage, index) => ({ stage, index }))
+    .sort((a, b) => {
+      const aOrder = orderIndex.has(a.stage.id) ? (orderIndex.get(a.stage.id) as number) : Number.POSITIVE_INFINITY;
+      const bOrder = orderIndex.has(b.stage.id) ? (orderIndex.get(b.stage.id) as number) : Number.POSITIVE_INFINITY;
+      if (aOrder !== bOrder) {
+        return aOrder - bOrder;
+      }
+      return a.index - b.index;
+    })
+    .map((entry) => entry.stage);
 };
 
 export const buildStageLabelMap = (stages: PipelineStage[]) =>

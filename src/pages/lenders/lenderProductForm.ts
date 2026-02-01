@@ -63,13 +63,51 @@ export const deriveCurrency = (country: string, fallback?: string | null) => {
 export const resolveRateType = (rateType?: RateType) =>
   rateType === "variable" || rateType === "fixed" ? rateType : "fixed";
 
+const formatRateNumber = (value: string) => {
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  const numeric = trimmed.replace(/[^\d.]/g, "");
+  return numeric;
+};
+
+export const normalizeVariableRateInput = (value: string) => {
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  const numeric = formatRateNumber(value);
+  if (!numeric) return "P + ";
+  return `P + ${numeric}`;
+};
+
+export const isValidVariableRate = (value: string) => /^P\s*\+\s*\d+(\.\d+)?$/i.test(value.trim());
+
+export const normalizeInterestInput = (rateType: RateType, value: string) =>
+  rateType === "variable" ? normalizeVariableRateInput(value) : value;
+
+export const formatInterestPayload = (rateType: RateType, value: string) => {
+  if (rateType === "variable") {
+    return normalizeVariableRateInput(value).replace(/\s+/g, " ").trim();
+  }
+  const numeric = Number(value);
+  return Number.isNaN(numeric) ? 0 : numeric;
+};
+
 export const getRateDefaults = (product?: LenderProduct | null) => {
   const resolvedRateType = resolveRateType(product?.rateType);
-  const minRate = typeof product?.interestRateMin === "number" ? product.interestRateMin : null;
-  const maxRate = typeof product?.interestRateMax === "number" ? product.interestRateMax : null;
+  const minRate =
+    typeof product?.interestRateMin === "number"
+      ? String(product?.interestRateMin)
+      : typeof product?.interestRateMin === "string"
+        ? product?.interestRateMin
+        : "";
+  const maxRate =
+    typeof product?.interestRateMax === "number"
+      ? String(product?.interestRateMax)
+      : typeof product?.interestRateMax === "string"
+        ? product?.interestRateMax
+        : "";
   return {
     rateType: resolvedRateType,
-    interestMin: minRate !== null ? String(minRate) : "",
-    interestMax: maxRate !== null ? String(maxRate) : ""
+    interestMin: resolvedRateType === "variable" ? normalizeVariableRateInput(minRate) : minRate,
+    interestMax: resolvedRateType === "variable" ? normalizeVariableRateInput(maxRate) : maxRate
   };
 };
