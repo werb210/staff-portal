@@ -47,7 +47,8 @@ import {
   getRateDefaults,
   isValidVariableRate,
   mapRequiredDocumentsToValues,
-  normalizeProductCountry,
+  normalizeCountrySelection,
+  splitCountrySelection,
   normalizeInterestInput,
   resolveRateType
 } from "./lenderProductForm";
@@ -83,7 +84,7 @@ const emptyProductForm = (lenderId: string): ProductFormValues => ({
   active: true,
   productName: deriveProductName(LENDER_PRODUCT_CATEGORIES[0]),
   category: LENDER_PRODUCT_CATEGORIES[0],
-  country: "",
+  country: [],
   minAmount: "",
   maxAmount: "",
   minTerm: "",
@@ -173,10 +174,28 @@ const toFormString = (value?: number | string | null) => {
 
 const formatRateType = (value: RateType) => value.charAt(0).toUpperCase() + value.slice(1);
 
-const buildCategoryOptions = (country: string) => {
-  return LENDER_PRODUCT_CATEGORIES.map((category) => ({
+const PORTAL_PRODUCT_CATEGORIES = [
+  "LINE_OF_CREDIT",
+  "TERM_LOAN",
+  "EQUIPMENT_FINANCE",
+  "FACTORING",
+  "PURCHASE_ORDER_FINANCE"
+] as const;
+
+const PORTAL_PRODUCT_CATEGORY_LABELS: Record<(typeof PORTAL_PRODUCT_CATEGORIES)[number] | "STARTUP_CAPITAL", string> = {
+  LINE_OF_CREDIT: "Line of Credit",
+  TERM_LOAN: "Term Loan",
+  EQUIPMENT_FINANCE: "Equipment Financing",
+  FACTORING: "Factoring",
+  PURCHASE_ORDER_FINANCE: "Purchase Order Financing",
+  STARTUP_CAPITAL: "Startup Financing"
+};
+
+const buildCategoryOptions = (includeStartup: boolean) => {
+  const categories = includeStartup ? [...PORTAL_PRODUCT_CATEGORIES, "STARTUP_CAPITAL"] : PORTAL_PRODUCT_CATEGORIES;
+  return categories.map((category) => ({
     value: category,
-    label: LENDER_PRODUCT_CATEGORY_LABELS[category]
+    label: PORTAL_PRODUCT_CATEGORY_LABELS[category]
   }));
 };
 
@@ -273,6 +292,28 @@ const LendersContent = () => {
   const safeProducts = Array.isArray(products) ? products : [];
   const hasSelectedLender = Boolean(selectedLender);
   const productsToRender = hasSelectedLender ? safeProducts : [];
+  const hasStartupCategory =
+    productsToRender.some((product) => product.category === "STARTUP_CAPITAL") ||
+    editingProduct?.category === "STARTUP_CAPITAL";
+
+  const groupedProducts = useMemo(() => {
+    const categories = hasStartupCategory ? [...PORTAL_PRODUCT_CATEGORIES, "STARTUP_CAPITAL"] : [...PORTAL_PRODUCT_CATEGORIES];
+    const map = new Map<string, LenderProduct[]>();
+    productsToRender.forEach((product) => {
+      const category = product.category ?? LENDER_PRODUCT_CATEGORIES[0];
+      const list = map.get(category) ?? [];
+      list.push(product);
+      map.set(category, list);
+    });
+    const extraCategories = Array.from(map.keys()).filter((category) => !categories.includes(category as typeof categories[number]));
+    return [...categories, ...extraCategories]
+      .map((category) => ({
+        category,
+        label: PORTAL_PRODUCT_CATEGORY_LABELS[category] ?? LENDER_PRODUCT_CATEGORY_LABELS[category],
+        products: map.get(category) ?? []
+      }))
+      .filter((group) => group.products.length > 0);
+  }, [hasStartupCategory, productsToRender]);
 
   useEffect(() => {
     if (isNewRoute) {
@@ -456,6 +497,21 @@ const LendersContent = () => {
   const productMutationLoading = createProductMutation.isPending || updateProductMutation.isPending;
   const rateTypeOptions: RateType[] = ["fixed", "variable"];
   const apiConfig = editingLender?.submissionConfig ?? lenderDetail?.submissionConfig ?? null;
+  const activeLenderOptions = safeLenders
+    .filter((lender) => isLenderActive(lender))
+    .map((lender) => ({
+      value: lender.id,
+      label: lender.name || "Unnamed lender"
+    }));
+  const selectedLenderOption =
+    selectedLender && !isLenderActive(selectedLender)
+      ? {
+          value: selectedLender.id,
+          label: `${selectedLender.name || "Unnamed lender"} (Inactive)`,
+          disabled: true
+        }
+      : null;
+  const lenderOptions = selectedLenderOption ? [selectedLenderOption, ...activeLenderOptions] : activeLenderOptions;
 
   const validateLenderForm = (values: LenderFormValues) => {
     const nextErrors: Record<string, string> = {};
@@ -504,7 +560,7 @@ const LendersContent = () => {
     }
     if (!values.productName.trim()) errors.productName = "Product name is required.";
     if (!values.category) errors.category = "Product category is required.";
-    if (!values.country.trim()) errors.country = "Country is required.";
+    if (!values.country.length) errors.country = "Country is required.";
     if (!values.minAmount) errors.minAmount = "Minimum amount is required.";
     if (!values.maxAmount) errors.maxAmount = "Maximum amount is required.";
     const minAmount = Number(values.minAmount);
@@ -528,10 +584,10 @@ const LendersContent = () => {
     if (!values.interestMax) errors.interestMax = "Interest maximum is required.";
     if (values.rateType === "variable") {
       if (values.interestMin && !isValidVariableRate(values.interestMin)) {
-        errors.interestMin = "Use format P + X.";
+        errors.interestMin = "Use format Prime + X%.";
       }
       if (values.interestMax && !isValidVariableRate(values.interestMax)) {
-        errors.interestMax = "Use format P + Y.";
+        errors.interestMax = "Use format Prime + Y%.";
       }
     } else {
       const interestMin = Number(values.interestMin);
@@ -552,19 +608,20 @@ const LendersContent = () => {
   };
 
   const buildProductPayload = (values: ProductFormValues, existing?: LenderProduct | null): LenderProductPayload => {
-    const normalizedCountry = normalizeProductCountry(values.country);
+    const normalizedCountry = normalizeCountrySelection(values.country);
+    const resolvedCountry = normalizedCountry || "CA";
     const resolvedRateType = resolveRateType(values.rateType);
     const interestRateMin = formatInterestPayload(resolvedRateType, values.interestMin);
     const interestRateMax = formatInterestPayload(resolvedRateType, values.interestMax);
     const minTerm = Number(values.minTerm);
     const maxTerm = Number(values.maxTerm);
-    const resolvedCurrency = deriveCurrency(normalizedCountry, existing?.currency ?? null);
+    const resolvedCurrency = deriveCurrency(resolvedCountry, existing?.currency ?? null);
     return {
       lenderId: values.lenderId,
       productName: values.productName.trim() || existing?.productName || deriveProductName(values.category),
       active: values.active,
       category: values.category,
-      country: normalizedCountry,
+      country: resolvedCountry,
       currency: resolvedCurrency,
       minAmount: Number(values.minAmount),
       maxAmount: Number(values.maxAmount),
@@ -690,7 +747,7 @@ const LendersContent = () => {
       active: product.active,
       productName: product.productName ?? "",
       category: resolvedCategory,
-      country: normalizeProductCountry(product.country),
+      country: splitCountrySelection(product.country),
       minAmount: toFormString(product.minAmount),
       maxAmount: toFormString(product.maxAmount),
       rateType: rateDefaults.rateType,
@@ -768,6 +825,7 @@ const LendersContent = () => {
                 const lenderName = lender.name?.trim() || "Unnamed lender";
                 const statusLabel = getLenderStatus(lender);
                 const statusVariant = statusLabel === "ACTIVE" ? "active" : "paused";
+                const statusText = statusLabel === "ACTIVE" ? "Active" : "Inactive";
                 const countryLabel = formatLenderCountryLabel(lender.address?.country);
                 const rowKey = lenderIdValue || `lender-${index}`;
                 return (
@@ -790,7 +848,7 @@ const LendersContent = () => {
                     </td>
                     <td>
                       <span className={`status-pill status-pill--${statusVariant}`}>
-                        {statusLabel}
+                        {statusText}
                       </span>
                     </td>
                     <td>{countryLabel || "—"}</td>
@@ -858,54 +916,53 @@ const LendersContent = () => {
             </div>
           )}
           {!productsLoading && !productsError && (
-            <Table headers={["Name", "Category", "Country", "Status", "Amount range"]}>
-              {productsToRender.map((product, index) => {
-                const productIdValue = product.id ?? "";
-                const productCategory = product.category ?? LENDER_PRODUCT_CATEGORIES[0];
-                const productActive = Boolean(product.active);
-                const minAmount = Number.isFinite(product.minAmount) ? product.minAmount : 0;
-                const maxAmount = Number.isFinite(product.maxAmount) ? product.maxAmount : 0;
-                const rowKey = productIdValue || `product-${index}`;
-                return (
-                  <tr
-                    key={rowKey}
-                    className={productActive ? "management-row" : "management-row management-row--disabled"}
-                  >
-                    <td>
-                      <button
-                        type="button"
-                        className="management-link"
-                        onClick={() => openEditProductModal(product)}
-                        disabled={!productIdValue}
-                      >
-                        {product.productName || "Untitled product"}
-                      </button>
-                    </td>
-                    <td>
-                      <div className="text-sm font-semibold">
-                        {LENDER_PRODUCT_CATEGORY_LABELS[productCategory]}
-                      </div>
-                    </td>
-                    <td>{formatLenderCountryLabel(product.country) || "—"}</td>
-                    <td>
-                      <span className={`status-pill status-pill--${productActive ? "active" : "paused"}`}>
-                        {productActive ? "Active" : "Inactive"}
-                      </span>
-                    </td>
-                    <td>
-                      ${minAmount.toLocaleString()} - ${maxAmount.toLocaleString()}
-                    </td>
-                  </tr>
-                );
-              })}
+            <div className="space-y-6">
+              {groupedProducts.map((group) => (
+                <div key={group.category} className="space-y-2">
+                  <div className="text-sm font-semibold text-slate-600">{group.label}</div>
+                  <Table headers={["Name", "Country", "Status", "Amount range"]}>
+                    {group.products.map((product, index) => {
+                      const productIdValue = product.id ?? "";
+                      const productActive = Boolean(product.active);
+                      const minAmount = Number.isFinite(product.minAmount) ? product.minAmount : 0;
+                      const maxAmount = Number.isFinite(product.maxAmount) ? product.maxAmount : 0;
+                      const rowKey = productIdValue || `product-${index}`;
+                      return (
+                        <tr
+                          key={rowKey}
+                          className={productActive ? "management-row" : "management-row management-row--disabled"}
+                        >
+                          <td>
+                            <button
+                              type="button"
+                              className="management-link"
+                              onClick={() => openEditProductModal(product)}
+                              disabled={!productIdValue}
+                            >
+                              {product.productName || "Untitled product"}
+                            </button>
+                          </td>
+                          <td>{formatLenderCountryLabel(product.country) || "—"}</td>
+                          <td>
+                            <span className={`status-pill status-pill--${productActive ? "active" : "paused"}`}>
+                              {productActive ? "Active" : "Inactive"}
+                            </span>
+                          </td>
+                          <td>
+                            ${minAmount.toLocaleString()} - ${maxAmount.toLocaleString()}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </Table>
+                </div>
+              ))}
               {!productsToRender.length && (
-                <tr>
-                  <td colSpan={5}>
-                    {hasSelectedLender ? "No products for this lender." : "Select a lender to view products."}
-                  </td>
-                </tr>
+                <div className="text-sm text-slate-500">
+                  {hasSelectedLender ? "No products for this lender." : "Select a lender to view products."}
+                </div>
               )}
-            </Table>
+            </div>
           )}
         </Card>
       </div>
@@ -1021,25 +1078,31 @@ const LendersContent = () => {
 
             <div className="management-field">
               <span className="management-field__label">Submission configuration</span>
-              <Select
-                label="Submission method"
-                value={lenderFormValues.submissionMethod}
-                onChange={(event) =>
-                  setLenderFormValues((prev) => ({
-                    ...prev,
-                    submissionMethod: event.target.value as SubmissionMethod
-                  }))
-                }
-              >
-                {SUBMISSION_METHODS.filter((method) => method !== "MANUAL").map((method) => (
-                  <option key={method} value={method}>
-                    {method}
-                  </option>
-                ))}
-              </Select>
-              {lenderFormErrors.submissionMethod && (
-                <span className="ui-field__error">{lenderFormErrors.submissionMethod}</span>
-              )}
+              <div className="ui-field">
+                <span className="ui-field__label">Submission method</span>
+                <div className="management-docs">
+                  {SUBMISSION_METHODS.filter((method) => method !== "MANUAL").map((method) => (
+                    <label key={method} className="management-toggle">
+                      <input
+                        type="radio"
+                        name="submissionMethod"
+                        value={method}
+                        checked={lenderFormValues.submissionMethod === method}
+                        onChange={(event) =>
+                          setLenderFormValues((prev) => ({
+                            ...prev,
+                            submissionMethod: event.target.value as SubmissionMethod
+                          }))
+                        }
+                      />
+                      <span>{method === "API" ? "API" : "Email"}</span>
+                    </label>
+                  ))}
+                </div>
+                {lenderFormErrors.submissionMethod && (
+                  <span className="ui-field__error">{lenderFormErrors.submissionMethod}</span>
+                )}
+              </div>
               {lenderFormValues.submissionMethod === "EMAIL" && (
                 <Input
                   label="Submission email"
@@ -1093,10 +1156,10 @@ const LendersContent = () => {
           isSaving={productMutationLoading}
           isSubmitDisabled={isSelectedLenderInactive}
           errorMessage={productSubmitError}
-          lenderOptions={[{ value: selectedLender.id, label: selectedLender.name }]}
+          lenderOptions={lenderOptions}
           formValues={productFormValues}
           formErrors={productFormErrors}
-          categoryOptions={buildCategoryOptions(productFormValues.country)}
+          categoryOptions={buildCategoryOptions(hasStartupCategory)}
           rateTypes={rateTypeOptions}
           documentOptions={PRODUCT_DOCUMENT_OPTIONS}
           formatRateType={formatRateType}

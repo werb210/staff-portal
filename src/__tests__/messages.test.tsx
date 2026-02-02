@@ -18,7 +18,7 @@ describe("messages thread", () => {
     useApplicationDrawerStore.setState({
       isOpen: true,
       selectedApplicationId: "app-22",
-      selectedTab: "messages"
+      selectedTab: "notes"
     });
     fetchMessagesThreadMock.mockReset();
     vi.mocked(sendMessage).mockReset();

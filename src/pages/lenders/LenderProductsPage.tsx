@@ -36,7 +36,8 @@ import {
   getRateDefaults,
   isValidVariableRate,
   mapRequiredDocumentsToValues,
-  normalizeProductCountry,
+  normalizeCountrySelection,
+  splitCountrySelection,
   normalizeInterestInput,
   resolveRateType
 } from "./lenderProductForm";
@@ -44,10 +45,19 @@ import {
 const CATEGORY_DISPLAY_ORDER: LenderProductCategory[] = [
   "LINE_OF_CREDIT",
   "TERM_LOAN",
-  "FACTORING",
   "EQUIPMENT_FINANCE",
+  "FACTORING",
   "PURCHASE_ORDER_FINANCE"
 ];
+
+const PORTAL_PRODUCT_CATEGORY_LABELS: Record<LenderProductCategory, string> = {
+  LINE_OF_CREDIT: "Line of Credit",
+  TERM_LOAN: "Term Loan",
+  EQUIPMENT_FINANCE: "Equipment Financing",
+  FACTORING: "Factoring",
+  PURCHASE_ORDER_FINANCE: "Purchase Order Financing",
+  STARTUP_CAPITAL: "Startup Financing"
+};
 
 const RATE_TYPE_OPTIONS: RateType[] = ["fixed", "variable"];
 
@@ -56,7 +66,7 @@ const emptyProductForm = (lenderId: string): ProductFormValues => ({
   active: true,
   productName: deriveProductName(LENDER_PRODUCT_CATEGORIES[0]),
   category: LENDER_PRODUCT_CATEGORIES[0],
-  country: "",
+  country: [],
   minAmount: "",
   maxAmount: "",
   minTerm: "",
@@ -214,6 +224,11 @@ const LenderProductsContent = () => {
     );
   }, [activeLenderId, activeLenders, safeProducts]);
 
+  const hasStartupCategory = useMemo(
+    () => visibleProducts.some((product) => product.category === "STARTUP_CAPITAL") || editingProduct?.category === "STARTUP_CAPITAL",
+    [visibleProducts, editingProduct]
+  );
+
   const selectedProduct = useMemo(
     () => visibleProducts.find((product) => product.id === selectedProductId) ?? null,
     [visibleProducts, selectedProductId]
@@ -254,7 +269,7 @@ const LenderProductsContent = () => {
       active: selectedProduct.active,
       productName: selectedProduct.productName ?? "",
       category: resolvedCategory,
-      country: normalizeProductCountry(selectedProduct.country),
+      country: splitCountrySelection(selectedProduct.country),
       minAmount: toFormString(selectedProduct.minAmount),
       maxAmount: toFormString(selectedProduct.maxAmount),
       rateType: rateDefaults.rateType,
@@ -350,7 +365,7 @@ const LenderProductsContent = () => {
     }
     if (!values.productName.trim()) errors.productName = "Product name is required.";
     if (!values.category) errors.category = "Product category is required.";
-    if (!values.country.trim()) errors.country = "Country is required.";
+    if (!values.country.length) errors.country = "Country is required.";
     if (!values.minAmount) errors.minAmount = "Minimum amount is required.";
     if (!values.maxAmount) errors.maxAmount = "Maximum amount is required.";
     const minAmount = Number(values.minAmount);
@@ -374,10 +389,10 @@ const LenderProductsContent = () => {
     if (!values.interestMax) errors.interestMax = "Interest maximum is required.";
     if (values.rateType === "variable") {
       if (values.interestMin && !isValidVariableRate(values.interestMin)) {
-        errors.interestMin = "Use format P + X.";
+        errors.interestMin = "Use format Prime + X%.";
       }
       if (values.interestMax && !isValidVariableRate(values.interestMax)) {
-        errors.interestMax = "Use format P + Y.";
+        errors.interestMax = "Use format Prime + Y%.";
       }
     } else {
       const interestMin = Number(values.interestMin);
@@ -398,7 +413,8 @@ const LenderProductsContent = () => {
   };
 
   const buildPayload = (values: ProductFormValues, existing?: LenderProduct | null): LenderProductPayload => {
-    const normalizedCountry = normalizeProductCountry(values.country);
+    const normalizedCountry = normalizeCountrySelection(values.country);
+    const resolvedCountry = normalizedCountry || "CA";
     const resolvedRateType = resolveRateType(values.rateType);
     const interestRateMin = formatInterestPayload(resolvedRateType, values.interestMin);
     const interestRateMax = formatInterestPayload(resolvedRateType, values.interestMax);
@@ -409,8 +425,8 @@ const LenderProductsContent = () => {
       productName: values.productName.trim() || existing?.productName || deriveProductName(values.category),
       active: values.active,
       category: values.category,
-      country: normalizedCountry,
-      currency: deriveCurrency(normalizedCountry, existing?.currency ?? null),
+      country: resolvedCountry,
+      currency: deriveCurrency(resolvedCountry, existing?.currency ?? null),
       minAmount: Number(values.minAmount),
       maxAmount: Number(values.maxAmount),
       interestRateMin,
@@ -435,19 +451,16 @@ const LenderProductsContent = () => {
   };
 
   const categoryOptions = useMemo(() => {
-    return LENDER_PRODUCT_CATEGORIES.map((category) => ({
+    const categories = hasStartupCategory ? [...CATEGORY_DISPLAY_ORDER, "STARTUP_CAPITAL"] : CATEGORY_DISPLAY_ORDER;
+    return categories.map((category) => ({
       value: category,
-      label: LENDER_PRODUCT_CATEGORY_LABELS[category]
+      label: PORTAL_PRODUCT_CATEGORY_LABELS[category] ?? LENDER_PRODUCT_CATEGORY_LABELS[category]
     }));
-  }, [formValues.country]);
+  }, [hasStartupCategory]);
 
   const groupedProducts = useMemo(() => {
-    const ordered = [
-      ...CATEGORY_DISPLAY_ORDER,
-      ...LENDER_PRODUCT_CATEGORIES.filter((category) => !CATEGORY_DISPLAY_ORDER.includes(category))
-    ];
+    const ordered = hasStartupCategory ? [...CATEGORY_DISPLAY_ORDER, "STARTUP_CAPITAL"] : [...CATEGORY_DISPLAY_ORDER];
     const map = new Map<LenderProductCategory, LenderProduct[]>();
-    ordered.forEach((category) => map.set(category, []));
     visibleProducts.forEach((product) => {
       const category = (product.category ?? LENDER_PRODUCT_CATEGORIES[0]) as LenderProductCategory;
       if (!map.has(category)) {
@@ -455,8 +468,9 @@ const LenderProductsContent = () => {
       }
       map.get(category)?.push(product);
     });
-    return { ordered, map };
-  }, [visibleProducts]);
+    const extraCategories = Array.from(map.keys()).filter((category) => !ordered.includes(category));
+    return { ordered: [...ordered, ...extraCategories], map };
+  }, [hasStartupCategory, visibleProducts]);
 
   const openCreateModal = () => {
     if (!activeLender) return;
@@ -583,7 +597,7 @@ const LenderProductsContent = () => {
                   <details key={category} className="lender-section" open>
                     <summary className="lender-section__header">
                       <span className="lender-section__title">
-                        {LENDER_PRODUCT_CATEGORY_LABELS[category]} ({items.length})
+                        {(PORTAL_PRODUCT_CATEGORY_LABELS[category] ?? LENDER_PRODUCT_CATEGORY_LABELS[category])} ({items.length})
                       </span>
                     </summary>
                     <table className="lender-table">

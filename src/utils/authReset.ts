@@ -30,7 +30,7 @@ export const resetAuthState = async () => {
 
   useApiStatusStore.setState({ status: "starting" });
   useApplicationDrawerStore.setState(
-    { isOpen: false, selectedApplicationId: null, selectedTab: "overview" },
+    { isOpen: false, selectedApplicationId: null, selectedTab: "application" },
     true
   );
   useCalendarStore.setState({ currentDate: new Date(), view: "week", meetingLinks: [] }, true);

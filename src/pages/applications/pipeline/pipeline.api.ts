@@ -19,6 +19,18 @@ const toTitleCase = (value: string) =>
     .map((segment) => (segment ? segment[0].toUpperCase() + segment.slice(1) : segment))
     .join(" ");
 
+const normalizeStageId = (value: string) => value.replace(/[\s_-]+/g, "").toUpperCase();
+
+const STAGE_LABEL_OVERRIDES: Record<string, string> = {
+  RECEIVED: "Received",
+  DOCUMENTSREQUIRED: "Documents Required",
+  INREVIEW: "In Review",
+  STARTUP: "Startup",
+  OFFTOLENDER: "Off to Lender",
+  ACCEPTED: "Accepted",
+  DECLINED: "Declined"
+};
+
 const parseStage = (item: unknown): PipelineStage | null => {
   if (typeof item === "string") {
     const trimmed = item.trim();
@@ -36,6 +48,7 @@ const parseStage = (item: unknown): PipelineStage | null => {
       : typeof record.name === "string"
         ? record.name
         : toTitleCase(id);
+  const normalizedId = normalizeStageId(id);
   const description = typeof record.description === "string" ? record.description : undefined;
   const terminal = typeof record.terminal === "boolean" ? record.terminal : undefined;
   const order = typeof record.order === "number" ? record.order : undefined;
@@ -46,7 +59,7 @@ const parseStage = (item: unknown): PipelineStage | null => {
       : undefined;
   return {
     id,
-    label,
+    label: STAGE_LABEL_OVERRIDES[normalizedId] ?? label,
     description,
     terminal,
     allowedTransitions,

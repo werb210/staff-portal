@@ -21,7 +21,7 @@ const pipelineStages: PipelineStage[] = [
   { id: "RECEIVED", label: "Received" },
   { id: "DOCUMENTS_REQUIRED", label: "Documents Required" },
   { id: "IN_REVIEW", label: "In Review" },
-  { id: "START_UP", label: "Start Up" },
+  { id: "STARTUP", label: "Startup" },
   { id: "OFF_TO_LENDER", label: "Off to Lender" },
   { id: "ACCEPTED", label: "Accepted", terminal: true },
   { id: "DECLINED", label: "Declined", terminal: true }
@@ -56,12 +56,12 @@ describe("Pipeline foundation", () => {
     (pipelineApi.fetchColumn as MockedFunction<typeof pipelineApi.fetchColumn>).mockResolvedValue([]);
     (pipelineApi.fetchStages as MockedFunction<typeof pipelineApi.fetchStages>).mockResolvedValue(pipelineStages);
     usePipelineStore.getState().resetPipeline();
-    useApplicationDrawerStore.setState({ selectedTab: "overview" });
+    useApplicationDrawerStore.setState({ selectedTab: "application" });
     window.localStorage.clear();
   });
 
   it("renders all BF pipeline columns", async () => {
-    renderWithProviders(<PipelinePage />);
+    const { container } = renderWithProviders(<PipelinePage />);
 
     await waitFor(() => {
       pipelineStages.forEach((stage) => {
@@ -71,6 +71,19 @@ describe("Pipeline foundation", () => {
     });
 
     await waitFor(() => expect(pipelineApi.fetchColumn).toHaveBeenCalled());
+
+    const orderedLabels = Array.from(container.querySelectorAll(".pipeline-column__title")).map(
+      (node) => node.textContent
+    );
+    expect(orderedLabels).toEqual([
+      "Received",
+      "Documents Required",
+      "In Review",
+      "Startup",
+      "Off to Lender",
+      "Accepted",
+      "Declined"
+    ]);
   });
 
   it("blocks pipeline for non-BF silos", () => {
@@ -159,7 +172,7 @@ describe("Pipeline determinism", () => {
     (pipelineApi.fetchColumn as MockedFunction<typeof pipelineApi.fetchColumn>).mockResolvedValue([]);
     (pipelineApi.fetchStages as MockedFunction<typeof pipelineApi.fetchStages>).mockResolvedValue(pipelineStages);
     usePipelineStore.getState().resetPipeline();
-    useApplicationDrawerStore.setState({ selectedTab: "overview" });
+    useApplicationDrawerStore.setState({ selectedTab: "application" });
     window.localStorage.clear();
   });
 

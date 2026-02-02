@@ -2,27 +2,23 @@ import { useEffect, useRef } from "react";
 import DrawerHeader from "./DrawerHeader";
 import { TABS, type DrawerTabId } from "./DrawerTabs";
 import ApplicationCard from "@/pages/applications/ApplicationCard";
-import OverviewTab from "./tab-overview/OverviewTab";
-import BusinessDetailsTab from "./tab-business/BusinessDetailsTab";
-import ApplicantDetailsTab from "./tab-applicant/ApplicantDetailsTab";
-import FinancialProfileTab from "./tab-financial-profile/FinancialProfileTab";
-import ProductFitTab from "./tab-product-fit/ProductFitTab";
+import ApplicationTab from "./tab-application/ApplicationTab";
+import FinancialTab from "./tab-financial/FinancialTab";
+import BankingTab from "./tab-banking/BankingTab";
+import CreditSummaryTab from "./tab-credit-summary/CreditSummaryTab";
 import DocumentsTab from "./tab-documents/DocumentsTab";
-import MessagesTab from "./tab-messages/MessagesTab";
-import AuditTimelineTab from "./tab-audit/AuditTimelineTab";
+import NotesTab from "./tab-notes/NotesTab";
 import LendersTab from "./tab-lenders/LendersTab";
 import { useApplicationDrawerStore } from "@/state/applicationDrawer.store";
 import { usePipelineStore } from "@/pages/applications/pipeline/pipeline.store";
 
 const tabContentMap: Record<DrawerTabId, JSX.Element> = {
-  overview: <OverviewTab />,
-  business: <BusinessDetailsTab />,
-  applicant: <ApplicantDetailsTab />,
-  financial: <FinancialProfileTab />,
-  "product-fit": <ProductFitTab />,
+  application: <ApplicationTab />,
+  financials: <FinancialTab />,
+  banking: <BankingTab />,
+  "credit-summary": <CreditSummaryTab />,
   documents: <DocumentsTab />,
-  messages: <MessagesTab />,
-  audit: <AuditTimelineTab />,
+  notes: <NotesTab />,
   lenders: <LendersTab />
 };
 

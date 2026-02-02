@@ -32,7 +32,7 @@ describe("application visibility requirements", () => {
     useApplicationDrawerStore.setState({
       isOpen: true,
       selectedApplicationId: "app-1",
-      selectedTab: "overview"
+      selectedTab: "application"
     });
     fetchApplicationDetailsMock.mockReset();
     fetchDocumentRequirementsMock.mockReset();
