@@ -4,6 +4,7 @@ import { useSilo } from "@/hooks/useSilo";
 import { useSettingsStore } from "@/state/settings.store";
 import { useNotificationsStore } from "@/state/notifications.store";
 import { getRoleLabel } from "@/utils/roles";
+import { useDialerStore } from "@/state/dialer.store";
 import Button from "../ui/Button";
 import SiloSelector from "./SiloSelector";
 import PushNotificationCta from "@/components/PushNotificationCta";
@@ -20,6 +21,7 @@ const Topbar = ({ onToggleSidebar }: TopbarProps) => {
   const unreadCount = useNotificationsStore(
     (state) => state.notifications.filter((item) => !item.read).length
   );
+  const openDialer = useDialerStore((state) => state.openDialer);
   const [isCenterOpen, setIsCenterOpen] = useState(false);
 
   return (
@@ -48,6 +50,14 @@ const Topbar = ({ onToggleSidebar }: TopbarProps) => {
       </div>
       <div className="topbar__right">
         <SiloSelector />
+        <button
+          type="button"
+          className="topbar__icon-button"
+          aria-label="Open dialer"
+          onClick={() => openDialer({ source: "global" })}
+        >
+          ☎︎
+        </button>
         <div className="relative">
           <button
             type="button"

@@ -248,6 +248,26 @@ export const createNote = async (entityId: string, summary: string) => {
   return delay(note);
 };
 
+export const logCallEvent = async (payload: {
+  contactId: string;
+  number: string;
+  durationSeconds: number;
+  outcome: string;
+}) => {
+  const call: TimelineEvent = {
+    id: `call-${Date.now()}`,
+    entityId: payload.contactId,
+    entityType: "contact",
+    type: "call",
+    direction: "outbound",
+    occurredAt: new Date().toISOString(),
+    summary: "Outbound call logged",
+    details: `Number: ${payload.number} · Duration: ${payload.durationSeconds}s · Outcome: ${payload.outcome}`
+  };
+  timelineEvents.push(call);
+  return delay(call);
+};
+
 export const fetchApplications = async (contactId: string) =>
   delay([
     { id: "app-1001", stage: "Underwriting", contactId },

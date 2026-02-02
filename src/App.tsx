@@ -118,6 +118,13 @@ export default function App() {
     previousTokenRef.current = accessToken;
     queryClient.clear();
     void resetAuthState();
+    if ("serviceWorker" in navigator) {
+      void navigator.serviceWorker.ready
+        .then((registration) => {
+          registration.active?.postMessage({ type: "AUTH_CHANGED" });
+        })
+        .catch(() => undefined);
+    }
   }, [accessToken, queryClient]);
 
   useEffect(() => {
@@ -168,6 +175,22 @@ export default function App() {
       window.removeEventListener("resize", applyDisplayMode);
       window.removeEventListener("pageshow", applyDisplayMode);
       document.removeEventListener("visibilitychange", applyDisplayMode);
+    };
+  }, []);
+
+  useEffect(() => {
+    const refreshServiceWorker = () => {
+      if (document.visibilityState !== "visible") return;
+      if (!("serviceWorker" in navigator)) return;
+      void navigator.serviceWorker.ready
+        .then((registration) => registration.update())
+        .catch(() => undefined);
+    };
+    window.addEventListener("pageshow", refreshServiceWorker);
+    document.addEventListener("visibilitychange", refreshServiceWorker);
+    return () => {
+      window.removeEventListener("pageshow", refreshServiceWorker);
+      document.removeEventListener("visibilitychange", refreshServiceWorker);
     };
   }, []);
 

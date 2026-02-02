@@ -188,6 +188,23 @@ const logTimeline = (conversation: CommunicationConversation, message: string) =
   return entry;
 };
 
+export const logApplicationCallEvent = async (payload: {
+  applicationId: string;
+  number: string;
+  durationSeconds: number;
+  outcome: string;
+}) => {
+  const entry: TimelineEntry = {
+    id: `call-${Date.now()}`,
+    conversationId: payload.applicationId,
+    applicationId: payload.applicationId,
+    message: `Call to ${payload.number} · Duration ${payload.durationSeconds}s · Outcome ${payload.outcome}`,
+    createdAt: now()
+  };
+  applicationTimeline.push(entry);
+  return Promise.resolve(clone(entry));
+};
+
 const findConversation = (conversationId: string) => conversations.find((conv) => conv.id === conversationId);
 
 const updateConversation = (conversation: CommunicationConversation) => {

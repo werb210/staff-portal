@@ -6,6 +6,7 @@ import ApiStatusBanner from "./ApiStatusBanner";
 import ApiErrorToast from "./ApiErrorToast";
 import NotificationToast from "@/components/notifications/NotificationToast";
 import { useNotificationPermissionPrompt } from "@/hooks/useNotificationPermissionPrompt";
+import VoiceDialer from "@/components/dialer/VoiceDialer";
 import "@/styles/globals.css";
 
 const AppLayout = () => {
@@ -29,6 +30,7 @@ const AppLayout = () => {
           <Outlet />
         </main>
       </div>
+      <VoiceDialer />
       {sidebarOpen && (
         <button
           type="button"
