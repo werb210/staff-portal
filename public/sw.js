@@ -1,4 +1,4 @@
-const CACHE_VERSION = "v2";
+const CACHE_VERSION = "v3";
 const RUNTIME_CACHE = `staff-portal-static-${CACHE_VERSION}`;
 
 const isCacheableRequest = (request) => {
@@ -23,6 +23,8 @@ self.addEventListener("activate", (event) => {
       const keys = await caches.keys();
       await Promise.all(keys.filter((key) => key !== RUNTIME_CACHE).map((key) => caches.delete(key)));
       await self.clients.claim();
+      const clients = await self.clients.matchAll({ includeUncontrolled: true, type: "window" });
+      clients.forEach((client) => client.postMessage({ type: "SW_ACTIVATED", version: CACHE_VERSION }));
     })()
   );
 });

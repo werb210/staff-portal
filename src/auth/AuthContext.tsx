@@ -34,6 +34,8 @@ import { useNotificationsStore } from "@/state/notifications.store";
 import type { NotificationItem } from "@/types/notifications";
 import { clearClientStorage, clearServiceWorkerCaches } from "@/utils/sessionCleanup";
 import { performLogoutCleanup } from "@/auth/logout";
+import { triggerSafeReload } from "@/utils/reloadGuard";
+import { reconnectRealtime } from "@/utils/realtime";
 export type AuthStatus = "loading" | "authenticated" | "unauthenticated";
 export type AuthState = AuthStatus;
 export type RolesStatus = "loading" | "resolved";
@@ -141,6 +143,8 @@ const getErrorStatus = (error: unknown): number | undefined => {
   return undefined;
 };
 
+const isAuthInvalidStatus = (status?: number) => status === 401 || status === 403;
+
 const emitNotification = (payload: { title?: string; body?: string; url?: string; type?: string }) => {
   const notification: NotificationItem = buildNotification(
     {
@@ -188,6 +192,7 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
     void clearSession();
     clearClientStorage();
     void clearServiceWorkerCaches();
+    refreshRetryRef.current = 0;
     setAccessTokenState(null);
     setUserState(null);
     setAuthStatus("unauthenticated");
@@ -252,7 +257,7 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
         } catch (fetchError) {
           const status = getErrorStatus(fetchError);
           logAuthError("/api/auth/me failed", user, { error: fetchError, status });
-          if (status === 401) {
+          if (isAuthInvalidStatus(status)) {
             if (refreshRetryRef.current < 1) {
               refreshRetryRef.current += 1;
               try {
@@ -355,7 +360,7 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
         if (!isMounted) return;
         const status = getErrorStatus(fetchError);
         logAuthError("/api/auth/me failed", null, { error: fetchError, status });
-        if (status === 401) {
+        if (isAuthInvalidStatus(status)) {
           if (refreshRetryRef.current < 1) {
             refreshRetryRef.current += 1;
             try {
@@ -443,6 +448,7 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
               details: "Please contact an administrator if you need access.",
               timestamp: Date.now()
             });
+            clearAuthState();
             return;
           }
           const refreshed = await refreshUser({ allowLogout: false });
@@ -463,7 +469,7 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
     return () => {
       unregister();
     };
-  }, [authStatus, refreshUser]);
+  }, [authStatus, clearAuthState, refreshUser]);
 
   useEffect(() => {
     const role = (user as { role?: UserRole } | null)?.role ?? null;
@@ -484,7 +490,7 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
       });
       setTimeout(() => {
         if (typeof window !== "undefined") {
-          window.location.reload();
+          triggerSafeReload("role-drift");
         }
       }, 300);
     }
@@ -495,6 +501,7 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
     const handleResume = () => {
       if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
       if (authStatus !== "authenticated") return;
+      reconnectRealtime();
       void refreshUser();
     };
 

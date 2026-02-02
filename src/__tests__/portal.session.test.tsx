@@ -49,6 +49,23 @@ describe("portal session guard and offline banner", () => {
     expect(clearAuthMock).toHaveBeenCalledTimes(1);
   });
 
+  it("redirects to login once on forbidden responses", async () => {
+    render(
+      <MemoryRouter initialEntries={["/dashboard"]}>
+        <GuardHarness />
+      </MemoryRouter>
+    );
+
+    await act(async () => {
+      reportAuthFailure("forbidden");
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("path").textContent).toBe("/login");
+    });
+    expect(clearAuthMock).toHaveBeenCalledTimes(1);
+  });
+
   it("shows the offline banner when navigator is offline", () => {
     const originalOnLine = navigator.onLine;
     Object.defineProperty(navigator, "onLine", { value: false, configurable: true });

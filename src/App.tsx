@@ -28,6 +28,7 @@ import { flushQueuedMutations, registerBackgroundSync } from "./utils/background
 import { getDisplayMode } from "./utils/pwa";
 import DataReadyGuard from "./guards/DataReadyGuard";
 import UpdatePromptBanner from "./components/UpdatePromptBanner";
+import UpdatePromptBoundary from "./components/errors/UpdatePromptBoundary";
 import { useAuth } from "./auth/AuthContext";
 import { resetAuthState } from "./utils/authReset";
 import { useNotificationAudio } from "@/hooks/useNotificationAudio";
@@ -35,6 +36,7 @@ import { useNotificationsStore } from "@/state/notifications.store";
 import { buildNotification } from "@/utils/notifications";
 import type { PushNotificationPayload } from "@/types/notifications";
 import { usePortalSessionGuard } from "@/auth/portalSessionGuard";
+import { triggerSafeReload } from "@/utils/reloadGuard";
 
 const RouteChangeObserver = () => {
   const location = useLocation();
@@ -140,6 +142,13 @@ export default function App() {
     const handleSyncMessage = (event: MessageEvent) => {
       if (event.data?.type === "SYNC_OFFLINE_QUEUE") {
         void flushQueuedMutations();
+        return;
+      }
+      if (event.data?.type === "SW_ACTIVATED") {
+        if (!navigator.serviceWorker?.controller) {
+          return;
+        }
+        triggerSafeReload("service-worker-activated");
         return;
       }
       if (event.data?.type === "PUSH_NOTIFICATION") {
@@ -248,7 +257,9 @@ export default function App() {
       <UiFailureBanner />
       <OfflineBanner />
       <InstallPromptBanner />
-      <UpdatePromptBanner />
+      <UpdatePromptBoundary>
+        <UpdatePromptBanner />
+      </UpdatePromptBoundary>
       <ErrorBoundary>
         <BrowserRouter>
           <PortalSessionGuard />
