@@ -1,5 +1,5 @@
-const CACHE_VERSION = "v1";
-const RUNTIME_CACHE = `staff-portal-runtime-${CACHE_VERSION}`;
+const CACHE_VERSION = "v2";
+const RUNTIME_CACHE = `staff-portal-static-${CACHE_VERSION}`;
 
 const isCacheableRequest = (request) => {
   if (request.method !== "GET") return false;
@@ -7,13 +7,14 @@ const isCacheableRequest = (request) => {
   if (url.origin !== self.location.origin) return false;
   if (url.pathname.startsWith("/api") || url.pathname.startsWith("/auth")) return false;
   if (url.pathname.startsWith("/_") || url.pathname.startsWith("/sockjs-node")) return false;
+  if (!url.pathname.endsWith(".js") && !url.pathname.endsWith(".css") && !url.pathname.endsWith(".mjs")) {
+    return false;
+  }
   return true;
 };
 
 self.addEventListener("install", (event) => {
-  if (!self.registration?.active) {
-    event.waitUntil(self.skipWaiting());
-  }
+  event.waitUntil(self.skipWaiting());
 });
 
 self.addEventListener("activate", (event) => {
@@ -45,32 +46,20 @@ self.addEventListener("fetch", (event) => {
   const { request } = event;
   if (!isCacheableRequest(request)) return;
 
-  if (request.mode === "navigate") {
-    event.respondWith(
-      (async () => {
-        try {
-          const response = await fetch(request);
-          const cache = await caches.open(RUNTIME_CACHE);
-          cache.put(request, response.clone());
-          return response;
-        } catch {
-          const cache = await caches.open(RUNTIME_CACHE);
-          const cached = await cache.match(request);
-          return cached ?? caches.match("/");
-        }
-      })()
-    );
-    return;
-  }
-
   event.respondWith(
     (async () => {
-      const cache = await caches.open(RUNTIME_CACHE);
-      const cached = await cache.match(request);
-      if (cached) return cached;
-      const response = await fetch(request);
-      cache.put(request, response.clone());
-      return response;
+      try {
+        const cache = await caches.open(RUNTIME_CACHE);
+        const cached = await cache.match(request);
+        if (cached) return cached;
+        const response = await fetch(request);
+        if (response.ok) {
+          cache.put(request, response.clone());
+        }
+        return response;
+      } catch {
+        return fetch(request);
+      }
     })()
   );
 });

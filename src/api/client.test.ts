@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/services/api", async () => {
   const actual = await vi.importActual<typeof import("@/services/api")>("@/services/api");
@@ -15,6 +15,7 @@ import { registerAuthFailureHandler } from "@/auth/authEvents";
 import { clearStoredAuth, setStoredAccessToken } from "@/services/token";
 
 let failureHandler: ReturnType<typeof vi.fn>;
+let unregisterFailureHandler: (() => void) | null = null;
 
 const adapter = vi.fn(async (config) => ({
   data: {},
@@ -29,7 +30,12 @@ describe("apiClient auth", () => {
     clearStoredAuth();
     adapter.mockClear();
     failureHandler = vi.fn();
-    registerAuthFailureHandler(failureHandler);
+    unregisterFailureHandler = registerAuthFailureHandler(failureHandler);
+  });
+
+  afterEach(() => {
+    unregisterFailureHandler?.();
+    unregisterFailureHandler = null;
   });
 
   it("attaches auth headers when token exists", async () => {

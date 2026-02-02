@@ -4,7 +4,7 @@ import { reportAuthFailure } from "@/auth/authEvents";
 import { attachRequestIdAndLog, logError, logResponse } from "@/utils/apiLogging";
 import { getAccessToken } from "@/lib/authToken";
 import { queueFailedMutation } from "@/utils/backgroundSyncQueue";
-import { showApiToast } from "@/state/apiNotifications";
+import { setApiStatus } from "@/state/apiStatus";
 
 export type RequestOptions = AxiosRequestConfig & {
   skipAuth?: boolean;
@@ -67,8 +67,9 @@ const handleApiError = (error: unknown) => {
       reportAuthFailure("unauthorized");
     } else if (error.status === 403) {
       reportAuthFailure("forbidden");
+      setApiStatus("forbidden");
     } else if (error.status >= 500) {
-      showApiToast("We hit a server issue. Please retry in a moment.", error.requestId);
+      setApiStatus("unavailable");
     }
   }
   throw error;
@@ -82,6 +83,7 @@ const ensureSuccess = <T>(response: AxiosResponse<T>) => {
       details: response.data
     });
   }
+  setApiStatus("available");
   return response;
 };
 

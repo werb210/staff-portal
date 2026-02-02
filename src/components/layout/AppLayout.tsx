@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
-import ApiStatusBanner from "./ApiStatusBanner";
+import SystemBanner from "@/components/SystemBanner";
 import ApiErrorToast from "./ApiErrorToast";
 import NotificationToast from "@/components/notifications/NotificationToast";
 import { useNotificationPermissionPrompt } from "@/hooks/useNotificationPermissionPrompt";
@@ -22,7 +22,7 @@ const AppLayout = () => {
     <div className={`app-shell ${sidebarOpen ? "app-shell--menu-open" : ""}`}>
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="app-shell__content">
-        <ApiStatusBanner />
+        <SystemBanner />
         <ApiErrorToast />
         <NotificationToast />
         <Topbar onToggleSidebar={() => setSidebarOpen((prev) => !prev)} />

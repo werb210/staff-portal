@@ -33,6 +33,7 @@ import { buildNotification } from "@/utils/notifications";
 import { useNotificationsStore } from "@/state/notifications.store";
 import type { NotificationItem } from "@/types/notifications";
 import { clearClientStorage, clearServiceWorkerCaches } from "@/utils/sessionCleanup";
+import { performLogoutCleanup } from "@/auth/logout";
 export type AuthStatus = "loading" | "authenticated" | "unauthenticated";
 export type AuthState = AuthStatus;
 export type RolesStatus = "loading" | "resolved";
@@ -603,6 +604,7 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
     } catch (error) {
       logAuthError("Logout failed", user, { error });
     }
+    await performLogoutCleanup();
     clearAuthState();
   }, [clearAuthState, user]);
 

@@ -2,17 +2,15 @@ export type AuthFailureReason = "missing-token" | "unauthorized" | "forbidden";
 
 type AuthFailureHandler = (reason: AuthFailureReason) => void;
 
-let handler: AuthFailureHandler | null = null;
+const handlers = new Set<AuthFailureHandler>();
 
 export const registerAuthFailureHandler = (next: AuthFailureHandler) => {
-  handler = next;
+  handlers.add(next);
   return () => {
-    if (handler === next) {
-      handler = null;
-    }
+    handlers.delete(next);
   };
 };
 
 export const reportAuthFailure = (reason: AuthFailureReason) => {
-  handler?.(reason);
+  handlers.forEach((handler) => handler(reason));
 };

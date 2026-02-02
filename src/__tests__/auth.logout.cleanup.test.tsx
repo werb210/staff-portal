@@ -35,8 +35,10 @@ describe("logout cleanup", () => {
     });
 
     const postMessage = vi.fn();
+    const unregister = vi.fn();
+    const getRegistrations = vi.fn(async () => [{ unregister }]);
     Object.defineProperty(navigator, "serviceWorker", {
-      value: { ready: Promise.resolve({ active: { postMessage } }) },
+      value: { ready: Promise.resolve({ active: { postMessage } }), getRegistrations },
       configurable: true
     });
 
@@ -55,5 +57,7 @@ describe("logout cleanup", () => {
     expect(cacheKeys).toHaveBeenCalled();
     expect(cacheDelete).toHaveBeenCalledTimes(2);
     await waitFor(() => expect(postMessage).toHaveBeenCalledWith({ type: "CLEAR_CACHES" }));
+    await waitFor(() => expect(getRegistrations).toHaveBeenCalled());
+    await waitFor(() => expect(unregister).toHaveBeenCalled());
   });
 });
