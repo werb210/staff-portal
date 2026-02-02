@@ -5,7 +5,7 @@ import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import apiClient from "@/api/httpClient";
 import { ApiError } from "@/api/http";
 import { useApiHealthCheck } from "@/hooks/useApiHealthCheck";
-import ApiStatusBanner from "@/components/layout/ApiStatusBanner";
+import SystemBanner from "@/components/SystemBanner";
 import { useApiStatusStore } from "@/state/apiStatus";
 
 const TestShell = () => {
@@ -14,7 +14,7 @@ const TestShell = () => {
 
   return (
     <div>
-      <ApiStatusBanner />
+      <SystemBanner />
       <div data-testid="app-content">Portal content</div>
       <div data-testid="api-status">{status}</div>
     </div>

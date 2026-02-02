@@ -34,6 +34,7 @@ import { useNotificationAudio } from "@/hooks/useNotificationAudio";
 import { useNotificationsStore } from "@/state/notifications.store";
 import { buildNotification } from "@/utils/notifications";
 import type { PushNotificationPayload } from "@/types/notifications";
+import { usePortalSessionGuard } from "@/auth/portalSessionGuard";
 
 const RouteChangeObserver = () => {
   const location = useLocation();
@@ -62,6 +63,11 @@ const ProtectedApp = () => (
     </DataReadyGuard>
   </PrivateRoute>
 );
+
+const PortalSessionGuard = () => {
+  usePortalSessionGuard();
+  return null;
+};
 
 export default function App() {
   useApiHealthCheck();
@@ -245,6 +251,7 @@ export default function App() {
       <UpdatePromptBanner />
       <ErrorBoundary>
         <BrowserRouter>
+          <PortalSessionGuard />
           <RouteChangeObserver />
           <Routes>
             <Route

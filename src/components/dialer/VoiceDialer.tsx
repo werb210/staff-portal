@@ -51,6 +51,9 @@ const VoiceDialer = () => {
   const statusLabel = formatStatusLabel(status);
   const statusTone =
     status === "connected" ? "active" : status === "dialing" || status === "ringing" ? "ringing" : status;
+  const isCallInProgress = status === "dialing" || status === "ringing" || status === "connected";
+  const isCallSetup = status === "dialing" || status === "ringing";
+  const canSelectOutcome = status === "ended" || status === "failed";
   const outcomeOptions = useMemo(
     () => [
       { label: "Completed", value: "completed" },
@@ -106,25 +109,23 @@ const VoiceDialer = () => {
               value={number}
               onChange={(event) => setNumber(event.target.value)}
               placeholder="Enter phone number"
+              disabled={isCallInProgress}
             />
           </label>
           <div className="dialer__controls">
-            <Button
-              onClick={dial}
-              disabled={!number || status === "connected" || status === "ringing" || status === "dialing"}
-            >
+            <Button onClick={dial} disabled={!number || isCallInProgress}>
               {status === "dialing" ? "Dialing…" : status === "ringing" ? "Ringing…" : status === "connected" ? "In call" : "Dial"}
             </Button>
-            <Button variant="secondary" onClick={toggleMute} aria-pressed={muted}>
+            <Button variant="secondary" onClick={toggleMute} aria-pressed={muted} disabled={status !== "connected"}>
               {muted ? "Unmute" : "Mute"}
             </Button>
-            <Button variant="secondary" onClick={toggleHold} aria-pressed={onHold}>
+            <Button variant="secondary" onClick={toggleHold} aria-pressed={onHold} disabled={status !== "connected"}>
               {onHold ? "Resume" : "Hold"}
             </Button>
-            <Button variant="secondary" onClick={toggleKeypad} aria-pressed={keypadOpen}>
+            <Button variant="secondary" onClick={toggleKeypad} aria-pressed={keypadOpen} disabled={isCallSetup}>
               Keypad
             </Button>
-            <Button variant="secondary" className="dialer__hangup" onClick={hangup}>
+            <Button variant="secondary" className="dialer__hangup" onClick={hangup} disabled={status === "idle"}>
               Hang up
             </Button>
           </div>
@@ -136,6 +137,7 @@ const VoiceDialer = () => {
                   type="button"
                   className="dialer__keypad-key"
                   onClick={() => setNumber(`${number}${digit}`)}
+                  disabled={isCallSetup}
                 >
                   {digit}
                 </button>
@@ -150,6 +152,7 @@ const VoiceDialer = () => {
                 key={option.value}
                 type="button"
                 className="dialer__outcome"
+                disabled={!canSelectOutcome}
                 onClick={() => {
                   endCall(option.value as "completed" | "no-answer" | "failed" | "canceled");
                   resetCall();

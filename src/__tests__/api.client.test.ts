@@ -55,7 +55,7 @@ describe("api client auth handling", () => {
 
   it("reports missing tokens without redirecting", async () => {
     const failureHandler = vi.fn();
-    registerAuthFailureHandler(failureHandler);
+    const unregister = registerAuthFailureHandler(failureHandler);
 
     const adapter = vi.fn(async (config) => ({
       data: {},
@@ -69,12 +69,13 @@ describe("api client auth handling", () => {
 
     expect(failureHandler).toHaveBeenCalledWith("missing-token");
     expect(redirectToLogin).not.toHaveBeenCalled();
+    unregister();
   });
 
   it("reports unauthorized responses without redirecting", async () => {
     setStoredAccessToken("test-token");
     const failureHandler = vi.fn();
-    registerAuthFailureHandler(failureHandler);
+    const unregister = registerAuthFailureHandler(failureHandler);
 
     const adapter = vi.fn(async (config) => ({
       data: {},
@@ -88,5 +89,6 @@ describe("api client auth handling", () => {
 
     expect(failureHandler).toHaveBeenCalledWith("unauthorized");
     expect(redirectToLogin).not.toHaveBeenCalled();
+    unregister();
   });
 });

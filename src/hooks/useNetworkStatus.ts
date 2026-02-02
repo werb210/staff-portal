@@ -6,6 +6,7 @@ export const useNetworkStatus = () => {
   );
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
 
