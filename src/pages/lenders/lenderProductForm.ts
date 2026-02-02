@@ -69,6 +69,24 @@ export const normalizeProductCountry = (value?: string | null) => {
   return trimmed;
 };
 
+export const splitCountrySelection = (value?: string | null): string[] => {
+  const normalized = normalizeProductCountry(value);
+  if (normalized === "BOTH") return ["CA", "US"];
+  if (normalized === "CA") return ["CA"];
+  if (normalized === "US") return ["US"];
+  return [];
+};
+
+export const normalizeCountrySelection = (countries: string[]) => {
+  const normalized = countries.map((country) => normalizeProductCountry(country)).filter(Boolean);
+  const hasCA = normalized.includes("CA");
+  const hasUS = normalized.includes("US");
+  if (hasCA && hasUS) return "BOTH";
+  if (hasCA) return "CA";
+  if (hasUS) return "US";
+  return "";
+};
+
 export const resolveRateType = (rateType?: RateType) =>
   rateType === "variable" || rateType === "fixed" ? rateType : "fixed";
 
@@ -83,11 +101,12 @@ export const normalizeVariableRateInput = (value: string) => {
   const trimmed = value.trim();
   if (!trimmed) return "";
   const numeric = formatRateNumber(value);
-  if (!numeric) return "P + ";
-  return `P + ${numeric}`;
+  if (!numeric) return "Prime + ";
+  return `Prime + ${numeric}%`;
 };
 
-export const isValidVariableRate = (value: string) => /^P\s*\+\s*\d+(\.\d+)?$/i.test(value.trim());
+export const isValidVariableRate = (value: string) =>
+  /^prime\s*\+\s*\d+(\.\d+)?%?$/i.test(value.trim());
 
 export const normalizeInterestInput = (rateType: RateType, value: string) =>
   rateType === "variable" ? normalizeVariableRateInput(value) : value;

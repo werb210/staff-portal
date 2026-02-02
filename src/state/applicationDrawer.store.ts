@@ -2,14 +2,12 @@ import { create } from "zustand";
 import { readPortalDraft, updatePortalDraft } from "@/utils/portalDraft";
 
 export type DrawerTabId =
-  | "overview"
-  | "business"
-  | "applicant"
-  | "financial"
-  | "product-fit"
+  | "application"
+  | "financials"
+  | "banking"
+  | "credit-summary"
   | "documents"
-  | "messages"
-  | "audit"
+  | "notes"
   | "lenders";
 
 export type ApplicationDrawerState = {
@@ -24,7 +22,7 @@ export type ApplicationDrawerActions = {
   setTab: (tab: DrawerTabId) => void;
 };
 
-const defaultTab = (): DrawerTabId => readPortalDraft().drawerTab ?? "overview";
+const defaultTab = (): DrawerTabId => readPortalDraft().drawerTab ?? "application";
 
 export const useApplicationDrawerStore = create<ApplicationDrawerState & ApplicationDrawerActions>((set) => ({
   isOpen: false,

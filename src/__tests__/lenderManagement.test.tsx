@@ -242,7 +242,7 @@ describe("lender management flows", () => {
     expect(screen.getByLabelText(/Contact name/i)).toHaveValue("Alex Agent");
     expect(screen.getByLabelText(/Contact email/i)).toHaveValue("alex@example.com");
     expect(screen.getByLabelText(/Contact phone/i)).toHaveValue("+1 555 111 3333");
-    expect(screen.getByLabelText(/Submission method/i)).toHaveValue("API");
+    expect(screen.getByLabelText("API")).toBeChecked();
     expect(screen.getByRole("checkbox", { name: /Active lender/i })).toBeChecked();
   });
 
@@ -272,7 +272,7 @@ describe("lender management flows", () => {
     const nameInput = await screen.findByLabelText(/Product name/i);
     await userEvent.type(nameInput, "Term loan");
     await userEvent.selectOptions(screen.getByLabelText(/Product category/i), "TERM_LOAN");
-    await userEvent.selectOptions(screen.getByLabelText(/^Country$/i), "US");
+    await userEvent.click(screen.getByLabelText("United States"));
     await userEvent.type(screen.getAllByLabelText(/Minimum amount/i)[0], "10000");
     await userEvent.type(screen.getAllByLabelText(/Maximum amount/i)[0], "500000");
     await userEvent.type(screen.getByLabelText(/Interest min/i), "6.5");

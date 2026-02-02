@@ -11,6 +11,18 @@ export type PipelineStage = {
   order?: number;
 };
 
+const PIPELINE_STAGE_ORDER = [
+  "RECEIVED",
+  "DOCUMENTS_REQUIRED",
+  "IN_REVIEW",
+  "STARTUP",
+  "OFF_TO_LENDER",
+  "ACCEPTED",
+  "DECLINED"
+];
+
+const normalizeStageId = (value: string) => value.replace(/[\s_-]+/g, "").toUpperCase();
+
 export type PipelineFilters = {
   searchTerm?: string;
   productCategory?: string;
@@ -56,7 +68,26 @@ export type PipelineDragEndEvent = DragEndEvent & {
 export const sortPipelineStages = (stages: PipelineStage[]) => {
   if (!stages.length) return [];
   const hasOrder = stages.some((stage) => typeof stage.order === "number");
-  if (!hasOrder) return stages;
+  const normalizedOrder = PIPELINE_STAGE_ORDER.map(normalizeStageId);
+  const getOrderIndex = (id: string) => {
+    const normalized = normalizeStageId(id);
+    const index = normalizedOrder.indexOf(normalized);
+    return index === -1 ? Number.POSITIVE_INFINITY : index;
+  };
+  const hasKnownStages = stages.some((stage) => getOrderIndex(stage.id) !== Number.POSITIVE_INFINITY);
+  if (!hasOrder || hasKnownStages) {
+    return [...stages]
+      .map((stage, index) => ({ stage, index }))
+      .sort((a, b) => {
+        const aOrder = getOrderIndex(a.stage.id);
+        const bOrder = getOrderIndex(b.stage.id);
+        if (aOrder !== bOrder) {
+          return aOrder - bOrder;
+        }
+        return a.index - b.index;
+      })
+      .map((entry) => entry.stage);
+  }
   return [...stages]
     .map((stage, index) => ({ stage, index }))
     .sort((a, b) => {

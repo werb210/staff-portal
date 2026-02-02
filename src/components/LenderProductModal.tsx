@@ -10,7 +10,7 @@ export type ProductFormValues = {
   lenderId: string;
   productName: string;
   category: LenderProductCategory;
-  country: string;
+  country: string[];
   minAmount: string;
   maxAmount: string;
   minTerm: string;
@@ -31,7 +31,7 @@ type LenderProductModalProps = {
   errorMessage?: string | null;
   formValues: ProductFormValues;
   formErrors: Record<string, string>;
-  lenderOptions: Array<{ value: string; label: string }>;
+  lenderOptions: Array<{ value: string; label: string; disabled?: boolean }>;
   categoryOptions: Array<{ value: LenderProductCategory; label: string; disabled?: boolean }>;
   rateTypes: RateType[];
   documentOptions: Array<{ value: string; label: string; locked?: boolean }>;
@@ -84,7 +84,7 @@ const LenderProductModal = ({
           >
             <option value="">Select lender</option>
             {lenderOptions.map((option) => (
-              <option key={option.value} value={option.value}>
+              <option key={option.value} value={option.value} disabled={option.disabled}>
                 {option.label}
               </option>
             ))}
@@ -120,16 +120,32 @@ const LenderProductModal = ({
           </Select>
           {formErrors.category && <span className="ui-field__error">{formErrors.category}</span>}
           <div className="management-grid__row">
-            <Select
-              label="Country"
-              value={formValues.country}
-              onChange={(event) => onChange({ country: event.target.value })}
-            >
-              <option value="">Select country</option>
-              <option value="CA">Canada</option>
-              <option value="US">United States</option>
-              <option value="BOTH">Both</option>
-            </Select>
+            <div className="ui-field">
+              <span className="ui-field__label">Country availability</span>
+              <div className="management-docs">
+                {[
+                  { value: "CA", label: "Canada" },
+                  { value: "US", label: "United States" }
+                ].map((option) => {
+                  const checked = formValues.country.includes(option.value);
+                  return (
+                    <label key={option.value} className="management-toggle">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={(event) => {
+                          const next = event.target.checked
+                            ? [...formValues.country, option.value]
+                            : formValues.country.filter((value) => value !== option.value);
+                          onChange({ country: next });
+                        }}
+                      />
+                      <span>{option.label}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
           </div>
           {formErrors.country && <span className="ui-field__error">{formErrors.country}</span>}
         </div>
@@ -186,13 +202,13 @@ const LenderProductModal = ({
           {formErrors.rateType && <span className="ui-field__error">{formErrors.rateType}</span>}
           <div className="management-grid__row">
             <Input
-              label={formValues.rateType === "variable" ? "Interest min (P + X)" : "Interest min (%)"}
+              label={formValues.rateType === "variable" ? "Interest min (Prime + X%)" : "Interest min (%)"}
               value={formValues.interestMin}
               onChange={(event) => onChange({ interestMin: event.target.value })}
               error={formErrors.interestMin}
             />
             <Input
-              label={formValues.rateType === "variable" ? "Interest max (P + Y)" : "Interest max (%)"}
+              label={formValues.rateType === "variable" ? "Interest max (Prime + Y%)" : "Interest max (%)"}
               value={formValues.interestMax}
               onChange={(event) => onChange({ interestMax: event.target.value })}
               error={formErrors.interestMax}
