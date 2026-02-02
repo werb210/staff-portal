@@ -5,6 +5,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { createElement } from "react";
 import { AuthProvider, useAuth } from "@/auth/AuthContext";
 import { logout as logoutService } from "@/services/auth";
+import { useDialerStore } from "@/state/dialer.store";
 
 vi.mock("@/services/auth", () => ({
   startOtp: vi.fn(),
@@ -26,6 +27,13 @@ describe("logout cleanup", () => {
   it("clears storage and caches on logout", async () => {
     localStorage.setItem("test-key", "persist");
     sessionStorage.setItem("test-session", "persist");
+    useDialerStore.setState({
+      isOpen: true,
+      status: "connected",
+      number: "+15555551212",
+      dialedNumber: "+15555551212",
+      startedAt: new Date().toISOString()
+    });
 
     const cacheDelete = vi.fn();
     const cacheKeys = vi.fn(async () => ["cache-a", "cache-b"]);
@@ -54,6 +62,8 @@ describe("logout cleanup", () => {
       expect(localStorage.getItem("test-key")).toBeNull();
       expect(sessionStorage.getItem("test-session")).toBeNull();
     });
+    expect(useDialerStore.getState().isOpen).toBe(false);
+    expect(useDialerStore.getState().status).toBe("idle");
     expect(cacheKeys).toHaveBeenCalled();
     expect(cacheDelete.mock.calls.length).toBeGreaterThanOrEqual(2);
     await waitFor(() => expect(postMessage).toHaveBeenCalledWith({ type: "CLEAR_CACHES" }));

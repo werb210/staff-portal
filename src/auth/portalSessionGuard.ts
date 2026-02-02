@@ -6,7 +6,8 @@ import { recordRedirect } from "@/utils/redirectGuard";
 
 let handledAuthFailure = false;
 
-const shouldHandleReason = (reason: AuthFailureReason) => reason === "unauthorized" || reason === "missing-token";
+const shouldHandleReason = (reason: AuthFailureReason) =>
+  reason === "unauthorized" || reason === "missing-token" || reason === "forbidden";
 
 const isLoginRoute = (path: string) => path.startsWith("/login") || path.startsWith("/auth/");
 

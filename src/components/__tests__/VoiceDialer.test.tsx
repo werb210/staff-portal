@@ -87,4 +87,17 @@ describe("VoiceDialer", () => {
     });
     expect(await screen.findByText("Call ended")).toBeInTheDocument();
   });
+
+  it("preserves dialer state across unmounts", async () => {
+    const { unmount } = renderWithProviders(<VoiceDialer />);
+    act(() => {
+      useDialerStore.getState().openDialer({ contactName: "Jane Doe", phone: "+15555551212" });
+    });
+    expect(await screen.findByTestId("voice-dialer")).toBeInTheDocument();
+
+    unmount();
+
+    renderWithProviders(<VoiceDialer />);
+    expect(await screen.findByTestId("voice-dialer")).toBeInTheDocument();
+  });
 });

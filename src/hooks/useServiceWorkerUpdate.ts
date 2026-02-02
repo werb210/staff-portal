@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
+import { clearReloadGuardIfStale, triggerSafeReload } from "@/utils/reloadGuard";
 
 type UpdateDetail = {
   registration?: ServiceWorkerRegistration;
 };
 
 const isBrowser = typeof window !== "undefined";
-const RELOAD_GUARD_KEY = "sw:reload-guard";
 
 export const useServiceWorkerUpdate = () => {
   const [updateAvailable, setUpdateAvailable] = useState(false);
@@ -13,9 +13,7 @@ export const useServiceWorkerUpdate = () => {
 
   useEffect(() => {
     if (!isBrowser) return;
-    if (window.sessionStorage.getItem(RELOAD_GUARD_KEY)) {
-      window.sessionStorage.removeItem(RELOAD_GUARD_KEY);
-    }
+    clearReloadGuardIfStale();
     const handleUpdate = (event: Event) => {
       const detail = (event as CustomEvent<UpdateDetail>).detail;
       if (detail?.registration) {
@@ -24,9 +22,7 @@ export const useServiceWorkerUpdate = () => {
       setUpdateAvailable(true);
     };
     const handleControllerChange = () => {
-      if (window.sessionStorage.getItem(RELOAD_GUARD_KEY)) return;
-      window.sessionStorage.setItem(RELOAD_GUARD_KEY, "true");
-      window.location.reload();
+      triggerSafeReload("service-worker-controller-change");
     };
     window.addEventListener("sw:update", handleUpdate);
     navigator.serviceWorker?.addEventListener("controllerchange", handleControllerChange);
