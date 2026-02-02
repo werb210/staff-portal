@@ -1,9 +1,11 @@
+import type { MouseEvent } from "react";
 import { useDraggable } from "@dnd-kit/core";
 import clsx from "clsx";
 import type { PipelineApplication, PipelineStageId } from "./pipeline.types";
 import { usePipelineStore } from "./pipeline.store";
 import { useAuth } from "@/hooks/useAuth";
 import { canAccessStaffPortal } from "@/utils/roles";
+import { useDialerStore } from "@/state/dialer.store";
 
 type PipelineCardProps = {
   card: PipelineApplication;
@@ -28,6 +30,7 @@ const resolveMatchScore = (card: PipelineApplication) => {
 const PipelineCard = ({ card, stageId, stageLabel, isTerminalStage, onClick }: PipelineCardProps) => {
   const { user } = useAuth();
   const setDragging = usePipelineStore((state) => state.setDragging);
+  const openDialer = useDialerStore((state) => state.openDialer);
 
   const canDrag = canAccessStaffPortal(user?.role) && !isTerminalStage;
   const draggable = useDraggable({
@@ -63,6 +66,16 @@ const PipelineCard = ({ card, stageId, stageLabel, isTerminalStage, onClick }: P
     return Number.isNaN(parsed.getTime()) ? "—" : parsed.toLocaleDateString();
   })();
 
+  const handleCallClick = (event: MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    openDialer({
+      applicationId: card.id,
+      applicationName: card.businessName ?? "Application",
+      contactName: card.contactName ?? "Applicant",
+      source: "pipeline"
+    });
+  };
+
   return (
     <div
       ref={setNodeRef}
@@ -83,7 +96,12 @@ const PipelineCard = ({ card, stageId, stageLabel, isTerminalStage, onClick }: P
           <div className="pipeline-card__title">{card.businessName ?? "Unknown business"}</div>
           <div className="pipeline-card__subtitle">{card.contactName ?? "Unknown contact"}</div>
         </div>
-        <div className="pipeline-card__amount">{formatAmount(card.requestedAmount)}</div>
+        <div className="pipeline-card__header-actions">
+          <div className="pipeline-card__amount">{formatAmount(card.requestedAmount)}</div>
+          <button type="button" className="pipeline-card__call" onClick={handleCallClick}>
+            Call
+          </button>
+        </div>
       </div>
       <div className="pipeline-card__meta">
         <span className="pipeline-card__pill">{card.productCategory ?? "Unspecified"}</span>

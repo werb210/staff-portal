@@ -10,6 +10,7 @@ import SMSComposer from "@/components/sms/SMSComposer";
 import EmailViewer from "@/components/email/EmailViewer";
 import { renderWithProviders } from "@/test/testUtils";
 import { useCrmStore } from "@/state/crm.store";
+import { useDialerStore } from "@/state/dialer.store";
 import type { Contact } from "@/api/crm";
 
 const janeContact: Contact = {
@@ -60,7 +61,12 @@ describe("CRM Contacts", () => {
   });
 
   it("mounts the calling interface", async () => {
-    renderWithProviders(<ContactsPage />);
+    renderWithProviders(
+      <>
+        <ContactsPage />
+        <VoiceDialer />
+      </>
+    );
     const detailsButton = await screen.findByText("Details");
     await userEvent.click(detailsButton);
     const drawer = await screen.findByTestId("contact-drawer");
@@ -139,8 +145,11 @@ describe("Timeline", () => {
 
 describe("Standalone Dialer", () => {
   it("requests token and shows status", async () => {
-    renderWithProviders(<VoiceDialer visible contact={janeContact} onClose={() => undefined} />);
+    renderWithProviders(<VoiceDialer />);
+    act(() => {
+      useDialerStore.getState().openDialer({ contactId: janeContact.id, contactName: janeContact.name });
+    });
     expect(await screen.findByTestId("voice-dialer")).toBeInTheDocument();
-    await waitFor(() => expect(screen.getByText(/Status: idle/i)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/Ready/i)).toBeInTheDocument());
   });
 });

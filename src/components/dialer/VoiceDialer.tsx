@@ -1,60 +1,160 @@
-import { useState } from "react";
-import Card from "@/components/ui/Card";
+import { useEffect, useMemo } from "react";
 import Button from "@/components/ui/Button";
-import type { Contact } from "@/api/crm";
-import { logCall } from "@/api/communications";
+import { useDialerStore, type DialerStatus } from "@/state/dialer.store";
 
-interface VoiceDialerProps {
-  visible: boolean;
-  contact: Contact;
-  onClose: () => void;
-  onCallLogged?: (summary: string) => void;
-}
+const formatDuration = (seconds: number) => {
+  const minutes = Math.floor(seconds / 60);
+  const remaining = seconds % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(remaining).padStart(2, "0")}`;
+};
 
-const VoiceDialer = ({ visible, contact, onClose, onCallLogged }: VoiceDialerProps) => {
-  const [status, setStatus] = useState("idle");
-  const [muted, setMuted] = useState(false);
-  const [onHold, setOnHold] = useState(false);
+const formatStatusLabel = (status: DialerStatus) => {
+  switch (status) {
+    case "ringing":
+      return "Ringing…";
+    case "active":
+      return "Active";
+    case "ended":
+      return "Call ended";
+    default:
+      return "Ready";
+  }
+};
 
-  if (!visible) return null;
+const VoiceDialer = () => {
+  const {
+    isOpen,
+    context,
+    status,
+    muted,
+    onHold,
+    keypadOpen,
+    number,
+    elapsedSeconds,
+    closeDialer,
+    setNumber,
+    toggleHold,
+    toggleKeypad,
+    toggleMute,
+    startCall,
+    setStatus,
+    recordElapsed,
+    endCall,
+    resetCall
+  } = useDialerStore();
 
-  const handleCall = () => {
-    setStatus("in-call");
-  };
+  const displayName = context.contactName ?? context.applicationName ?? "Dialer";
+  const statusLabel = formatStatusLabel(status);
+  const outcomeOptions = useMemo(
+    () => [
+      { label: "Completed", value: "completed" },
+      { label: "No answer", value: "no-answer" },
+      { label: "Failed", value: "failed" },
+      { label: "Canceled", value: "canceled" }
+    ],
+    []
+  );
 
-  const handleHangup = async () => {
-    setStatus("ended");
-    const summary = `Call with ${contact.name}`;
-    await logCall(contact.id, summary);
-    onCallLogged?.(summary);
-    onClose();
-  };
+  useEffect(() => {
+    if (status !== "ringing") return;
+    const timeout = window.setTimeout(() => setStatus("active"), 1200);
+    return () => window.clearTimeout(timeout);
+  }, [setStatus, status]);
+
+  useEffect(() => {
+    if (status !== "active") return;
+    const interval = window.setInterval(() => {
+      recordElapsed(elapsedSeconds + 1);
+    }, 1000);
+    return () => window.clearInterval(interval);
+  }, [elapsedSeconds, recordElapsed, status]);
+
+  if (!isOpen) return null;
 
   return (
-    <div className="dialer" data-testid="voice-dialer">
-      <Card
-        title={`Dialer — ${contact.name}`}
-        actions={
-          <Button variant="secondary" onClick={onClose}>
+    <div className="dialer" data-testid="voice-dialer" role="dialog" aria-label="Outbound call dialer">
+      <div className="dialer__panel">
+        <div className="dialer__header">
+          <div>
+            <p className="dialer__eyebrow">Outbound call</p>
+            <h2 className="dialer__title">{displayName}</h2>
+            {context.applicationId && <span className="dialer__meta">Application {context.applicationId}</span>}
+          </div>
+          <button type="button" className="dialer__close" onClick={closeDialer} aria-label="Close dialer">
+            ✕
+          </button>
+        </div>
+        <div className="dialer__body">
+          <div className="dialer__status">
+            <span className={`dialer__status-pill dialer__status-pill--${status}`}>{statusLabel}</span>
+            <span className="dialer__timer">{formatDuration(elapsedSeconds)}</span>
+          </div>
+          <label className="dialer__field">
+            <span>Number</span>
+            <input
+              type="tel"
+              value={number}
+              onChange={(event) => setNumber(event.target.value)}
+              placeholder="Enter phone number"
+            />
+          </label>
+          <div className="dialer__controls">
+            <Button onClick={startCall} disabled={!number || status === "active" || status === "ringing"}>
+              {status === "ringing" ? "Calling…" : status === "active" ? "In call" : "Dial"}
+            </Button>
+            <Button variant="secondary" onClick={toggleMute} aria-pressed={muted}>
+              {muted ? "Unmute" : "Mute"}
+            </Button>
+            <Button variant="secondary" onClick={toggleHold} aria-pressed={onHold}>
+              {onHold ? "Resume" : "Hold"}
+            </Button>
+            <Button variant="secondary" onClick={toggleKeypad} aria-pressed={keypadOpen}>
+              Keypad
+            </Button>
+            <Button variant="secondary" className="dialer__hangup" onClick={() => endCall()}>
+              Hang up
+            </Button>
+          </div>
+          {keypadOpen && (
+            <div className="dialer__keypad" aria-label="Keypad">
+              {["1", "2", "3", "4", "5", "6", "7", "8", "9", "*", "0", "#"].map((digit) => (
+                <button
+                  key={digit}
+                  type="button"
+                  className="dialer__keypad-key"
+                  onClick={() => setNumber(`${number}${digit}`)}
+                >
+                  {digit}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="dialer__footer">
+          <div className="dialer__outcomes">
+            {outcomeOptions.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                className="dialer__outcome"
+                onClick={() => {
+                  endCall(option.value as "completed" | "no-answer" | "failed" | "canceled");
+                  resetCall();
+                  closeDialer();
+                }}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+          <Button variant="ghost" onClick={() => {
+            resetCall();
+            closeDialer();
+          }}>
             Close
           </Button>
-        }
-      >
-        <div className="flex gap-2 my-2">
-          <Button onClick={handleCall}>Dial</Button>
-          <Button variant="secondary" onClick={() => setMuted((m) => !m)}>
-            {muted ? "Unmute" : "Mute"}
-          </Button>
-          <Button variant="secondary" onClick={() => setOnHold((h) => !h)}>
-            {onHold ? "Resume" : "Hold"}
-          </Button>
-          <Button variant="secondary">Transfer</Button>
-          <Button variant="secondary" onClick={handleHangup}>
-            Hang up
-          </Button>
         </div>
-        <p>Status: {status}</p>
-      </Card>
+      </div>
     </div>
   );
 };
