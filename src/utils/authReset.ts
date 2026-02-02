@@ -10,6 +10,7 @@ import { useTasksStore } from "@/state/tasks.store";
 import { clearLastApiRequest } from "@/state/apiRequestTrace";
 import { clearPortalDraft } from "@/utils/portalDraft";
 import { resetRedirectTracking } from "@/utils/redirectGuard";
+import { useDialerStore } from "@/state/dialer.store";
 
 const resetCacheStorage = async () => {
   if (typeof caches === "undefined") return;
@@ -63,6 +64,24 @@ export const resetAuthState = async () => {
     {
       selectedTask: undefined,
       filters: { mine: false, createdByMe: false, overdue: false, silo: undefined }
+    },
+    true
+  );
+  useDialerStore.setState(
+    {
+      isOpen: false,
+      isMinimized: false,
+      context: {},
+      status: "idle",
+      muted: false,
+      onHold: false,
+      keypadOpen: false,
+      number: "",
+      dialedNumber: null,
+      error: null,
+      startedAt: null,
+      elapsedSeconds: 0,
+      logs: []
     },
     true
   );

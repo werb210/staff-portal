@@ -11,7 +11,9 @@ const isCacheableRequest = (request) => {
 };
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(self.skipWaiting());
+  if (!self.registration?.active) {
+    event.waitUntil(self.skipWaiting());
+  }
 });
 
 self.addEventListener("activate", (event) => {
@@ -27,7 +29,7 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("message", (event) => {
   if (!event.data || !event.data.type) return;
   if (event.data.type === "SKIP_WAITING") {
-    self.skipWaiting();
+    event.waitUntil(self.skipWaiting());
   }
   if (event.data.type === "CLEAR_CACHES" || event.data.type === "AUTH_CHANGED") {
     event.waitUntil(

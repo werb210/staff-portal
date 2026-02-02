@@ -2,6 +2,8 @@ import axios, { AxiosError, type AxiosRequestConfig, type AxiosResponse } from "
 import { attachRequestIdAndLog, logError, logResponse } from "@/utils/apiLogging";
 import { getAccessToken } from "@/lib/authToken";
 import { getApiBaseUrl } from "@/config/api";
+import { reportAuthFailure } from "@/auth/authEvents";
+import { showApiToast } from "@/state/apiNotifications";
 
 export type ApiErrorOptions = {
   status: number;
@@ -60,6 +62,7 @@ api.interceptors.request.use((config: AuthRequestConfig) => {
 
 const handleUnauthorized = (url?: string | null) => {
   if (shouldBypassAuthRedirect(url)) return;
+  reportAuthFailure("unauthorized");
 };
 
 api.interceptors.response.use(
@@ -69,6 +72,10 @@ api.interceptors.response.use(
     const status = error.response?.status ?? 500;
     if (status === 401) {
       handleUnauthorized(error.config?.url);
+    } else if (status === 403) {
+      reportAuthFailure("forbidden");
+    } else if (status >= 500) {
+      showApiToast("We hit a server issue. Please retry in a moment.", error.response?.headers?.["x-request-id"]);
     }
     return Promise.reject(
       new ApiError({

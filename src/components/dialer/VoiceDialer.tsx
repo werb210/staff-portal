@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from "react";
 import Button from "@/components/ui/Button";
 import { useDialerStore, type DialerStatus } from "@/state/dialer.store";
+import { useTwilioCall } from "@/hooks/useTwilioCall";
 
 const formatDuration = (seconds: number) => {
   const minutes = Math.floor(seconds / 60);
@@ -10,10 +11,14 @@ const formatDuration = (seconds: number) => {
 
 const formatStatusLabel = (status: DialerStatus) => {
   switch (status) {
+    case "dialing":
+      return "Dialing…";
     case "ringing":
       return "Ringing…";
-    case "active":
-      return "Active";
+    case "connected":
+      return "Connected";
+    case "failed":
+      return "Call failed";
     case "ended":
       return "Call ended";
     default:
@@ -30,21 +35,22 @@ const VoiceDialer = () => {
     onHold,
     keypadOpen,
     number,
+    error,
     elapsedSeconds,
     closeDialer,
+    minimizeDialer,
     setNumber,
-    toggleHold,
     toggleKeypad,
-    toggleMute,
-    startCall,
-    setStatus,
     recordElapsed,
     endCall,
     resetCall
   } = useDialerStore();
+  const { dial, hangup, toggleHold, toggleMute } = useTwilioCall();
 
   const displayName = context.contactName ?? context.applicationName ?? "Dialer";
   const statusLabel = formatStatusLabel(status);
+  const statusTone =
+    status === "connected" ? "active" : status === "dialing" || status === "ringing" ? "ringing" : status;
   const outcomeOptions = useMemo(
     () => [
       { label: "Completed", value: "completed" },
@@ -56,13 +62,7 @@ const VoiceDialer = () => {
   );
 
   useEffect(() => {
-    if (status !== "ringing") return;
-    const timeout = window.setTimeout(() => setStatus("active"), 1200);
-    return () => window.clearTimeout(timeout);
-  }, [setStatus, status]);
-
-  useEffect(() => {
-    if (status !== "active") return;
+    if (status !== "connected") return;
     const interval = window.setInterval(() => {
       recordElapsed(elapsedSeconds + 1);
     }, 1000);
@@ -80,15 +80,25 @@ const VoiceDialer = () => {
             <h2 className="dialer__title">{displayName}</h2>
             {context.applicationId && <span className="dialer__meta">Application {context.applicationId}</span>}
           </div>
-          <button type="button" className="dialer__close" onClick={closeDialer} aria-label="Close dialer">
+          <button
+            type="button"
+            className="dialer__close"
+            onClick={status === "connected" || status === "ringing" || status === "dialing" ? minimizeDialer : closeDialer}
+            aria-label="Close dialer"
+          >
             ✕
           </button>
         </div>
         <div className="dialer__body">
           <div className="dialer__status">
-            <span className={`dialer__status-pill dialer__status-pill--${status}`}>{statusLabel}</span>
+            <span className={`dialer__status-pill dialer__status-pill--${statusTone}`}>{statusLabel}</span>
             <span className="dialer__timer">{formatDuration(elapsedSeconds)}</span>
           </div>
+          {error && (
+            <div role="status" aria-live="polite" className="text-sm text-red-600">
+              {error}
+            </div>
+          )}
           <label className="dialer__field">
             <span>Number</span>
             <input
@@ -99,8 +109,11 @@ const VoiceDialer = () => {
             />
           </label>
           <div className="dialer__controls">
-            <Button onClick={startCall} disabled={!number || status === "active" || status === "ringing"}>
-              {status === "ringing" ? "Calling…" : status === "active" ? "In call" : "Dial"}
+            <Button
+              onClick={dial}
+              disabled={!number || status === "connected" || status === "ringing" || status === "dialing"}
+            >
+              {status === "dialing" ? "Dialing…" : status === "ringing" ? "Ringing…" : status === "connected" ? "In call" : "Dial"}
             </Button>
             <Button variant="secondary" onClick={toggleMute} aria-pressed={muted}>
               {muted ? "Unmute" : "Mute"}
@@ -111,7 +124,7 @@ const VoiceDialer = () => {
             <Button variant="secondary" onClick={toggleKeypad} aria-pressed={keypadOpen}>
               Keypad
             </Button>
-            <Button variant="secondary" className="dialer__hangup" onClick={() => endCall()}>
+            <Button variant="secondary" className="dialer__hangup" onClick={hangup}>
               Hang up
             </Button>
           </div>

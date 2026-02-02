@@ -5,6 +5,7 @@ type UpdateDetail = {
 };
 
 const isBrowser = typeof window !== "undefined";
+const RELOAD_GUARD_KEY = "sw:reload-guard";
 
 export const useServiceWorkerUpdate = () => {
   const [updateAvailable, setUpdateAvailable] = useState(false);
@@ -12,6 +13,9 @@ export const useServiceWorkerUpdate = () => {
 
   useEffect(() => {
     if (!isBrowser) return;
+    if (window.sessionStorage.getItem(RELOAD_GUARD_KEY)) {
+      window.sessionStorage.removeItem(RELOAD_GUARD_KEY);
+    }
     const handleUpdate = (event: Event) => {
       const detail = (event as CustomEvent<UpdateDetail>).detail;
       if (detail?.registration) {
@@ -20,6 +24,8 @@ export const useServiceWorkerUpdate = () => {
       setUpdateAvailable(true);
     };
     const handleControllerChange = () => {
+      if (window.sessionStorage.getItem(RELOAD_GUARD_KEY)) return;
+      window.sessionStorage.setItem(RELOAD_GUARD_KEY, "true");
       window.location.reload();
     };
     window.addEventListener("sw:update", handleUpdate);
@@ -32,6 +38,10 @@ export const useServiceWorkerUpdate = () => {
 
   const applyUpdate = useCallback(async () => {
     if (!registration) return;
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      setUpdateAvailable(false);
+      return;
+    }
     if (registration.waiting) {
       registration.waiting.postMessage({ type: "SKIP_WAITING" });
       setUpdateAvailable(false);
