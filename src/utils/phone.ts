@@ -10,3 +10,11 @@ export function normalizeToE164(input: string, defaultCountry = "US"): string {
 
   throw new Error("Invalid phone number");
 }
+
+export function safeNormalizeToE164(input: string, defaultCountry = "US"): string | null {
+  try {
+    return normalizeToE164(input, defaultCountry);
+  } catch {
+    return null;
+  }
+}

@@ -32,6 +32,7 @@ import { clearSession, readSession, writeSession } from "@/utils/sessionStore";
 import { buildNotification } from "@/utils/notifications";
 import { useNotificationsStore } from "@/state/notifications.store";
 import type { NotificationItem } from "@/types/notifications";
+import { clearClientStorage, clearServiceWorkerCaches } from "@/utils/sessionCleanup";
 export type AuthStatus = "loading" | "authenticated" | "unauthenticated";
 export type AuthState = AuthStatus;
 export type RolesStatus = "loading" | "resolved";
@@ -184,6 +185,8 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
   const clearAuthState = useCallback(() => {
     clearStoredAuth();
     void clearSession();
+    clearClientStorage();
+    void clearServiceWorkerCaches();
     setAccessTokenState(null);
     setUserState(null);
     setAuthStatus("unauthenticated");
@@ -433,12 +436,23 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
       authFailureInFlightRef.current = true;
       void (async () => {
         try {
+          if (reason === "forbidden") {
+            setUiFailure({
+              message: "You do not have permission to perform that action.",
+              details: "Please contact an administrator if you need access.",
+              timestamp: Date.now()
+            });
+            return;
+          }
           const refreshed = await refreshUser({ allowLogout: false });
           if (refreshed) {
             return;
           }
           if (reason === "missing-token") {
             return;
+          }
+          if (reason === "unauthorized") {
+            clearAuthState();
           }
         } finally {
           authFailureInFlightRef.current = false;

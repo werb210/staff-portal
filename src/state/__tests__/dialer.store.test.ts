@@ -5,12 +5,15 @@ import { useDialerStore } from "@/state/dialer.store";
 const resetStore = () => {
   useDialerStore.setState({
     isOpen: false,
+    isMinimized: false,
     context: {},
     status: "idle",
     muted: false,
     onHold: false,
     keypadOpen: false,
     number: "",
+    dialedNumber: null,
+    error: null,
     startedAt: null,
     elapsedSeconds: 0,
     logs: []
@@ -41,7 +44,7 @@ describe("dialer store", () => {
       useDialerStore.getState().startCall();
     });
 
-    expect(useDialerStore.getState().status).toBe("ringing");
+    expect(useDialerStore.getState().status).toBe("dialing");
   });
 
   it("records call metadata on end", () => {
@@ -49,7 +52,7 @@ describe("dialer store", () => {
       useDialerStore.getState().openDialer({ applicationId: "app-1" });
       useDialerStore.getState().setNumber("555-0100");
       useDialerStore.getState().startCall();
-      useDialerStore.getState().setStatus("active");
+      useDialerStore.getState().setStatus("connected");
     });
 
     vi.advanceTimersByTime(32000);
