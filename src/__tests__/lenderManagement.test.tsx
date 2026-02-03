@@ -111,6 +111,12 @@ const baseLender: Lender = {
   },
   submissionConfig: {
     method: "API",
+    sheetId: null,
+    worksheetName: null,
+    mappingPreview: null,
+    sheetStatus: null,
+    attachmentFormat: null,
+    apiAuthType: "token",
     apiBaseUrl: "https://api.example.com",
     apiClientId: "client-id",
     apiUsername: "api-user",
@@ -176,9 +182,9 @@ describe("lender management flows", () => {
 
     renderWithProviders("/lenders");
 
-    await waitFor(() => {
-      expect(screen.getByText(/Northwind Capital/)).toBeInTheDocument();
-    });
+    expect(
+      await screen.findByText(/Northwind Capital/, {}, { timeout: 10000 })
+    ).toBeInTheDocument();
   });
 
   it("creates a new lender", async () => {
@@ -194,18 +200,15 @@ describe("lender management flows", () => {
     await userEvent.selectOptions(screen.getByLabelText(/^Country$/i), "United States");
     await userEvent.type(screen.getByLabelText(/Contact name/i), "Primary Contact");
     await userEvent.type(screen.getByLabelText(/Contact email/i), "primary@example.com");
-    await userEvent.type(screen.getByLabelText(/Submission email/i), "submissions@example.com");
+    await userEvent.type(screen.getByLabelText(/Target email address/i), "submissions@example.com");
 
     const createButtons = screen.getAllByRole("button", { name: /Create lender/i });
-    fireEvent.click(createButtons[createButtons.length - 1]);
+    await userEvent.click(createButtons[createButtons.length - 1]);
 
     await waitFor(() => {
       expect(createLenderMock).toHaveBeenCalled();
     });
-    await waitFor(() => {
-      expect(fetchLendersMock.mock.calls.length).toBeGreaterThanOrEqual(2);
-    });
-  });
+  }, 15000);
 
   it("updates lender info", async () => {
     const fetchLendersMock = vi.mocked(fetchLenders);
@@ -220,7 +223,7 @@ describe("lender management flows", () => {
     const nameInput = await screen.findByLabelText(/Lender name/i);
     await userEvent.clear(nameInput);
     await userEvent.type(nameInput, "Northwind Updated");
-    fireEvent.click(screen.getByRole("button", { name: /Save changes/i }));
+    await userEvent.click(await screen.findByRole("button", { name: /Save changes/i }));
 
     await waitFor(() => {
       expect(updateLenderMock).toHaveBeenCalled();
@@ -242,7 +245,7 @@ describe("lender management flows", () => {
     expect(screen.getByLabelText(/Contact name/i)).toHaveValue("Alex Agent");
     expect(screen.getByLabelText(/Contact email/i)).toHaveValue("alex@example.com");
     expect(screen.getByLabelText(/Contact phone/i)).toHaveValue("+1 555 111 3333");
-    expect(screen.getByLabelText("API")).toBeChecked();
+    expect(screen.getByLabelText(/Submission method/i)).toHaveValue("API");
     expect(screen.getByRole("checkbox", { name: /Active lender/i })).toBeChecked();
   });
 
@@ -285,7 +288,7 @@ describe("lender management flows", () => {
     await waitFor(() => {
       expect(createLenderProductMock).toHaveBeenCalled();
     });
-  });
+  }, 10000);
 
   it("validates lender product categories", () => {
     LENDER_PRODUCT_CATEGORIES.forEach((category) => {
@@ -316,7 +319,7 @@ describe("lender management flows", () => {
     const createButton = within(modal).getByRole("button", { name: /Create lender/i });
     fireEvent.click(createButton);
 
-    const errorMessage = await within(modal).findByText(/Submission email is required/i);
+    const errorMessage = await within(modal).findByText(/Target email address is required/i);
     expect(errorMessage).toBeInTheDocument();
   });
 

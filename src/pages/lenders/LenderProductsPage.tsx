@@ -9,6 +9,7 @@ import RequireRole from "@/components/auth/RequireRole";
 import AppLoading from "@/components/layout/AppLoading";
 import LenderProductModal, { type ProductFormValues } from "@/components/LenderProductModal";
 import { getErrorMessage } from "@/utils/errors";
+import { getSubmissionMethodBadgeTone, getSubmissionMethodLabel } from "@/utils/submissionMethods";
 import { ApiError } from "@/lib/api";
 import { useAuthorization } from "@/hooks/useAuthorization";
 import {
@@ -103,6 +104,12 @@ const getLenderStatus = (lender?: Lender | null) => {
 };
 
 const isLenderActive = (lender?: Lender | null) => getLenderStatus(lender) === "ACTIVE";
+
+const renderSubmissionMethodBadge = (method?: Lender["submissionConfig"]["method"] | null) => (
+  <span className={`status-pill status-pill--submission-${getSubmissionMethodBadgeTone(method)}`}>
+    {getSubmissionMethodLabel(method)}
+  </span>
+);
 
 const getApiErrorStatus = (error: unknown) => {
   if (error instanceof ApiError) {
@@ -202,6 +209,15 @@ const LenderProductsContent = () => {
     () => activeLenders.find((lender) => lender.id === activeLenderId) ?? null,
     [activeLenderId, activeLenders]
   );
+  const lenderSubmissionMethods = useMemo(() => {
+    const map = new Map<string, Lender["submissionConfig"]["method"]>();
+    safeLenders.forEach((lender) => {
+      if (lender.id) {
+        map.set(lender.id, lender.submissionConfig?.method ?? "MANUAL");
+      }
+    });
+    return map;
+  }, [safeLenders]);
 
   const {
     data: products = [],
@@ -605,6 +621,7 @@ const LenderProductsContent = () => {
                         <tr>
                           <th>Name</th>
                           <th>Country</th>
+                          <th>Submission</th>
                           <th>Status</th>
                           <th>Amount range</th>
                         </tr>
@@ -633,6 +650,7 @@ const LenderProductsContent = () => {
                                 </button>
                               </td>
                               <td>{formatLenderCountryLabel(product.country) || "—"}</td>
+                              <td>{renderSubmissionMethodBadge(lenderSubmissionMethods.get(product.lenderId))}</td>
                               <td>
                                 <span className={`status-pill status-pill--${productActive ? "active" : "paused"}`}>
                                   {productActive ? "Active" : "Inactive"}

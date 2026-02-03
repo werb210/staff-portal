@@ -32,6 +32,7 @@ import { getErrorMessage } from "@/utils/errors";
 import { getRequestId } from "@/utils/requestId";
 import { emitUiTelemetry } from "@/utils/uiTelemetry";
 import { SUBMISSION_METHODS, type SubmissionMethod } from "@/types/lenderManagement.types";
+import { SUBMISSION_METHOD_LABELS, getSubmissionMethodBadgeTone, getSubmissionMethodLabel } from "@/utils/submissionMethods";
 import {
   LENDER_PRODUCT_CATEGORIES,
   LENDER_PRODUCT_CATEGORY_LABELS,
@@ -64,6 +65,13 @@ type LenderFormValues = {
   internalNotes: string;
   submissionMethod: SubmissionMethod;
   submissionEmail: string;
+  submissionAttachmentFormat: "PDF" | "CSV";
+  submissionSheetId: string;
+  submissionWorksheetName: string;
+  submissionMappingPreview: string;
+  submissionSheetStatus: string;
+  submissionApiEndpoint: string;
+  submissionApiAuthType: "token" | "key";
 };
 
 const emptyLenderForm: LenderFormValues = {
@@ -76,7 +84,14 @@ const emptyLenderForm: LenderFormValues = {
   website: "",
   internalNotes: "",
   submissionMethod: "EMAIL",
-  submissionEmail: ""
+  submissionEmail: "",
+  submissionAttachmentFormat: "PDF",
+  submissionSheetId: "",
+  submissionWorksheetName: "",
+  submissionMappingPreview: "",
+  submissionSheetStatus: "",
+  submissionApiEndpoint: "",
+  submissionApiAuthType: "token"
 };
 
 const emptyProductForm = (lenderId: string): ProductFormValues => ({
@@ -172,7 +187,26 @@ const toFormString = (value?: number | string | null) => {
   return String(value);
 };
 
+const toOptionalTrim = (value: string) => {
+  const trimmed = value.trim();
+  return trimmed ? trimmed : null;
+};
+
 const formatRateType = (value: RateType) => value.charAt(0).toUpperCase() + value.slice(1);
+
+const normalizeSheetStatus = (value?: string) => {
+  const trimmed = value?.trim();
+  if (!trimmed) return "";
+  return trimmed.toUpperCase();
+};
+
+const getSheetStatusBadge = (value?: string) => {
+  const normalized = normalizeSheetStatus(value);
+  if (normalized === "CONNECTED") return { label: "Connected", tone: "sent" };
+  if (normalized === "ERROR") return { label: "Error", tone: "failed" };
+  if (normalized) return { label: value ?? "Unknown", tone: "pending" };
+  return { label: "Not connected", tone: "idle" };
+};
 
 const PORTAL_PRODUCT_CATEGORIES = [
   "LINE_OF_CREDIT",
@@ -208,6 +242,12 @@ const getLenderStatus = (lender?: Lender | null) => {
 
 const isLenderActive = (lender?: Lender | null) => getLenderStatus(lender) === "ACTIVE";
 
+const renderSubmissionMethodBadge = (method?: Lender["submissionConfig"]["method"] | null) => (
+  <span className={`status-pill status-pill--submission-${getSubmissionMethodBadgeTone(method)}`}>
+    {getSubmissionMethodLabel(method)}
+  </span>
+);
+
 const mapLenderToFormValues = (lender: Lender): LenderFormValues => {
   const primaryContact = lender.primaryContact ?? {
     name: "",
@@ -228,8 +268,15 @@ const mapLenderToFormValues = (lender: Lender): LenderFormValues => {
     primaryContactPhone: primaryContact.phone ?? "",
     website: lender.website ?? "",
     internalNotes: lender.internalNotes ?? "",
-    submissionMethod: submissionConfig.method === "API" ? "API" : "EMAIL",
-    submissionEmail: submissionConfig.submissionEmail ?? ""
+    submissionMethod: submissionConfig.method ?? "EMAIL",
+    submissionEmail: submissionConfig.submissionEmail ?? "",
+    submissionAttachmentFormat: submissionConfig.attachmentFormat ?? "PDF",
+    submissionSheetId: submissionConfig.sheetId ?? "",
+    submissionWorksheetName: submissionConfig.worksheetName ?? "",
+    submissionMappingPreview: submissionConfig.mappingPreview ?? "",
+    submissionSheetStatus: submissionConfig.sheetStatus ?? "",
+    submissionApiEndpoint: submissionConfig.apiBaseUrl ?? "",
+    submissionApiAuthType: submissionConfig.apiAuthType ?? "token"
   };
 };
 
@@ -496,7 +543,6 @@ const LendersContent = () => {
   const mutationLoading = createLenderMutation.isPending || updateLenderMutation.isPending;
   const productMutationLoading = createProductMutation.isPending || updateProductMutation.isPending;
   const rateTypeOptions: RateType[] = ["fixed", "variable"];
-  const apiConfig = editingLender?.submissionConfig ?? lenderDetail?.submissionConfig ?? null;
   const activeLenderOptions = safeLenders
     .filter((lender) => isLenderActive(lender))
     .map((lender) => ({
@@ -525,9 +571,9 @@ const LendersContent = () => {
     }
     if (!values.submissionMethod) nextErrors.submissionMethod = "Submission method is required.";
     if (values.submissionMethod === "EMAIL" && !values.submissionEmail.trim()) {
-      nextErrors.submissionEmail = "Submission email is required.";
+      nextErrors.submissionEmail = "Target email address is required.";
     } else if (values.submissionMethod === "EMAIL" && !isValidEmail(values.submissionEmail)) {
-      nextErrors.submissionEmail = "Enter a valid submission email.";
+      nextErrors.submissionEmail = "Enter a valid email address.";
     }
     return nextErrors;
   };
@@ -548,7 +594,18 @@ const LendersContent = () => {
     contact_email: values.primaryContactEmail.trim(),
     contact_phone: values.primaryContactPhone.trim(),
     submission_method: values.submissionMethod,
-    submission_email: values.submissionMethod === "EMAIL" ? values.submissionEmail.trim() : null
+    submission_email: values.submissionMethod === "EMAIL" ? values.submissionEmail.trim() : null,
+    submission_attachment_format:
+      values.submissionMethod === "EMAIL" ? values.submissionAttachmentFormat : null,
+    submission_sheet_id: values.submissionMethod === "GOOGLE_SHEET" ? toOptionalTrim(values.submissionSheetId) : null,
+    submission_worksheet_name:
+      values.submissionMethod === "GOOGLE_SHEET" ? toOptionalTrim(values.submissionWorksheetName) : null,
+    submission_mapping_preview:
+      values.submissionMethod === "GOOGLE_SHEET" ? toOptionalTrim(values.submissionMappingPreview) : null,
+    submission_sheet_status:
+      values.submissionMethod === "GOOGLE_SHEET" ? toOptionalTrim(values.submissionSheetStatus) : null,
+    submission_api_endpoint: values.submissionMethod === "API" ? toOptionalTrim(values.submissionApiEndpoint) : null,
+    submission_api_auth_type: values.submissionMethod === "API" ? values.submissionApiAuthType : null
   });
 
   const validateProductForm = (values: ProductFormValues) => {
@@ -920,7 +977,7 @@ const LendersContent = () => {
               {groupedProducts.map((group) => (
                 <div key={group.category} className="space-y-2">
                   <div className="text-sm font-semibold text-slate-600">{group.label}</div>
-                  <Table headers={["Name", "Country", "Status", "Amount range"]}>
+                  <Table headers={["Name", "Country", "Submission", "Status", "Amount range"]}>
                     {group.products.map((product, index) => {
                       const productIdValue = product.id ?? "";
                       const productActive = Boolean(product.active);
@@ -943,6 +1000,7 @@ const LendersContent = () => {
                             </button>
                           </td>
                           <td>{formatLenderCountryLabel(product.country) || "—"}</td>
+                          <td>{renderSubmissionMethodBadge(selectedLender?.submissionConfig?.method ?? "MANUAL")}</td>
                           <td>
                             <span className={`status-pill status-pill--${productActive ? "active" : "paused"}`}>
                               {productActive ? "Active" : "Inactive"}
@@ -1077,66 +1135,112 @@ const LendersContent = () => {
             </div>
 
             <div className="management-field">
-              <span className="management-field__label">Submission configuration</span>
-              <div className="ui-field">
-                <span className="ui-field__label">Submission method</span>
-                <div className="management-docs">
-                  {SUBMISSION_METHODS.filter((method) => method !== "MANUAL").map((method) => (
-                    <label key={method} className="management-toggle">
-                      <input
-                        type="radio"
-                        name="submissionMethod"
-                        value={method}
-                        checked={lenderFormValues.submissionMethod === method}
-                        onChange={(event) =>
-                          setLenderFormValues((prev) => ({
-                            ...prev,
-                            submissionMethod: event.target.value as SubmissionMethod
-                          }))
-                        }
-                      />
-                      <span>{method === "API" ? "API" : "Email"}</span>
-                    </label>
-                  ))}
+              <span className="management-field__label">Submission method</span>
+              <Select
+                label="Submission method"
+                value={lenderFormValues.submissionMethod}
+                onChange={(event) =>
+                  setLenderFormValues((prev) => ({
+                    ...prev,
+                    submissionMethod: event.target.value as SubmissionMethod
+                  }))
+                }
+              >
+                {SUBMISSION_METHODS.map((method) => (
+                  <option key={method} value={method}>
+                    {SUBMISSION_METHOD_LABELS[method]}
+                  </option>
+                ))}
+              </Select>
+              {lenderFormErrors.submissionMethod && (
+                <span className="ui-field__error">{lenderFormErrors.submissionMethod}</span>
+              )}
+              {lenderFormValues.submissionMethod === "GOOGLE_SHEET" && (
+                <div className="space-y-3">
+                  <Input
+                    label="Sheet ID"
+                    value={lenderFormValues.submissionSheetId}
+                    onChange={(event) =>
+                      setLenderFormValues((prev) => ({ ...prev, submissionSheetId: event.target.value }))
+                    }
+                  />
+                  <Input
+                    label="Worksheet name"
+                    value={lenderFormValues.submissionWorksheetName}
+                    onChange={(event) =>
+                      setLenderFormValues((prev) => ({ ...prev, submissionWorksheetName: event.target.value }))
+                    }
+                  />
+                  <label className="ui-field">
+                    <span className="ui-field__label">Mapping preview</span>
+                    <textarea
+                      className="ui-input ui-textarea"
+                      value={lenderFormValues.submissionMappingPreview || "No mapping available."}
+                      readOnly
+                    />
+                  </label>
+                  <div className="ui-field">
+                    <span className="ui-field__label">Status</span>
+                    {(() => {
+                      const status = getSheetStatusBadge(lenderFormValues.submissionSheetStatus);
+                      return <span className={`status-pill status-pill--${status.tone}`}>{status.label}</span>;
+                    })()}
+                  </div>
                 </div>
-                {lenderFormErrors.submissionMethod && (
-                  <span className="ui-field__error">{lenderFormErrors.submissionMethod}</span>
-                )}
-              </div>
+              )}
               {lenderFormValues.submissionMethod === "EMAIL" && (
-                <Input
-                  label="Submission email"
-                  value={lenderFormValues.submissionEmail}
-                  onChange={(event) =>
-                    setLenderFormValues((prev) => ({ ...prev, submissionEmail: event.target.value }))
-                  }
-                  error={lenderFormErrors.submissionEmail}
-                />
+                <div className="space-y-3">
+                  <Input
+                    label="Target email address"
+                    value={lenderFormValues.submissionEmail}
+                    onChange={(event) =>
+                      setLenderFormValues((prev) => ({ ...prev, submissionEmail: event.target.value }))
+                    }
+                    error={lenderFormErrors.submissionEmail}
+                  />
+                  <Select
+                    label="Attachment format"
+                    value={lenderFormValues.submissionAttachmentFormat}
+                    onChange={(event) =>
+                      setLenderFormValues((prev) => ({
+                        ...prev,
+                        submissionAttachmentFormat: event.target.value as "PDF" | "CSV"
+                      }))
+                    }
+                  >
+                    <option value="PDF">PDF</option>
+                    <option value="CSV">CSV</option>
+                  </Select>
+                </div>
               )}
               {lenderFormValues.submissionMethod === "API" && (
                 <div className="space-y-3">
                   <Input
-                    label="API Base URL"
-                    value={apiConfig?.apiBaseUrl ?? ""}
-                    placeholder="Not configured"
-                    disabled
+                    label="Endpoint"
+                    type="password"
+                    value={lenderFormValues.submissionApiEndpoint}
+                    placeholder="https://api.example.com"
+                    onChange={(event) =>
+                      setLenderFormValues((prev) => ({ ...prev, submissionApiEndpoint: event.target.value }))
+                    }
                   />
-                  <Input
-                    label="API Client ID"
-                    value={apiConfig?.apiClientId ?? ""}
-                    placeholder="Not configured"
-                    disabled
-                  />
-                  <Input
-                    label="API Username"
-                    value={apiConfig?.apiUsername ?? ""}
-                    placeholder="Not configured"
-                    disabled
-                  />
-                  <p className="text-xs text-slate-500">
-                    API configuration is managed in the backend and is display-only here.
-                  </p>
+                  <Select
+                    label="Auth type"
+                    value={lenderFormValues.submissionApiAuthType}
+                    onChange={(event) =>
+                      setLenderFormValues((prev) => ({
+                        ...prev,
+                        submissionApiAuthType: event.target.value as "token" | "key"
+                      }))
+                    }
+                  >
+                    <option value="token">Token</option>
+                    <option value="key">Key</option>
+                  </Select>
                 </div>
+              )}
+              {lenderFormValues.submissionMethod === "MANUAL" && (
+                <p className="text-xs text-slate-500">Manual submissions are tracked internally only.</p>
               )}
             </div>
 

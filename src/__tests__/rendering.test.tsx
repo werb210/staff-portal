@@ -85,6 +85,12 @@ describe("loading and empty-state rendering", () => {
         submissionConfig: {
           method: "EMAIL",
           submissionEmail: "submissions@atlas.example.com",
+          sheetId: null,
+          worksheetName: null,
+          mappingPreview: null,
+          sheetStatus: null,
+          attachmentFormat: "PDF",
+          apiAuthType: null,
           apiBaseUrl: null,
           apiClientId: null,
           apiUsername: null,
