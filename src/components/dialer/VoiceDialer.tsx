@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from "react";
+import { clsx } from "clsx";
 import Button from "@/components/ui/Button";
 import { useDialerStore, type DialerFailureReason, type DialerStatus } from "@/state/dialer.store";
 import { useTwilioCall } from "@/hooks/useTwilioCall";
@@ -44,6 +45,50 @@ const formatFailureReason = (reason: DialerFailureReason | null) => {
     default:
       return "Call failed.";
   }
+};
+
+const controlIcons = {
+  mute: (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M9 9v6a3 3 0 0 0 6 0V9a3 3 0 0 0-6 0Z" />
+      <path d="M5 12a7 7 0 0 0 12.8 3.8" />
+      <path d="M12 19v3" />
+      <path d="M8 22h8" />
+      <path d="M4 4l16 16" />
+    </svg>
+  ),
+  hold: (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M7 5v14" />
+      <path d="M17 5v14" />
+    </svg>
+  ),
+  record: (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="12" r="6" />
+    </svg>
+  ),
+  transfer: (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M4 7h12" />
+      <path d="M12 3l4 4-4 4" />
+      <path d="M20 17H8" />
+      <path d="M12 21l-4-4 4-4" />
+    </svg>
+  ),
+  add: (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12 5v14" />
+      <path d="M5 12h14" />
+    </svg>
+  ),
+  merge: (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M7 4v8a4 4 0 0 0 4 4h6" />
+      <path d="M7 20v-4" />
+      <path d="M17 20v-8" />
+    </svg>
+  )
 };
 
 const VoiceDialer = () => {
@@ -95,6 +140,59 @@ const VoiceDialer = () => {
       { label: "Canceled", value: "canceled" }
     ],
     []
+  );
+  const controlButtons = useMemo(
+    () => [
+      {
+        key: "mute",
+        label: "Mute",
+        icon: controlIcons.mute,
+        onClick: toggleMute,
+        active: muted,
+        disabled: status !== "connected"
+      },
+      {
+        key: "hold",
+        label: "Hold",
+        icon: controlIcons.hold,
+        onClick: toggleHold,
+        active: onHold,
+        disabled: status !== "connected"
+      },
+      {
+        key: "record",
+        label: "Record",
+        icon: controlIcons.record,
+        onClick: () => undefined,
+        active: false,
+        disabled: true
+      },
+      {
+        key: "transfer",
+        label: "Transfer",
+        icon: controlIcons.transfer,
+        onClick: () => undefined,
+        active: false,
+        disabled: true
+      },
+      {
+        key: "add",
+        label: "Add",
+        icon: controlIcons.add,
+        onClick: () => undefined,
+        active: false,
+        disabled: true
+      },
+      {
+        key: "merge",
+        label: "Merge",
+        icon: controlIcons.merge,
+        onClick: () => undefined,
+        active: false,
+        disabled: true
+      }
+    ],
+    [muted, onHold, status, toggleHold, toggleMute]
   );
 
   useEffect(() => {
@@ -156,14 +254,23 @@ const VoiceDialer = () => {
             />
           </label>
           <div className="dialer__controls">
+            {controlButtons.map((control) => (
+              <button
+                key={control.key}
+                type="button"
+                className={clsx("dialer__control", { "dialer__control--active": control.active })}
+                onClick={control.onClick}
+                aria-pressed={control.active}
+                disabled={control.disabled}
+              >
+                <span className="dialer__control-icon">{control.icon}</span>
+                <span className="dialer__control-label">{control.label}</span>
+              </button>
+            ))}
+          </div>
+          <div className="dialer__actions">
             <Button onClick={dial} disabled={!number || isCallInProgress}>
               {status === "dialing" ? "Dialing…" : status === "ringing" ? "Ringing…" : status === "connected" ? "In call" : "Dial"}
-            </Button>
-            <Button variant="secondary" onClick={toggleMute} aria-pressed={muted} disabled={status !== "connected"}>
-              {muted ? "Unmute" : "Mute"}
-            </Button>
-            <Button variant="secondary" onClick={toggleHold} aria-pressed={onHold} disabled={status !== "connected"}>
-              {onHold ? "Resume" : "Hold"}
             </Button>
             <Button variant="secondary" onClick={toggleKeypad} aria-pressed={keypadOpen} disabled={isCallSetup}>
               Keypad

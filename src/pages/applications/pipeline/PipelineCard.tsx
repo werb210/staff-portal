@@ -33,9 +33,9 @@ const getSubmissionBadge = (method?: string) => {
     case "API":
       return `🟦 ${getSubmissionMethodLabel(method)}`;
     case "EMAIL":
-      return `🟩 ${getSubmissionMethodLabel(method)}`;
+      return `🟨 ${getSubmissionMethodLabel(method)}`;
     case "GOOGLE_SHEET":
-      return "🟨 Sheet";
+      return "🟥 Sheet";
     default:
       return null;
   }
