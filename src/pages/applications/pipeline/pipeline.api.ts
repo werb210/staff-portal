@@ -71,6 +71,9 @@ const parseStage = (item: unknown): PipelineStage | null => {
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
 
+const parseStringArray = (value: unknown) =>
+  Array.isArray(value) ? value.filter((item) => typeof item === "string") : undefined;
+
 const normalizePipelineApplication = (value: unknown): PipelineApplication | null => {
   if (!isRecord(value)) return null;
   const id =
@@ -154,6 +157,10 @@ const normalizePipelineApplication = (value: unknown): PipelineApplication | nul
         : typeof value.ocr_complete === "boolean"
           ? value.ocr_complete
           : undefined,
+    ocrMissingFields:
+      parseStringArray(value.ocrMissingFields) ??
+      parseStringArray(value.ocr_missing_fields) ??
+      parseStringArray(value.missing_ocr_fields),
     assignedStaff:
       typeof value.assignedStaff === "string"
         ? value.assignedStaff

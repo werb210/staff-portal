@@ -5,6 +5,7 @@ export type DrawerTabId =
   | "application"
   | "financials"
   | "banking"
+  | "ocr-insights"
   | "credit-summary"
   | "documents"
   | "notes"
@@ -20,6 +21,7 @@ export const TABS: DrawerTab[] = [
   { id: "application", label: "Application" },
   { id: "financials", label: "Financials (OCR output)" },
   { id: "banking", label: "Banking Analysis (bank OCR)" },
+  { id: "ocr-insights", label: "OCR Insights" },
   { id: "credit-summary", label: "Credit Summary" },
   { id: "documents", label: "Documents" },
   { id: "notes", label: "Notes (internal staff only)" },

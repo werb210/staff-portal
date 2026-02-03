@@ -1592,6 +1592,11 @@ a,
   background: var(--ui-surface-muted);
 }
 
+.pipeline-card__indicator--warning {
+  background: rgba(248, 113, 113, 0.2);
+  color: #fecaca;
+}
+
 .pipeline-card__footer {
   font-size: 12px;
   color: var(--ui-text-muted);
@@ -1744,6 +1749,101 @@ a,
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.ocr-insights {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ocr-insights__banner {
+  background: rgba(248, 113, 113, 0.15);
+  color: #fecaca;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.ocr-insights__section {
+  background: var(--panel-bg);
+  border-radius: 16px;
+  padding: 12px 16px;
+  box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.12);
+}
+
+.ocr-insights__section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.ocr-insights__section-header h3 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.ocr-insights__section-count {
+  font-size: 12px;
+  color: var(--ui-text-muted);
+}
+
+.ocr-insights__table {
+  display: grid;
+  gap: 8px;
+}
+
+.ocr-insights__row {
+  display: grid;
+  grid-template-columns: 1.2fr 2fr 1.2fr;
+  gap: 12px;
+  padding: 8px 0;
+  font-size: 13px;
+  align-items: start;
+}
+
+.ocr-insights__row--header {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ui-text-muted);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+  padding-bottom: 10px;
+}
+
+.ocr-insights__field-label {
+  font-weight: 600;
+}
+
+.ocr-insights__value {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ocr-insights__value--conflict {
+  color: #f87171;
+}
+
+.ocr-insights__conflict-badge {
+  display: inline-flex;
+  align-self: flex-start;
+  background: rgba(248, 113, 113, 0.2);
+  color: #fecaca;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 999px;
+}
+
+.ocr-insights__conflict-context {
+  font-size: 12px;
+  color: var(--ui-text-muted);
+}
+
+.ocr-insights__source {
+  color: var(--ui-text-soft);
 }
 
 .drawer {

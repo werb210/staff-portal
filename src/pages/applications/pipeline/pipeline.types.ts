@@ -50,6 +50,7 @@ export type PipelineApplication = {
   };
   bankingComplete?: boolean;
   ocrComplete?: boolean;
+  ocrMissingFields?: string[];
   assignedStaff?: string;
   createdAt: string;
 };

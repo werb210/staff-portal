@@ -9,6 +9,7 @@ import CreditSummaryTab from "./tab-credit-summary/CreditSummaryTab";
 import DocumentsTab from "./tab-documents/DocumentsTab";
 import NotesTab from "./tab-notes/NotesTab";
 import LendersTab from "./tab-lenders/LendersTab";
+import OCRInsightsTab from "./tabs/OCRInsightsTab";
 import { useApplicationDrawerStore } from "@/state/applicationDrawer.store";
 import { usePipelineStore } from "@/pages/applications/pipeline/pipeline.store";
 
@@ -16,6 +17,7 @@ const tabContentMap: Record<DrawerTabId, JSX.Element> = {
   application: <ApplicationTab />,
   financials: <FinancialTab />,
   banking: <BankingTab />,
+  "ocr-insights": <OCRInsightsTab />,
   "credit-summary": <CreditSummaryTab />,
   documents: <DocumentsTab />,
   notes: <NotesTab />,

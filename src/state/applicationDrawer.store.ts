@@ -5,6 +5,7 @@ export type DrawerTabId =
   | "application"
   | "financials"
   | "banking"
+  | "ocr-insights"
   | "credit-summary"
   | "documents"
   | "notes"
