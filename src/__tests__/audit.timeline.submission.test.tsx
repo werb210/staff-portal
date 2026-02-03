@@ -16,9 +16,21 @@ vi.mock("@/pages/applications/hooks/useApplicationDetails", () => ({
       auditTimeline: [
         {
           id: "evt-1",
-          type: "Submitted to Merchant Growth via Google Sheet",
+          type: "submission_google_sheet",
           createdAt: "2024-01-01T12:00:00Z",
-          detail: "Submitted to Merchant Growth via Google Sheet"
+          detail: "Submitted via sheet"
+        },
+        {
+          id: "evt-2",
+          type: "submission_failed",
+          createdAt: "2024-01-02T12:00:00Z",
+          detail: "Failed"
+        },
+        {
+          id: "evt-3",
+          type: "submission_retry",
+          createdAt: "2024-01-03T12:00:00Z",
+          detail: "Retried"
         }
       ]
     },
@@ -27,11 +39,12 @@ vi.mock("@/pages/applications/hooks/useApplicationDetails", () => ({
   })
 }));
 
-describe("AuditTimelineTab", () => {
-  it("renders submission events in the timeline", async () => {
+describe("audit timeline submissions", () => {
+  it("renders submission audit labels", async () => {
     renderWithProviders(<AuditTimelineTab />);
 
-    expect((await screen.findAllByText("Submitted to Merchant Growth via Google Sheet")).length).toBeGreaterThan(0);
-    expect(screen.getByText("2024-01-01T12:00:00Z")).toBeInTheDocument();
+    expect(await screen.findByText("Application submitted to lender (Google Sheet)")).toBeInTheDocument();
+    expect(screen.getByText("Submission failed — retry required")).toBeInTheDocument();
+    expect(screen.getByText("Submission retried successfully")).toBeInTheDocument();
   });
 });

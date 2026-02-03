@@ -163,6 +163,7 @@ export const usePipelineStore = create<PipelineStore>((set) => {
 const filterKeyParts = (filters: PipelineFilters) => [
   filters.searchTerm ?? "",
   filters.productCategory ?? "",
+  filters.submissionMethod ?? "",
   filters.dateFrom ?? "",
   filters.dateTo ?? "",
   filters.sort ?? "newest"

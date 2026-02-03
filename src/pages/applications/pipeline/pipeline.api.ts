@@ -6,6 +6,7 @@ const buildQueryParams = (filters: PipelineFilters, stage?: PipelineStageId): st
   if (stage) params.set("stage", stage);
   if (filters.searchTerm) params.set("search", filters.searchTerm);
   if (filters.productCategory) params.set("productCategory", filters.productCategory);
+  if (filters.submissionMethod) params.set("submissionMethod", filters.submissionMethod);
   if (filters.dateFrom) params.set("from", filters.dateFrom);
   if (filters.dateTo) params.set("to", filters.dateTo);
   if (filters.sort) params.set("sort", filters.sort);
@@ -123,6 +124,12 @@ const normalizePipelineApplication = (value: unknown): PipelineApplication | nul
         ? value.productCategory
         : typeof value.product_category === "string"
           ? value.product_category
+          : undefined,
+    submissionMethod:
+      typeof value.submissionMethod === "string"
+        ? value.submissionMethod
+        : typeof value.submission_method === "string"
+          ? value.submission_method
           : undefined,
     stage:
       typeof value.stage === "string"

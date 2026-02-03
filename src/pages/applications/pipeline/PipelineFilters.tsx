@@ -1,6 +1,7 @@
 import Input from "@/components/ui/Input";
 import Select from "@/components/ui/Select";
 import { usePipelineStore } from "./pipeline.store";
+import { SUBMISSION_METHOD_LABELS } from "@/utils/submissionMethods";
 
 const PipelineFilters = () => {
   const filters = usePipelineStore((state) => state.currentFilters);
@@ -24,6 +25,17 @@ const PipelineFilters = () => {
           { value: "startup", label: "Start-Up" },
           { value: "sba", label: "SBA" },
           { value: "term-loan", label: "Term Loan" }
+        ]}
+      />
+      <Select
+        label="Submission Method"
+        value={filters.submissionMethod ?? ""}
+        onChange={(event) => setFilters({ submissionMethod: event.target.value || undefined })}
+        options={[
+          { value: "", label: "Any" },
+          { value: "API", label: SUBMISSION_METHOD_LABELS.API },
+          { value: "EMAIL", label: SUBMISSION_METHOD_LABELS.EMAIL },
+          { value: "GOOGLE_SHEET", label: SUBMISSION_METHOD_LABELS.GOOGLE_SHEET }
         ]}
       />
       <div className="pipeline-filters__dates">
