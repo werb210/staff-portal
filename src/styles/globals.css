@@ -1,20 +1,39 @@
 :root {
-  color-scheme: dark;
+  --bg-primary: #ffffff;
+  --panel-bg: #f8f9fb;
+  --text-primary: #0b1220;
+  color-scheme: light dark;
   font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  background-color: #0b0f1a;
-  color: #f8fafc;
-  --ui-bg: #0b0f1a;
-  --ui-surface: rgba(15, 23, 42, 0.82);
-  --ui-surface-strong: rgba(17, 25, 40, 0.96);
-  --ui-surface-muted: rgba(15, 23, 42, 0.55);
-  --ui-text: #f8fafc;
-  --ui-text-muted: #94a3b8;
-  --ui-text-soft: #cbd5f5;
+  color: var(--text-primary);
+  --ui-bg: var(--bg-primary);
+  --ui-surface: var(--panel-bg);
+  --ui-surface-strong: #ffffff;
+  --ui-surface-muted: #eef1f5;
+  --ui-text: var(--text-primary);
+  --ui-text-muted: #475569;
+  --ui-text-soft: #1f2937;
   --ui-accent-blue: #3b82f6;
   --ui-accent-gold: #f59e0b;
   --ui-accent-red: #ef4444;
-  --ui-shadow-soft: 0 12px 30px rgba(2, 6, 23, 0.45);
-  --ui-shadow-strong: 0 18px 40px rgba(2, 6, 23, 0.65);
+  --ui-shadow-soft: 0 12px 30px rgba(15, 23, 42, 0.08);
+  --ui-shadow-strong: 0 18px 40px rgba(15, 23, 42, 0.16);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-primary: #0b1220;
+    --panel-bg: #121826;
+    --text-primary: #e6e8ee;
+    --ui-bg: var(--bg-primary);
+    --ui-surface: var(--panel-bg);
+    --ui-surface-strong: rgba(17, 25, 40, 0.96);
+    --ui-surface-muted: rgba(15, 23, 42, 0.55);
+    --ui-text: var(--text-primary);
+    --ui-text-muted: #94a3b8;
+    --ui-text-soft: #cbd5f5;
+    --ui-shadow-soft: 0 12px 30px rgba(2, 6, 23, 0.45);
+    --ui-shadow-strong: 0 18px 40px rgba(2, 6, 23, 0.65);
+  }
 }
 
 * {
@@ -32,8 +51,6 @@ body {
     env(safe-area-inset-left);
   overscroll-behavior: none;
   -webkit-tap-highlight-color: transparent;
-  background: radial-gradient(circle at top, rgba(59, 130, 246, 0.12), transparent 45%),
-    radial-gradient(circle at 20% 20%, rgba(245, 158, 11, 0.08), transparent 50%), var(--ui-bg);
   color: var(--ui-text);
 }
 
@@ -53,7 +70,7 @@ a,
 }
 
 .offline-banner {
-  background: rgba(15, 23, 42, 0.9);
+  background: var(--ui-surface-strong);
   color: var(--ui-text);
   text-align: center;
   padding: 10px 16px;
@@ -122,13 +139,12 @@ a,
 .app-shell__main {
   flex: 1;
   padding: 24px;
-  background: radial-gradient(circle at top, rgba(59, 130, 246, 0.08), transparent 45%),
-    linear-gradient(180deg, rgba(11, 15, 26, 0.92) 0%, rgba(8, 12, 20, 0.98) 100%);
+  background: var(--bg-primary);
   padding-bottom: calc(24px + env(safe-area-inset-bottom));
 }
 
 .sidebar {
-  background: linear-gradient(160deg, rgba(15, 23, 42, 0.95), rgba(11, 17, 32, 0.92));
+  background: var(--ui-surface-strong);
   color: var(--ui-text);
   padding: 24px 16px;
   display: flex;
@@ -224,7 +240,7 @@ a,
 
 .topbar__icon-button {
   border: none;
-  background: rgba(15, 23, 42, 0.7);
+  background: var(--ui-surface-muted);
   color: var(--ui-text);
   border-radius: 999px;
   padding: 8px 12px;
@@ -255,7 +271,7 @@ a,
 
 .topbar__menu-button {
   border: none;
-  background: rgba(15, 23, 42, 0.8);
+  background: var(--ui-surface-muted);
   color: var(--ui-text);
   border-radius: 8px;
   padding: 10px 14px;
@@ -281,18 +297,35 @@ a,
 }
 
 .dialer__panel {
-  background: linear-gradient(160deg, rgba(15, 23, 42, 0.95), rgba(10, 15, 28, 0.98));
   width: min(480px, 100%);
   height: 100%;
   display: flex;
   flex-direction: column;
-  padding: 24px;
-  box-shadow: -14px 0 40px rgba(2, 6, 23, 0.6);
+  padding: 0;
   border-radius: 16px 0 0 16px;
   margin: 12px 0;
-  backdrop-filter: blur(18px);
   transform: translateX(0);
   animation: dialer-slide-in 0.24s ease-out;
+}
+
+.dialer-surface {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+  border-radius: 16px 0 0 16px;
+  box-shadow: -14px 0 40px rgba(2, 6, 23, 0.6);
+  background: radial-gradient(circle at top, #1a2233, #0b1220);
+  color: #e6e8ee;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  --ui-text: #e6e8ee;
+  --ui-text-muted: #94a3b8;
+  --ui-text-soft: #cbd5f5;
+}
+
+.dialer-surface * {
+  color-scheme: dark;
 }
 
 .dialer__header {
@@ -544,12 +577,12 @@ a,
 }
 
 .ui-button--secondary {
-  background-color: rgba(15, 23, 42, 0.8);
+  background-color: var(--ui-surface-muted);
   color: var(--ui-text);
 }
 
 .ui-button--ghost {
-  background-color: rgba(15, 23, 42, 0.6);
+  background-color: var(--ui-surface-muted);
   border: none;
   color: var(--ui-text);
   box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.2);
@@ -593,7 +626,7 @@ a,
   font-size: 14px;
   width: 100%;
   min-height: 44px;
-  background: rgba(15, 23, 42, 0.75);
+  background: var(--ui-surface-strong);
   color: var(--ui-text);
   box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.2);
 }
@@ -632,7 +665,8 @@ a,
   align-items: center;
   justify-content: center;
   padding: 32px 16px;
-  background: radial-gradient(circle at top, rgba(59, 130, 246, 0.15), transparent 45%), #0b0f1a;
+  background: radial-gradient(circle at top, rgba(59, 130, 246, 0.15), transparent 45%),
+    var(--bg-primary);
 }
 
 .login-card {
@@ -668,7 +702,7 @@ a,
   border-radius: 12px;
   padding: 12px 14px;
   width: 100%;
-  background: rgba(15, 23, 42, 0.8);
+  background: var(--ui-surface-strong);
   color: var(--ui-text);
   box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.2);
 }
@@ -715,7 +749,7 @@ a,
   border-radius: 12px;
   padding: 12px 16px;
   border: none;
-  background: rgba(15, 23, 42, 0.75);
+  background: var(--ui-surface-muted);
   color: var(--ui-text);
   font-weight: 600;
 }
@@ -1000,7 +1034,7 @@ a,
   font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
-  background: rgba(15, 23, 42, 0.75);
+  background: var(--ui-surface-muted);
   color: var(--ui-text);
   box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.16);
 }
@@ -1385,7 +1419,7 @@ a,
 }
 
 .pipeline-column__pill {
-  background: rgba(15, 23, 42, 0.75);
+  background: var(--ui-surface-muted);
   border: none;
   border-radius: 999px;
   padding: 4px 8px;
@@ -1423,7 +1457,7 @@ a,
 }
 
 .pipeline-card {
-  background: rgba(15, 23, 42, 0.85);
+  background: var(--ui-surface-strong);
   border-radius: 16px;
   padding: 12px;
   box-shadow: var(--ui-shadow-soft);
@@ -1480,12 +1514,15 @@ a,
 
 .pipeline-card__amount {
   font-weight: 700;
-  color: #bfdbfe;
+  color: var(--ui-accent-blue);
 }
 
 @media (max-width: 1024px) {
   .dialer__panel {
     width: 100%;
+  }
+
+  .dialer-surface {
     padding: calc(16px + env(safe-area-inset-top)) 20px calc(16px + env(safe-area-inset-bottom));
   }
 }
@@ -1498,8 +1535,12 @@ a,
   .dialer__panel {
     width: 100%;
     border-radius: 0;
-    box-shadow: none;
     margin: 0;
+  }
+
+  .dialer-surface {
+    border-radius: 0;
+    box-shadow: none;
   }
 }
 
@@ -1518,7 +1559,7 @@ a,
 }
 
 .pipeline-card__pill--muted {
-  background: rgba(15, 23, 42, 0.65);
+  background: var(--ui-surface-muted);
   color: var(--ui-text-muted);
 }
 
@@ -1535,7 +1576,7 @@ a,
 }
 
 .pipeline-card__indicator {
-  background: rgba(15, 23, 42, 0.65);
+  background: var(--ui-surface-muted);
   color: var(--ui-text-muted);
   padding: 4px 6px;
   border-radius: 8px;
@@ -1548,7 +1589,7 @@ a,
 }
 
 .pipeline-card__indicator--muted {
-  background: rgba(15, 23, 42, 0.55);
+  background: var(--ui-surface-muted);
 }
 
 .pipeline-card__footer {
@@ -1601,7 +1642,7 @@ a,
 
 .pipeline-empty {
   padding: 16px;
-  background: rgba(15, 23, 42, 0.7);
+  background: var(--ui-surface-muted);
   border: none;
   border-radius: 16px;
   text-align: center;
@@ -1621,7 +1662,7 @@ a,
 .application-drawer {
   width: min(560px, 100%);
   height: 100%;
-  background: linear-gradient(160deg, rgba(15, 23, 42, 0.96), rgba(9, 13, 25, 0.98));
+  background: var(--panel-bg);
   border-radius: 16px 0 0 16px;
   box-shadow: var(--ui-shadow-strong);
   margin: 12px 0;
@@ -1652,7 +1693,7 @@ a,
 
 .application-drawer__close {
   border: none;
-  background: rgba(15, 23, 42, 0.7);
+  background: var(--ui-surface-muted);
   color: var(--ui-text);
   border-radius: 10px;
   padding: 6px 10px;
@@ -1670,7 +1711,7 @@ a,
 
 .application-drawer__tab {
   border: none;
-  background: rgba(15, 23, 42, 0.7);
+  background: var(--ui-surface-muted);
   color: var(--ui-text-muted);
   border-radius: 12px;
   padding: 8px 12px;
@@ -1690,7 +1731,7 @@ a,
 }
 
 .application-drawer__tab-badge {
-  background: rgba(15, 23, 42, 0.7);
+  background: var(--ui-surface-muted);
   color: var(--ui-text-soft);
   border-radius: 999px;
   padding: 2px 6px;
@@ -1711,7 +1752,7 @@ a,
   top: 96px;
   bottom: 24px;
   width: min(440px, 92vw);
-  background: linear-gradient(160deg, rgba(15, 23, 42, 0.94), rgba(9, 13, 25, 0.98));
+  background: var(--panel-bg);
   border-radius: 16px;
   box-shadow: var(--ui-shadow-strong);
   display: flex;
@@ -1750,7 +1791,7 @@ a,
 }
 
 .drawer-section {
-  background: rgba(15, 23, 42, 0.75);
+  background: var(--ui-surface-muted);
   border-radius: 14px;
   padding: 12px 14px;
   box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.14);
@@ -1787,7 +1828,7 @@ a,
 .drawer-placeholder {
   padding: 12px;
   border-radius: 12px;
-  background: rgba(15, 23, 42, 0.6);
+  background: var(--ui-surface-muted);
   color: var(--ui-text-muted);
   font-size: 13px;
 }
@@ -1833,7 +1874,7 @@ a,
 }
 
 .drawer-list__item {
-  background: rgba(15, 23, 42, 0.6);
+  background: var(--ui-surface-muted);
   border-radius: 12px;
   padding: 10px 12px;
   box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.12);
@@ -1846,7 +1887,7 @@ a,
 }
 
 .drawer-metric {
-  background: rgba(15, 23, 42, 0.7);
+  background: var(--ui-surface-muted);
   border-radius: 12px;
   padding: 12px;
   box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.14);
@@ -1894,7 +1935,7 @@ a,
   border: none;
   border-radius: 12px;
   padding: 10px 12px;
-  background: rgba(15, 23, 42, 0.8);
+  background: var(--ui-surface-strong);
   color: var(--ui-text);
   box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.2);
 }
@@ -1947,7 +1988,7 @@ a,
   border-radius: 999px;
   font-size: 12px;
   font-weight: 600;
-  background: rgba(15, 23, 42, 0.75);
+  background: var(--ui-surface-muted);
   color: var(--ui-text);
   box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.16);
 }
@@ -1978,7 +2019,7 @@ a,
 }
 
 .status-pill--idle {
-  background: rgba(15, 23, 42, 0.7);
+  background: var(--ui-surface-muted);
   color: var(--ui-text-muted);
 }
 
@@ -1998,7 +2039,7 @@ a,
 }
 
 .status-pill--submission-manual {
-  background: rgba(15, 23, 42, 0.7);
+  background: var(--ui-surface-muted);
   color: var(--ui-text-muted);
 }
 
