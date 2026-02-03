@@ -208,117 +208,119 @@ const VoiceDialer = () => {
   return (
     <div className="dialer" data-testid="voice-dialer" role="dialog" aria-label="Outbound call dialer">
       <div className="dialer__panel">
-        <div className="dialer__header">
-          <div>
-            <p className="dialer__eyebrow">Outbound call</p>
-            <h2 className="dialer__title">{displayName}</h2>
-            {context.applicationId && <span className="dialer__meta">Application {context.applicationId}</span>}
-          </div>
-          <button
-            type="button"
-            className="dialer__close"
-            onClick={status === "connected" || status === "ringing" || status === "dialing" ? minimizeDialer : closeDialer}
-            aria-label="Close dialer"
-          >
-            ✕
-          </button>
-        </div>
-        <div className="dialer__body">
-          <div className="dialer__status">
-            <span className={`dialer__status-pill dialer__status-pill--${statusTone}`}>{statusLabel}</span>
-            <span className="dialer__timer">{formatDuration(elapsedSeconds)}</span>
-          </div>
-          {error && (
-            <div role="status" aria-live="polite" className="text-sm text-red-600">
-              {error}
+        <div className="dialer-surface">
+          <div className="dialer__header">
+            <div>
+              <p className="dialer__eyebrow">Outbound call</p>
+              <h2 className="dialer__title">{displayName}</h2>
+              {context.applicationId && <span className="dialer__meta">Application {context.applicationId}</span>}
             </div>
-          )}
-          {warning && (
-            <div role="status" aria-live="polite" className="text-sm text-amber-700">
-              {warning}
-            </div>
-          )}
-          {failureReason && (
-            <div role="status" aria-live="polite" className="text-sm text-slate-600">
-              {formatFailureReason(failureReason)}
-            </div>
-          )}
-          <label className="dialer__field">
-            <span>Number</span>
-            <input
-              type="tel"
-              value={number}
-              onChange={(event) => setNumber(event.target.value)}
-              placeholder="Enter phone number"
-              disabled={isCallInProgress}
-            />
-          </label>
-          <div className="dialer__controls">
-            {controlButtons.map((control) => (
-              <button
-                key={control.key}
-                type="button"
-                className={clsx("dialer__control", { "dialer__control--active": control.active })}
-                onClick={control.onClick}
-                aria-pressed={control.active}
-                disabled={control.disabled}
-              >
-                <span className="dialer__control-icon">{control.icon}</span>
-                <span className="dialer__control-label">{control.label}</span>
-              </button>
-            ))}
+            <button
+              type="button"
+              className="dialer__close"
+              onClick={status === "connected" || status === "ringing" || status === "dialing" ? minimizeDialer : closeDialer}
+              aria-label="Close dialer"
+            >
+              ✕
+            </button>
           </div>
-          <div className="dialer__actions">
-            <Button onClick={dial} disabled={!number || isCallInProgress}>
-              {status === "dialing" ? "Dialing…" : status === "ringing" ? "Ringing…" : status === "connected" ? "In call" : "Dial"}
-            </Button>
-            <Button variant="secondary" onClick={toggleKeypad} aria-pressed={keypadOpen} disabled={isCallSetup}>
-              Keypad
-            </Button>
-            <Button variant="secondary" className="dialer__hangup" onClick={hangup} disabled={status === "idle"}>
-              Hang up
-            </Button>
-          </div>
-          {keypadOpen && (
-            <div className="dialer__keypad" aria-label="Keypad">
-              {["1", "2", "3", "4", "5", "6", "7", "8", "9", "*", "0", "#"].map((digit) => (
+          <div className="dialer__body">
+            <div className="dialer__status">
+              <span className={`dialer__status-pill dialer__status-pill--${statusTone}`}>{statusLabel}</span>
+              <span className="dialer__timer">{formatDuration(elapsedSeconds)}</span>
+            </div>
+            {error && (
+              <div role="status" aria-live="polite" className="text-sm text-red-600">
+                {error}
+              </div>
+            )}
+            {warning && (
+              <div role="status" aria-live="polite" className="text-sm text-amber-700">
+                {warning}
+              </div>
+            )}
+            {failureReason && (
+              <div role="status" aria-live="polite" className="text-sm text-slate-600">
+                {formatFailureReason(failureReason)}
+              </div>
+            )}
+            <label className="dialer__field">
+              <span>Number</span>
+              <input
+                type="tel"
+                value={number}
+                onChange={(event) => setNumber(event.target.value)}
+                placeholder="Enter phone number"
+                disabled={isCallInProgress}
+              />
+            </label>
+            <div className="dialer__controls">
+              {controlButtons.map((control) => (
                 <button
-                  key={digit}
+                  key={control.key}
                   type="button"
-                  className="dialer__keypad-key"
-                  onClick={() => setNumber(`${number}${digit}`)}
-                  disabled={isCallSetup}
+                  className={clsx("dialer__control", { "dialer__control--active": control.active })}
+                  onClick={control.onClick}
+                  aria-pressed={control.active}
+                  disabled={control.disabled}
                 >
-                  {digit}
+                  <span className="dialer__control-icon">{control.icon}</span>
+                  <span className="dialer__control-label">{control.label}</span>
                 </button>
               ))}
             </div>
-          )}
-        </div>
-        <div className="dialer__footer">
-          <div className="dialer__outcomes">
-            {outcomeOptions.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                className="dialer__outcome"
-                disabled={!canSelectOutcome}
-                onClick={() => {
-                  endCall(option.value as "completed" | "voicemail" | "no-answer" | "failed" | "canceled");
-                  resetCall();
-                  closeDialer();
-                }}
-              >
-                {option.label}
-              </button>
-            ))}
+            <div className="dialer__actions">
+              <Button onClick={dial} disabled={!number || isCallInProgress}>
+                {status === "dialing" ? "Dialing…" : status === "ringing" ? "Ringing…" : status === "connected" ? "In call" : "Dial"}
+              </Button>
+              <Button variant="secondary" onClick={toggleKeypad} aria-pressed={keypadOpen} disabled={isCallSetup}>
+                Keypad
+              </Button>
+              <Button variant="secondary" className="dialer__hangup" onClick={hangup} disabled={status === "idle"}>
+                Hang up
+              </Button>
+            </div>
+            {keypadOpen && (
+              <div className="dialer__keypad" aria-label="Keypad">
+                {["1", "2", "3", "4", "5", "6", "7", "8", "9", "*", "0", "#"].map((digit) => (
+                  <button
+                    key={digit}
+                    type="button"
+                    className="dialer__keypad-key"
+                    onClick={() => setNumber(`${number}${digit}`)}
+                    disabled={isCallSetup}
+                  >
+                    {digit}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
-          <Button variant="ghost" onClick={() => {
-            resetCall();
-            closeDialer();
-          }}>
-            Close
-          </Button>
+          <div className="dialer__footer">
+            <div className="dialer__outcomes">
+              {outcomeOptions.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  className="dialer__outcome"
+                  disabled={!canSelectOutcome}
+                  onClick={() => {
+                    endCall(option.value as "completed" | "voicemail" | "no-answer" | "failed" | "canceled");
+                    resetCall();
+                    closeDialer();
+                  }}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+            <Button variant="ghost" onClick={() => {
+              resetCall();
+              closeDialer();
+            }}>
+              Close
+            </Button>
+          </div>
         </div>
       </div>
     </div>
