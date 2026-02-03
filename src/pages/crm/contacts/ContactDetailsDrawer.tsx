@@ -134,7 +134,7 @@ const ContactDetailsDrawer = ({ contact, onClose }: ContactDetailsDrawerProps) =
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="Add internal note"
-            className="w-full border rounded p-2"
+            className="drawer-input"
           />
           <Button onClick={handleAddNote} className="mt-2">
             Save Note
