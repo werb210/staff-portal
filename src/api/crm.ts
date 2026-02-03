@@ -56,6 +56,12 @@ export type TimelineEvent = {
   summary: string;
   details?: string;
   automation?: AutomationMetadata;
+  call?: {
+    outcome: string;
+    durationSeconds: number;
+    failureReason?: string | null;
+    recordingUrl?: string | null;
+  };
 };
 
 const contacts: Contact[] = [
@@ -127,7 +133,13 @@ const timelineEvents: TimelineEvent[] = [
     direction: "outbound",
     occurredAt: new Date().toISOString(),
     summary: "Outbound call to Jane",
-    details: "Discussed application status."
+    details: "Discussed application status.",
+    call: {
+      outcome: "completed",
+      durationSeconds: 245,
+      failureReason: null,
+      recordingUrl: null
+    }
   },
   {
     id: "t2",
@@ -327,6 +339,7 @@ export const logCallEvent = async (payload: {
   number: string;
   durationSeconds: number;
   outcome: string;
+  failureReason?: string | null;
 }) => {
   const call: TimelineEvent = {
     id: `call-${Date.now()}`,
@@ -336,7 +349,15 @@ export const logCallEvent = async (payload: {
     direction: "outbound",
     occurredAt: new Date().toISOString(),
     summary: "Outbound call logged",
-    details: `Number: ${payload.number} · Duration: ${payload.durationSeconds}s · Outcome: ${payload.outcome}`
+    details: `Number: ${payload.number} · Duration: ${payload.durationSeconds}s · Outcome: ${payload.outcome}${
+      payload.failureReason ? ` · Reason: ${payload.failureReason}` : ""
+    }`,
+    call: {
+      outcome: payload.outcome,
+      durationSeconds: payload.durationSeconds,
+      failureReason: payload.failureReason ?? null,
+      recordingUrl: null
+    }
   };
   timelineEvents.push(call);
   return delay(call);

@@ -49,6 +49,7 @@ const ContactDetailsDrawer = ({ contact, onClose }: ContactDetailsDrawerProps) =
     if (!contact || !latestLog) return;
     if (latestLog.contactId !== contact.id) return;
     if (lastLogId.current === latestLog.id) return;
+    if (latestLog.isPending || !latestLog.outcome || !latestLog.endedAt) return;
     lastLogId.current = latestLog.id;
     setTimeline((current) => [
       {
@@ -59,7 +60,15 @@ const ContactDetailsDrawer = ({ contact, onClose }: ContactDetailsDrawerProps) =
         direction: "outbound",
         occurredAt: latestLog.endedAt,
         summary: `Outbound call to ${latestLog.number || "unknown number"}`,
-        details: `Duration ${latestLog.durationSeconds}s · Outcome ${latestLog.outcome}`
+        details: `Duration ${latestLog.durationSeconds}s · Outcome ${latestLog.outcome}${
+          latestLog.failureReason ? ` · Reason ${latestLog.failureReason}` : ""
+        }`,
+        call: {
+          outcome: latestLog.outcome,
+          durationSeconds: latestLog.durationSeconds,
+          failureReason: latestLog.failureReason ?? null,
+          recordingUrl: latestLog.recordingUrl ?? null
+        }
       },
       ...current
     ]);

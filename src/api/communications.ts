@@ -193,12 +193,15 @@ export const logApplicationCallEvent = async (payload: {
   number: string;
   durationSeconds: number;
   outcome: string;
+  failureReason?: string | null;
 }) => {
   const entry: TimelineEntry = {
     id: `call-${Date.now()}`,
     conversationId: payload.applicationId,
     applicationId: payload.applicationId,
-    message: `Call to ${payload.number} · Duration ${payload.durationSeconds}s · Outcome ${payload.outcome}`,
+    message: `Call to ${payload.number} · Duration ${payload.durationSeconds}s · Outcome ${payload.outcome}${
+      payload.failureReason ? ` · Reason ${payload.failureReason}` : ""
+    }`,
     createdAt: now()
   };
   applicationTimeline.push(entry);

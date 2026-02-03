@@ -19,9 +19,13 @@ const resetDialer = () => {
     number: "",
     dialedNumber: null,
     error: null,
+    warning: null,
+    failureReason: null,
     startedAt: null,
     elapsedSeconds: 0,
-    logs: []
+    logs: [],
+    currentCallId: null,
+    dialAttempts: []
   });
 };
 
@@ -85,7 +89,23 @@ describe("VoiceDialer", () => {
     act(() => {
       callHandlers.disconnect?.();
     });
-    expect(await screen.findByText("Call ended")).toBeInTheDocument();
+    expect(await screen.findByText("Completed", { selector: ".dialer__status-pill" })).toBeInTheDocument();
+  });
+
+  it("classifies permission errors inline", async () => {
+    render(<VoiceDialer />);
+    act(() => {
+      useDialerStore.getState().openDialer({ contactName: "Jane Doe" });
+    });
+    const input = await screen.findByPlaceholderText("Enter phone number");
+    await userEvent.type(input, "555-555-0100");
+    await userEvent.click(screen.getByRole("button", { name: "Dial" }));
+
+    act(() => {
+      callHandlers.error?.(new Error("Permission denied by user"));
+    });
+
+    expect(await screen.findByText("Microphone permission denied.")).toBeInTheDocument();
   });
 
   it("preserves dialer state across unmounts", async () => {

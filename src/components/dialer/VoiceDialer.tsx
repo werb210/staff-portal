@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from "react";
 import Button from "@/components/ui/Button";
-import { useDialerStore, type DialerStatus } from "@/state/dialer.store";
+import { useDialerStore, type DialerFailureReason, type DialerStatus } from "@/state/dialer.store";
 import { useTwilioCall } from "@/hooks/useTwilioCall";
 
 const formatDuration = (seconds: number) => {
@@ -17,12 +17,32 @@ const formatStatusLabel = (status: DialerStatus) => {
       return "Ringing…";
     case "connected":
       return "Connected";
+    case "completed":
+      return "Completed";
+    case "voicemail":
+      return "Voicemail";
     case "failed":
       return "Call failed";
     case "ended":
       return "Call ended";
     default:
       return "Ready";
+  }
+};
+
+const formatFailureReason = (reason: DialerFailureReason | null) => {
+  if (!reason) return null;
+  switch (reason) {
+    case "network":
+      return "Network issue detected.";
+    case "permission-denied":
+      return "Microphone permission denied.";
+    case "busy-no-answer":
+      return "Busy or no answer.";
+    case "user-canceled":
+      return "Call canceled.";
+    default:
+      return "Call failed.";
   }
 };
 
@@ -36,6 +56,8 @@ const VoiceDialer = () => {
     keypadOpen,
     number,
     error,
+    warning,
+    failureReason,
     elapsedSeconds,
     closeDialer,
     minimizeDialer,
@@ -50,13 +72,24 @@ const VoiceDialer = () => {
   const displayName = context.contactName ?? context.applicationName ?? "Dialer";
   const statusLabel = formatStatusLabel(status);
   const statusTone =
-    status === "connected" ? "active" : status === "dialing" || status === "ringing" ? "ringing" : status;
+    status === "connected"
+      ? "active"
+      : status === "dialing" || status === "ringing"
+        ? "ringing"
+        : status === "completed"
+          ? "completed"
+          : status === "voicemail"
+            ? "voicemail"
+            : status === "failed"
+              ? "failed"
+              : status;
   const isCallInProgress = status === "dialing" || status === "ringing" || status === "connected";
   const isCallSetup = status === "dialing" || status === "ringing";
-  const canSelectOutcome = status === "ended" || status === "failed";
+  const canSelectOutcome = !isCallInProgress && status !== "idle";
   const outcomeOptions = useMemo(
     () => [
       { label: "Completed", value: "completed" },
+      { label: "Voicemail", value: "voicemail" },
       { label: "No answer", value: "no-answer" },
       { label: "Failed", value: "failed" },
       { label: "Canceled", value: "canceled" }
@@ -100,6 +133,16 @@ const VoiceDialer = () => {
           {error && (
             <div role="status" aria-live="polite" className="text-sm text-red-600">
               {error}
+            </div>
+          )}
+          {warning && (
+            <div role="status" aria-live="polite" className="text-sm text-amber-700">
+              {warning}
+            </div>
+          )}
+          {failureReason && (
+            <div role="status" aria-live="polite" className="text-sm text-slate-600">
+              {formatFailureReason(failureReason)}
             </div>
           )}
           <label className="dialer__field">
@@ -154,7 +197,7 @@ const VoiceDialer = () => {
                 className="dialer__outcome"
                 disabled={!canSelectOutcome}
                 onClick={() => {
-                  endCall(option.value as "completed" | "no-answer" | "failed" | "canceled");
+                  endCall(option.value as "completed" | "voicemail" | "no-answer" | "failed" | "canceled");
                   resetCall();
                   closeDialer();
                 }}

@@ -18,9 +18,13 @@ const resetDialerStore = () => {
       number: "",
       dialedNumber: null,
       error: null,
+      warning: null,
+      failureReason: null,
       startedAt: null,
       elapsedSeconds: 0,
-      logs: []
+      logs: [],
+      currentCallId: null,
+      dialAttempts: []
     },
     true
   );
