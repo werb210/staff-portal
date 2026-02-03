@@ -72,10 +72,12 @@ export default function LoginPage() {
   // 🚨 CRITICAL: redirect immediately once authenticated
   useEffect(() => {
     if (auth.authStatus === "authenticated" && !hasNavigatedRef.current) {
+      const role = auth.user?.role;
+      const destination = role === "Referrer" ? "/referrer" : role === "Lender" ? "/lender" : "/dashboard";
       hasNavigatedRef.current = true;
-      navigate("/dashboard", { replace: true });
+      navigate(destination, { replace: true });
     }
-  }, [auth.authStatus, navigate]);
+  }, [auth.authStatus, auth.user?.role, navigate]);
 
   useEffect(() => {
     if (!msalClient) return;

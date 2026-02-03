@@ -29,6 +29,6 @@ describe("PipelineCard", () => {
       />
     );
 
-    expect(screen.getByText("OCR Missing 2")).toBeInTheDocument();
+    expect(screen.getByText("OCR_MISSING_FIELDS")).toBeInTheDocument();
   });
 });

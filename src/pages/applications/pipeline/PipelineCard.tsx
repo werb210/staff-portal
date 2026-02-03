@@ -81,6 +81,7 @@ const PipelineCard = ({ card, stageId, stageLabel, isTerminalStage, onClick }: P
     return Number.isNaN(parsed.getTime()) ? "—" : parsed.toLocaleDateString();
   })();
   const missingOcrCount = Array.isArray(card.ocrMissingFields) ? card.ocrMissingFields.length : 0;
+  const ocrConflictCount = typeof card.ocrConflictCount === "number" ? card.ocrConflictCount : 0;
 
   const handleCallClick = (event: MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
@@ -124,10 +125,15 @@ const PipelineCard = ({ card, stageId, stageLabel, isTerminalStage, onClick }: P
         <span className="pipeline-card__pill pipeline-card__pill--muted">{card.status ?? "Pending"}</span>
         <span className="pipeline-card__pill pipeline-card__pill--muted">{matchLabel}</span>
         {submissionBadge ? <span className="pipeline-card__pill pipeline-card__pill--muted">{submissionBadge}</span> : null}
+        {card.referrerName ? (
+          <span className="pipeline-card__pill pipeline-card__pill--referral">Referred by {card.referrerName}</span>
+        ) : null}
       </div>
       <div className="pipeline-card__progress">{documentsLabel}</div>
       {(typeof card.bankingComplete === "boolean" ||
         typeof card.ocrComplete === "boolean" ||
+        missingOcrCount > 0 ||
+        ocrConflictCount > 0 ||
         Boolean(card.assignedStaff)) && (
         <div className="pipeline-card__indicators">
           {typeof card.bankingComplete === "boolean" && (
@@ -145,12 +151,17 @@ const PipelineCard = ({ card, stageId, stageLabel, isTerminalStage, onClick }: P
                 "pipeline-card__indicator--active": card.ocrComplete
               })}
             >
-              OCR
+              OCR_COMPLETE
             </span>
           )}
           {missingOcrCount > 0 && (
-            <span className="pipeline-card__indicator pipeline-card__indicator--warning">
-              OCR Missing {missingOcrCount}
+            <span className="pipeline-card__indicator pipeline-card__indicator--warning" title={`${missingOcrCount} missing fields`}>
+              OCR_MISSING_FIELDS
+            </span>
+          )}
+          {ocrConflictCount > 0 && (
+            <span className="pipeline-card__indicator pipeline-card__indicator--warning" title={`${ocrConflictCount} conflicts`}>
+              OCR_CONFLICTS
             </span>
           )}
           {card.assignedStaff && (

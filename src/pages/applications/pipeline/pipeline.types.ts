@@ -51,6 +51,9 @@ export type PipelineApplication = {
   bankingComplete?: boolean;
   ocrComplete?: boolean;
   ocrMissingFields?: string[];
+  ocrConflictCount?: number;
+  referrerId?: string;
+  referrerName?: string;
   assignedStaff?: string;
   createdAt: string;
 };

@@ -98,6 +98,7 @@ const ContactDetailsDrawer = ({ contact, onClose }: ContactDetailsDrawerProps) =
           <p>Silo: {contact.silo}</p>
           <p>Owner: {contact.owner}</p>
           <p>Tags: {contact.tags.join(", ")}</p>
+          {contact.referrerName ? <p>Referred by: {contact.referrerName}</p> : null}
         </Card>
         <Card title="Associated Companies">
           {companies.map((company) => (

@@ -9,7 +9,14 @@ interface ContactRowProps {
 
 const ContactRow = ({ contact, onSelect, onCall }: ContactRowProps) => (
   <tr data-testid={`contact-row-${contact.id}`}>
-    <td>{contact.name}</td>
+    <td>
+      <div className="crm-name">
+        <span>{contact.name}</span>
+        {contact.referrerName ? (
+          <span className="referrer-badge">Referred by {contact.referrerName}</span>
+        ) : null}
+      </div>
+    </td>
     <td>{contact.email}</td>
     <td>{contact.phone}</td>
     <td>{contact.silo}</td>
