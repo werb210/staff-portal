@@ -4,7 +4,7 @@ import { render, screen, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 import LenderProductsPage from "@/pages/lenders/LenderProductsPage";
-import type { Lender } from "@/types/lenderManagement.models";
+import type { Lender, LenderProduct } from "@/types/lenderManagement.models";
 import { renderWithProviders } from "@/test/testUtils";
 import { fetchLenderProducts, fetchLenders } from "@/api/lenders";
 
@@ -68,6 +68,42 @@ const inactiveLender: Lender = {
   status: "INACTIVE"
 };
 
+const sheetLender: Lender = {
+  ...activeLender,
+  id: "l-sheet",
+  name: "Sheet Lender",
+  submissionConfig: {
+    ...activeLender.submissionConfig,
+    method: "GOOGLE_SHEET"
+  }
+};
+
+const sheetProduct: LenderProduct = {
+  id: "p-sheet",
+  lenderId: "l-sheet",
+  productName: "Sheet Product",
+  active: true,
+  category: "TERM_LOAN",
+  country: "US",
+  currency: "USD",
+  minAmount: 5000,
+  maxAmount: 25000,
+  interestRateMin: 8,
+  interestRateMax: 12,
+  rateType: "fixed",
+  termLength: { min: 6, max: 24, unit: "months" },
+  fees: null,
+  minimumCreditScore: null,
+  ltv: null,
+  eligibilityRules: null,
+  eligibilityFlags: {
+    minimumRevenue: null,
+    timeInBusinessMonths: null,
+    industryRestrictions: null
+  },
+  requiredDocuments: []
+};
+
 describe("LenderProductsPage", () => {
   it("shows only active lenders in the product form dropdown", async () => {
     const fetchLendersMock = vi.mocked(fetchLenders);
@@ -102,5 +138,20 @@ describe("LenderProductsPage", () => {
     );
 
     expect(await screen.findByText(/No active lenders available/i)).toBeInTheDocument();
+  });
+
+  it("shows a sheet-based submission badge for Google Sheet lenders", async () => {
+    vi.mocked(fetchLenders).mockResolvedValue([sheetLender]);
+    vi.mocked(fetchLenderProducts).mockResolvedValue([sheetProduct]);
+
+    renderWithProviders(
+      <MemoryRouter initialEntries={["/lender-products"]}>
+        <Routes>
+          <Route path="/lender-products" element={<LenderProductsPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByText(/Sheet-based submission/i)).toBeInTheDocument();
   });
 });

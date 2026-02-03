@@ -101,7 +101,7 @@ describe("LendersPage", () => {
     vi.clearAllMocks();
   });
 
-  it("creates an active lender and shows it as Active", async () => {
+  it("creates an active lender and shows it as active", async () => {
     vi.mocked(fetchLenders).mockResolvedValue([activeLender]);
     vi.mocked(fetchLenderProducts).mockResolvedValue([]);
     vi.mocked(createLender).mockResolvedValue(activeLender);
@@ -110,6 +110,7 @@ describe("LendersPage", () => {
       <MemoryRouter initialEntries={["/lenders"]}>
         <Routes>
           <Route path="/lenders" element={<LendersPage />} />
+          <Route path="/lenders/:lenderId" element={<LendersPage />} />
         </Routes>
       </MemoryRouter>
     );
@@ -125,7 +126,7 @@ describe("LendersPage", () => {
     await userEvent.click(createButtons[createButtons.length - 1]);
 
     await waitFor(() => expect(createLender).toHaveBeenCalled());
-    expect(await screen.findByText("Active")).toBeInTheDocument();
+    expect(await screen.findByText("Lender active")).toBeInTheDocument();
     expect(screen.getByText("Northern Bank")).toBeInTheDocument();
   }, 10000);
 
@@ -142,7 +143,7 @@ describe("LendersPage", () => {
       </MemoryRouter>
     );
 
-    await userEvent.click(await screen.findByText("Northern Bank"));
+    await userEvent.click(await screen.findByRole("button", { name: /Edit lender/i }));
 
     expect(await screen.findByLabelText(/Lender name/i)).toHaveValue("Northern Bank");
     expect(screen.getByLabelText(/Contact name/i)).toHaveValue("Alex Agent");
@@ -199,9 +200,9 @@ describe("LendersPage", () => {
 
     const methodSelect = screen.getByLabelText(/Submission method/i);
     await userEvent.selectOptions(methodSelect, "GOOGLE_SHEET");
-    expect(screen.getByLabelText(/Sheet ID/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Worksheet name/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Mapping preview/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Google Sheet ID/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Sheet tab name/i)).toBeInTheDocument();
+    expect(screen.getByText(/Column mapping editor/i)).toBeInTheDocument();
     expect(screen.getAllByText(/Status/i).length).toBeGreaterThan(0);
 
     await userEvent.selectOptions(methodSelect, "EMAIL");

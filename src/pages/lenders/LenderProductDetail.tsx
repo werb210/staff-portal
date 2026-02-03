@@ -62,6 +62,9 @@ const validateRow = (row: RequirementRow) => {
   return null;
 };
 
+const getSubmissionBadgeLabel = (method?: string | null) =>
+  method === "GOOGLE_SHEET" ? "Sheet-based submission" : getSubmissionMethodLabel(method);
+
 const LenderProductDetail = () => {
   const { productId } = useParams();
   const location = useLocation();
@@ -220,147 +223,123 @@ const LenderProductDetail = () => {
     }
   };
 
-  const handleDelete = async (row: RequirementRow) => {
-    if (!productId || row.isNew) {
-      setRows((prev) => prev.filter((item) => item.id !== row.id));
-      return;
-    }
-    try {
-      await deleteMutation.mutateAsync({ requirementId: row.id });
-      setRows((prev) => prev.filter((item) => item.id !== row.id));
-    } catch (error) {
-      setRows((prev) =>
-        prev.map((item) =>
-          item.id === row.id
-            ? { ...item, error: getErrorMessage(error, "Unable to delete requirement.") }
-            : item
-        )
-      );
-    }
+  const handleDelete = (id: string) => {
+    deleteMutation.mutate({ requirementId: id });
   };
 
-  if (productLoading || lendersLoading) {
-    return <AppLoading />;
-  }
+  if (productLoading || lendersLoading || requirementsLoading) return <AppLoading />;
 
-  if (productError) {
-    return <ErrorBanner message={getErrorMessage(productError, "Unable to load product.")} />;
+  if (productError || lendersError || requirementsError) {
+    return (
+      <ErrorBanner
+        message={getErrorMessage(productError ?? lendersError ?? requirementsError, "Unable to load product details.")}
+      />
+    );
   }
 
   if (!product) {
-    return <ErrorBanner message="Product not found." />;
+    return <ErrorBanner message="Unable to load product details." />;
   }
 
   return (
-    <div className="page">
-      <Card title="Product Info">
-        <div className="grid gap-4 md:grid-cols-2">
-          <div>
-            <div className="text-xs text-slate-500">Name</div>
-            <div className="text-sm font-semibold">{product.productName}</div>
-          </div>
-          <div>
-            <div className="text-xs text-slate-500">Type</div>
-            <div className="text-sm font-semibold">{LENDER_PRODUCT_CATEGORY_LABELS[product.category]}</div>
-          </div>
-          <div>
-            <div className="text-xs text-slate-500">Min / Max Amount</div>
-            <div className="text-sm font-semibold">
-              ${product.minAmount.toLocaleString()} - ${product.maxAmount.toLocaleString()}
-            </div>
-          </div>
-          <div>
-            <div className="text-xs text-slate-500">Status</div>
-            <div className="text-sm font-semibold">{product.active ? "Active" : "Inactive"}</div>
-          </div>
-          <div>
-            <div className="text-xs text-slate-500">Lender Name</div>
-            <div className="text-sm font-semibold">{lenderName || "Unknown lender"}</div>
-          </div>
-          <div>
-            <div className="text-xs text-slate-500">Submission method</div>
-            <div className="text-sm font-semibold">
-              <span className={`status-pill status-pill--submission-${getSubmissionMethodBadgeTone(lenderSubmissionMethod)}`}>
-                {getSubmissionMethodLabel(lenderSubmissionMethod)}
-              </span>
-            </div>
-          </div>
+    <div className="page page--lender-product-detail">
+      <div className="page-header">
+        <div>
+          <h1>{product.productName}</h1>
+          <p className="page-header__subtitle">{lenderName}</p>
         </div>
-        {lendersError && <ErrorBanner message={getErrorMessage(lendersError, "Unable to load lender details.")} />}
-      </Card>
+      </div>
 
-      <div ref={requirementsRef}>
-        <Card title="Document Requirements">
-          {requirementsLoading && <AppLoading />}
-          {requirementsError && (
-            <ErrorBanner message={getErrorMessage(requirementsError, "Unable to load requirements.")} />
-          )}
-          {saveError && <ErrorBanner message={saveError} />}
-          {requiredCount === 0 && (
-            <p className="text-sm text-amber-600">
-              Warning: this product currently has zero required documents.
-            </p>
-          )}
-          <div className="flex flex-wrap gap-2 py-4">
-            <Button type="button" onClick={handleAddRequirement}>
-              ➕ Add Requirement
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={handleSave}
-              disabled={!hasEdits || isSaving}
-            >
-              💾 Save Changes
-            </Button>
+      <div className="page-grid">
+        <Card>
+          <div className="card__body space-y-4">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className={`status-pill status-pill--submission-${getSubmissionMethodBadgeTone(lenderSubmissionMethod)}`}>
+                {getSubmissionBadgeLabel(lenderSubmissionMethod)}
+              </span>
+              <span className="status-pill status-pill--active">Active</span>
+            </div>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <div className="text-xs uppercase text-slate-400">Category</div>
+                <div>{LENDER_PRODUCT_CATEGORY_LABELS[product.category] ?? product.category}</div>
+              </div>
+              <div>
+                <div className="text-xs uppercase text-slate-400">Country</div>
+                <div>{product.country}</div>
+              </div>
+              <div>
+                <div className="text-xs uppercase text-slate-400">Amount range</div>
+                <div>
+                  ${product.minAmount.toLocaleString()} - ${product.maxAmount.toLocaleString()}
+                </div>
+              </div>
+              <div>
+                <div className="text-xs uppercase text-slate-400">Rate type</div>
+                <div>{product.rateType}</div>
+              </div>
+            </div>
           </div>
-          <Table headers={["Document Type", "Required", "Min Amount", "Max Amount", "Actions"]}>
-            {rows.map((row) => {
-              const isDeleteDisabled = row.required && requiredCount <= 1;
-              return (
-                <tr key={row.id} className="management-row">
+        </Card>
+
+        <Card>
+          <div className="card__body space-y-4" ref={requirementsRef}>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h2>Required documents</h2>
+                <p className="text-sm text-slate-500">
+                  {requiredCount} required document{requiredCount === 1 ? "" : "s"}
+                </p>
+              </div>
+              <Button variant="secondary" onClick={handleAddRequirement}>
+                Add requirement
+              </Button>
+            </div>
+
+            {saveError && <ErrorBanner message={saveError} />}
+
+            <Table headers={["Document type", "Required", "Min amount", "Max amount", "Actions"]}>
+              {rows.map((row) => (
+                <tr key={row.id}>
                   <td>
                     {row.isEditing ? (
-                      <Select
+                      <Input
                         value={row.documentType}
                         onChange={(event) =>
                           setRows((prev) =>
                             prev.map((item) =>
+                              item.id === row.id ? { ...item, documentType: event.target.value, error: null } : item
+                            )
+                          )
+                        }
+                      />
+                    ) : (
+                      row.documentType
+                    )}
+                    {row.error && <div className="text-xs text-red-600">{row.error}</div>}
+                  </td>
+                  <td>
+                    {row.isEditing ? (
+                      <Select
+                        value={row.required ? "required" : "optional"}
+                        onChange={(event) =>
+                          setRows((prev) =>
+                            prev.map((item) =>
                               item.id === row.id
-                                ? { ...item, documentType: event.target.value, isEditing: true }
+                                ? { ...item, required: event.target.value === "required", error: null }
                                 : item
                             )
                           )
                         }
                       >
-                        <option value="">Select document type</option>
-                        {documentTypeOptions.map((type) => (
-                          <option key={type} value={type}>
-                            {type}
-                          </option>
-                        ))}
+                        <option value="required">Required</option>
+                        <option value="optional">Optional</option>
                       </Select>
+                    ) : row.required ? (
+                      "Required"
                     ) : (
-                      <span>{row.documentType || "—"}</span>
+                      "Optional"
                     )}
-                  </td>
-                  <td>
-                    <label className="management-toggle">
-                      <input
-                        type="checkbox"
-                        checked={row.required}
-                        onChange={(event) =>
-                          setRows((prev) =>
-                            prev.map((item) =>
-                              item.id === row.id
-                                ? { ...item, required: event.target.checked, isEditing: true }
-                                : item
-                            )
-                          )
-                        }
-                      />
-                      <span>{row.required ? "Required" : "Optional"}</span>
-                    </label>
                   </td>
                   <td>
                     {row.isEditing ? (
@@ -369,15 +348,13 @@ const LenderProductDetail = () => {
                         onChange={(event) =>
                           setRows((prev) =>
                             prev.map((item) =>
-                              item.id === row.id
-                                ? { ...item, minAmount: event.target.value, isEditing: true }
-                                : item
+                              item.id === row.id ? { ...item, minAmount: event.target.value, error: null } : item
                             )
                           )
                         }
                       />
                     ) : (
-                      <span>{row.minAmount || "—"}</span>
+                      row.minAmount || "—"
                     )}
                   </td>
                   <td>
@@ -387,57 +364,87 @@ const LenderProductDetail = () => {
                         onChange={(event) =>
                           setRows((prev) =>
                             prev.map((item) =>
-                              item.id === row.id
-                                ? { ...item, maxAmount: event.target.value, isEditing: true }
-                                : item
+                              item.id === row.id ? { ...item, maxAmount: event.target.value, error: null } : item
                             )
                           )
                         }
                       />
                     ) : (
-                      <span>{row.maxAmount || "—"}</span>
+                      row.maxAmount || "—"
                     )}
                   </td>
                   <td>
-                    <div className="flex flex-col gap-2">
-                      <div className="flex flex-wrap gap-2">
+                    {row.isEditing ? (
+                      <div className="flex items-center gap-2">
                         <Button
-                          type="button"
-                          variant="secondary"
+                          variant="primary"
+                          size="sm"
+                          onClick={handleSave}
+                          disabled={isSaving}
+                        >
+                          Save
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           onClick={() =>
                             setRows((prev) =>
                               prev.map((item) =>
-                                item.id === row.id ? { ...item, isEditing: true } : item
+                                item.id === row.id
+                                  ? { ...item, isEditing: false, error: null, isNew: false }
+                                  : item
+                              )
+                            )
+                          }
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() =>
+                            setRows((prev) =>
+                              prev.map((item) =>
+                                item.id === row.id ? { ...item, isEditing: true, error: null } : item
                               )
                             )
                           }
                         >
                           Edit
                         </Button>
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          disabled={isDeleteDisabled || deleteMutation.isPending}
-                          onClick={() => handleDelete(row)}
-                        >
+                        <Button variant="ghost" size="sm" onClick={() => handleDelete(row.id)}>
                           Delete
                         </Button>
                       </div>
-                      {isDeleteDisabled && (
-                        <span className="text-xs text-slate-500">At least one required doc needed.</span>
-                      )}
-                      {row.error && <span className="text-xs text-red-600">{row.error}</span>}
-                    </div>
+                    )}
                   </td>
                 </tr>
-              );
-            })}
-            {!rows.length && !requirementsLoading && (
-              <tr>
-                <td colSpan={5}>No requirements defined yet.</td>
-              </tr>
+              ))}
+            </Table>
+
+            {documentTypeOptions.length ? (
+              <div className="text-xs text-slate-500">
+                Suggested document types: {documentTypeOptions.join(", ")}
+              </div>
+            ) : null}
+
+            {hasEdits && (
+              <div className="flex items-center gap-2">
+                <Button variant="primary" onClick={handleSave} disabled={isSaving}>
+                  Save changes
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => setRows((prev) => prev.map((row) => ({ ...row, isEditing: false, error: null })))}
+                >
+                  Cancel edits
+                </Button>
+              </div>
             )}
-          </Table>
+          </div>
         </Card>
       </div>
     </div>
