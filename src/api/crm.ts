@@ -32,7 +32,19 @@ export type TimelineEventType =
   | "status"
   | "ai"
   | "lender"
-  | "system";
+  | "system"
+  | "RULE_TRIGGERED"
+  | "AUTO_SMS_SENT"
+  | "AUTO_TASK_CREATED"
+  | "FOLLOW_UP_REMINDER";
+
+export type AutomationMetadata = {
+  ruleId: string;
+  triggerReason: string;
+  delayCondition: string;
+  action: string;
+  internalNotes?: string;
+};
 
 export type TimelineEvent = {
   id: string;
@@ -43,6 +55,7 @@ export type TimelineEvent = {
   direction?: "inbound" | "outbound";
   summary: string;
   details?: string;
+  automation?: AutomationMetadata;
 };
 
 const contacts: Contact[] = [
@@ -189,6 +202,67 @@ const timelineEvents: TimelineEvent[] = [
     occurredAt: new Date().toISOString(),
     summary: "System action",
     details: "Auto-reminder sent"
+  },
+  {
+    id: "t10",
+    entityId: "c1",
+    entityType: "contact",
+    type: "RULE_TRIGGERED",
+    occurredAt: new Date(Date.now() - 1000 * 60 * 9).toISOString(),
+    summary: "Important email not opened",
+    details: "Rule evaluation detected no open activity.",
+    automation: {
+      ruleId: "rule-1024",
+      triggerReason: "No email open within 24 hours",
+      delayCondition: "24h since email sent",
+      action: "Trigger follow-up automation",
+      internalNotes: "Escalate if no response after SMS."
+    }
+  },
+  {
+    id: "t11",
+    entityId: "c1",
+    entityType: "contact",
+    type: "AUTO_SMS_SENT",
+    occurredAt: new Date(Date.now() - 1000 * 60 * 6).toISOString(),
+    summary: "SMS reminder sent",
+    details: "Automated SMS sent to contact.",
+    automation: {
+      ruleId: "rule-1024",
+      triggerReason: "Email unopened",
+      delayCondition: "3m after rule trigger",
+      action: "Send SMS reminder"
+    }
+  },
+  {
+    id: "t12",
+    entityId: "c1",
+    entityType: "contact",
+    type: "AUTO_TASK_CREATED",
+    occurredAt: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
+    summary: "Follow-up task created",
+    details: "Task assigned to owner for outreach.",
+    automation: {
+      ruleId: "rule-1024",
+      triggerReason: "No engagement after SMS",
+      delayCondition: "5m after SMS",
+      action: "Create follow-up task"
+    }
+  },
+  {
+    id: "t13",
+    entityId: "c1",
+    entityType: "contact",
+    type: "FOLLOW_UP_REMINDER",
+    occurredAt: new Date(Date.now() - 1000 * 60 * 4).toISOString(),
+    summary: "Reminder scheduled",
+    details: "Reminder queued for staff review.",
+    automation: {
+      ruleId: "rule-1024",
+      triggerReason: "Pending task without response",
+      delayCondition: "15m after task creation",
+      action: "Notify assigned staff"
+    }
   }
 ];
 
