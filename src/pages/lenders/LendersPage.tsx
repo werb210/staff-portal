@@ -14,6 +14,10 @@ import ActionGate from "@/components/auth/ActionGate";
 import { useAuthorization } from "@/hooks/useAuthorization";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import LenderProductModal, { type ProductFormValues } from "@/components/LenderProductModal";
+import GoogleSheetMappingEditor, {
+  createEmptyMappingRow,
+  type SheetMappingRow
+} from "@/components/lenders/GoogleSheetMappingEditor";
 import {
   createLender,
   createLenderProduct,
@@ -69,12 +73,15 @@ type LenderFormValues = {
   submissionSheetId: string;
   submissionWorksheetName: string;
   submissionMappingPreview: string;
+  submissionMappings: SheetMappingRow[];
   submissionSheetStatus: string;
   submissionApiEndpoint: string;
   submissionApiAuthType: "token" | "key";
 };
 
-const emptyLenderForm: LenderFormValues = {
+const REQUIRED_IDENTIFIER_FIELDS = new Set(["business.legal_name", "owner.email"]);
+
+const createEmptyLenderForm = (): LenderFormValues => ({
   name: "",
   active: true,
   country: "CA",
@@ -89,10 +96,11 @@ const emptyLenderForm: LenderFormValues = {
   submissionSheetId: "",
   submissionWorksheetName: "",
   submissionMappingPreview: "",
+  submissionMappings: [createEmptyMappingRow()],
   submissionSheetStatus: "",
   submissionApiEndpoint: "",
   submissionApiAuthType: "token"
-};
+});
 
 const emptyProductForm = (lenderId: string): ProductFormValues => ({
   lenderId,
@@ -208,6 +216,55 @@ const getSheetStatusBadge = (value?: string) => {
   return { label: "Not connected", tone: "idle" };
 };
 
+const parseMappingPreview = (preview?: string | null): SheetMappingRow[] => {
+  if (!preview) return [createEmptyMappingRow()];
+  try {
+    const parsed = JSON.parse(preview) as { column?: string; field?: string }[];
+    if (!Array.isArray(parsed)) return [createEmptyMappingRow()];
+    const rows = parsed
+      .filter((entry) => entry && (entry.column || entry.field))
+      .map((entry) => ({
+        id: createEmptyMappingRow().id,
+        columnName: entry.column ?? "",
+        systemField: entry.field ?? ""
+      }));
+    return rows.length ? rows : [createEmptyMappingRow()];
+  } catch {
+    return [createEmptyMappingRow()];
+  }
+};
+
+const buildMappingPreview = (rows: SheetMappingRow[]) => {
+  const mapped = rows
+    .map((row) => ({ column: row.columnName.trim(), field: row.systemField.trim() }))
+    .filter((row) => row.column || row.field);
+  if (!mapped.length) return "";
+  return JSON.stringify(mapped, null, 2);
+};
+
+const validateSheetMappings = (rows: SheetMappingRow[]) => {
+  const normalizedRows = rows.map((row) => ({
+    columnName: row.columnName.trim(),
+    systemField: row.systemField.trim()
+  }));
+  if (!normalizedRows.length) {
+    return "At least one column mapping is required.";
+  }
+  if (normalizedRows.some((row) => !row.columnName || !row.systemField)) {
+    return "All mappings must include a sheet column and a system field.";
+  }
+  const columnNames = normalizedRows.map((row) => row.columnName.toLowerCase());
+  const uniqueColumns = new Set(columnNames);
+  if (uniqueColumns.size !== columnNames.length) {
+    return "Sheet column names must be unique.";
+  }
+  const hasIdentifier = normalizedRows.some((row) => REQUIRED_IDENTIFIER_FIELDS.has(row.systemField));
+  if (!hasIdentifier) {
+    return "Map Business Name or Owner Email as an identifier.";
+  }
+  return null;
+};
+
 const PORTAL_PRODUCT_CATEGORIES = [
   "LINE_OF_CREDIT",
   "TERM_LOAN",
@@ -225,14 +282,6 @@ const PORTAL_PRODUCT_CATEGORY_LABELS: Record<(typeof PORTAL_PRODUCT_CATEGORIES)[
   STARTUP_CAPITAL: "Startup Financing"
 };
 
-const buildCategoryOptions = (includeStartup: boolean) => {
-  const categories = includeStartup ? [...PORTAL_PRODUCT_CATEGORIES, "STARTUP_CAPITAL"] : PORTAL_PRODUCT_CATEGORIES;
-  return categories.map((category) => ({
-    value: category,
-    label: PORTAL_PRODUCT_CATEGORY_LABELS[category]
-  }));
-};
-
 const getLenderStatus = (lender?: Lender | null) => {
   if (!lender) return "INACTIVE";
   if (lender.status) return lender.status;
@@ -242,9 +291,12 @@ const getLenderStatus = (lender?: Lender | null) => {
 
 const isLenderActive = (lender?: Lender | null) => getLenderStatus(lender) === "ACTIVE";
 
+const getSubmissionBadgeLabel = (method?: Lender["submissionConfig"]["method"] | null) =>
+  method === "GOOGLE_SHEET" ? "Sheet-based submission" : getSubmissionMethodLabel(method);
+
 const renderSubmissionMethodBadge = (method?: Lender["submissionConfig"]["method"] | null) => (
   <span className={`status-pill status-pill--submission-${getSubmissionMethodBadgeTone(method)}`}>
-    {getSubmissionMethodLabel(method)}
+    {getSubmissionBadgeLabel(method)}
   </span>
 );
 
@@ -258,8 +310,9 @@ const mapLenderToFormValues = (lender: Lender): LenderFormValues => {
     method: "EMAIL",
     submissionEmail: ""
   };
+  const submissionMappings = parseMappingPreview(submissionConfig.mappingPreview);
   return {
-    ...emptyLenderForm,
+    ...createEmptyLenderForm(),
     name: lender.name ?? "",
     active: isLenderActive(lender),
     country: normalizeLenderCountryValue(lender.address?.country ?? "") || COUNTRIES[0].value,
@@ -273,7 +326,8 @@ const mapLenderToFormValues = (lender: Lender): LenderFormValues => {
     submissionAttachmentFormat: submissionConfig.attachmentFormat ?? "PDF",
     submissionSheetId: submissionConfig.sheetId ?? "",
     submissionWorksheetName: submissionConfig.worksheetName ?? "",
-    submissionMappingPreview: submissionConfig.mappingPreview ?? "",
+    submissionMappingPreview: submissionConfig.mappingPreview ?? buildMappingPreview(submissionMappings),
+    submissionMappings,
     submissionSheetStatus: submissionConfig.sheetStatus ?? "",
     submissionApiEndpoint: submissionConfig.apiBaseUrl ?? "",
     submissionApiAuthType: submissionConfig.apiAuthType ?? "token"
@@ -297,7 +351,7 @@ const LendersContent = () => {
   const [isLenderModalOpen, setIsLenderModalOpen] = useState(false);
   const [editingLenderId, setEditingLenderId] = useState<string | null>(null);
   const [editingLender, setEditingLender] = useState<Lender | null>(null);
-  const [lenderFormValues, setLenderFormValues] = useState<LenderFormValues>(emptyLenderForm);
+  const [lenderFormValues, setLenderFormValues] = useState<LenderFormValues>(createEmptyLenderForm());
   const [lenderFormErrors, setLenderFormErrors] = useState<Record<string, string>>({});
   const [lenderSubmitError, setLenderSubmitError] = useState<string | null>(null);
 
@@ -338,7 +392,7 @@ const LendersContent = () => {
   });
   const safeProducts = Array.isArray(products) ? products : [];
   const hasSelectedLender = Boolean(selectedLender);
-  const productsToRender = hasSelectedLender ? safeProducts : [];
+  const productsToRender = hasSelectedLender && !isSelectedLenderInactive ? safeProducts : [];
   const hasStartupCategory =
     productsToRender.some((product) => product.category === "STARTUP_CAPITAL") ||
     editingProduct?.category === "STARTUP_CAPITAL";
@@ -366,7 +420,7 @@ const LendersContent = () => {
     if (isNewRoute) {
       setEditingLender(null);
       setEditingLenderId(null);
-      setLenderFormValues(emptyLenderForm);
+      setLenderFormValues(createEmptyLenderForm());
       setLenderFormErrors({});
       setIsLenderModalOpen(true);
       return;
@@ -402,7 +456,7 @@ const LendersContent = () => {
       setLenderSubmitError(null);
       return;
     }
-    setLenderFormValues(emptyLenderForm);
+    setLenderFormValues(createEmptyLenderForm());
     setLenderFormErrors({});
     setLenderSubmitError(null);
   }, [editingLenderId, isLenderModalOpen, lenderDetail]);
@@ -414,6 +468,9 @@ const LendersContent = () => {
       active: "active",
       submission_method: "submissionMethod",
       submission_email: "submissionEmail",
+      submission_sheet_id: "submissionSheetId",
+      submission_worksheet_name: "submissionWorksheetName",
+      submission_mapping_preview: "submissionMappingPreview",
       contact_name: "primaryContactName",
       contact_email: "primaryContactEmail",
       contact_phone: "primaryContactPhone",
@@ -425,19 +482,18 @@ const LendersContent = () => {
   const productFieldMap = useMemo(
     () => ({
       lender_id: "lenderId",
-      lenderId: "lenderId",
-      name: "productName",
       product_name: "productName",
       category: "category",
-      product_category: "category",
       country: "country",
       min_amount: "minAmount",
       max_amount: "maxAmount",
-      interest_type: "rateType",
+      min_term: "minTerm",
+      max_term: "maxTerm",
+      rate_type: "rateType",
       interest_min: "interestMin",
       interest_max: "interestMax",
-      term_min_months: "minTerm",
-      term_max_months: "maxTerm"
+      fees: "fees",
+      required_documents: "requiredDocuments"
     }),
     []
   );
@@ -448,50 +504,55 @@ const LendersContent = () => {
       setLenderSubmitError(null);
       setLenderFormErrors({});
     },
-    onError: (error, _payload, context) => {
+    onSuccess: async (created) => {
+      emitUiTelemetry("lender_create", {
+        lenderId: created.id,
+        requestId: getRequestId(created)
+      });
+      await queryClient.invalidateQueries({ queryKey: ["lenders"] });
+      setEditingLender(created);
+      setEditingLenderId(created.id);
+      setSelectedLenderId(created.id);
+      setIsLenderModalOpen(false);
+      navigate(`/lenders/${created.id}`);
+    },
+    onError: (error) => {
       const validationErrors = extractValidationErrors(error, lenderFieldMap);
       if (validationErrors && Object.keys(validationErrors).length) {
         setLenderFormErrors(validationErrors);
         return;
       }
       setLenderSubmitError(getErrorMessage(error, "Unable to save lender. Please retry."));
-    },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["lenders"] });
-      await refetchLenders();
-      setIsLenderModalOpen(false);
-      setEditingLender(null);
-      setLenderSubmitError(null);
-      navigate("/lenders");
     }
   });
 
   const updateLenderMutation = useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: Partial<LenderPayload> }) =>
-      updateLender(id, payload),
+    mutationFn: ({ lenderId, payload }: { lenderId: string; payload: Partial<LenderPayload> }) =>
+      updateLender(lenderId, payload),
     onMutate: () => {
       setLenderSubmitError(null);
       setLenderFormErrors({});
     },
-    onError: (error, _payload, context) => {
+    onSuccess: async (updated) => {
+      emitUiTelemetry("lender_update", {
+        lenderId: updated.id,
+        requestId: getRequestId(updated)
+      });
+      await queryClient.invalidateQueries({ queryKey: ["lenders"] });
+      setEditingLender(updated);
+      setEditingLenderId(updated.id);
+      setSelectedLenderId(updated.id);
+      setIsLenderModalOpen(false);
+    },
+    onError: (error) => {
       const validationErrors = extractValidationErrors(error, lenderFieldMap);
       if (validationErrors && Object.keys(validationErrors).length) {
         setLenderFormErrors(validationErrors);
         return;
       }
       setLenderSubmitError(getErrorMessage(error, "Unable to save lender. Please retry."));
-    },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["lenders"] });
-      await refetchLenders();
-      setIsLenderModalOpen(false);
-      setEditingLenderId(null);
-      setEditingLender(null);
-      setLenderSubmitError(null);
-      navigate("/lenders");
     }
   });
-
 
   const createProductMutation = useMutation({
     mutationFn: (payload: LenderProductPayload) => createLenderProduct(payload),
@@ -499,7 +560,7 @@ const LendersContent = () => {
       setProductSubmitError(null);
       setProductFormErrors({});
     },
-    onError: (error, _payload, context) => {
+    onError: (error) => {
       const validationErrors = extractValidationErrors(error, productFieldMap);
       if (validationErrors && Object.keys(validationErrors).length) {
         setProductFormErrors(validationErrors);
@@ -574,6 +635,18 @@ const LendersContent = () => {
       nextErrors.submissionEmail = "Target email address is required.";
     } else if (values.submissionMethod === "EMAIL" && !isValidEmail(values.submissionEmail)) {
       nextErrors.submissionEmail = "Enter a valid email address.";
+    }
+    if (values.submissionMethod === "GOOGLE_SHEET") {
+      if (!values.submissionSheetId.trim()) {
+        nextErrors.submissionSheetId = "Google Sheet ID is required.";
+      }
+      if (!values.submissionWorksheetName.trim()) {
+        nextErrors.submissionWorksheetName = "Sheet tab name is required.";
+      }
+      const mappingError = validateSheetMappings(values.submissionMappings);
+      if (mappingError) {
+        nextErrors.submissionMappingPreview = mappingError;
+      }
     }
     return nextErrors;
   };
@@ -721,307 +794,214 @@ const LendersContent = () => {
     });
   };
 
-  const handleLenderSubmit = () => {
-    if (!canManageLenders) return;
-    const nextErrors = validateLenderForm(lenderFormValues);
-    setLenderFormErrors(nextErrors);
-    if (Object.keys(nextErrors).length) return;
-    const payload = buildLenderPayload(lenderFormValues);
-    if (editingLender) {
-      if (!editingLender.id) {
-        setLenderFormErrors({ name: "Missing lender id. Please refresh and try again." });
-        return;
-      }
-      updateLenderMutation.mutate({ id: editingLender.id, payload });
-      return;
-    }
-    createLenderMutation.mutate(payload);
-  };
-
   const handleProductSubmit = () => {
     if (!canManageLenders) return;
     const errors = validateProductForm(productFormValues);
     setProductFormErrors(errors);
     if (Object.keys(errors).length) return;
     const payload = buildProductPayload(productFormValues, editingProduct);
-    if (editingProduct) {
-      if (!editingProduct.id) {
-        setProductFormErrors({ category: "Missing product id. Please refresh and try again." });
-        return;
-      }
+    if (editingProduct?.id) {
       updateProductMutation.mutate({ productId: editingProduct.id, payload });
       return;
     }
     createProductMutation.mutate(payload);
   };
 
-  const openCreateLenderModal = () => {
-    setEditingLender(null);
-    setEditingLenderId(null);
-    setLenderFormValues(emptyLenderForm);
-    setLenderFormErrors({});
-    setLenderSubmitError(null);
-    setIsLenderModalOpen(true);
-  };
-
-  const openEditLenderModal = (lenderIdValue: string) => {
-    if (!lenderIdValue) return;
-    setSelectedLenderId(lenderIdValue);
-    setEditingLenderId(lenderIdValue);
-    setEditingLender(null);
-    setLenderFormErrors({});
-    setLenderSubmitError(null);
-    setIsLenderModalOpen(true);
+  const handleLenderSubmit = () => {
+    if (!canManageLenders) return;
+    const errors = validateLenderForm(lenderFormValues);
+    setLenderFormErrors(errors);
+    if (Object.keys(errors).length) return;
+    const payload = buildLenderPayload(lenderFormValues);
+    if (editingLender?.id) {
+      updateLenderMutation.mutate({ lenderId: editingLender.id, payload });
+      return;
+    }
+    createLenderMutation.mutate(payload);
   };
 
   const closeLenderModal = () => {
     setIsLenderModalOpen(false);
-    setEditingLenderId(null);
     setEditingLender(null);
-    setLenderFormErrors({});
+    setEditingLenderId(null);
     setLenderSubmitError(null);
-    if (isNewRoute || lenderId) {
-      navigate("/lenders");
-    }
+    setLenderFormErrors({});
+    navigate("/lenders");
   };
 
-  const openCreateProductModal = () => {
-    if (!selectedLender?.id) return;
-    setEditingProduct(null);
-    setProductFormValues(emptyProductForm(selectedLender.id));
-    setProductFormErrors({});
-    setProductSubmitError(null);
-    setIsProductModalOpen(true);
-  };
-
-  const openEditProductModal = (product: LenderProduct) => {
-    if (!product?.id) return;
-    const resolvedCategory = product.category ?? LENDER_PRODUCT_CATEGORIES[0];
-    const rateDefaults = getRateDefaults(product);
-    setEditingProduct(product);
-    setProductFormValues({
-      lenderId: product.lenderId ?? "",
-      active: product.active,
-      productName: product.productName ?? "",
-      category: resolvedCategory,
-      country: splitCountrySelection(product.country),
-      minAmount: toFormString(product.minAmount),
-      maxAmount: toFormString(product.maxAmount),
-      rateType: rateDefaults.rateType,
-      interestMin: rateDefaults.interestMin,
-      interestMax: rateDefaults.interestMax,
-      minTerm: toFormString(product.termLength?.min),
-      maxTerm: toFormString(product.termLength?.max),
-      fees: product.fees ?? "",
-      requiredDocuments: mapRequiredDocumentsToValues(product.requiredDocuments)
-    });
-    setProductFormErrors({});
-    setProductSubmitError(null);
-    setIsProductModalOpen(true);
+  const openEditModal = (lenderIdValue: string) => {
+    setEditingLenderId(lenderIdValue);
+    setIsLenderModalOpen(true);
   };
 
   const closeProductModal = () => {
     setIsProductModalOpen(false);
     setEditingProduct(null);
-    setProductFormErrors({});
     setProductSubmitError(null);
+    setProductFormErrors({});
   };
 
-  useEffect(() => {
-    if (error) {
-      console.error("Failed to load lenders", { requestId: getRequestId(), error });
-    }
-  }, [error]);
+  const handleLenderSelection = (lenderIdValue: string) => {
+    if (lenderIdValue === selectedLenderId) return;
+    setSelectedLenderId(lenderIdValue);
+    setEditingLender(null);
+  };
 
-  useEffect(() => {
-    if (!isLoading && !error) {
-      emitUiTelemetry("data_loaded", { view: "lenders", count: safeLenders.length });
-    }
-  }, [error, isLoading, safeLenders.length]);
+  const handleAddProduct = () => {
+    if (!selectedLender?.id) return;
+    setEditingProduct(null);
+    setIsProductModalOpen(true);
+    setProductFormValues(emptyProductForm(selectedLender.id));
+    setProductFormErrors({});
+  };
 
-  useEffect(() => {
-    if (lenderDetailError) {
-      console.error("Failed to load lender detail", { requestId: getRequestId(), error: lenderDetailError });
-    }
-  }, [lenderDetailError]);
+  const handleEditProduct = (product: LenderProduct) => {
+    setEditingProduct(product);
+    setIsProductModalOpen(true);
+    setProductFormErrors({});
+  };
 
+  if (isLoading || productsLoading) return <AppLoading />;
+  if (error || productsError) {
+    return (
+      <ErrorBanner
+        message={getErrorMessage(error ?? productsError, "Unable to load lender data.")}
+        onRetry={() => {
+          refetchLenders();
+          refetchProducts();
+        }}
+      />
+    );
+  }
+
+  const handleMappingChange = (rows: SheetMappingRow[]) => {
+    setLenderFormValues((prev) => ({
+      ...prev,
+      submissionMappings: rows,
+      submissionMappingPreview: buildMappingPreview(rows)
+    }));
+  };
 
   return (
-    <div className="page">
-      <div className="management-grid">
-        <Card
-          title="Lenders"
-          actions={
-            <ActionGate
-              roles={["Admin", "Staff"]}
-              fallback={
-                <Button type="button" variant="secondary" disabled>
-                  Create lender
-                </Button>
-              }
-            >
-              <Button type="button" variant="secondary" onClick={openCreateLenderModal}>
-                Create lender
-              </Button>
-            </ActionGate>
-          }
-        >
-          {isLoading && <AppLoading />}
-          {error && (
-            <div className="space-y-2">
-              <ErrorBanner message={getErrorMessage(error, "Unable to load lenders.")} />
-              <Button type="button" variant="secondary" onClick={() => void refetchLenders()}>
-                Retry
-              </Button>
-            </div>
-          )}
-          {!isLoading && !error && (
-            <Table headers={["Name", "Status", "Country", "Primary contact"]}>
-              {safeLenders.map((lender, index) => {
-                const lenderIdValue = lender.id ?? "";
-                const lenderName = lender.name?.trim() || "Unnamed lender";
-                const statusLabel = getLenderStatus(lender);
-                const statusVariant = statusLabel === "ACTIVE" ? "active" : "paused";
-                const statusText = statusLabel === "ACTIVE" ? "Active" : "Inactive";
-                const countryLabel = formatLenderCountryLabel(lender.address?.country);
-                const rowKey = lenderIdValue || `lender-${index}`;
-                return (
-                  <tr
-                    key={rowKey}
-                    className="management-row"
-                    role={lenderIdValue ? "button" : undefined}
-                    tabIndex={lenderIdValue ? 0 : undefined}
-                    onClick={() => lenderIdValue && openEditLenderModal(lenderIdValue)}
-                    onKeyDown={(event) => {
-                      if (!lenderIdValue) return;
-                      if (event.key === "Enter" || event.key === " ") {
-                        event.preventDefault();
-                        openEditLenderModal(lenderIdValue);
-                      }
-                    }}
-                  >
-                    <td>
-                      <span className="management-link">{lenderName}</span>
-                    </td>
-                    <td>
-                      <span className={`status-pill status-pill--${statusVariant}`}>
-                        {statusText}
-                      </span>
-                    </td>
-                    <td>{countryLabel || "—"}</td>
-                    <td>
-                      <div className="text-sm font-semibold">{lender.primaryContact?.name || "—"}</div>
-                      <div className="text-xs text-slate-500">{lender.primaryContact?.email || "—"}</div>
-                    </td>
-                  </tr>
-                );
-              })}
-              {!safeLenders.length && (
-                <tr>
-                  <td colSpan={4}>
-                    No lenders.
-                  </td>
-                </tr>
-              )}
-            </Table>
-          )}
+    <div className="page page--lenders">
+      <div className="page-header">
+        <div>
+          <h1>Lenders</h1>
+          <p className="page-header__subtitle">Manage lender details and submission settings.</p>
+        </div>
+        <ActionGate actions={["create_lender"]}>
+          <Button
+            variant="primary"
+            onClick={() => {
+              setEditingLender(null);
+              setEditingLenderId(null);
+              setIsLenderModalOpen(true);
+              setLenderFormValues(createEmptyLenderForm());
+              setLenderFormErrors({});
+            }}
+          >
+            Create lender
+          </Button>
+        </ActionGate>
+      </div>
+
+      <div className="page-grid">
+        <Card>
+          <div className="card__body">
+            {!safeLenders.length ? (
+              <div className="text-sm text-slate-500">No lenders added yet.</div>
+            ) : (
+              <div className="management-grid">
+                <Select
+                  label="Lender"
+                  value={selectedLenderId ?? ""}
+                  onChange={(event) => handleLenderSelection(event.target.value)}
+                >
+                  {safeLenders.map((lender) => (
+                    <option key={lender.id} value={lender.id}>
+                      {lender.name || "Unnamed lender"}
+                    </option>
+                  ))}
+                </Select>
+                {selectedLender && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className={`status-pill status-pill--${isLenderActive(selectedLender) ? "active" : "paused"}`}>
+                      {isLenderActive(selectedLender) ? "Lender active" : "Lender inactive"}
+                    </span>
+                    <span>{formatLenderCountryLabel(selectedLender.address?.country) || "—"}</span>
+                    {!isLenderActive(selectedLender) && (
+                      <span className="text-xs text-amber-600">Inactive lenders hide products.</span>
+                    )}
+                  </div>
+                )}
+                {selectedLender ? (
+                  <div className="flex flex-wrap gap-2">
+                    <Button variant="secondary" onClick={() => openEditModal(selectedLender.id)}>
+                      Edit lender
+                    </Button>
+                    <Button variant="secondary" onClick={handleAddProduct} disabled={isSelectedLenderInactive}>
+                      Add product
+                    </Button>
+                  </div>
+                ) : null}
+              </div>
+            )}
+          </div>
         </Card>
 
-        <Card
-          title="Products"
-          actions={
-            <ActionGate
-              roles={["Admin", "Staff"]}
-              fallback={
-                <Button type="button" variant="secondary" disabled>
-                  Add product
-                </Button>
-              }
-            >
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={openCreateProductModal}
-                disabled={!selectedLender || isSelectedLenderInactive}
-              >
-                Add product
-              </Button>
-            </ActionGate>
-          }
-        >
-          {!selectedLender && (
-            <p className="text-sm text-slate-500">Select a lender on the left to view and manage products.</p>
-          )}
-          {selectedLender && (
-            <div className="management-note">
-              <span className={`status-pill status-pill--${isLenderActive(selectedLender) ? "active" : "paused"}`}>
-                {isLenderActive(selectedLender) ? "Lender active" : "Lender inactive"}
-              </span>
-              <span>{formatLenderCountryLabel(selectedLender.address?.country) || "—"}</span>
-              {!isLenderActive(selectedLender) && (
-                <span className="text-xs text-amber-600">Inactive lenders cannot publish products.</span>
-              )}
-            </div>
-          )}
-          {productsLoading && <AppLoading />}
-          {productsError && (
-            <div className="space-y-2">
-              <ErrorBanner message={getErrorMessage(productsError, "Unable to load products.")} />
-              <Button type="button" variant="secondary" onClick={() => void refetchProducts()}>
-                Retry
-              </Button>
-            </div>
-          )}
-          {!productsLoading && !productsError && (
-            <div className="space-y-6">
-              {groupedProducts.map((group) => (
-                <div key={group.category} className="space-y-2">
-                  <div className="text-sm font-semibold text-slate-600">{group.label}</div>
-                  <Table headers={["Name", "Country", "Submission", "Status", "Amount range"]}>
-                    {group.products.map((product, index) => {
-                      const productIdValue = product.id ?? "";
-                      const productActive = Boolean(product.active);
-                      const minAmount = Number.isFinite(product.minAmount) ? product.minAmount : 0;
-                      const maxAmount = Number.isFinite(product.maxAmount) ? product.maxAmount : 0;
-                      const rowKey = productIdValue || `product-${index}`;
-                      return (
-                        <tr
-                          key={rowKey}
-                          className={productActive ? "management-row" : "management-row management-row--disabled"}
-                        >
-                          <td>
-                            <button
-                              type="button"
-                              className="management-link"
-                              onClick={() => openEditProductModal(product)}
-                              disabled={!productIdValue}
-                            >
-                              {product.productName || "Untitled product"}
-                            </button>
-                          </td>
-                          <td>{formatLenderCountryLabel(product.country) || "—"}</td>
-                          <td>{renderSubmissionMethodBadge(selectedLender?.submissionConfig?.method ?? "MANUAL")}</td>
-                          <td>
-                            <span className={`status-pill status-pill--${productActive ? "active" : "paused"}`}>
-                              {productActive ? "Active" : "Inactive"}
-                            </span>
-                          </td>
-                          <td>
-                            ${minAmount.toLocaleString()} - ${maxAmount.toLocaleString()}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </Table>
-                </div>
-              ))}
-              {!productsToRender.length && (
-                <div className="text-sm text-slate-500">
-                  {hasSelectedLender ? "No products for this lender." : "Select a lender to view products."}
-                </div>
-              )}
-            </div>
-          )}
+        <Card>
+          <div className="card__body">
+            {hasSelectedLender && !isSelectedLenderInactive ? (
+              <div className="space-y-4">
+                {groupedProducts.map((group) => (
+                  <div key={group.category}>
+                    <h3 className="text-lg font-semibold">{group.label}</h3>
+                    <div className="mt-2">
+                      <Table headers={["Product", "Country", "Submission", "Status", "Min/Max"]}>
+                        {group.products.map((product) => {
+                          const productActive = Boolean(product.active);
+                          const minAmount = product.minAmount || 0;
+                          const maxAmount = product.maxAmount || 0;
+                          return (
+                            <tr key={product.id}>
+                              <td>
+                                <button
+                                  type="button"
+                                  className="text-left text-sm font-medium text-slate-900 hover:underline"
+                                  onClick={() => handleEditProduct(product)}
+                                >
+                                  {product.productName}
+                                </button>
+                              </td>
+                              <td>{formatLenderCountryLabel(product.country) || "—"}</td>
+                              <td>{renderSubmissionMethodBadge(selectedLender?.submissionConfig?.method ?? "MANUAL")}</td>
+                              <td>
+                                <span className={`status-pill status-pill--${productActive ? "active" : "paused"}`}>
+                                  {productActive ? "Active" : "Inactive"}
+                                </span>
+                              </td>
+                              <td>
+                                ${minAmount.toLocaleString()} - ${maxAmount.toLocaleString()}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </Table>
+                    </div>
+                  </div>
+                ))}
+                {!productsToRender.length && (
+                  <div className="text-sm text-slate-500">No products for this lender.</div>
+                )}
+              </div>
+            ) : (
+              <div className="text-sm text-slate-500">
+                {hasSelectedLender
+                  ? "This lender is inactive, so products are hidden."
+                  : "Select a lender to view products."}
+              </div>
+            )}
+          </div>
         </Card>
       </div>
 
@@ -1158,27 +1138,29 @@ const LendersContent = () => {
               {lenderFormValues.submissionMethod === "GOOGLE_SHEET" && (
                 <div className="space-y-3">
                   <Input
-                    label="Sheet ID"
+                    label="Google Sheet ID"
                     value={lenderFormValues.submissionSheetId}
                     onChange={(event) =>
                       setLenderFormValues((prev) => ({ ...prev, submissionSheetId: event.target.value }))
                     }
+                    error={lenderFormErrors.submissionSheetId}
                   />
                   <Input
-                    label="Worksheet name"
+                    label="Sheet tab name"
                     value={lenderFormValues.submissionWorksheetName}
                     onChange={(event) =>
                       setLenderFormValues((prev) => ({ ...prev, submissionWorksheetName: event.target.value }))
                     }
+                    error={lenderFormErrors.submissionWorksheetName}
                   />
-                  <label className="ui-field">
-                    <span className="ui-field__label">Mapping preview</span>
-                    <textarea
-                      className="ui-input ui-textarea"
-                      value={lenderFormValues.submissionMappingPreview || "No mapping available."}
-                      readOnly
+                  <div className="ui-field">
+                    <span className="ui-field__label">Column mapping editor</span>
+                    <GoogleSheetMappingEditor
+                      rows={lenderFormValues.submissionMappings}
+                      onChange={handleMappingChange}
+                      error={lenderFormErrors.submissionMappingPreview}
                     />
-                  </label>
+                  </div>
                   <div className="ui-field">
                     <span className="ui-field__label">Status</span>
                     {(() => {
@@ -1289,6 +1271,14 @@ const LendersContent = () => {
       )}
     </div>
   );
+};
+
+const buildCategoryOptions = (hasStartupCategory: boolean) => {
+  const categories = hasStartupCategory ? [...PORTAL_PRODUCT_CATEGORIES, "STARTUP_CAPITAL"] : PORTAL_PRODUCT_CATEGORIES;
+  return categories.map((category) => ({
+    value: category,
+    label: PORTAL_PRODUCT_CATEGORY_LABELS[category] ?? LENDER_PRODUCT_CATEGORY_LABELS[category]
+  }));
 };
 
 const LendersPage = () => (

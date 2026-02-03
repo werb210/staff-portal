@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createLenderSubmission,
@@ -15,8 +15,20 @@ import { useApplicationDrawerStore } from "@/state/applicationDrawer.store";
 import { getErrorMessage } from "@/utils/errors";
 import { useAuth } from "@/hooks/useAuth";
 import AccessRestricted from "@/components/auth/AccessRestricted";
+import Modal from "@/components/ui/Modal";
 import { fullStaffRoles, hasRequiredRole } from "@/utils/roles";
 import { getSubmissionMethodLabel } from "@/utils/submissionMethods";
+
+type MatchWithMethod = LenderMatch & {
+  submissionMethod?: string | null;
+  submission_method?: string | null;
+  submissionConfig?: { method?: string | null };
+};
+
+type ToastState = {
+  message: string;
+  tone: "success";
+};
 
 const LendersTab = () => {
   const applicationId = useApplicationDrawerStore((state) => state.selectedApplicationId);
@@ -41,6 +53,27 @@ const LendersTab = () => {
   const [selected, setSelected] = useState<string[]>([]);
   const [submitError, setSubmitError] = useState<{ message: string; canRetry: boolean } | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [toast, setToast] = useState<ToastState | null>(null);
+  const toastTimeoutRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimeoutRef.current) {
+        window.clearTimeout(toastTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const showToast = (message: string) => {
+    if (toastTimeoutRef.current) {
+      window.clearTimeout(toastTimeoutRef.current);
+    }
+    setToast({ message, tone: "success" });
+    toastTimeoutRef.current = window.setTimeout(() => {
+      setToast(null);
+    }, 4000);
+  };
 
   const mutation = useMutation({
     mutationFn: () => createLenderSubmission(applicationId ?? "", eligibleSelection),
@@ -48,6 +81,7 @@ const LendersTab = () => {
       setSelected([]);
       setSubmitError(null);
       setSubmitSuccess("Submission sent successfully.");
+      showToast("Submission sent to lender.");
       queryClient.invalidateQueries({ queryKey: ["lenders", applicationId, "submissions"] });
     },
     onError: (err) => {
@@ -87,7 +121,6 @@ const LendersTab = () => {
 
   const canManageSubmissions = hasRequiredRole(user?.role, fullStaffRoles);
   const isReadOnly = user?.role === "Lender";
-  const [expandedErrors, setExpandedErrors] = useState<Record<string, boolean>>({});
 
   const submissionRows = useMemo(
     () =>
@@ -108,8 +141,41 @@ const LendersTab = () => {
     [matches, submissions]
   );
 
+  const getMatchSubmissionMethod = (match: LenderMatch) => {
+    const matchWithMethod = match as MatchWithMethod;
+    return matchWithMethod.submissionMethod ?? matchWithMethod.submission_method ?? matchWithMethod.submissionConfig?.method ?? null;
+  };
+
+  const googleSheetMatchIds = useMemo(
+    () =>
+      new Set(
+        matches
+          .filter((match) => getMatchSubmissionMethod(match) === "GOOGLE_SHEET")
+          .map((match) => match.id)
+      ),
+    [matches]
+  );
+
+  const hasGoogleSheetSelection = useMemo(
+    () => eligibleSelection.some((id) => googleSheetMatchIds.has(id)),
+    [eligibleSelection, googleSheetMatchIds]
+  );
+
   const toggleSelection = (id: string) => {
     setSelected((current) => (current.includes(id) ? current.filter((item) => item !== id) : [...current, id]));
+  };
+
+  const handleSendClick = () => {
+    if (hasGoogleSheetSelection) {
+      setIsConfirmOpen(true);
+      return;
+    }
+    mutation.mutate();
+  };
+
+  const handleConfirmSend = () => {
+    setIsConfirmOpen(false);
+    mutation.mutate();
   };
 
   if (!applicationId) return <div className="drawer-placeholder">Select an application to view lenders.</div>;
@@ -235,6 +301,9 @@ const LendersTab = () => {
                           <dd>{submission.externalReference ?? "—"}</dd>
                         </div>
                       </div>
+                      {submission.status === "failed" && submission.errorMessage ? (
+                        <div className="text-xs text-red-600 pt-2">{submission.errorMessage}</div>
+                      ) : null}
                       <div className="flex flex-wrap gap-2 pt-3">
                         {submission.status === "failed" && canManageSubmissions ? (
                           <button
@@ -246,24 +315,7 @@ const LendersTab = () => {
                             Retry submission
                           </button>
                         ) : null}
-                        {submission.status === "failed" && submission.errorMessage ? (
-                          <button
-                            type="button"
-                            className="btn btn--secondary"
-                            onClick={() =>
-                              setExpandedErrors((prev) => ({
-                                ...prev,
-                                [submission.id]: !prev[submission.id]
-                              }))
-                            }
-                          >
-                            View error
-                          </button>
-                        ) : null}
                       </div>
-                      {expandedErrors[submission.id] && submission.errorMessage ? (
-                        <div className="text-xs text-red-600 pt-2">{submission.errorMessage}</div>
-                      ) : null}
                     </div>
                   </div>
                 </div>
@@ -276,13 +328,43 @@ const LendersTab = () => {
         <button
           className="btn btn--primary"
           type="button"
-          onClick={() => mutation.mutate()}
+          onClick={handleSendClick}
           disabled={!eligibleSelection.length || mutation.isPending || !canManageSubmissions}
         >
           Send to Lender
         </button>
         {isReadOnly ? <span className="text-xs text-slate-500">Read-only access.</span> : null}
       </div>
+
+      {isConfirmOpen ? (
+        <Modal title="Confirm submission" onClose={() => setIsConfirmOpen(false)}>
+          <div className="space-y-4">
+            <p>This will submit the application to the lender’s Google Sheet.</p>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                className="btn btn--primary"
+                onClick={handleConfirmSend}
+                disabled={mutation.isPending}
+              >
+                Confirm
+              </button>
+              <button type="button" className="btn btn--secondary" onClick={() => setIsConfirmOpen(false)}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </Modal>
+      ) : null}
+
+      {toast ? (
+        <div
+          className="fixed bottom-4 right-4 z-50 rounded bg-emerald-600 px-4 py-2 text-sm text-white shadow"
+          role="status"
+        >
+          {toast.message}
+        </div>
+      ) : null}
     </div>
   );
 };
