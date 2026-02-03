@@ -80,6 +80,7 @@ const PipelineCard = ({ card, stageId, stageLabel, isTerminalStage, onClick }: P
     const parsed = new Date(card.createdAt);
     return Number.isNaN(parsed.getTime()) ? "—" : parsed.toLocaleDateString();
   })();
+  const missingOcrCount = Array.isArray(card.ocrMissingFields) ? card.ocrMissingFields.length : 0;
 
   const handleCallClick = (event: MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
@@ -145,6 +146,11 @@ const PipelineCard = ({ card, stageId, stageLabel, isTerminalStage, onClick }: P
               })}
             >
               OCR
+            </span>
+          )}
+          {missingOcrCount > 0 && (
+            <span className="pipeline-card__indicator pipeline-card__indicator--warning">
+              OCR Missing {missingOcrCount}
             </span>
           )}
           {card.assignedStaff && (
