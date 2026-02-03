@@ -77,7 +77,7 @@ describe("staff portal smoke checks", () => {
         </Routes>
       </MemoryRouter>
     );
-    expect(await screen.findByText("Lender Products")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: /lender products/i })).toBeInTheDocument();
   });
 
   it("renders core pages without runtime errors", () => {

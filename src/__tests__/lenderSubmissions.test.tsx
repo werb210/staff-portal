@@ -120,7 +120,7 @@ describe("lender submissions tab", () => {
     expect(retryLenderTransmissionMock).toHaveBeenCalledWith("tx-99");
   });
 
-  it("enforces role-based visibility and read-only behavior", async () => {
+  it("enforces role-based visibility and hides lender submission data", async () => {
     fetchLenderMatchesMock.mockResolvedValueOnce([
       { id: "prod-4", lenderName: "Beacon Lending", productCategory: "LOC" }
     ]);
@@ -129,11 +129,11 @@ describe("lender submissions tab", () => {
     renderWithProviders(<LendersTab />, { auth: { user: { id: "1", email: "lender@example.com", role: "Lender" } } });
 
     await waitFor(() => {
-      expect(screen.getByText("Beacon Lending")).toBeInTheDocument();
+      expect(screen.getByText("Access restricted")).toBeInTheDocument();
     });
 
-    expect(screen.getByRole("button", { name: "Send to Lender" })).toBeDisabled();
-    expect(screen.getByText("Read-only access.")).toBeInTheDocument();
+    expect(screen.queryByText("Beacon Lending")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Send to Lender" })).not.toBeInTheDocument();
   });
 
   it("blocks referrer access entirely", async () => {

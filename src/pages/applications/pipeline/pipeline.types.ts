@@ -26,6 +26,7 @@ const normalizeStageId = (value: string) => value.replace(/[\s_-]+/g, "").toUppe
 export type PipelineFilters = {
   searchTerm?: string;
   productCategory?: string;
+  submissionMethod?: string;
   dateFrom?: string;
   dateTo?: string;
   sort?: "newest" | "oldest" | "highest_amount" | "lowest_amount";
@@ -37,6 +38,7 @@ export type PipelineApplication = {
   contactName?: string;
   requestedAmount?: number;
   productCategory?: string;
+  submissionMethod?: string;
   stage: PipelineStageId;
   status?: string;
   matchPercentage?: number | string | null;

@@ -42,9 +42,9 @@ describe("LendersTab", () => {
 
     renderWithProviders(<LendersTab />);
 
-    expect(await screen.findByText("Lender Submission")).toBeInTheDocument();
+    expect(await screen.findByText("Submissions")).toBeInTheDocument();
     expect((await screen.findAllByText("Merchant Growth")).length).toBeGreaterThan(0);
-    expect(screen.getByText("Submitted")).toBeInTheDocument();
+    expect(screen.getByText("Submitted", { selector: "span" })).toBeInTheDocument();
     expect(screen.getByText("Email")).toBeInTheDocument();
     expect(screen.getByText("ext-456")).toBeInTheDocument();
   });
@@ -71,5 +71,6 @@ describe("LendersTab", () => {
     useApplicationDrawerStore.setState({ isOpen: true, selectedApplicationId: "app-123", selectedTab: "lenders" });
     renderWithProviders(<LendersTab />, { auth: { user: { id: "2", email: "lender@example.com", role: "Lender" } } });
     expect(screen.queryByRole("button", { name: /Retry submission/i })).not.toBeInTheDocument();
+    expect(await screen.findByText(/do not have permission/i)).toBeInTheDocument();
   });
 });

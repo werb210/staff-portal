@@ -65,6 +65,23 @@ const validateRow = (row: RequirementRow) => {
 const getSubmissionBadgeLabel = (method?: string | null) =>
   method === "GOOGLE_SHEET" ? "Sheet-based submission" : getSubmissionMethodLabel(method);
 
+const getSubmissionConfigSummary = (config?: { method?: string | null; worksheetName?: string | null; submissionEmail?: string | null; apiBaseUrl?: string | null; sheetStatus?: string | null }) => {
+  if (!config?.method) return "—";
+  switch (config.method) {
+    case "GOOGLE_SHEET": {
+      const spreadsheetName = config.sheetStatus?.trim() || "Google Sheet";
+      const sheetTab = config.worksheetName?.trim() || "—";
+      return `Spreadsheet: ${spreadsheetName} • Sheet: ${sheetTab}`;
+    }
+    case "EMAIL":
+      return `Email: ${config.submissionEmail ?? "—"}`;
+    case "API":
+      return `Endpoint: ${config.apiBaseUrl ?? "—"}`;
+    default:
+      return "—";
+  }
+};
+
 const LenderProductDetail = () => {
   const { productId } = useParams();
   const location = useLocation();
@@ -127,10 +144,11 @@ const LenderProductDetail = () => {
     if (!product) return "";
     return lenders.find((lender) => lender.id === product.lenderId)?.name ?? "";
   }, [lenders, product]);
-  const lenderSubmissionMethod = useMemo(() => {
-    if (!product) return "MANUAL";
-    return lenders.find((lender) => lender.id === product.lenderId)?.submissionConfig?.method ?? "MANUAL";
+  const lenderSubmissionConfig = useMemo(() => {
+    if (!product) return null;
+    return lenders.find((lender) => lender.id === product.lenderId)?.submissionConfig ?? null;
   }, [lenders, product]);
+  const lenderSubmissionMethod = lenderSubmissionConfig?.method ?? "MANUAL";
 
   const documentTypeOptions = useMemo(() => {
     const source = new Set<string>();
@@ -277,6 +295,14 @@ const LenderProductDetail = () => {
               <div>
                 <div className="text-xs uppercase text-slate-400">Rate type</div>
                 <div>{product.rateType}</div>
+              </div>
+              <div>
+                <div className="text-xs uppercase text-slate-400">Submission method</div>
+                <div>{getSubmissionMethodLabel(lenderSubmissionMethod)}</div>
+              </div>
+              <div>
+                <div className="text-xs uppercase text-slate-400">Submission config</div>
+                <div>{getSubmissionConfigSummary(lenderSubmissionConfig ?? undefined)}</div>
               </div>
             </div>
           </div>

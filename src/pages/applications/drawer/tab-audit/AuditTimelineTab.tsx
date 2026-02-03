@@ -4,6 +4,7 @@ import renderValue from "@/pages/applications/ApplicationDetails";
 import { useApplicationDetails } from "@/pages/applications/hooks/useApplicationDetails";
 import type { ApplicationAuditEvent } from "@/types/application.types";
 import { getErrorMessage } from "@/utils/errors";
+import { getAuditEventLabel } from "@/components/Timeline/auditEventLabels";
 
 const AuditTimelineTab = () => {
   const { applicationId, data: details, isLoading, error } = useApplicationDetails();
@@ -27,7 +28,7 @@ const AuditTimelineTab = () => {
           {timeline.map((event) => (
             <div key={event.id} className="drawer-list__item">
               <div className="drawer-section">
-                <div className="drawer-section__title">{event.type}</div>
+                <div className="drawer-section__title">{getAuditEventLabel(event)}</div>
                 <div className="drawer-section__body">
                   <div className="drawer-kv-list">
                     <div className="drawer-kv-list__item">

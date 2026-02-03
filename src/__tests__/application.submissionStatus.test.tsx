@@ -49,11 +49,12 @@ describe("application submission status", () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText("Lender Submission")).toBeInTheDocument();
+      expect(screen.getByText("Submissions")).toBeInTheDocument();
     });
 
     expect(screen.getByText("Google Sheet")).toBeInTheDocument();
-    expect(screen.getAllByText("Sheet unreachable").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Submission failed — retry available").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Sheet unreachable")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Retry submission/i })).toBeInTheDocument();
     expect(screen.queryAllByRole("button", { name: /Retry submission/i }).length).toBe(1);
   });

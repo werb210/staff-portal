@@ -83,6 +83,6 @@ describe("stability smoke tests", () => {
         </Routes>
       </MemoryRouter>
     );
-    expect(await screen.findByText("Lender Products")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: /lender products/i })).toBeInTheDocument();
   });
 });

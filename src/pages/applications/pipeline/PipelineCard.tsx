@@ -6,6 +6,7 @@ import { usePipelineStore } from "./pipeline.store";
 import { useAuth } from "@/hooks/useAuth";
 import { canAccessStaffPortal } from "@/utils/roles";
 import { useDialerStore } from "@/state/dialer.store";
+import { getSubmissionMethodLabel } from "@/utils/submissionMethods";
 
 type PipelineCardProps = {
   card: PipelineApplication;
@@ -25,6 +26,19 @@ const resolveMatchScore = (card: PipelineApplication) => {
   if (raw == null || raw === "") return null;
   if (typeof raw === "number" && Number.isNaN(raw)) return null;
   return raw;
+};
+
+const getSubmissionBadge = (method?: string) => {
+  switch (method) {
+    case "API":
+      return `🟦 ${getSubmissionMethodLabel(method)}`;
+    case "EMAIL":
+      return `🟩 ${getSubmissionMethodLabel(method)}`;
+    case "GOOGLE_SHEET":
+      return "🟨 Sheet";
+    default:
+      return null;
+  }
 };
 
 const PipelineCard = ({ card, stageId, stageLabel, isTerminalStage, onClick }: PipelineCardProps) => {
@@ -60,6 +74,7 @@ const PipelineCard = ({ card, stageId, stageLabel, isTerminalStage, onClick }: P
       : "Documents: —";
   const matchScore = resolveMatchScore(card);
   const matchLabel = matchScore != null ? `Match ${matchScore}%` : "Match pending";
+  const submissionBadge = getSubmissionBadge(card.submissionMethod);
   const createdAtLabel = (() => {
     if (!card.createdAt) return "—";
     const parsed = new Date(card.createdAt);
@@ -107,6 +122,7 @@ const PipelineCard = ({ card, stageId, stageLabel, isTerminalStage, onClick }: P
         <span className="pipeline-card__pill">{card.productCategory ?? "Unspecified"}</span>
         <span className="pipeline-card__pill pipeline-card__pill--muted">{card.status ?? "Pending"}</span>
         <span className="pipeline-card__pill pipeline-card__pill--muted">{matchLabel}</span>
+        {submissionBadge ? <span className="pipeline-card__pill pipeline-card__pill--muted">{submissionBadge}</span> : null}
       </div>
       <div className="pipeline-card__progress">{documentsLabel}</div>
       {(typeof card.bankingComplete === "boolean" ||

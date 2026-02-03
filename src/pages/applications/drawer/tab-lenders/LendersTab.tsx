@@ -17,7 +17,7 @@ import { useAuth } from "@/hooks/useAuth";
 import AccessRestricted from "@/components/auth/AccessRestricted";
 import Modal from "@/components/ui/Modal";
 import { fullStaffRoles, hasRequiredRole } from "@/utils/roles";
-import { getSubmissionMethodLabel } from "@/utils/submissionMethods";
+import { getSubmissionMethodBadgeTone, getSubmissionMethodLabel } from "@/utils/submissionMethods";
 
 type MatchWithMethod = LenderMatch & {
   submissionMethod?: string | null;
@@ -54,6 +54,7 @@ const LendersTab = () => {
   const [submitError, setSubmitError] = useState<{ message: string; canRetry: boolean } | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [retryTarget, setRetryTarget] = useState<LenderSubmission | null>(null);
   const [toast, setToast] = useState<ToastState | null>(null);
   const toastTimeoutRef = useRef<number | null>(null);
 
@@ -99,8 +100,32 @@ const LendersTab = () => {
   });
 
   const retrySubmissionMutation = useMutation({
-    mutationFn: (lenderProductId?: string) => retryLenderSubmission(applicationId ?? "", lenderProductId),
-    onSuccess: () => {
+    mutationFn: (submission: LenderSubmission) => retryLenderSubmission(applicationId ?? "", submission.lenderProductId),
+    onMutate: async (submission) => {
+      await queryClient.cancelQueries({ queryKey: ["lenders", applicationId, "submissions"] });
+      const previous = queryClient.getQueryData<LenderSubmission[]>(["lenders", applicationId, "submissions"]);
+      queryClient.setQueryData<LenderSubmission[]>(["lenders", applicationId, "submissions"], (current) => {
+        if (!current) return current;
+        const optimisticTimestamp = new Date().toISOString();
+        return current.map((item) =>
+          item.id === submission.id
+            ? {
+                ...item,
+                status: "pending_manual",
+                updatedAt: optimisticTimestamp,
+                errorMessage: null
+              }
+            : item
+        );
+      });
+      return { previous };
+    },
+    onError: (_error, _submission, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(["lenders", applicationId, "submissions"], context.previous);
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["lenders", applicationId, "submissions"] });
     }
   });
@@ -120,7 +145,6 @@ const LendersTab = () => {
   );
 
   const canManageSubmissions = hasRequiredRole(user?.role, fullStaffRoles);
-  const isReadOnly = user?.role === "Lender";
 
   const submissionRows = useMemo(
     () =>
@@ -181,7 +205,7 @@ const LendersTab = () => {
   if (!applicationId) return <div className="drawer-placeholder">Select an application to view lenders.</div>;
   if (isLoading) return <div className="drawer-placeholder">Loading lenders…</div>;
   if (error) return <div className="drawer-placeholder">{getErrorMessage(error, "Unable to load lenders.")}</div>;
-  if (user?.role === "Referrer") {
+  if (!canManageSubmissions) {
     return <AccessRestricted message="You do not have permission to view lender submissions." />;
   }
 
@@ -254,8 +278,8 @@ const LendersTab = () => {
                       Retry
                     </button>
                   ) : null}
-                  {submissionByProductId[match.id]?.errorMessage ? (
-                    <div className="text-xs text-red-600">{submissionByProductId[match.id]?.errorMessage}</div>
+                  {submissionByProductId[match.id]?.status === "failed" ? (
+                    <div className="text-xs text-amber-700">Submission failed — retry available</div>
                   ) : null}
                 </div>
               </li>
@@ -266,7 +290,7 @@ const LendersTab = () => {
         )}
       </div>
       <div className="drawer-section">
-        <div className="drawer-section__title">Lender Submission</div>
+        <div className="drawer-section__title">Submissions</div>
         {submissionsLoading ? <div className="drawer-placeholder">Loading submission status…</div> : null}
         {!submissionsLoading && !submissionRows.length ? (
           <div className="drawer-placeholder">No submissions yet.</div>
@@ -289,20 +313,28 @@ const LendersTab = () => {
                           </dd>
                         </div>
                         <div className="drawer-kv-list__item">
-                          <dt>Timestamp</dt>
+                          <dt>Submitted</dt>
                           <dd>{timestamp}</dd>
                         </div>
                         <div className="drawer-kv-list__item">
                           <dt>Method</dt>
-                          <dd>{getSubmissionMethodLabel(submission.method)}</dd>
+                          <dd>
+                            <span
+                              className={`status-pill status-pill--submission-${getSubmissionMethodBadgeTone(
+                                submission.method
+                              )}`}
+                            >
+                              {getSubmissionMethodLabel(submission.method)}
+                            </span>
+                          </dd>
                         </div>
                         <div className="drawer-kv-list__item">
                           <dt>External reference</dt>
                           <dd>{submission.externalReference ?? "—"}</dd>
                         </div>
                       </div>
-                      {submission.status === "failed" && submission.errorMessage ? (
-                        <div className="text-xs text-red-600 pt-2">{submission.errorMessage}</div>
+                      {submission.status === "failed" ? (
+                        <div className="text-xs text-amber-700 pt-2">Submission failed — retry available</div>
                       ) : null}
                       <div className="flex flex-wrap gap-2 pt-3">
                         {submission.status === "failed" && canManageSubmissions ? (
@@ -310,7 +342,7 @@ const LendersTab = () => {
                             type="button"
                             className="btn btn--secondary"
                             disabled={retrySubmissionMutation.isPending}
-                            onClick={() => retrySubmissionMutation.mutate(submission.lenderProductId)}
+                            onClick={() => setRetryTarget(submission)}
                           >
                             Retry submission
                           </button>
@@ -333,7 +365,6 @@ const LendersTab = () => {
         >
           Send to Lender
         </button>
-        {isReadOnly ? <span className="text-xs text-slate-500">Read-only access.</span> : null}
       </div>
 
       {isConfirmOpen ? (
@@ -350,6 +381,29 @@ const LendersTab = () => {
                 Confirm
               </button>
               <button type="button" className="btn btn--secondary" onClick={() => setIsConfirmOpen(false)}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </Modal>
+      ) : null}
+      {retryTarget ? (
+        <Modal title="Confirm retry" onClose={() => setRetryTarget(null)}>
+          <div className="space-y-4">
+            <p>Retry submission to this lender?</p>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                className="btn btn--primary"
+                onClick={() => {
+                  retrySubmissionMutation.mutate(retryTarget);
+                  setRetryTarget(null);
+                }}
+                disabled={retrySubmissionMutation.isPending}
+              >
+                Confirm retry
+              </button>
+              <button type="button" className="btn btn--secondary" onClick={() => setRetryTarget(null)}>
                 Cancel
               </button>
             </div>
