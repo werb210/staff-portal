@@ -17,16 +17,30 @@ export const useTwilioCall = () => {
   const setDialedNumber = useDialerStore((state) => state.setDialedNumber);
   const setMuted = useDialerStore((state) => state.setMuted);
   const setOnHold = useDialerStore((state) => state.setOnHold);
+  const setFailureReason = useDialerStore((state) => state.setFailureReason);
+  const registerDialAttempt = useDialerStore((state) => state.registerDialAttempt);
 
   const deviceRef = useRef<VoiceDevice | null>(null);
   const callRef = useRef<VoiceCall | null>(null);
   const endingRef = useRef(false);
 
+  const classifyFailureReason = useCallback((error?: Error | null) => {
+    if (typeof navigator !== "undefined" && !navigator.onLine) return "network";
+    const message = error?.message?.toLowerCase() ?? "";
+    if (message.includes("permission") || message.includes("denied") || message.includes("notallowed")) {
+      return "permission-denied";
+    }
+    if (message.includes("busy") || message.includes("no answer") || message.includes("no-answer") || message.includes("declined")) {
+      return "busy-no-answer";
+    }
+    return "unknown";
+  }, []);
+
   const finalizeCall = useCallback(
-    (outcome?: "completed" | "no-answer" | "failed" | "canceled", finalStatus = "ended") => {
+    (outcome?: "completed" | "voicemail" | "no-answer" | "failed" | "canceled", finalStatus?: "ended" | "failed" | "completed" | "voicemail", failureReason?: "network" | "permission-denied" | "busy-no-answer" | "user-canceled" | "unknown") => {
       if (endingRef.current) return;
       endingRef.current = true;
-      endCall(outcome, finalStatus);
+      endCall(outcome, finalStatus, failureReason);
       setMuted(false);
       setOnHold(false);
       callRef.current = null;
@@ -39,15 +53,17 @@ export const useTwilioCall = () => {
       call.on("ringing", () => setStatus("ringing"));
       call.on("accept", () => setStatus("connected"));
       call.on("disconnect", () => finalizeCall());
-      call.on("cancel", () => finalizeCall("canceled"));
-      call.on("reject", () => finalizeCall("failed", "failed"));
+      call.on("cancel", () => finalizeCall("canceled", "failed", "user-canceled"));
+      call.on("reject", () => finalizeCall("failed", "failed", "busy-no-answer"));
       call.on("error", (error: Error) => {
+        const failureReason = classifyFailureReason(error);
         setError(error?.message ?? "Call failed.");
         setStatus("failed");
-        finalizeCall("failed", "failed");
+        setFailureReason(failureReason);
+        finalizeCall("failed", "failed", failureReason);
       });
     },
-    [finalizeCall, setError, setStatus]
+    [classifyFailureReason, finalizeCall, setError, setFailureReason, setStatus]
   );
 
   const getDevice = useCallback(async () => {
@@ -72,10 +88,13 @@ export const useTwilioCall = () => {
     if (typeof navigator !== "undefined" && !navigator.onLine) {
       setError("You are offline. Connect to the internet to place calls.");
       setStatus("failed");
+      setFailureReason("network");
       return;
     }
+    registerDialAttempt(normalized);
     setDialedNumber(normalized);
     setError(null);
+    setFailureReason(null);
     startCall();
     endingRef.current = false;
     try {
@@ -83,23 +102,29 @@ export const useTwilioCall = () => {
       if (!device) {
         setError("Calling is currently unavailable.");
         setStatus("failed");
+        setFailureReason("unknown");
         return;
       }
       const connection = await device.connect({ params: { To: normalized } });
       callRef.current = connection;
       attachCallHandlers(connection);
     } catch (error) {
+      const failureReason = classifyFailureReason(error as Error);
       setError((error as Error)?.message ?? "Call failed to start.");
       setStatus("failed");
-      finalizeCall("failed", "failed");
+      setFailureReason(failureReason);
+      finalizeCall("failed", "failed", failureReason);
     }
   }, [
     attachCallHandlers,
+    classifyFailureReason,
     finalizeCall,
     getDevice,
     number,
+    registerDialAttempt,
     setDialedNumber,
     setError,
+    setFailureReason,
     setStatus,
     startCall,
     status
@@ -107,16 +132,18 @@ export const useTwilioCall = () => {
 
   const hangup = useCallback(() => {
     if (!callRef.current) {
-      finalizeCall("canceled");
+      finalizeCall("canceled", "failed", "user-canceled");
       return;
     }
     try {
       callRef.current.disconnect?.();
     } catch (error) {
       setError((error as Error)?.message ?? "Failed to end call.");
-      finalizeCall("failed", "failed");
+      const failureReason = classifyFailureReason(error as Error);
+      setFailureReason(failureReason);
+      finalizeCall("failed", "failed", failureReason);
     }
-  }, [finalizeCall, setError]);
+  }, [classifyFailureReason, finalizeCall, setError, setFailureReason]);
 
   const toggleMute = useCallback(() => {
     const next = !muted;

@@ -14,9 +14,13 @@ const resetStore = () => {
     number: "",
     dialedNumber: null,
     error: null,
+    warning: null,
+    failureReason: null,
     startedAt: null,
     elapsedSeconds: 0,
-    logs: []
+    logs: [],
+    currentCallId: null,
+    dialAttempts: []
   });
 };
 
@@ -61,6 +65,7 @@ describe("dialer store", () => {
     const latest = useDialerStore.getState().logs[0];
     expect(latest.number).toBe("555-0100");
     expect(latest.outcome).toBe("completed");
+    expect(latest.status).toBe("completed");
     expect(latest.applicationId).toBe("app-1");
     expect(log).not.toBeNull();
   });
