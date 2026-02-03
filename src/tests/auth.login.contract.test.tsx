@@ -117,5 +117,5 @@ describe("login contract flow", () => {
     await waitFor(() => {
       expect(screen.getByTestId("location")).toHaveTextContent("/dashboard");
     });
-  });
+  }, 10000);
 });

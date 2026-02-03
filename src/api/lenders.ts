@@ -36,6 +36,8 @@ export type LenderSubmission = {
   transmissionId?: string | null;
   errorMessage?: string | null;
   updatedAt?: string | null;
+  method?: string | null;
+  externalReference?: string | null;
 };
 
 export type ClientLender = { id: string; name: string };
@@ -248,9 +250,16 @@ const normalizeLender = (raw: LenderSummary): Lender | null => {
         method:
           (raw as Lender).submissionConfig.method === "API" ||
           (raw as Lender).submissionConfig.method === "EMAIL" ||
+          (raw as Lender).submissionConfig.method === "GOOGLE_SHEET" ||
           (raw as Lender).submissionConfig.method === "MANUAL"
             ? (raw as Lender).submissionConfig.method
             : "MANUAL",
+        sheetId: (raw as Lender).submissionConfig.sheetId ?? null,
+        worksheetName: (raw as Lender).submissionConfig.worksheetName ?? null,
+        mappingPreview: (raw as Lender).submissionConfig.mappingPreview ?? null,
+        sheetStatus: (raw as Lender).submissionConfig.sheetStatus ?? null,
+        attachmentFormat: (raw as Lender).submissionConfig.attachmentFormat ?? null,
+        apiAuthType: (raw as Lender).submissionConfig.apiAuthType ?? null,
         apiBaseUrl: (raw as Lender).submissionConfig.apiBaseUrl ?? null,
         apiClientId: (raw as Lender).submissionConfig.apiClientId ?? null,
         apiUsername: (raw as Lender).submissionConfig.apiUsername ?? null,
@@ -260,10 +269,39 @@ const normalizeLender = (raw: LenderSummary): Lender | null => {
     : {
         method:
           typeof (raw as { submission_method?: unknown }).submission_method === "string" &&
-          ["API", "EMAIL", "MANUAL"].includes((raw as { submission_method: string }).submission_method)
+          ["API", "EMAIL", "MANUAL", "GOOGLE_SHEET"].includes((raw as { submission_method: string }).submission_method)
             ? ((raw as { submission_method: string }).submission_method as Lender["submissionConfig"]["method"])
             : "MANUAL",
-        apiBaseUrl: null,
+        sheetId:
+          typeof (raw as { submission_sheet_id?: unknown }).submission_sheet_id === "string"
+            ? (raw as { submission_sheet_id: string }).submission_sheet_id
+            : null,
+        worksheetName:
+          typeof (raw as { submission_worksheet_name?: unknown }).submission_worksheet_name === "string"
+            ? (raw as { submission_worksheet_name: string }).submission_worksheet_name
+            : null,
+        mappingPreview:
+          typeof (raw as { submission_mapping_preview?: unknown }).submission_mapping_preview === "string"
+            ? (raw as { submission_mapping_preview: string }).submission_mapping_preview
+            : null,
+        sheetStatus:
+          typeof (raw as { submission_sheet_status?: unknown }).submission_sheet_status === "string"
+            ? (raw as { submission_sheet_status: string }).submission_sheet_status
+            : null,
+        attachmentFormat:
+          typeof (raw as { submission_attachment_format?: unknown }).submission_attachment_format === "string"
+            ? ((raw as { submission_attachment_format: "PDF" | "CSV" }).submission_attachment_format as
+                | "PDF"
+                | "CSV")
+            : null,
+        apiAuthType:
+          typeof (raw as { submission_api_auth_type?: unknown }).submission_api_auth_type === "string"
+            ? ((raw as { submission_api_auth_type: "token" | "key" }).submission_api_auth_type as "token" | "key")
+            : null,
+        apiBaseUrl:
+          typeof (raw as { submission_api_endpoint?: unknown }).submission_api_endpoint === "string"
+            ? (raw as { submission_api_endpoint: string }).submission_api_endpoint
+            : null,
         apiClientId: null,
         apiUsername: null,
         apiPassword: null,
@@ -461,6 +499,9 @@ export const fetchLenderSubmissions = (applicationId: string, options?: RequestO
     ...options,
     params: { applicationId, ...(options?.params ?? {}) }
   });
+
+export const retryLenderSubmission = (applicationId: string, lenderProductId?: string) =>
+  apiClient.post(`/lender-submissions/${applicationId}/submit`, lenderProductId ? { lenderProductId } : undefined);
 
 export const retryLenderTransmission = (transmissionId: string) =>
   apiClient.post(`/admin/transmissions/${transmissionId}/retry`);

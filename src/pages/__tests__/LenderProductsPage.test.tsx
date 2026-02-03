@@ -40,6 +40,12 @@ const activeLender: Lender = {
   },
   submissionConfig: {
     method: "EMAIL",
+    sheetId: null,
+    worksheetName: null,
+    mappingPreview: null,
+    sheetStatus: null,
+    attachmentFormat: "PDF",
+    apiAuthType: null,
     apiBaseUrl: null,
     apiClientId: null,
     apiUsername: null,

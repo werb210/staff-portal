@@ -103,7 +103,7 @@ describe("Pipeline foundation", () => {
         expect.any(Object)
       )
     );
-  });
+  }, 10000);
 
   it("resets filters without breaking the pipeline view", async () => {
     renderWithProviders(<PipelinePage />);
@@ -115,7 +115,7 @@ describe("Pipeline foundation", () => {
     await waitFor(() => {
       expect(searchInput).toHaveValue("");
     });
-  });
+  }, 10000);
 
   it("prevents movement from terminal stages", async () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });

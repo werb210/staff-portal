@@ -73,5 +73,5 @@ export type RateType = (typeof RATE_TYPES)[number];
 export const TERM_UNITS = ["months", "years"] as const;
 export type TermUnit = (typeof TERM_UNITS)[number];
 
-export const SUBMISSION_METHODS = ["API", "EMAIL", "MANUAL"] as const;
+export const SUBMISSION_METHODS = ["GOOGLE_SHEET", "EMAIL", "API", "MANUAL"] as const;
 export type SubmissionMethod = (typeof SUBMISSION_METHODS)[number];

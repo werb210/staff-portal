@@ -9,6 +9,7 @@ import Select from "@/components/ui/Select";
 import ErrorBanner from "@/components/ui/ErrorBanner";
 import AppLoading from "@/components/layout/AppLoading";
 import { getErrorMessage } from "@/utils/errors";
+import { getSubmissionMethodBadgeTone, getSubmissionMethodLabel } from "@/utils/submissionMethods";
 import {
   createLenderProductRequirement,
   deleteLenderProductRequirement,
@@ -122,6 +123,10 @@ const LenderProductDetail = () => {
   const lenderName = useMemo(() => {
     if (!product) return "";
     return lenders.find((lender) => lender.id === product.lenderId)?.name ?? "";
+  }, [lenders, product]);
+  const lenderSubmissionMethod = useMemo(() => {
+    if (!product) return "MANUAL";
+    return lenders.find((lender) => lender.id === product.lenderId)?.submissionConfig?.method ?? "MANUAL";
   }, [lenders, product]);
 
   const documentTypeOptions = useMemo(() => {
@@ -271,6 +276,14 @@ const LenderProductDetail = () => {
           <div>
             <div className="text-xs text-slate-500">Lender Name</div>
             <div className="text-sm font-semibold">{lenderName || "Unknown lender"}</div>
+          </div>
+          <div>
+            <div className="text-xs text-slate-500">Submission method</div>
+            <div className="text-sm font-semibold">
+              <span className={`status-pill status-pill--submission-${getSubmissionMethodBadgeTone(lenderSubmissionMethod)}`}>
+                {getSubmissionMethodLabel(lenderSubmissionMethod)}
+              </span>
+            </div>
           </div>
         </div>
         {lendersError && <ErrorBanner message={getErrorMessage(lendersError, "Unable to load lender details.")} />}

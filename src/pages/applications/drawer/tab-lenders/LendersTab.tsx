@@ -4,6 +4,7 @@ import {
   createLenderSubmission,
   fetchLenderMatches,
   fetchLenderSubmissions,
+  retryLenderSubmission,
   retryLenderTransmission,
   type LenderMatch,
   type LenderSubmission,
@@ -15,6 +16,7 @@ import { getErrorMessage } from "@/utils/errors";
 import { useAuth } from "@/hooks/useAuth";
 import AccessRestricted from "@/components/auth/AccessRestricted";
 import { fullStaffRoles, hasRequiredRole } from "@/utils/roles";
+import { getSubmissionMethodLabel } from "@/utils/submissionMethods";
 
 const LendersTab = () => {
   const applicationId = useApplicationDrawerStore((state) => state.selectedApplicationId);
@@ -62,6 +64,13 @@ const LendersTab = () => {
     }
   });
 
+  const retrySubmissionMutation = useMutation({
+    mutationFn: (lenderProductId?: string) => retryLenderSubmission(applicationId ?? "", lenderProductId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["lenders", applicationId, "submissions"] });
+    }
+  });
+
   const submissionByProductId = useMemo(
     () =>
       submissions.reduce<Record<string, LenderSubmission>>((acc, submission) => {
@@ -78,6 +87,26 @@ const LendersTab = () => {
 
   const canManageSubmissions = hasRequiredRole(user?.role, fullStaffRoles);
   const isReadOnly = user?.role === "Lender";
+  const [expandedErrors, setExpandedErrors] = useState<Record<string, boolean>>({});
+
+  const submissionRows = useMemo(
+    () =>
+      submissions.map((submission) => {
+        const match = matches.find((item) => item.id === submission.lenderProductId);
+        const externalReference =
+          submission.externalReference ??
+          submission.transmissionId ??
+          (submission as { external_reference?: string | null }).external_reference ??
+          null;
+        return {
+          ...submission,
+          lenderName: match?.lenderName ?? "Unknown lender",
+          method: submission.method ?? (submission as { submission_method?: string | null }).submission_method ?? null,
+          externalReference
+        };
+      }),
+    [matches, submissions]
+  );
 
   const toggleSelection = (id: string) => {
     setSelected((current) => (current.includes(id) ? current.filter((item) => item !== id) : [...current, id]));
@@ -170,6 +199,79 @@ const LendersTab = () => {
           <div className="drawer-placeholder">No lenders available.</div>
         )}
       </div>
+      <div className="drawer-section">
+        <div className="drawer-section__title">Lender Submission</div>
+        {submissionsLoading ? <div className="drawer-placeholder">Loading submission status…</div> : null}
+        {!submissionsLoading && !submissionRows.length ? (
+          <div className="drawer-placeholder">No submissions yet.</div>
+        ) : null}
+        {!submissionsLoading && submissionRows.length ? (
+          <div className="drawer-list">
+            {submissionRows.map((submission) => {
+              const status = formatSubmissionStatus(submission.status);
+              const timestamp = formatTimestamp(submission.updatedAt);
+              return (
+                <div key={submission.id} className="drawer-list__item">
+                  <div className="drawer-section">
+                    <div className="drawer-section__title">{submission.lenderName}</div>
+                    <div className="drawer-section__body">
+                      <div className="drawer-kv-list">
+                        <div className="drawer-kv-list__item">
+                          <dt>Status</dt>
+                          <dd>
+                            <span className={`status-pill status-pill--${status.tone}`}>{status.label}</span>
+                          </dd>
+                        </div>
+                        <div className="drawer-kv-list__item">
+                          <dt>Timestamp</dt>
+                          <dd>{timestamp}</dd>
+                        </div>
+                        <div className="drawer-kv-list__item">
+                          <dt>Method</dt>
+                          <dd>{getSubmissionMethodLabel(submission.method)}</dd>
+                        </div>
+                        <div className="drawer-kv-list__item">
+                          <dt>External reference</dt>
+                          <dd>{submission.externalReference ?? "—"}</dd>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-2 pt-3">
+                        {submission.status === "failed" && canManageSubmissions ? (
+                          <button
+                            type="button"
+                            className="btn btn--secondary"
+                            disabled={retrySubmissionMutation.isPending}
+                            onClick={() => retrySubmissionMutation.mutate(submission.lenderProductId)}
+                          >
+                            Retry submission
+                          </button>
+                        ) : null}
+                        {submission.status === "failed" && submission.errorMessage ? (
+                          <button
+                            type="button"
+                            className="btn btn--secondary"
+                            onClick={() =>
+                              setExpandedErrors((prev) => ({
+                                ...prev,
+                                [submission.id]: !prev[submission.id]
+                              }))
+                            }
+                          >
+                            View error
+                          </button>
+                        ) : null}
+                      </div>
+                      {expandedErrors[submission.id] && submission.errorMessage ? (
+                        <div className="text-xs text-red-600 pt-2">{submission.errorMessage}</div>
+                      ) : null}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : null}
+      </div>
       <div className="drawer-footer-actions">
         <button
           className="btn btn--primary"
@@ -198,6 +300,25 @@ const SubmissionStatus = ({ status, loading }: { status?: LenderSubmissionStatus
     default:
       return <span className="status-pill status-pill--idle">Unknown</span>;
   }
+};
+
+const formatSubmissionStatus = (status?: LenderSubmissionStatus) => {
+  switch (status) {
+    case "sent":
+      return { label: "Submitted", tone: "sent" };
+    case "failed":
+      return { label: "Failed", tone: "failed" };
+    case "pending_manual":
+      return { label: "Pending", tone: "pending" };
+    default:
+      return { label: "Pending", tone: "idle" };
+  }
+};
+
+const formatTimestamp = (value?: string | null) => {
+  if (!value) return "—";
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? "—" : parsed.toLocaleString();
 };
 
 const getRetryId = (submission?: LenderSubmission) =>

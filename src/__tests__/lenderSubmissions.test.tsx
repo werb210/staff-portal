@@ -9,6 +9,7 @@ import {
   createLenderSubmission,
   fetchLenderMatches,
   fetchLenderSubmissions,
+  retryLenderSubmission,
   retryLenderTransmission
 } from "@/api/lenders";
 import { ApiError } from "@/lib/api";
@@ -17,6 +18,7 @@ vi.mock("@/api/lenders", () => ({
   fetchLenderMatches: vi.fn(),
   fetchLenderSubmissions: vi.fn(),
   createLenderSubmission: vi.fn(),
+  retryLenderSubmission: vi.fn(),
   retryLenderTransmission: vi.fn()
 }));
 
@@ -110,7 +112,7 @@ describe("lender submissions tab", () => {
     renderWithProviders(<LendersTab />);
 
     await waitFor(() => {
-      expect(screen.getByText("Failed")).toBeInTheDocument();
+      expect(screen.getAllByText("Failed").length).toBeGreaterThan(0);
     });
 
     await userEvent.click(screen.getByRole("button", { name: "Retry" }));
@@ -162,7 +164,7 @@ describe("lender submissions tab", () => {
     await waitFor(() => {
       expect(screen.getByText("Sent")).toBeInTheDocument();
       expect(screen.getByText("Pending manual")).toBeInTheDocument();
-      expect(screen.getByText("Failed")).toBeInTheDocument();
+      expect(screen.getAllByText("Failed").length).toBeGreaterThan(0);
     });
   });
 });

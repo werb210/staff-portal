@@ -17,6 +17,12 @@ export type LenderPrimaryContact = {
 
 export type LenderSubmissionConfig = {
   method: SubmissionMethod;
+  sheetId: string | null;
+  worksheetName: string | null;
+  mappingPreview: string | null;
+  sheetStatus: string | null;
+  attachmentFormat: "PDF" | "CSV" | null;
+  apiAuthType: "token" | "key" | null;
   apiBaseUrl: string | null;
   apiClientId: string | null;
   apiUsername: string | null;
@@ -64,6 +70,13 @@ export type LenderPayload = {
   contact_phone: string;
   submission_method: SubmissionMethod;
   submission_email: string | null;
+  submission_sheet_id?: string | null;
+  submission_worksheet_name?: string | null;
+  submission_mapping_preview?: string | null;
+  submission_sheet_status?: string | null;
+  submission_attachment_format?: "PDF" | "CSV" | null;
+  submission_api_endpoint?: string | null;
+  submission_api_auth_type?: "token" | "key" | null;
 };
 
 export type LenderProductTermLength = {
