@@ -7,6 +7,7 @@ import type { DocumentRequirement } from "@/types/documents.types";
 import DocumentListItem from "./DocumentListItem";
 import DocumentVersionHistory from "./DocumentVersionHistory";
 import { getErrorMessage } from "@/utils/errors";
+import DocumentReliabilityPanel from "@/features/documentReliability/DocumentReliabilityPanel";
 
 const DocumentsTab = () => {
   const applicationId = useApplicationDrawerStore((state) => state.selectedApplicationId);
@@ -49,6 +50,7 @@ const DocumentsTab = () => {
 
   return (
     <div className="drawer-tab drawer-tab__documents">
+      <DocumentReliabilityPanel />
       <div className="documents-layout">
         <div className="documents-list">
           {documents.length ? (

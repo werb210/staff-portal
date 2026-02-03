@@ -8,7 +8,14 @@ interface CompanyRowProps {
 
 const CompanyRow = ({ company, onSelect }: CompanyRowProps) => (
   <tr data-testid={`company-row-${company.id}`}>
-    <td>{company.name}</td>
+    <td>
+      <div className="crm-name">
+        <span>{company.name}</span>
+        {company.referrerName ? (
+          <span className="referrer-badge">Referred by {company.referrerName}</span>
+        ) : null}
+      </div>
+    </td>
     <td>{company.industry}</td>
     <td>{company.silo}</td>
     <td>{company.owner}</td>

@@ -43,9 +43,11 @@ const CompanyDetailsDrawer = ({ company, onClose }: CompanyDetailsDrawerProps) =
       <div className="drawer__content">
         <Card title="Basic Info">
           <p>Industry: {company.industry}</p>
+          {company.website ? <p>Website: {company.website}</p> : null}
           <p>Silo: {company.silo}</p>
           <p>Owner: {company.owner}</p>
           <p>Tags: {company.tags.join(", ")}</p>
+          {company.referrerName ? <p>Referred by: {company.referrerName}</p> : null}
         </Card>
         <Card title="Contacts">
           {contacts.map((contact) => (

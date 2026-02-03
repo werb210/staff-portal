@@ -161,6 +161,26 @@ const normalizePipelineApplication = (value: unknown): PipelineApplication | nul
       parseStringArray(value.ocrMissingFields) ??
       parseStringArray(value.ocr_missing_fields) ??
       parseStringArray(value.missing_ocr_fields),
+    ocrConflictCount:
+      typeof value.ocrConflictCount === "number"
+        ? value.ocrConflictCount
+        : typeof value.ocr_conflict_count === "number"
+          ? value.ocr_conflict_count
+          : parseStringArray(value.ocrConflicts)?.length ??
+            parseStringArray(value.ocr_conflicts)?.length ??
+            parseStringArray(value.conflicting_ocr_fields)?.length,
+    referrerId:
+      typeof value.referrerId === "string"
+        ? value.referrerId
+        : typeof value.referrer_id === "string"
+          ? value.referrer_id
+          : undefined,
+    referrerName:
+      typeof value.referrerName === "string"
+        ? value.referrerName
+        : typeof value.referrer_name === "string"
+          ? value.referrer_name
+          : undefined,
     assignedStaff:
       typeof value.assignedStaff === "string"
         ? value.assignedStaff

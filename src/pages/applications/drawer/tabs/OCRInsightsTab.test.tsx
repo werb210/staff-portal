@@ -8,21 +8,22 @@ vi.mock("@/hooks/useOCRInsights", () => ({
     error: null,
     data: {
       groupedByCategory: {
-        "Bank Statement": [
+        "balance-sheet": [
           {
             fieldKey: "bank_balance",
             label: "Bank Balance",
             value: "1,200",
             documentId: "doc-1",
             documentName: "January Statement",
-            documentCategory: "Bank Statement",
+            documentCategory: "balance-sheet",
             conflict: true,
             comparisonValues: ["1,500"]
           }
         ]
       },
       missingRequiredFields: [],
-      mismatches: []
+      mismatches: [],
+      mismatchRows: []
     }
   })
 }));

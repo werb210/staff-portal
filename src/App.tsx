@@ -13,6 +13,7 @@ import MarketingPage from "./pages/marketing/MarketingPage";
 import LendersPage from "./pages/lenders/LendersPage";
 import SettingsPage from "./pages/settings/SettingsPage";
 import TaskPane from "./pages/tasks/TaskPane";
+import ReferrerPortal from "./pages/referrer/ReferrerPortal";
 import { emitUiTelemetry } from "./utils/uiTelemetry";
 import { useApiHealthCheck } from "./hooks/useApiHealthCheck";
 import UiFailureBanner from "./components/UiFailureBanner";
@@ -37,6 +38,7 @@ import { buildNotification } from "@/utils/notifications";
 import type { PushNotificationPayload } from "@/types/notifications";
 import { usePortalSessionGuard } from "@/auth/portalSessionGuard";
 import { triggerSafeReload } from "@/utils/reloadGuard";
+import ReferrerLayout from "@/components/layout/ReferrerLayout";
 
 const RouteChangeObserver = () => {
   const location = useLocation();
@@ -271,6 +273,18 @@ export default function App() {
                 <DataReadyGuard>
                   <LoginPage />
                 </DataReadyGuard>
+              }
+            />
+            <Route
+              path="/referrer"
+              element={
+                <PrivateRoute allowedRoles={["Referrer"]}>
+                  <DataReadyGuard>
+                    <ReferrerLayout>
+                      <ReferrerPortal />
+                    </ReferrerLayout>
+                  </DataReadyGuard>
+                </PrivateRoute>
               }
             />
             <Route

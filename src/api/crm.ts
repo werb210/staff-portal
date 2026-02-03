@@ -11,6 +11,8 @@ export type Contact = {
   hasActiveApplication: boolean;
   companyIds: string[];
   applicationIds: string[];
+  referrerId?: string;
+  referrerName?: string;
 };
 
 export type Company = {
@@ -18,9 +20,12 @@ export type Company = {
   name: string;
   silo: "BF" | "BI" | "SLF";
   industry: string;
+  website?: string;
   owner: string;
   tags: string[];
   contactIds: string[];
+  referrerId?: string;
+  referrerName?: string;
 };
 
 export type TimelineEventType =
@@ -87,7 +92,9 @@ const contacts: Contact[] = [
     tags: ["Follow-up"],
     hasActiveApplication: false,
     companyIds: ["co2"],
-    applicationIds: []
+    applicationIds: [],
+    referrerId: "ref-22",
+    referrerName: "Morgan Lee"
   },
   {
     id: "c3",
@@ -120,8 +127,15 @@ const companies: Company[] = [
     industry: "Lending",
     owner: "Taylor",
     tags: ["Partner"],
-    contactIds: ["c2"]
+    contactIds: ["c2"],
+    referrerId: "ref-22",
+    referrerName: "Morgan Lee"
   }
+];
+
+const crmApplications: { id: string; stage: string; contactId: string }[] = [
+  { id: "app-1001", stage: "Underwriting", contactId: "c1" },
+  { id: "app-2002", stage: "Submitted", contactId: "c3" }
 ];
 
 const timelineEvents: TimelineEvent[] = [
@@ -364,13 +378,93 @@ export const logCallEvent = async (payload: {
 };
 
 export const fetchApplications = async (contactId: string) =>
-  delay([
-    { id: "app-1001", stage: "Underwriting", contactId },
-    { id: "app-2002", stage: "Submitted", contactId }
-  ]);
+  delay(crmApplications.filter((application) => application.contactId === contactId));
 
 export const fetchContactCompanies = async (contact: Contact) =>
   delay(companies.filter((company) => contact.companyIds.includes(company.id)));
 
 export const fetchCompanyContacts = async (company: Company) =>
   delay(contacts.filter((contact) => company.contactIds.includes(contact.id)));
+
+export const createContact = async (payload: {
+  name: string;
+  email: string;
+  phone: string;
+  silo: Contact["silo"];
+  owner: string;
+  tags?: string[];
+  referrerId?: string;
+  referrerName?: string;
+}) => {
+  const contact: Contact = {
+    id: `c-${Date.now()}`,
+    name: payload.name,
+    email: payload.email,
+    phone: payload.phone,
+    silo: payload.silo,
+    owner: payload.owner,
+    tags: payload.tags ?? [],
+    hasActiveApplication: false,
+    companyIds: [],
+    applicationIds: [],
+    referrerId: payload.referrerId,
+    referrerName: payload.referrerName
+  };
+  contacts.push(contact);
+  return delay(contact);
+};
+
+export const createCompany = async (payload: {
+  name: string;
+  silo: Company["silo"];
+  industry?: string;
+  website?: string;
+  owner: string;
+  tags?: string[];
+  referrerId?: string;
+  referrerName?: string;
+}) => {
+  const company: Company = {
+    id: `co-${Date.now()}`,
+    name: payload.name,
+    silo: payload.silo,
+    industry: payload.industry ?? "Unspecified",
+    website: payload.website,
+    owner: payload.owner,
+    tags: payload.tags ?? [],
+    contactIds: [],
+    referrerId: payload.referrerId,
+    referrerName: payload.referrerName
+  };
+  companies.push(company);
+  return delay(company);
+};
+
+export const linkContactCompany = async (contactId: string, companyId: string) => {
+  const contact = contacts.find((item) => item.id === contactId);
+  const company = companies.find((item) => item.id === companyId);
+  if (!contact || !company) return delay(null);
+  if (!contact.companyIds.includes(companyId)) contact.companyIds.push(companyId);
+  if (!company.contactIds.includes(contactId)) company.contactIds.push(contactId);
+  return delay({ contact, company });
+};
+
+export const createContactApplication = async (payload: {
+  contactId: string;
+  stage: string;
+}) => {
+  const application = {
+    id: `app-${Date.now()}`,
+    stage: payload.stage,
+    contactId: payload.contactId
+  };
+  crmApplications.push(application);
+  const contact = contacts.find((item) => item.id === payload.contactId);
+  if (contact) {
+    if (!contact.applicationIds.includes(application.id)) {
+      contact.applicationIds.push(application.id);
+      contact.hasActiveApplication = true;
+    }
+  }
+  return delay(application);
+};
