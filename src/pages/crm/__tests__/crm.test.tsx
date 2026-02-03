@@ -141,6 +141,32 @@ describe("Timeline", () => {
       expect(await screen.findByText(summary)).toBeInTheDocument();
     }
   });
+
+  it("groups automated events under an automations cluster", async () => {
+    renderWithProviders(<TimelineFeed entityId="c1" entityType="contact" />);
+    const groupToggle = await screen.findByRole("button", { name: /automations/i });
+    expect(groupToggle).toBeInTheDocument();
+    await userEvent.click(groupToggle);
+    expect(await screen.findByText("Important email not opened")).toBeInTheDocument();
+    expect(await screen.findByText("SMS reminder sent")).toBeInTheDocument();
+  });
+
+  it("shows manual events alongside automated clusters", async () => {
+    renderWithProviders(<TimelineFeed entityId="c1" entityType="contact" />);
+    expect(await screen.findByText("Outbound call to Jane")).toBeInTheDocument();
+  });
+
+  it("hides automation metadata for non-staff roles", async () => {
+    renderWithProviders(<TimelineFeed entityId="c1" entityType="contact" />, {
+      auth: { user: { id: "lender-1", email: "lender@example.com", role: "Lender" } }
+    });
+    const groupToggle = await screen.findByRole("button", { name: /automations/i });
+    await userEvent.click(groupToggle);
+    const automationItem = await screen.findByText("Important email not opened");
+    await userEvent.click(automationItem);
+    expect(await screen.findByText("Automation metadata is restricted to staff.")).toBeInTheDocument();
+    expect(screen.queryByText("Rule ID")).not.toBeInTheDocument();
+  });
 });
 
 describe("Standalone Dialer", () => {

@@ -16,7 +16,11 @@ const eventTypes: TimelineEventType[] = [
   "status",
   "ai",
   "lender",
-  "system"
+  "system",
+  "RULE_TRIGGERED",
+  "AUTO_SMS_SENT",
+  "AUTO_TASK_CREATED",
+  "FOLLOW_UP_REMINDER"
 ];
 
 const TimelineFilters = ({ activeTypes, onToggle, onReset }: TimelineFiltersProps) => (
