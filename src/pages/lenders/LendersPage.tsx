@@ -40,6 +40,7 @@ import { SUBMISSION_METHOD_LABELS, getSubmissionMethodBadgeTone, getSubmissionMe
 import {
   LENDER_PRODUCT_CATEGORIES,
   LENDER_PRODUCT_CATEGORY_LABELS,
+  type LenderProductCategory,
   type RateType
 } from "@/types/lenderManagement.types";
 import {
@@ -155,7 +156,9 @@ const extractValidationErrors = (error: unknown, fieldMap: Record<string, string
   Object.entries(rawErrors as Record<string, unknown>).forEach(([key, value]) => {
     const mappedKey = fieldMap[key] ?? fieldMap[key.toLowerCase()] ?? key;
     const message = Array.isArray(value)
-      ? value.filter((item): item is string => typeof item === "string" && item.trim()).join(", ")
+      ? value
+          .filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+          .join(", ")
       : typeof value === "string"
         ? value
         : typeof value === "object" && value && "message" in value
@@ -273,7 +276,9 @@ const PORTAL_PRODUCT_CATEGORIES = [
   "PURCHASE_ORDER_FINANCE"
 ] as const;
 
-const PORTAL_PRODUCT_CATEGORY_LABELS: Record<(typeof PORTAL_PRODUCT_CATEGORIES)[number] | "STARTUP_CAPITAL", string> = {
+type PortalProductCategory = (typeof PORTAL_PRODUCT_CATEGORIES)[number] | "STARTUP_CAPITAL";
+
+const PORTAL_PRODUCT_CATEGORY_LABELS: Record<PortalProductCategory, string> = {
   LINE_OF_CREDIT: "Line of Credit",
   TERM_LOAN: "Term Loan",
   EQUIPMENT_FINANCE: "Equipment Financing",
@@ -281,6 +286,9 @@ const PORTAL_PRODUCT_CATEGORY_LABELS: Record<(typeof PORTAL_PRODUCT_CATEGORIES)[
   PURCHASE_ORDER_FINANCE: "Purchase Order Financing",
   STARTUP_CAPITAL: "Startup Financing"
 };
+
+const isPortalProductCategory = (value: LenderProductCategory): value is PortalProductCategory =>
+  value === "STARTUP_CAPITAL" || (PORTAL_PRODUCT_CATEGORIES as readonly string[]).includes(value);
 
 const getLenderStatus = (lender?: Lender | null) => {
   if (!lender) return "INACTIVE";
@@ -398,19 +406,24 @@ const LendersContent = () => {
     editingProduct?.category === "STARTUP_CAPITAL";
 
   const groupedProducts = useMemo(() => {
-    const categories = hasStartupCategory ? [...PORTAL_PRODUCT_CATEGORIES, "STARTUP_CAPITAL"] : [...PORTAL_PRODUCT_CATEGORIES];
-    const map = new Map<string, LenderProduct[]>();
+    const categories: PortalProductCategory[] = hasStartupCategory
+      ? [...PORTAL_PRODUCT_CATEGORIES, "STARTUP_CAPITAL"]
+      : [...PORTAL_PRODUCT_CATEGORIES];
+    const map = new Map<LenderProductCategory, LenderProduct[]>();
     productsToRender.forEach((product) => {
       const category = product.category ?? LENDER_PRODUCT_CATEGORIES[0];
       const list = map.get(category) ?? [];
       list.push(product);
       map.set(category, list);
     });
-    const extraCategories = Array.from(map.keys()).filter((category) => !categories.includes(category as typeof categories[number]));
-    return [...categories, ...extraCategories]
+    const extraCategories = Array.from(map.keys()).filter((category) => !isPortalProductCategory(category));
+    const allCategories: LenderProductCategory[] = [...categories, ...extraCategories];
+    return allCategories
       .map((category) => ({
         category,
-        label: PORTAL_PRODUCT_CATEGORY_LABELS[category] ?? LENDER_PRODUCT_CATEGORY_LABELS[category],
+        label:
+          (isPortalProductCategory(category) ? PORTAL_PRODUCT_CATEGORY_LABELS[category] : undefined) ??
+          LENDER_PRODUCT_CATEGORY_LABELS[category],
         products: map.get(category) ?? []
       }))
       .filter((group) => group.products.length > 0);
@@ -507,7 +520,7 @@ const LendersContent = () => {
     onSuccess: async (created) => {
       emitUiTelemetry("lender_create", {
         lenderId: created.id,
-        requestId: getRequestId(created)
+        requestId: getRequestId()
       });
       await queryClient.invalidateQueries({ queryKey: ["lenders"] });
       setEditingLender(created);
@@ -536,7 +549,7 @@ const LendersContent = () => {
     onSuccess: async (updated) => {
       emitUiTelemetry("lender_update", {
         lenderId: updated.id,
-        requestId: getRequestId(updated)
+        requestId: getRequestId()
       });
       await queryClient.invalidateQueries({ queryKey: ["lenders"] });
       setEditingLender(updated);
@@ -1274,7 +1287,9 @@ const LendersContent = () => {
 };
 
 const buildCategoryOptions = (hasStartupCategory: boolean) => {
-  const categories = hasStartupCategory ? [...PORTAL_PRODUCT_CATEGORIES, "STARTUP_CAPITAL"] : PORTAL_PRODUCT_CATEGORIES;
+  const categories: PortalProductCategory[] = hasStartupCategory
+    ? [...PORTAL_PRODUCT_CATEGORIES, "STARTUP_CAPITAL"]
+    : [...PORTAL_PRODUCT_CATEGORIES];
   return categories.map((category) => ({
     value: category,
     label: PORTAL_PRODUCT_CATEGORY_LABELS[category] ?? LENDER_PRODUCT_CATEGORY_LABELS[category]

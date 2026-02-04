@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useNotificationsStore } from "@/state/notifications.store";
 import { useAuth } from "@/hooks/useAuth";
-import { canAccessStaffPortal } from "@/utils/roles";
+import { canAccessStaffPortal, resolveUserRole } from "@/utils/roles";
 import type { NotificationItem } from "@/types/notifications";
 
 const issueTracker = new Map<string, { missing: number; conflicts: number }>();
@@ -30,7 +30,7 @@ export const useDocumentReliabilityToast = ({
 
   useEffect(() => {
     if (!applicationId) return;
-    if (!canAccessStaffPortal(user?.role)) return;
+    if (!canAccessStaffPortal(resolveUserRole((user as { role?: string | null } | null)?.role ?? null))) return;
 
     const missingCount = missingFields.length;
     const conflictCount = conflictFields.length;

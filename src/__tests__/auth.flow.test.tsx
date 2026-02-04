@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
+import type { AxiosAdapter, AxiosResponse, InternalAxiosRequestConfig } from "axios";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { createElement } from "react";
@@ -32,13 +33,16 @@ const mockedVerifyOtp = vi.mocked(verifyOtpService);
 const mockedLogout = vi.mocked(logoutService);
 
 const createAuthAdapter = (data: unknown, status = 200) =>
-  vi.fn(async (config) => ({
-    data,
-    status,
-    statusText: status === 200 ? "OK" : "Error",
-    headers: {},
-    config
-  }));
+  vi.fn((config: InternalAxiosRequestConfig) =>
+    Promise.resolve<AxiosResponse>({
+      data,
+      status,
+      statusText: status === 200 ? "OK" : "Error",
+      headers: {},
+      config,
+      request: {}
+    })
+  );
 
 const TestAuthState = () => {
   const { authStatus, rolesStatus } = useAuth();
@@ -89,7 +93,7 @@ describe("auth flow", () => {
 
   it("verifies OTP successfully", async () => {
     const adapter = createAuthAdapter({ id: "1", role: "Admin" });
-    api.defaults.adapter = adapter;
+    api.defaults.adapter = adapter as AxiosAdapter;
     mockedVerifyOtp.mockResolvedValue({ accessToken: "access", refreshToken: "refresh" });
 
     render(
@@ -117,20 +121,20 @@ describe("auth flow", () => {
     mockedVerifyOtp.mockResolvedValue({ accessToken: "access", refreshToken: "refresh" });
 
     let resolveRequest: (payload: { id: string; role: string }) => void = () => undefined;
-    const pendingAdapter = vi.fn(
-      (config) =>
-        new Promise((resolve) => {
-          resolveRequest = (payload) =>
-            resolve({
-              data: payload,
-              status: 200,
-              statusText: "OK",
-              headers: {},
-              config
-            });
-        })
+    const pendingAdapter = vi.fn((config: InternalAxiosRequestConfig) =>
+      new Promise<AxiosResponse>((resolve) => {
+        resolveRequest = (payload) =>
+          resolve({
+            data: payload,
+            status: 200,
+            statusText: "OK",
+            headers: {},
+            config,
+            request: {}
+          });
+      })
     );
-    api.defaults.adapter = pendingAdapter;
+    api.defaults.adapter = pendingAdapter as AxiosAdapter;
 
     render(
       <MemoryRouter initialEntries={["/login"]}>

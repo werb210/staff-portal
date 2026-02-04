@@ -9,6 +9,10 @@ export type QueuedMutation = {
   createdAt: number;
 };
 
+type BackgroundSyncManager = {
+  register: (tag: string) => Promise<void>;
+};
+
 const QUEUE_KEY = "bf-offline-mutation-queue";
 const trackedPathPattern = /\/(lenders|products|users)\b/i;
 
@@ -71,7 +75,10 @@ export const registerBackgroundSync = async () => {
   if (!("serviceWorker" in navigator) || !("SyncManager" in window)) return;
   try {
     const registration = await navigator.serviceWorker.ready;
-    await registration.sync.register("sync-offline-queue");
+    const syncManager = (registration as ServiceWorkerRegistration & { sync?: BackgroundSyncManager }).sync;
+    if (syncManager) {
+      await syncManager.register("sync-offline-queue");
+    }
   } catch (error) {
     console.info("Background sync registration skipped", error);
   }

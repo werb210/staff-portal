@@ -1,4 +1,10 @@
-import axios, { AxiosError, type AxiosRequestConfig, type AxiosResponse } from "axios";
+import axios, {
+  AxiosError,
+  AxiosHeaders,
+  type AxiosRequestConfig,
+  type AxiosResponse,
+  type InternalAxiosRequestConfig
+} from "axios";
 import { attachRequestIdAndLog, logError, logResponse } from "@/utils/apiLogging";
 import { getAccessToken } from "@/lib/authToken";
 import { getApiBaseUrl } from "@/config/api";
@@ -37,6 +43,10 @@ export type AuthRequestConfig = AxiosRequestConfig & {
   skipAuth?: boolean;
   skipRequestId?: boolean;
 };
+type AuthRequestInternalConfig = InternalAxiosRequestConfig & {
+  skipAuth?: boolean;
+  skipRequestId?: boolean;
+};
 
 export const api = axios.create({
   baseURL: apiBaseUrl
@@ -47,14 +57,13 @@ const shouldBypassAuthRedirect = (url?: string | null) => {
   return ["/auth/otp/start", "/auth/otp/verify"].some((path) => url.includes(path));
 };
 
-api.interceptors.request.use((config: AuthRequestConfig) => {
+api.interceptors.request.use((config: AuthRequestInternalConfig) => {
   if (!config.skipAuth && !shouldBypassAuthRedirect(config.url)) {
     const token = getAccessToken();
     if (token) {
-      config.headers = {
-        ...(config.headers ?? {}),
-        Authorization: `Bearer ${token}`
-      };
+      const headers = AxiosHeaders.from(config.headers ?? {});
+      headers.set("Authorization", `Bearer ${token}`);
+      config.headers = headers;
     }
   }
   return attachRequestIdAndLog(config);

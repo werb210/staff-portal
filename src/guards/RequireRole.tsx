@@ -1,7 +1,7 @@
 import { ReactNode } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { canAccess, type Capability } from "@/utils/permissions";
-import type { UserRole } from "@/utils/roles";
+import { resolveUserRole, type UserRole } from "@/utils/roles";
 
 export function RequireRole({
   allow,
@@ -14,7 +14,7 @@ export function RequireRole({
 }) {
   const { user } = useAuth();
   const hasAccess = canAccess({
-    role: user?.role ?? null,
+    role: resolveUserRole((user as { role?: string | null } | null)?.role ?? null),
     allowedRoles: allow,
     requiredCapabilities: capabilities,
     userCapabilities: (user as { capabilities?: Capability[] } | null)?.capabilities ?? null

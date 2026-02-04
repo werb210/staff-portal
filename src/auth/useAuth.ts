@@ -12,7 +12,7 @@ export function useAuth(): AuthState {
 
   useEffect(() => {
     const token = getAuthToken();
-    const decoded = decodeJwt(token) as JwtPayload | null;
+    const decoded = decodeJwt(token ?? undefined) as JwtPayload | null;
 
     if (!decoded) {
       setState({ status: "unauthenticated" });

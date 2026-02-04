@@ -2,6 +2,8 @@
 
 const APP_SHELL_CACHE = "bf-staff-app-shell-v1";
 const OFFLINE_URL = "/offline.html";
+const sw = self as unknown as ServiceWorkerGlobalScope;
+type BackgroundSyncEvent = ExtendableEvent & { tag?: string };
 
 const isAppShellRequest = (request: Request) => {
   const destination = request.destination;
@@ -13,25 +15,25 @@ const isApiRequest = (request: Request) => {
   return url.pathname.startsWith("/api");
 };
 
-self.addEventListener("install", (event) => {
+sw.addEventListener("install", (event: ExtendableEvent) => {
   event.waitUntil(
     caches.open(APP_SHELL_CACHE).then((cache) =>
       cache.addAll([OFFLINE_URL, "/", "/manifest.json"]).catch(() => undefined)
     )
   );
-  self.skipWaiting();
+  sw.skipWaiting();
 });
 
-self.addEventListener("activate", (event) => {
+sw.addEventListener("activate", (event: ExtendableEvent) => {
   event.waitUntil(
     caches.keys().then((keys) =>
       Promise.all(keys.filter((key) => key !== APP_SHELL_CACHE).map((key) => caches.delete(key)))
     )
   );
-  self.clients.claim();
+  sw.clients.claim();
 });
 
-self.addEventListener("fetch", (event) => {
+sw.addEventListener("fetch", (event: FetchEvent) => {
   const { request } = event;
 
   if (request.method !== "GET") {
@@ -67,27 +69,31 @@ self.addEventListener("fetch", (event) => {
   }
 });
 
-self.addEventListener("sync", (event) => {
-  if (event.tag !== "sync-offline-queue") return;
-  event.waitUntil(
-    self.clients
+sw.addEventListener("sync", (event) => {
+  const syncEvent = event as BackgroundSyncEvent;
+  if (syncEvent.tag !== "sync-offline-queue") return;
+  syncEvent.waitUntil(
+    sw.clients
       .matchAll({ includeUncontrolled: true, type: "window" })
       .then((clients) => clients.forEach((client) => client.postMessage({ type: "SYNC_OFFLINE_QUEUE" })))
   );
 });
 
-self.addEventListener("push", (event) => {
+sw.addEventListener("push", (event: PushEvent) => {
   if (!event.data) return;
   const payload = event.data.json() as { title?: string; body?: string; url?: string };
   event.waitUntil(
     Promise.all([
-      self.registration.showNotification(payload.title ?? "Staff Portal Update", {
-        body: payload.body ?? "New notification received.",
-        tag: "staff-portal",
-        vibrate: [80, 60, 80],
-        data: { url: payload.url ?? "/" }
-      }),
-      self.clients
+      (() => {
+        const notificationOptions: NotificationOptions & { vibrate?: number[] } = {
+          body: payload.body ?? "New notification received.",
+          tag: "staff-portal",
+          vibrate: [80, 60, 80],
+          data: { url: payload.url ?? "/" }
+        };
+        return sw.registration.showNotification(payload.title ?? "Staff Portal Update", notificationOptions);
+      })(),
+      sw.clients
         .matchAll({ includeUncontrolled: true, type: "window" })
         .then((clients) =>
           clients.forEach((client) =>
@@ -98,11 +104,11 @@ self.addEventListener("push", (event) => {
   );
 });
 
-self.addEventListener("notificationclick", (event) => {
+sw.addEventListener("notificationclick", (event: NotificationEvent) => {
   event.notification.close();
   const targetUrl = (event.notification.data as { url?: string } | undefined)?.url ?? "/";
   event.waitUntil(
-    self.clients.matchAll({ type: "window" }).then((clients) => {
+    sw.clients.matchAll({ type: "window" }).then((clients) => {
       if (clients.length > 0) {
         const client = clients[0];
         if ("navigate" in client) {
@@ -110,7 +116,7 @@ self.addEventListener("notificationclick", (event) => {
         }
         client.focus();
       } else {
-        self.clients.openWindow(targetUrl);
+        sw.clients.openWindow(targetUrl);
       }
     })
   );

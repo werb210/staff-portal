@@ -179,14 +179,47 @@ describe("SettingsPage", () => {
 
   test("logo upload previews correctly", async () => {
     const fileReaderSpy = vi.fn();
-    class MockFileReader {
-      result: string | ArrayBuffer | null = null;
-      onload: ((this: FileReader, ev: ProgressEvent<FileReader>) => unknown) | null = null;
+    class MockFileReader extends EventTarget implements FileReader {
+      readonly EMPTY = 0;
+      readonly LOADING = 1;
+      readonly DONE = 2;
+      error: DOMException | null = null;
+      onabort: ((this: FileReader, ev: ProgressEvent<FileReader>) => unknown) | null = null;
       onerror: ((this: FileReader, ev: ProgressEvent<FileReader>) => unknown) | null = null;
+      onload: ((this: FileReader, ev: ProgressEvent<FileReader>) => unknown) | null = null;
+      onloadend: ((this: FileReader, ev: ProgressEvent<FileReader>) => unknown) | null = null;
+      onloadstart: ((this: FileReader, ev: ProgressEvent<FileReader>) => unknown) | null = null;
+      onprogress: ((this: FileReader, ev: ProgressEvent<FileReader>) => unknown) | null = null;
+      readyState: 0 | 1 | 2 = 0;
+      result: string | ArrayBuffer | null = null;
+      abort() {
+        this.readyState = this.DONE;
+        this.onabort?.(new ProgressEvent("abort") as ProgressEvent<FileReader>);
+      }
+      readAsArrayBuffer() {
+        this.result = new ArrayBuffer(0);
+        this.readyState = this.DONE;
+        this.onload?.(new ProgressEvent("load") as ProgressEvent<FileReader>);
+        this.onloadend?.(new ProgressEvent("loadend") as ProgressEvent<FileReader>);
+      }
+      readAsBinaryString() {
+        this.result = "";
+        this.readyState = this.DONE;
+        this.onload?.(new ProgressEvent("load") as ProgressEvent<FileReader>);
+        this.onloadend?.(new ProgressEvent("loadend") as ProgressEvent<FileReader>);
+      }
       readAsDataURL() {
         this.result = "data:image/png;base64,preview";
+        this.readyState = this.DONE;
         fileReaderSpy();
-        this.onload?.(new ProgressEvent("load"));
+        this.onload?.(new ProgressEvent("load") as ProgressEvent<FileReader>);
+        this.onloadend?.(new ProgressEvent("loadend") as ProgressEvent<FileReader>);
+      }
+      readAsText() {
+        this.result = "";
+        this.readyState = this.DONE;
+        this.onload?.(new ProgressEvent("load") as ProgressEvent<FileReader>);
+        this.onloadend?.(new ProgressEvent("loadend") as ProgressEvent<FileReader>);
       }
     }
     Object.defineProperty(window, "FileReader", { value: MockFileReader });

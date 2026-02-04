@@ -3,7 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useSilo } from "@/hooks/useSilo";
 import { useSettingsStore } from "@/state/settings.store";
 import { useNotificationsStore } from "@/state/notifications.store";
-import { getRoleLabel } from "@/utils/roles";
+import { getRoleLabel, resolveUserRole } from "@/utils/roles";
 import { useDialerStore } from "@/state/dialer.store";
 import Button from "../ui/Button";
 import SiloSelector from "./SiloSelector";
@@ -79,7 +79,9 @@ const Topbar = ({ onToggleSidebar }: TopbarProps) => {
           <div className="topbar__user">
             <div>
               <div className="topbar__user-name">{user.name}</div>
-              <div className="topbar__user-role">{getRoleLabel(user.role)}</div>
+              <div className="topbar__user-role">
+                {getRoleLabel(resolveUserRole((user as { role?: string | null } | null)?.role ?? null))}
+              </div>
             </div>
             <Button variant="secondary" onClick={logout}>
               Logout

@@ -6,7 +6,8 @@ const canUseAudio = () =>
 
 const getAudioContext = () => {
   const AudioContextConstructor =
-    (window as Window & { webkitAudioContext?: typeof AudioContext }).AudioContext ||
+    (window as Window & { AudioContext?: typeof AudioContext; webkitAudioContext?: typeof AudioContext })
+      .AudioContext ||
     (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
   if (!AudioContextConstructor) return null;
   return new AudioContextConstructor();

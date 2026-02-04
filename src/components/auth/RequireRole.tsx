@@ -4,7 +4,7 @@ import AccessRestricted from "@/components/auth/AccessRestricted";
 import AppLoading from "@/components/layout/AppLoading";
 import { useAuth } from "@/hooks/useAuth";
 import { emitUiTelemetry } from "@/utils/uiTelemetry";
-import { type UserRole } from "@/utils/roles";
+import { resolveUserRole, type UserRole } from "@/utils/roles";
 import { canAccess, type Capability } from "@/utils/permissions";
 
 const defaultMessage = "You do not have permission to view this page.";
@@ -25,7 +25,7 @@ const RequireRole = ({
 }: RequireRoleProps) => {
   const { user, authStatus } = useAuth();
   const hasAccess = canAccess({
-    role: user?.role ?? null,
+    role: resolveUserRole((user as { role?: string | null } | null)?.role ?? null),
     allowedRoles: roles,
     requiredCapabilities: capabilities,
     userCapabilities: (user as { capabilities?: Capability[] } | null)?.capabilities ?? null

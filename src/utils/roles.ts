@@ -16,6 +16,9 @@ export const hasRequiredRole = (role: UserRole | null | undefined, requiredRoles
 
 export const isUserRole = (role: string): role is UserRole => roleValues.includes(role as UserRole);
 
+export const resolveUserRole = (role?: string | null): UserRole | null =>
+  typeof role === "string" && isUserRole(role) ? role : null;
+
 export const assertKnownRole = (role: string): asserts role is UserRole => {
   if (!isUserRole(role)) {
     throw new Error(`Invalid role: ${role}`);

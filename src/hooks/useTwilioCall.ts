@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef } from "react";
-import { useDialerStore } from "@/state/dialer.store";
+import { useDialerStore, type DialerStatus } from "@/state/dialer.store";
 import { safeNormalizeToE164 } from "@/utils/phone";
 import { createTwilioDevice, fetchTwilioToken, type VoiceCall, type VoiceDevice } from "@/services/twilioVoice";
 
 const CALL_IN_PROGRESS_STATUSES = ["dialing", "ringing", "connected"] as const;
+const isCallInProgressStatus = (status: DialerStatus) =>
+  CALL_IN_PROGRESS_STATUSES.includes(status as (typeof CALL_IN_PROGRESS_STATUSES)[number]);
 
 export const useTwilioCall = () => {
   const status = useDialerStore((state) => state.status);
@@ -78,7 +80,7 @@ export const useTwilioCall = () => {
 
   const dial = useCallback(async () => {
     if (!number) return;
-    if (CALL_IN_PROGRESS_STATUSES.includes(status)) return;
+    if (isCallInProgressStatus(status)) return;
     const normalized = safeNormalizeToE164(number);
     if (!normalized) {
       setError("Enter a valid phone number before dialing.");

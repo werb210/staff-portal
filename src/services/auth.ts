@@ -29,9 +29,16 @@ export async function startOtp(payload: { phone: string }): Promise<OtpStartResu
   if (response.status === 204) {
     return null;
   }
+  const headersObject = typeof response.headers?.toJSON === "function" ? response.headers.toJSON() : response.headers;
+  const headers = Object.fromEntries(
+    Object.entries(headersObject ?? {}).map(([key, value]) => [
+      key,
+      Array.isArray(value) ? value.join(", ") : String(value ?? "")
+    ])
+  );
   return {
     data: response.data ?? null,
-    headers: response.headers ?? {}
+    headers
   };
 }
 

@@ -13,7 +13,7 @@ import OCRInsightsTab from "./tabs/OCRInsightsTab";
 import { useApplicationDrawerStore } from "@/state/applicationDrawer.store";
 import { usePipelineStore } from "@/pages/applications/pipeline/pipeline.store";
 import { useAuth } from "@/hooks/useAuth";
-import { canAccessStaffPortal } from "@/utils/roles";
+import { canAccessStaffPortal, resolveUserRole } from "@/utils/roles";
 
 const tabContentMap: Record<DrawerTabId, JSX.Element> = {
   application: <ApplicationTab />,
@@ -34,7 +34,7 @@ const ApplicationDrawer = () => {
   const selectedApplicationId = usePipelineStore((state) => state.selectedApplicationId);
   const closeDrawer = usePipelineStore((state) => state.closeDrawer);
   const { user } = useAuth();
-  const isStaff = canAccessStaffPortal(user?.role);
+  const isStaff = canAccessStaffPortal(resolveUserRole((user as { role?: string | null } | null)?.role ?? null));
   const visibleTabs = useMemo(
     () => (isStaff ? TABS : TABS.filter((tab) => tab.id !== "ocr-insights")),
     [isStaff]

@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { TimelineEvent, TimelineEventType } from "@/api/crm";
 import { fetchTimeline } from "@/api/crm";
 import { useAuth } from "@/hooks/useAuth";
-import { fullStaffRoles, hasRequiredRole } from "@/utils/roles";
+import { fullStaffRoles, hasRequiredRole, resolveUserRole } from "@/utils/roles";
 import TimelineItem from "./TimelineItem";
 import TimelineFilters from "./TimelineFilters";
 
@@ -72,7 +72,10 @@ const TimelineFeed = ({ entityType, entityId, initialEvents = [] }: TimelineFeed
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
   const [selectedAutomation, setSelectedAutomation] = useState<TimelineEvent | null>(null);
   const { user } = useAuth();
-  const canViewAutomationDetails = hasRequiredRole(user?.role, fullStaffRoles);
+  const canViewAutomationDetails = hasRequiredRole(
+    resolveUserRole((user as { role?: string | null } | null)?.role ?? null),
+    fullStaffRoles
+  );
   const { data: events = initialEvents, refetch } = useQuery({
     queryKey: ["timeline", entityType, entityId],
     queryFn: () => fetchTimeline(entityType, entityId),
