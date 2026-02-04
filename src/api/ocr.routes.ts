@@ -1,7 +1,8 @@
 import type { OcrExtractionInput, OcrExtractionOutput } from "@/ocr/ocrExtractor";
-import { getOcrResultsForApplication, runOcrExtraction } from "@/ocr/ocrExtractor";
-import { compareOcrResults, type OcrComparisonResult } from "@/ocr/ocrComparator";
+import { runOcrExtraction } from "@/ocr/ocrExtractor";
+import type { OcrComparisonResult } from "@/ocr/ocrComparator";
 import type { OcrResultRecord } from "@/db/schema/ocrResults";
+import { apiClient } from "@/api/httpClient";
 
 export type OcrInsightsResponse = OcrComparisonResult & {
   application_id: string;
@@ -10,12 +11,5 @@ export type OcrInsightsResponse = OcrComparisonResult & {
 
 export const extractDocumentOcr = (input: OcrExtractionInput): OcrExtractionOutput => runOcrExtraction(input);
 
-export const fetchOcrInsights = async (applicationId: string): Promise<OcrInsightsResponse> => {
-  const results = getOcrResultsForApplication(applicationId);
-  const comparison = compareOcrResults(results);
-  return {
-    application_id: applicationId,
-    results,
-    ...comparison
-  };
-};
+export const fetchOcrInsights = async (applicationId: string): Promise<OcrInsightsResponse> =>
+  apiClient.get<OcrInsightsResponse>(`/applications/${applicationId}/ocr-insights`);
