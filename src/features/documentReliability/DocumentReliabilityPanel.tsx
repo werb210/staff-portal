@@ -7,13 +7,17 @@ const DocumentReliabilityPanel = () => {
   const { applicationId, isLoading, error, data } = useOCRInsights();
 
   const conflictFields = useMemo(
-    () => Array.from(new Set(data.mismatchRows.map((row) => row.label))),
-    [data.mismatchRows]
+    () => data.conflictGroups.map((group) => group.label),
+    [data.conflictGroups]
+  );
+  const missingFields = useMemo(
+    () => data.requiredFields.filter((field) => !field.present).map((field) => field.label),
+    [data.requiredFields]
   );
 
   useDocumentReliabilityToast({
     applicationId,
-    missingFields: data.missingRequiredFields,
+    missingFields,
     conflictFields
   });
 
@@ -31,7 +35,7 @@ const DocumentReliabilityPanel = () => {
     );
   }
 
-  const hasIssues = data.missingRequiredFields.length > 0 || conflictFields.length > 0;
+  const hasIssues = missingFields.length > 0 || conflictFields.length > 0;
 
   return (
     <section className="document-reliability" aria-live="polite">
@@ -43,11 +47,11 @@ const DocumentReliabilityPanel = () => {
       </header>
       {hasIssues ? (
         <div className="document-reliability__body">
-          {data.missingRequiredFields.length > 0 && (
+          {missingFields.length > 0 && (
             <div className="document-reliability__section">
               <div className="document-reliability__label">Missing required OCR fields</div>
               <div className="document-reliability__tags">
-                {data.missingRequiredFields.map((field) => (
+                {missingFields.map((field) => (
                   <span key={field} className="document-reliability__tag document-reliability__tag--warning">
                     {field}
                   </span>

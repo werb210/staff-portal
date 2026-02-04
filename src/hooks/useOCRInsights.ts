@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchDocumentRequirements } from "@/api/documents";
 import { fetchOcrInsights } from "@/api/ocr.routes";
-import { getOcrFieldDefinition } from "@/ocr/OCR_FIELD_REGISTRY";
+import { OCR_FIELD_REGISTRY, getOcrFieldDefinition } from "@/ocr/OCR_FIELD_REGISTRY";
 import { useApplicationDrawerStore } from "@/state/applicationDrawer.store";
 import type { DocumentRequirement } from "@/types/documents.types";
 import type { OcrMismatchFlag } from "@/ocr/ocrComparator";
@@ -15,15 +15,16 @@ export type OcrInsightRow = {
   documentId: string;
   documentName: string;
   documentCategory: string;
+  confidence?: number;
   conflict: boolean;
   comparisonValues: string[];
 };
 
 export type OcrInsightsView = {
-  groupedByCategory: Record<string, OcrInsightRow[]>;
-  missingRequiredFields: string[];
-  mismatches: OcrMismatchFlag[];
-  mismatchRows: OcrMismatchRow[];
+  groupedByDocument: Record<string, Record<string, OcrInsightRow[]>>;
+  requiredFields: OcrRequiredFieldStatus[];
+  conflictGroups: OcrConflictGroup[];
+  totalRows: number;
 };
 
 export type OcrMismatchRow = {
@@ -33,6 +34,22 @@ export type OcrMismatchRow = {
   documentId: string;
   documentName: string;
   comparisonValues: string[];
+};
+
+export type OcrRequiredFieldStatus = {
+  fieldKey: string;
+  label: string;
+  present: boolean;
+};
+
+export type OcrConflictGroup = {
+  fieldKey: string;
+  label: string;
+  values: Array<{
+    documentId: string;
+    documentName: string;
+    value: string;
+  }>;
 };
 
 const buildMismatchLookup = (mismatches: OcrMismatchFlag[]) => {
@@ -72,52 +89,61 @@ export const useOCRInsights = () => {
     const documents = documentsQuery.data ?? [];
     const ocrData = ocrQuery.data;
     if (!ocrData) {
-      return { groupedByCategory: {}, missingRequiredFields: [], mismatches: [], mismatchRows: [] };
+      return { groupedByDocument: {}, requiredFields: [], conflictGroups: [], totalRows: 0 };
     }
 
     const mismatchLookup = buildMismatchLookup(ocrData.mismatch_flags);
-    const groupedByCategory: Record<string, OcrInsightRow[]> = {};
+    const groupedByDocument: Record<string, Record<string, OcrInsightRow[]>> = {};
 
     ocrData.results.forEach((result) => {
       const field = getOcrFieldDefinition(result.field_key);
-      if (!field) return;
       const documentMeta = resolveDocumentMeta(result.document_id, documents);
       const mismatch = mismatchLookup.get(`${result.field_key}:${result.document_id}`);
       const categoryId = resolveOcrInsightsCategoryId(result.field_key);
       const row: OcrInsightRow = {
         fieldKey: result.field_key,
-        label: field.display_label,
+        label: field?.display_label ?? result.field_key,
         value: result.extracted_value,
         documentId: result.document_id,
         documentName: documentMeta.name,
         documentCategory: categoryId,
+        confidence: result.confidence,
         conflict: Boolean(mismatch),
         comparisonValues: mismatch?.comparison_values ?? []
       };
-      if (!groupedByCategory[categoryId]) groupedByCategory[categoryId] = [];
-      groupedByCategory[categoryId].push(row);
+      const documentType = documentMeta.category;
+      if (!groupedByDocument[documentType]) groupedByDocument[documentType] = {};
+      if (!groupedByDocument[documentType][categoryId]) groupedByDocument[documentType][categoryId] = [];
+      groupedByDocument[documentType][categoryId].push(row);
     });
 
-    const mismatchRows = ocrData.mismatch_flags.map((flag) => {
+    const conflictGroups = new Map<string, OcrConflictGroup>();
+    ocrData.mismatch_flags.forEach((flag) => {
       const field = getOcrFieldDefinition(flag.field_key);
       const documentMeta = resolveDocumentMeta(flag.document_id, documents);
-      return {
-        fieldKey: flag.field_key,
-        label: field?.display_label ?? flag.field_key,
-        value: flag.value,
+      if (!conflictGroups.has(flag.field_key)) {
+        conflictGroups.set(flag.field_key, {
+          fieldKey: flag.field_key,
+          label: field?.display_label ?? flag.field_key,
+          values: []
+        });
+      }
+      conflictGroups.get(flag.field_key)?.values.push({
         documentId: flag.document_id,
         documentName: documentMeta.name,
-        comparisonValues: flag.comparison_values
-      };
+        value: flag.value
+      });
     });
 
     return {
-      groupedByCategory,
-      missingRequiredFields: ocrData.missing_required_fields.map(
-        (fieldKey) => getOcrFieldDefinition(fieldKey)?.display_label ?? fieldKey
-      ),
-      mismatches: ocrData.mismatch_flags,
-      mismatchRows
+      groupedByDocument,
+      requiredFields: OCR_FIELD_REGISTRY.map((field) => ({
+        fieldKey: field.field_key,
+        label: field.display_label,
+        present: ocrData.results.some((result) => result.field_key === field.field_key)
+      })),
+      conflictGroups: Array.from(conflictGroups.values()),
+      totalRows: ocrData.results.length
     };
   }, [documentsQuery.data, ocrQuery.data]);
 
