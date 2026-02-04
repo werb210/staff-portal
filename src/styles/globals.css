@@ -134,6 +134,7 @@ a,
   display: flex;
   flex-direction: column;
   min-height: calc(var(--app-vh, 1vh) * 100);
+  min-height: 0;
 }
 
 .app-shell__main {
@@ -141,6 +142,8 @@ a,
   padding: 24px;
   background: var(--bg-primary);
   padding-bottom: calc(24px + env(safe-area-inset-bottom));
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .sidebar {

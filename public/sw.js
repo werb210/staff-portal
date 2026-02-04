@@ -7,10 +7,16 @@ const isCacheableRequest = (request) => {
   if (url.origin !== self.location.origin) return false;
   if (url.pathname.startsWith("/api") || url.pathname.startsWith("/auth")) return false;
   if (url.pathname.startsWith("/_") || url.pathname.startsWith("/sockjs-node")) return false;
+  if (url.pathname === "/" || url.pathname === "/index.html") return true;
   if (!url.pathname.endsWith(".js") && !url.pathname.endsWith(".css") && !url.pathname.endsWith(".mjs")) {
     return false;
   }
   return true;
+};
+
+const isApiRequest = (request) => {
+  const url = new URL(request.url);
+  return url.origin === self.location.origin && (url.pathname.startsWith("/api") || url.pathname.startsWith("/auth"));
 };
 
 self.addEventListener("install", (event) => {
@@ -35,17 +41,28 @@ self.addEventListener("message", (event) => {
     event.waitUntil(self.skipWaiting());
   }
   if (event.data.type === "CLEAR_CACHES" || event.data.type === "AUTH_CHANGED") {
-    event.waitUntil(
-      (async () => {
-        const keys = await caches.keys();
-        await Promise.all(keys.map((key) => caches.delete(key)));
-      })()
-    );
+    event.waitUntil(caches.delete(RUNTIME_CACHE));
   }
 });
 
 self.addEventListener("fetch", (event) => {
   const { request } = event;
+
+  if (isApiRequest(request)) {
+    event.respondWith(
+      (async () => {
+        try {
+          return await fetch(request);
+        } catch (error) {
+          const cached = await caches.match(request);
+          if (cached) return cached;
+          throw error;
+        }
+      })()
+    );
+    return;
+  }
+
   if (!isCacheableRequest(request)) return;
 
   event.respondWith(
