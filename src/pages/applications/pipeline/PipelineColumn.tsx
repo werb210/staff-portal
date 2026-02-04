@@ -69,9 +69,17 @@ const PipelineColumn = ({
       case "oldest":
         return items.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime() || tieBreaker(a, b));
       case "highest_amount":
-        return items.sort((a, b) => b.requestedAmount - a.requestedAmount || tieBreaker(a, b));
+        return items.sort((a, b) => {
+          const aAmount = a.requestedAmount ?? 0;
+          const bAmount = b.requestedAmount ?? 0;
+          return bAmount - aAmount || tieBreaker(a, b);
+        });
       case "lowest_amount":
-        return items.sort((a, b) => a.requestedAmount - b.requestedAmount || tieBreaker(a, b));
+        return items.sort((a, b) => {
+          const aAmount = a.requestedAmount ?? 0;
+          const bAmount = b.requestedAmount ?? 0;
+          return aAmount - bAmount || tieBreaker(a, b);
+        });
       case "newest":
       default:
         return items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime() || tieBreaker(a, b));

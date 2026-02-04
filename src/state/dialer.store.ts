@@ -86,6 +86,10 @@ const now = () => new Date().toISOString();
 const SESSION_STORAGE_KEY = "dialer-session-v1";
 const LOG_STORAGE_KEY = "dialer-call-logs-v1";
 const CALL_IN_PROGRESS_STATUSES = ["dialing", "ringing", "connected"] as const;
+const isCallInProgressStatus = (
+  status?: DialerStatus | string | null
+): status is (typeof CALL_IN_PROGRESS_STATUSES)[number] =>
+  typeof status === "string" && CALL_IN_PROGRESS_STATUSES.includes(status as (typeof CALL_IN_PROGRESS_STATUSES)[number]);
 
 const createCallId = () => {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
@@ -186,7 +190,7 @@ const calculateDurationSeconds = (startedAt: string, endedAt: string) => {
 };
 
 const sessionState = readSessionState();
-const hasActiveSessionCall = CALL_IN_PROGRESS_STATUSES.includes((sessionState.status ?? "idle") as DialerStatus);
+const hasActiveSessionCall = isCallInProgressStatus(sessionState.status ?? null);
 const sessionStartedAt = sessionState.startedAt ?? null;
 const sessionElapsed = sessionStartedAt ? calculateDurationSeconds(sessionStartedAt, now()) : 0;
 const restoredElapsed =
@@ -199,7 +203,7 @@ const { logs: hydratedLogs, pendingFlushLogs } = (() => {
   }
   const flushable: DialerCallLog[] = [];
   const updatedLogs = storedLogs.map((log) => {
-    const shouldFinalize = log.isPending || CALL_IN_PROGRESS_STATUSES.includes(log.status as typeof CALL_IN_PROGRESS_STATUSES[number]);
+    const shouldFinalize = log.isPending || isCallInProgressStatus(log.status);
     if (!shouldFinalize) return log;
     const endedAt = log.endedAt ?? now();
     const startedAt = log.startedAt ?? endedAt;
@@ -239,7 +243,7 @@ export const useDialerStore = create<DialerState>((set, get) => ({
   dialAttempts: [],
   openDialer: (context) =>
     set((state) => {
-      const inProgress = CALL_IN_PROGRESS_STATUSES.includes(state.status as typeof CALL_IN_PROGRESS_STATUSES[number]);
+      const inProgress = isCallInProgressStatus(state.status);
       const nextNumber = inProgress ? state.number : context?.phone ?? state.number;
       return {
         isOpen: true,
@@ -273,7 +277,7 @@ export const useDialerStore = create<DialerState>((set, get) => ({
   toggleKeypad: () => set((state) => ({ keypadOpen: !state.keypadOpen })),
   startCall: () =>
     set((state) => {
-      if (!state.number || CALL_IN_PROGRESS_STATUSES.includes(state.status as typeof CALL_IN_PROGRESS_STATUSES[number])) {
+      if (!state.number || isCallInProgressStatus(state.status)) {
         return state;
       }
       const callId = state.currentCallId ?? createCallId();

@@ -19,9 +19,15 @@ const UserManagement = () => {
     fetchUsers,
     isLoadingUsers
   } = useSettingsStore();
-  const [userForm, setUserForm] = useState<
-    Pick<AdminUser, "email" | "role" | "firstName" | "lastName" | "phone">
-  >({
+  type UserFormState = {
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+    role: AdminUser["role"];
+  };
+
+  const [userForm, setUserForm] = useState<UserFormState>({
     firstName: "",
     lastName: "",
     email: "",

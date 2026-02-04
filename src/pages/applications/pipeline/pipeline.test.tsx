@@ -211,7 +211,8 @@ describe("Pipeline determinism", () => {
 
     renderWithProviders(<PipelinePage />);
     await waitFor(() => expect(pipelineApi.fetchColumn).toHaveBeenCalled());
-    await userEvent.click(await screen.findByText(sampleCard.businessName));
+    const businessName = sampleCard.businessName ?? "Acme Co";
+    await userEvent.click(await screen.findByText(businessName));
     await userEvent.click(screen.getAllByRole("button", { name: /Documents Required/i })[0]);
 
     expect(usePipelineStore.getState().selectedApplicationId).toBeNull();

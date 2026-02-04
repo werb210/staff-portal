@@ -6,6 +6,7 @@ import { useAuthorization } from "@/hooks/useAuthorization";
 type ActionGateProps = {
   roles?: UserRole[];
   capabilities?: Capability[];
+  actions?: Capability[];
   fallback?: ReactNode;
   children: ReactNode;
 };

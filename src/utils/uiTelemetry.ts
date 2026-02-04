@@ -1,6 +1,12 @@
 import type { UserRole } from "@/utils/roles";
 
-export type UiTelemetryEvent = "page_loaded" | "data_loaded" | "permission_blocked" | "api_error";
+export type UiTelemetryEvent =
+  | "page_loaded"
+  | "data_loaded"
+  | "permission_blocked"
+  | "api_error"
+  | "lender_create"
+  | "lender_update";
 
 export type AuthStatus = "loading" | "authenticated" | "unauthenticated";
 

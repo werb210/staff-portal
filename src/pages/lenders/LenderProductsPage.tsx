@@ -45,15 +45,17 @@ import {
 } from "./lenderProductForm";
 import Table from "@/components/ui/Table";
 
-const CATEGORY_DISPLAY_ORDER: LenderProductCategory[] = [
+const CATEGORY_DISPLAY_ORDER = [
   "LINE_OF_CREDIT",
   "TERM_LOAN",
   "EQUIPMENT_FINANCE",
   "FACTORING",
   "PURCHASE_ORDER_FINANCE"
-];
+ ] as const satisfies LenderProductCategory[];
 
-const PORTAL_PRODUCT_CATEGORY_LABELS: Record<LenderProductCategory, string> = {
+type PortalProductCategory = (typeof CATEGORY_DISPLAY_ORDER)[number] | "STARTUP_CAPITAL";
+
+const PORTAL_PRODUCT_CATEGORY_LABELS: Record<PortalProductCategory, string> = {
   LINE_OF_CREDIT: "Line of Credit",
   TERM_LOAN: "Term Loan",
   EQUIPMENT_FINANCE: "Equipment Financing",
@@ -150,7 +152,9 @@ const extractValidationErrors = (error: unknown, fieldMap: Record<string, string
   Object.entries(rawErrors as Record<string, unknown>).forEach(([key, value]) => {
     const mappedKey = fieldMap[key] ?? fieldMap[key.toLowerCase()] ?? key;
     const message = Array.isArray(value)
-      ? value.filter((item): item is string => typeof item === "string" && item.trim()).join(", ")
+      ? value
+          .filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+          .join(", ")
       : typeof value === "string"
         ? value
         : typeof value === "object" && value && "message" in value

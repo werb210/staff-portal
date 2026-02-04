@@ -1,4 +1,6 @@
+import { AxiosHeaders, type InternalAxiosRequestConfig } from "axios";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { attachRequestIdAndLog } from "@/utils/apiLogging";
 
 describe("otp client", () => {
   beforeEach(() => {
@@ -18,8 +20,13 @@ describe("otp client", () => {
     expect(apiInstance.defaults.baseURL).toBe(import.meta.env.VITE_API_BASE_URL);
     expect(apiPostSpy).toHaveBeenCalledWith("/auth/otp/start", { phone: "+15555550100" });
 
-    const requestHandler = apiInstance.interceptors.request.handlers[0]?.fulfilled;
-    const config = requestHandler ? requestHandler({ headers: {}, skipRequestId: true }) : null;
-    expect(config?.headers?.["X-Request-Id"]).toBeUndefined();
+    const config: InternalAxiosRequestConfig & { skipRequestId?: boolean } = {
+      headers: new AxiosHeaders(),
+      method: "post",
+      url: "/auth/otp/start",
+      skipRequestId: true
+    };
+    const updatedConfig = attachRequestIdAndLog(config);
+    expect(updatedConfig.headers.get("X-Request-Id")).toBeUndefined();
   });
 });

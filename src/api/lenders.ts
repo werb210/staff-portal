@@ -25,6 +25,9 @@ export type LenderMatch = {
   productCategory?: string;
   terms?: string;
   requiredDocsStatus?: string;
+  submissionMethod?: string | null;
+  submission_method?: string | null;
+  submissionConfig?: { method?: string | null };
 };
 
 export type LenderSubmissionStatus = "sent" | "failed" | "pending_manual";
@@ -162,152 +165,149 @@ const normalizeRequiredDocuments = (value: unknown) => {
 
 const normalizeLender = (raw: LenderSummary): Lender | null => {
   if (!raw?.id || typeof raw.id !== "string") return null;
-  const status = normalizeLenderStatus(raw.status ?? (raw as Lender).status ?? (raw as { status?: unknown }).status);
+  const record: Record<string, unknown> = isRecord(raw) ? raw : {};
+  const lender = raw as Partial<Lender>;
+  const status = normalizeLenderStatus(raw.status ?? lender.status ?? record.status);
   const activeValue =
-    typeof (raw as Lender).active === "boolean"
-      ? (raw as Lender).active
-      : typeof (raw as { active?: unknown }).active === "boolean"
-        ? (raw as { active: boolean }).active
+    typeof lender.active === "boolean"
+      ? lender.active
+      : typeof record.active === "boolean"
+        ? record.active
         : undefined;
   const resolvedStatus = status ?? (activeValue !== undefined ? (activeValue ? "ACTIVE" : "INACTIVE") : "INACTIVE");
   const active = activeValue ?? resolvedStatus === "ACTIVE";
 
   const rawCountry =
-    typeof (raw as { country?: unknown }).country === "string"
-      ? (raw as { country: string }).country
-      : isRecord((raw as Lender).address)
-        ? (raw as Lender).address.country
+    typeof record.country === "string"
+      ? record.country
+      : isRecord(lender.address)
+        ? lender.address.country
         : "";
-  const address = isRecord((raw as Lender).address)
+  const address = isRecord(lender.address)
     ? {
-        street: typeof (raw as Lender).address.street === "string" ? (raw as Lender).address.street : "",
-        city: typeof (raw as Lender).address.city === "string" ? (raw as Lender).address.city : "",
+        street: typeof lender.address.street === "string" ? lender.address.street : "",
+        city: typeof lender.address.city === "string" ? lender.address.city : "",
         stateProvince:
-          typeof (raw as Lender).address.stateProvince === "string"
-            ? (raw as Lender).address.stateProvince
-            : typeof (raw as { region?: unknown }).region === "string"
-              ? (raw as { region: string }).region
+          typeof lender.address.stateProvince === "string"
+            ? lender.address.stateProvince
+            : typeof record.region === "string"
+              ? record.region
               : "",
         postalCode:
-          typeof (raw as Lender).address.postalCode === "string"
-            ? (raw as Lender).address.postalCode
+          typeof lender.address.postalCode === "string"
+            ? lender.address.postalCode
             : "",
         country: normalizeLenderCountry(rawCountry)
       }
     : {
-        street: typeof (raw as { street?: unknown }).street === "string" ? (raw as { street: string }).street : "",
-        city: typeof (raw as { city?: unknown }).city === "string" ? (raw as { city: string }).city : "",
+        street: typeof record.street === "string" ? record.street : "",
+        city: typeof record.city === "string" ? record.city : "",
         stateProvince:
-          typeof (raw as { region?: unknown }).region === "string"
-            ? (raw as { region: string }).region
-            : typeof (raw as { stateProvince?: unknown }).stateProvince === "string"
-              ? (raw as { stateProvince: string }).stateProvince
+          typeof record.region === "string"
+            ? record.region
+            : typeof record.stateProvince === "string"
+              ? record.stateProvince
               : "",
         postalCode:
-          typeof (raw as { postal_code?: unknown }).postal_code === "string"
-            ? (raw as { postal_code: string }).postal_code
+          typeof record.postal_code === "string"
+            ? record.postal_code
             : "",
         country: normalizeLenderCountry(rawCountry)
       };
 
-  const primaryContact = isRecord((raw as Lender).primaryContact)
+  const primaryContact = isRecord(lender.primaryContact)
     ? {
-        name:
-          typeof (raw as Lender).primaryContact.name === "string" ? (raw as Lender).primaryContact.name : "",
-        email:
-          typeof (raw as Lender).primaryContact.email === "string" ? (raw as Lender).primaryContact.email : "",
-        phone:
-          typeof (raw as Lender).primaryContact.phone === "string" ? (raw as Lender).primaryContact.phone : "",
+        name: typeof lender.primaryContact.name === "string" ? lender.primaryContact.name : "",
+        email: typeof lender.primaryContact.email === "string" ? lender.primaryContact.email : "",
+        phone: typeof lender.primaryContact.phone === "string" ? lender.primaryContact.phone : "",
         mobilePhone:
-          typeof (raw as Lender).primaryContact.mobilePhone === "string"
-            ? (raw as Lender).primaryContact.mobilePhone
+          typeof lender.primaryContact.mobilePhone === "string"
+            ? lender.primaryContact.mobilePhone
             : ""
       }
     : {
         name:
-          typeof (raw as { contact_name?: unknown }).contact_name === "string"
-            ? (raw as { contact_name: string }).contact_name
-            : typeof (raw as { primary_contact_name?: unknown }).primary_contact_name === "string"
-              ? (raw as { primary_contact_name: string }).primary_contact_name
+          typeof record.contact_name === "string"
+            ? record.contact_name
+            : typeof record.primary_contact_name === "string"
+              ? record.primary_contact_name
               : "",
         email:
-          typeof (raw as { contact_email?: unknown }).contact_email === "string"
-            ? (raw as { contact_email: string }).contact_email
-            : typeof (raw as { primary_contact_email?: unknown }).primary_contact_email === "string"
-              ? (raw as { primary_contact_email: string }).primary_contact_email
+          typeof record.contact_email === "string"
+            ? record.contact_email
+            : typeof record.primary_contact_email === "string"
+              ? record.primary_contact_email
               : "",
         phone:
-          typeof (raw as { contact_phone?: unknown }).contact_phone === "string"
-            ? (raw as { contact_phone: string }).contact_phone
-            : typeof (raw as { primary_contact_phone?: unknown }).primary_contact_phone === "string"
-              ? (raw as { primary_contact_phone: string }).primary_contact_phone
+          typeof record.contact_phone === "string"
+            ? record.contact_phone
+            : typeof record.primary_contact_phone === "string"
+              ? record.primary_contact_phone
               : "",
         mobilePhone: ""
       };
 
-  const submissionConfig = isRecord((raw as Lender).submissionConfig)
+  const submissionConfig = isRecord(lender.submissionConfig)
     ? {
         method:
-          (raw as Lender).submissionConfig.method === "API" ||
-          (raw as Lender).submissionConfig.method === "EMAIL" ||
-          (raw as Lender).submissionConfig.method === "GOOGLE_SHEET" ||
-          (raw as Lender).submissionConfig.method === "MANUAL"
-            ? (raw as Lender).submissionConfig.method
+          lender.submissionConfig.method === "API" ||
+          lender.submissionConfig.method === "EMAIL" ||
+          lender.submissionConfig.method === "GOOGLE_SHEET" ||
+          lender.submissionConfig.method === "MANUAL"
+            ? lender.submissionConfig.method
             : "MANUAL",
-        sheetId: (raw as Lender).submissionConfig.sheetId ?? null,
-        worksheetName: (raw as Lender).submissionConfig.worksheetName ?? null,
-        mappingPreview: (raw as Lender).submissionConfig.mappingPreview ?? null,
-        sheetStatus: (raw as Lender).submissionConfig.sheetStatus ?? null,
-        attachmentFormat: (raw as Lender).submissionConfig.attachmentFormat ?? null,
-        apiAuthType: (raw as Lender).submissionConfig.apiAuthType ?? null,
-        apiBaseUrl: (raw as Lender).submissionConfig.apiBaseUrl ?? null,
-        apiClientId: (raw as Lender).submissionConfig.apiClientId ?? null,
-        apiUsername: (raw as Lender).submissionConfig.apiUsername ?? null,
-        apiPassword: (raw as Lender).submissionConfig.apiPassword ?? null,
-        submissionEmail: (raw as Lender).submissionConfig.submissionEmail ?? null
+        sheetId: lender.submissionConfig.sheetId ?? null,
+        worksheetName: lender.submissionConfig.worksheetName ?? null,
+        mappingPreview: lender.submissionConfig.mappingPreview ?? null,
+        sheetStatus: lender.submissionConfig.sheetStatus ?? null,
+        attachmentFormat: lender.submissionConfig.attachmentFormat ?? null,
+        apiAuthType: lender.submissionConfig.apiAuthType ?? null,
+        apiBaseUrl: lender.submissionConfig.apiBaseUrl ?? null,
+        apiClientId: lender.submissionConfig.apiClientId ?? null,
+        apiUsername: lender.submissionConfig.apiUsername ?? null,
+        apiPassword: lender.submissionConfig.apiPassword ?? null,
+        submissionEmail: lender.submissionConfig.submissionEmail ?? null
       }
     : {
         method:
-          typeof (raw as { submission_method?: unknown }).submission_method === "string" &&
-          ["API", "EMAIL", "MANUAL", "GOOGLE_SHEET"].includes((raw as { submission_method: string }).submission_method)
-            ? ((raw as { submission_method: string }).submission_method as Lender["submissionConfig"]["method"])
+          typeof record.submission_method === "string" &&
+          ["API", "EMAIL", "MANUAL", "GOOGLE_SHEET"].includes(record.submission_method)
+            ? (record.submission_method as Lender["submissionConfig"]["method"])
             : "MANUAL",
         sheetId:
-          typeof (raw as { submission_sheet_id?: unknown }).submission_sheet_id === "string"
-            ? (raw as { submission_sheet_id: string }).submission_sheet_id
+          typeof record.submission_sheet_id === "string"
+            ? record.submission_sheet_id
             : null,
         worksheetName:
-          typeof (raw as { submission_worksheet_name?: unknown }).submission_worksheet_name === "string"
-            ? (raw as { submission_worksheet_name: string }).submission_worksheet_name
+          typeof record.submission_worksheet_name === "string"
+            ? record.submission_worksheet_name
             : null,
         mappingPreview:
-          typeof (raw as { submission_mapping_preview?: unknown }).submission_mapping_preview === "string"
-            ? (raw as { submission_mapping_preview: string }).submission_mapping_preview
+          typeof record.submission_mapping_preview === "string"
+            ? record.submission_mapping_preview
             : null,
         sheetStatus:
-          typeof (raw as { submission_sheet_status?: unknown }).submission_sheet_status === "string"
-            ? (raw as { submission_sheet_status: string }).submission_sheet_status
+          typeof record.submission_sheet_status === "string"
+            ? record.submission_sheet_status
             : null,
         attachmentFormat:
-          typeof (raw as { submission_attachment_format?: unknown }).submission_attachment_format === "string"
-            ? ((raw as { submission_attachment_format: "PDF" | "CSV" }).submission_attachment_format as
-                | "PDF"
-                | "CSV")
+          typeof record.submission_attachment_format === "string"
+            ? (record.submission_attachment_format as "PDF" | "CSV")
             : null,
         apiAuthType:
-          typeof (raw as { submission_api_auth_type?: unknown }).submission_api_auth_type === "string"
-            ? ((raw as { submission_api_auth_type: "token" | "key" }).submission_api_auth_type as "token" | "key")
+          typeof record.submission_api_auth_type === "string"
+            ? (record.submission_api_auth_type as "token" | "key")
             : null,
         apiBaseUrl:
-          typeof (raw as { submission_api_endpoint?: unknown }).submission_api_endpoint === "string"
-            ? (raw as { submission_api_endpoint: string }).submission_api_endpoint
+          typeof record.submission_api_endpoint === "string"
+            ? record.submission_api_endpoint
             : null,
         apiClientId: null,
         apiUsername: null,
         apiPassword: null,
         submissionEmail:
-          typeof (raw as { submission_email?: unknown }).submission_email === "string"
-            ? (raw as { submission_email: string }).submission_email
+          typeof record.submission_email === "string"
+            ? record.submission_email
             : null
       };
 
@@ -331,11 +331,16 @@ const normalizeLender = (raw: LenderSummary): Lender | null => {
     active,
     status: resolvedStatus,
     address,
-    phone: typeof (raw as Lender).phone === "string" ? (raw as Lender).phone : "",
-    website: (raw as Lender).website ?? null,
-    description: (raw as Lender).description ?? null,
-    internalNotes: (raw as Lender).internalNotes ?? (raw as { internal_notes?: unknown }).internal_notes ?? null,
-    processingNotes: (raw as Lender).processingNotes ?? null,
+    phone: typeof lender.phone === "string" ? lender.phone : "",
+    website: typeof lender.website === "string" ? lender.website : null,
+    description: typeof lender.description === "string" ? lender.description : null,
+    internalNotes:
+      typeof lender.internalNotes === "string"
+        ? lender.internalNotes
+        : typeof record.internal_notes === "string"
+          ? record.internal_notes
+          : null,
+    processingNotes: typeof lender.processingNotes === "string" ? lender.processingNotes : null,
     primaryContact,
     submissionConfig,
     operationalLimits
@@ -395,9 +400,16 @@ const normalizeLenderProduct = (raw: unknown): LenderProduct | null => {
       };
   const eligibilityFlags = isRecord(raw.eligibilityFlags)
     ? {
-        minimumRevenue: raw.eligibilityFlags.minimumRevenue ?? null,
-        timeInBusinessMonths: raw.eligibilityFlags.timeInBusinessMonths ?? null,
-        industryRestrictions: raw.eligibilityFlags.industryRestrictions ?? null
+        minimumRevenue:
+          typeof raw.eligibilityFlags.minimumRevenue === "number" ? raw.eligibilityFlags.minimumRevenue : null,
+        timeInBusinessMonths:
+          typeof raw.eligibilityFlags.timeInBusinessMonths === "number"
+            ? raw.eligibilityFlags.timeInBusinessMonths
+            : null,
+        industryRestrictions:
+          typeof raw.eligibilityFlags.industryRestrictions === "string"
+            ? raw.eligibilityFlags.industryRestrictions
+            : null
       }
     : {
         minimumRevenue: null,

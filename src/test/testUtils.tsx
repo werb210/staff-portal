@@ -24,7 +24,7 @@ const defaultLenderAuth: LenderAuthContextValue = {
   isAuthenticated: true,
   isLoading: false,
   pendingEmail: null,
-  pendingSessionId: null,
+  pendingOtpRequestId: null,
   login: async () => undefined,
   triggerOtp: async () => undefined,
   verifyOtp: async () => undefined,
@@ -57,7 +57,7 @@ export const renderWithProviders = (ui: ReactElement, options?: StaffRenderOptio
     setAuthState: () => undefined,
     clearAuth: () => undefined,
     refreshUser: async () => true,
-    logout: () => undefined,
+    logout: async () => undefined,
     ...options?.auth
   };
 

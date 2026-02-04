@@ -1,7 +1,7 @@
 import { NavLink } from "react-router-dom";
 import { useSilo } from "@/hooks/useSilo";
 import { useAuth } from "@/hooks/useAuth";
-import { hasRequiredRole, type UserRole } from "@/utils/roles";
+import { hasRequiredRole, resolveUserRole, type UserRole } from "@/utils/roles";
 
 type SidebarProps = {
   isOpen: boolean;
@@ -28,9 +28,10 @@ const baseNavigation: NavigationItem[] = [
 const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
   const { silo } = useSilo();
   const { user } = useAuth();
-  const canViewStaffNav = user?.role === "Admin" || user?.role === "Staff";
+  const role = resolveUserRole((user as { role?: string | null } | null)?.role ?? null);
+  const canViewStaffNav = role === "Admin" || role === "Staff";
   const navigation = canViewStaffNav
-    ? baseNavigation.filter((item) => !item.roles || hasRequiredRole(user?.role ?? null, item.roles))
+    ? baseNavigation.filter((item) => !item.roles || hasRequiredRole(role, item.roles))
     : [];
 
   return (

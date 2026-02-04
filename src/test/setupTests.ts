@@ -1,5 +1,5 @@
 import "@testing-library/jest-dom/vitest";
-import type { AxiosRequestConfig } from "axios";
+import type { AxiosAdapter, AxiosResponse, InternalAxiosRequestConfig } from "axios";
 import { afterEach, beforeAll, describe, it, test, vi } from "vitest";
 import { cleanup } from "@testing-library/react";
 import api from "@/lib/api";
@@ -53,7 +53,7 @@ afterEach(() => {
   cleanup();
 });
 
-const fetchAdapter = async (config: AxiosRequestConfig) => {
+const fetchAdapter: AxiosAdapter = async (config: InternalAxiosRequestConfig) => {
   const baseURL = config.baseURL ?? "";
   const url = config.url ?? "";
   const response = await fetch(`${baseURL}${url}`, {
@@ -63,13 +63,15 @@ const fetchAdapter = async (config: AxiosRequestConfig) => {
   });
   const contentType = response.headers.get("content-type") ?? "";
   const data = contentType.includes("application/json") ? await response.json() : await response.text();
-  return {
+  const axiosResponse: AxiosResponse = {
     data,
     status: response.status,
     statusText: response.statusText,
     headers: Object.fromEntries(response.headers.entries()),
-    config
+    config,
+    request: {}
   };
+  return axiosResponse;
 };
 
 api.defaults.adapter = fetchAdapter;

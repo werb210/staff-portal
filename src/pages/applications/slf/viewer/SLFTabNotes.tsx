@@ -14,7 +14,7 @@ const SLFTabNotes = ({ applicationId }: { applicationId: string }) => {
   const [text, setText] = useState("");
   const { data: notes = [] } = useQuery<SLFNote[]>({
     queryKey: ["slf", "notes", applicationId],
-    queryFn: ({ signal }) => apiClient.get(`/api/slf/applications/${applicationId}/notes`, { signal })
+    queryFn: ({ signal }) => apiClient.get<SLFNote[]>(`/api/slf/applications/${applicationId}/notes`, { signal })
   });
 
   const mutation = useMutation({
@@ -28,7 +28,7 @@ const SLFTabNotes = ({ applicationId }: { applicationId: string }) => {
   return (
     <div className="notes-tab">
       <div className="notes-list">
-        {notes.map((note: any) => (
+        {notes.map((note) => (
           <div key={note.id} className="note-item">
             <div className="note-meta">{note.author} — {new Date(note.createdAt).toLocaleString()}</div>
             <div>{note.text}</div>

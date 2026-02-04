@@ -4,7 +4,7 @@ import clsx from "clsx";
 import type { PipelineApplication, PipelineStageId } from "./pipeline.types";
 import { usePipelineStore } from "./pipeline.store";
 import { useAuth } from "@/hooks/useAuth";
-import { canAccessStaffPortal } from "@/utils/roles";
+import { canAccessStaffPortal, resolveUserRole } from "@/utils/roles";
 import { useDialerStore } from "@/state/dialer.store";
 import { getSubmissionMethodLabel } from "@/utils/submissionMethods";
 
@@ -46,7 +46,9 @@ const PipelineCard = ({ card, stageId, stageLabel, isTerminalStage, onClick }: P
   const setDragging = usePipelineStore((state) => state.setDragging);
   const openDialer = useDialerStore((state) => state.openDialer);
 
-  const canDrag = canAccessStaffPortal(user?.role) && !isTerminalStage;
+  const canDrag =
+    canAccessStaffPortal(resolveUserRole((user as { role?: string | null } | null)?.role ?? null)) &&
+    !isTerminalStage;
   const draggable = useDraggable({
     id: card.id,
     disabled: !canDrag,

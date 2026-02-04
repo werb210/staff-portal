@@ -1,4 +1,5 @@
-import type { AxiosError, AxiosRequestConfig, AxiosResponse } from "axios";
+import { AxiosHeaders } from "axios";
+import type { AxiosError, AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from "axios";
 import { getRequestId } from "@/utils/requestId";
 import { setLastApiRequest } from "@/state/apiRequestTrace";
 import { endPendingRequest, startPendingRequest } from "@/utils/requestTracking";
@@ -19,14 +20,14 @@ const SENSITIVE_KEYS = [
 const isSensitiveKey = (key: string) =>
   SENSITIVE_KEYS.some((sensitive) => key.toLowerCase().includes(sensitive));
 
-const redactSensitive = (value: Redactable): Redactable => {
+const redactSensitive = (value: unknown): unknown => {
   if (Array.isArray(value)) {
     return value.map((entry) => redactSensitive(entry));
   }
   if (value && typeof value === "object") {
     const result: Record<string, unknown> = {};
     Object.entries(value as Record<string, unknown>).forEach(([key, val]) => {
-      result[key] = isSensitiveKey(key) ? "[REDACTED]" : redactSensitive(val as Redactable);
+      result[key] = isSensitiveKey(key) ? "[REDACTED]" : redactSensitive(val);
     });
     return result;
   }
@@ -59,32 +60,32 @@ export const buildRequestUrl = (config: AxiosRequestConfig) => {
   return `${base}${url}`;
 };
 
-type RequestIdConfig = AxiosRequestConfig & { skipRequestId?: boolean };
+type RequestIdConfig = InternalAxiosRequestConfig & { skipRequestId?: boolean };
 
 const shouldAttachRequestId = (config: RequestIdConfig) => {
   if (config.skipRequestId) return false;
   return true;
 };
 
-export const attachRequestIdAndLog = (config: AxiosRequestConfig) => {
+export const attachRequestIdAndLog = (config: InternalAxiosRequestConfig) => {
   const requestId = getRequestId();
   const requestConfig = config as RequestIdConfig;
-  const headers = { ...(requestConfig.headers ?? {}) } as Record<string, unknown>;
+  const headers = AxiosHeaders.from(requestConfig.headers ?? {});
   const attachRequestId = shouldAttachRequestId(requestConfig);
   if (attachRequestId) {
-    headers["X-Request-Id"] = requestId;
+    headers.set("X-Request-Id", requestId);
   }
   requestConfig.headers = headers;
 
-  if (attachRequestId && !headers["X-Request-Id"]) {
+  if (attachRequestId && !headers.get("X-Request-Id")) {
     throw new Error("Missing X-Request-Id header on request");
   }
 
   const pendingId = startPendingRequest(requestConfig);
   (requestConfig as AxiosRequestConfig & { __pendingId?: string }).__pendingId = pendingId;
 
-  const sanitizedHeaders = redactSensitive(headers);
-  const payload = requestConfig.data ? redactSensitive(requestConfig.data as Redactable) : undefined;
+  const sanitizedHeaders = redactSensitive(headers.toJSON());
+  const payload = requestConfig.data ? redactSensitive(requestConfig.data) : undefined;
 
   console.info("API request", {
     requestId,
@@ -123,7 +124,7 @@ export const logResponse = (response: AxiosResponse) => {
 
 export const logError = (error: AxiosError) => {
   const requestId = getRequestId();
-  const config = error.config ?? {};
+  const config: AxiosRequestConfig = error.config ?? {};
   const pendingId = (config as AxiosRequestConfig & { __pendingId?: string }).__pendingId;
   endPendingRequest(pendingId);
 

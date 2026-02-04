@@ -141,9 +141,24 @@ const normalizePipelineApplication = (value: unknown): PipelineApplication | nul
           ? value.current_stage
           : "",
     status: typeof value.status === "string" ? value.status : undefined,
-    matchPercentage: value.matchPercentage ?? value.match_percentage ?? undefined,
-    matchPercent: value.matchPercent ?? value.match_percent ?? undefined,
-    matchScore: value.matchScore ?? value.match_score ?? undefined,
+    matchPercentage:
+      typeof value.matchPercentage === "number" || typeof value.matchPercentage === "string"
+        ? value.matchPercentage
+        : typeof value.match_percentage === "number" || typeof value.match_percentage === "string"
+          ? value.match_percentage
+          : undefined,
+    matchPercent:
+      typeof value.matchPercent === "number" || typeof value.matchPercent === "string"
+        ? value.matchPercent
+        : typeof value.match_percent === "number" || typeof value.match_percent === "string"
+          ? value.match_percent
+          : undefined,
+    matchScore:
+      typeof value.matchScore === "number" || typeof value.matchScore === "string"
+        ? value.matchScore
+        : typeof value.match_score === "number" || typeof value.match_score === "string"
+          ? value.match_score
+          : undefined,
     documents,
     bankingComplete:
       typeof value.bankingComplete === "boolean"
