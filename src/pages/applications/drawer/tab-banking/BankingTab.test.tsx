@@ -6,14 +6,22 @@ import BankingTab from "@/pages/applications/drawer/tab-banking/BankingTab";
 import { renderWithProviders } from "@/test/testUtils";
 import { useApplicationDrawerStore } from "@/state/applicationDrawer.store";
 import { fetchBankingAnalysis } from "@/api/banking";
+import { useApplicationDetails } from "@/pages/applications/hooks/useApplicationDetails";
 
 vi.mock("@/api/banking", () => ({
   fetchBankingAnalysis: vi.fn()
+}));
+vi.mock("@/pages/applications/hooks/useApplicationDetails", () => ({
+  useApplicationDetails: vi.fn()
 }));
 
 describe("BankingTab", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(useApplicationDetails).mockReturnValue({
+      applicationId: null,
+      data: undefined
+    });
   });
 
   it("renders only when the banking tab is available", () => {
@@ -27,19 +35,58 @@ describe("BankingTab", () => {
 
   it("shows a pending banner when banking analysis is in progress", async () => {
     useApplicationDrawerStore.setState({ isOpen: true, selectedApplicationId: "app-123", selectedTab: "banking" });
+    vi.mocked(useApplicationDetails).mockReturnValue({
+      applicationId: "app-123",
+      data: { banking_completed_at: null, bank_statement_count: 4 }
+    });
     vi.mocked(fetchBankingAnalysis).mockResolvedValue({
-      bankingCompletedAt: null,
       monthsDetected: "6 of 6 months received",
       monthGroups: [{ year: "2025", months: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"] }]
     });
 
     renderWithProviders(<BankingTab />);
 
-    expect(await screen.findByText("Banking analysis in progress.")).toBeInTheDocument();
+    expect(await screen.findByText("Waiting for statements")).toBeInTheDocument();
+  });
+
+  it("shows processing when statements are present but banking is incomplete", async () => {
+    useApplicationDrawerStore.setState({ isOpen: true, selectedApplicationId: "app-124", selectedTab: "banking" });
+    vi.mocked(useApplicationDetails).mockReturnValue({
+      applicationId: "app-124",
+      data: { banking_completed_at: null, bank_statement_count: 6 }
+    });
+    vi.mocked(fetchBankingAnalysis).mockResolvedValue({
+      monthsDetected: "6 of 6 months received",
+      monthGroups: [{ year: "2025", months: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"] }]
+    });
+
+    renderWithProviders(<BankingTab />);
+
+    expect(await screen.findByText("Processing…")).toBeInTheDocument();
+  });
+
+  it("shows completed when banking analysis is finished", async () => {
+    useApplicationDrawerStore.setState({ isOpen: true, selectedApplicationId: "app-125", selectedTab: "banking" });
+    vi.mocked(useApplicationDetails).mockReturnValue({
+      applicationId: "app-125",
+      data: { banking_completed_at: "2025-07-01T12:00:00Z", bank_statement_count: 6 }
+    });
+    vi.mocked(fetchBankingAnalysis).mockResolvedValue({
+      monthsDetected: "6 of 6 months received",
+      monthGroups: [{ year: "2025", months: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"] }]
+    });
+
+    renderWithProviders(<BankingTab />);
+
+    expect(await screen.findByText("Completed")).toBeInTheDocument();
   });
 
   it("renders all sections with server data and no editable controls", async () => {
     useApplicationDrawerStore.setState({ isOpen: true, selectedApplicationId: "app-456", selectedTab: "banking" });
+    vi.mocked(useApplicationDetails).mockReturnValue({
+      applicationId: "app-456",
+      data: { banking_completed_at: "2025-07-01T12:00:00Z", bank_statement_count: 6 }
+    });
     vi.mocked(fetchBankingAnalysis).mockResolvedValue({
       bankingCompletedAt: "2025-07-01T12:00:00Z",
       monthsDetected: "6 of 6 months received",

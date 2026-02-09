@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { fetchOcrResults, type OcrSection, type OcrResults } from "@/api/ocr";
+import { useApplicationDetails } from "@/pages/applications/hooks/useApplicationDetails";
 import { useApplicationDrawerStore } from "@/state/applicationDrawer.store";
 import { getErrorMessage } from "@/utils/errors";
 
@@ -31,13 +32,24 @@ const SectionBlock = ({ section }: { section?: OcrSection }) => {
 
 const FinancialTab = () => {
   const applicationId = useApplicationDrawerStore((state) => state.selectedApplicationId);
+  const {
+    data: applicationDetails,
+    isLoading: isDetailsLoading,
+    error: detailsError
+  } = useApplicationDetails();
+  const ocrCompletedAt = (applicationDetails as { ocr_completed_at?: string | null } | null)?.ocr_completed_at;
+  const shouldFetchResults = Boolean(applicationId) && Boolean(ocrCompletedAt);
   const { data: results, isLoading, error } = useQuery<OcrResults>({
     queryKey: ["ocr", applicationId, "results"],
     queryFn: ({ signal }) => fetchOcrResults(applicationId ?? "", { signal }),
-    enabled: Boolean(applicationId)
+    enabled: shouldFetchResults
   });
 
   if (!applicationId) return <div className="drawer-placeholder">Select an application to view financial data.</div>;
+  if (isDetailsLoading) return <div className="drawer-placeholder">Loading financial data…</div>;
+  if (detailsError) return <div className="drawer-placeholder">{getErrorMessage(detailsError, "Unable to load financial data.")}</div>;
+  if (ocrCompletedAt === undefined) return <div className="drawer-placeholder">Unknown</div>;
+  if (ocrCompletedAt === null) return <div className="drawer-placeholder">Pending OCR</div>;
   if (isLoading) return <div className="drawer-placeholder">Loading financial data…</div>;
   if (error) return <div className="drawer-placeholder">{getErrorMessage(error, "Unable to load financial data.")}</div>;
 

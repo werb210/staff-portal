@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { acceptDocument, fetchDocumentRequirements, rejectDocument } from "@/api/documents";
 import { retryUnlessClientError } from "@/api/retryPolicy";
 import Modal from "@/components/ui/Modal";
+import { useApplicationDetails } from "@/pages/applications/hooks/useApplicationDetails";
 import { useAuth } from "@/hooks/useAuth";
 import { useApplicationDrawerStore } from "@/state/applicationDrawer.store";
 import type { DocumentRequirement } from "@/types/documents.types";
@@ -11,6 +12,7 @@ import { canAccessStaffPortal, resolveUserRole } from "@/utils/roles";
 
 const DocumentsTab = () => {
   const applicationId = useApplicationDrawerStore((state) => state.selectedApplicationId);
+  const { data: applicationDetails } = useApplicationDetails();
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const isStaff = canAccessStaffPortal(resolveUserRole((user as { role?: string | null } | null)?.role ?? null));
@@ -40,6 +42,13 @@ const DocumentsTab = () => {
   if (!applicationId) return <div className="drawer-placeholder">Select an application to view documents.</div>;
   if (isLoading) return <div className="drawer-placeholder">Loading documents…</div>;
   if (error) return <div className="drawer-placeholder">{getErrorMessage(error, "Unable to load documents.")}</div>;
+
+  const ocrCompletedAt = (applicationDetails as { ocr_completed_at?: string | null } | null)?.ocr_completed_at;
+  const ocrStatusLabel = (() => {
+    if (ocrCompletedAt === undefined) return "Unknown";
+    if (ocrCompletedAt === null) return "Processing…";
+    return "Completed";
+  })();
 
   const normalizeStatus = (status?: string | null) => status?.toLowerCase() ?? "unknown";
   const statusLabel = (status?: string | null) => {
@@ -118,6 +127,10 @@ const DocumentsTab = () => {
           {feedback.message}
         </div>
       ) : null}
+      <div className="drawer-section" role="status" aria-live="polite">
+        <div className="drawer-section__title">OCR Status</div>
+        <div className="drawer-section__body">{ocrStatusLabel}</div>
+      </div>
       {groupedDocuments.length ? (
         <div className="documents-grouped">
           {groupedDocuments.map(([category, categoryDocs]) => {
