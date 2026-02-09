@@ -1,5 +1,6 @@
 import type { PipelineApplication, PipelineStageId } from "./pipeline.types";
 import { PIPELINE_STAGE_LABELS, normalizeStageId } from "./pipeline.types";
+import { getProcessingStatus } from "@/pages/applications/utils/processingStatus";
 
 type PipelineCardProps = {
   card: PipelineApplication;
@@ -35,6 +36,10 @@ const PipelineCard = ({ card, stageId, onClick }: PipelineCardProps) => {
   const normalizedStage = normalizeStageId(stageId);
   const isDocumentsRequired = normalizedStage === "DOCUMENTSREQUIRED";
   const stageWarningLabel = PIPELINE_STAGE_LABELS.DOCUMENTSREQUIRED;
+  const processingStatus = getProcessingStatus({
+    ocrCompletedAt: (card as { ocr_completed_at?: string | null } | null)?.ocr_completed_at,
+    bankingCompletedAt: (card as { banking_completed_at?: string | null } | null)?.banking_completed_at
+  });
 
   return (
     <div
@@ -52,6 +57,9 @@ const PipelineCard = ({ card, stageId, onClick }: PipelineCardProps) => {
       <div className="pipeline-card__meta">
         {isDocumentsRequired ? (
           <span className="pipeline-card__pill pipeline-card__pill--warning">{stageWarningLabel}</span>
+        ) : null}
+        {processingStatus ? (
+          <span className="pipeline-card__pill pipeline-card__pill--muted">{processingStatus.badge}</span>
         ) : null}
       </div>
       <div className="pipeline-card__footer">{updatedAtLabel}</div>
