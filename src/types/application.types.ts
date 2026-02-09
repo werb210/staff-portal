@@ -36,3 +36,15 @@ export type ApplicationDetails = {
   fundingRequest?: Record<string, unknown> | null;
   productCategory?: string | null;
 };
+
+export type PortalApplicationRecord = {
+  id: string;
+  stage?: string;
+  current_stage?: string;
+  business?: Record<string, unknown> | null;
+  operations?: Record<string, unknown> | null;
+  primaryContact?: Record<string, unknown> | null;
+  auditTimeline?: ApplicationAuditEvent[] | null;
+  audit_events?: ApplicationAuditEvent[] | null;
+  [key: string]: unknown;
+};
