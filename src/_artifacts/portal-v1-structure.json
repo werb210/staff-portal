@@ -1,0 +1,53 @@
+{
+  "pipelineStages": [
+    "RECEIVED",
+    "IN_REVIEW",
+    "DOCUMENTS_REQUIRED",
+    "STARTUP",
+    "OFF_TO_LENDER",
+    "OFFER",
+    "ACCEPTED",
+    "REJECTED"
+  ],
+  "applicationCard": {
+    "tabs": [
+      {
+        "name": "Application",
+        "editable": true,
+        "actions": ["Save"]
+      },
+      {
+        "name": "Financials (OCR output)",
+        "editable": false
+      },
+      {
+        "name": "Banking Analysis",
+        "editable": false
+      },
+      {
+        "name": "OCR Insights",
+        "editable": false
+      },
+      {
+        "name": "Credit Summary",
+        "editable": true,
+        "actions": ["Regenerate Summary", "Download PDF"]
+      },
+      {
+        "name": "Documents",
+        "editable": true,
+        "actions": ["Accept", "Reject"]
+      },
+      {
+        "name": "Notes (internal staff only)",
+        "editable": true,
+        "actions": ["Send Note"]
+      },
+      {
+        "name": "Lender Matching",
+        "editable": true,
+        "actions": ["Send to Lender", "Retry send", "Retry", "Retry submission", "Confirm submission", "Confirm retry"]
+      }
+    ]
+  }
+}
