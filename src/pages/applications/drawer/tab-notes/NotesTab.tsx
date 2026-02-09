@@ -22,13 +22,19 @@ const NotesTab = () => {
 
   const mutation = useMutation({
     mutationFn: (text: string) => sendNoteMessage(applicationId ?? "", text),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notes", applicationId] })
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notes", applicationId] });
+      queryClient.invalidateQueries({ queryKey: ["pipeline"] });
+    }
   });
 
   const editMutation = useMutation({
     mutationFn: ({ noteId, body }: { noteId: string; body: string }) =>
       updateNoteMessage(applicationId ?? "", noteId, body),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notes", applicationId] })
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notes", applicationId] });
+      queryClient.invalidateQueries({ queryKey: ["pipeline"] });
+    }
   });
 
   const sortedMessages = useMemo(

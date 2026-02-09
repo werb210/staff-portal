@@ -10,7 +10,6 @@ import DocumentsTab from "./tab-documents/DocumentsTab";
 import NotesTab from "./tab-notes/NotesTab";
 import LendersTab from "./tab-lenders/LendersTab";
 import OffersTab from "./OffersTab";
-import OCRInsightsTab from "./tabs/OCRInsightsTab";
 import { useApplicationDrawerStore } from "@/state/applicationDrawer.store";
 import { usePipelineStore } from "@/pages/applications/pipeline/pipeline.store";
 import { useAuth } from "@/hooks/useAuth";
@@ -21,7 +20,6 @@ const tabContentMap: Record<DrawerTabId, JSX.Element> = {
   application: <ApplicationTab />,
   financials: <FinancialTab />,
   banking: <BankingTab />,
-  "ocr-insights": <OCRInsightsTab />,
   "credit-summary": <CreditSummaryTab />,
   documents: <DocumentsTab />,
   notes: <NotesTab />,
@@ -43,7 +41,6 @@ const ApplicationDrawer = () => {
   const visibleTabs = useMemo(
     () =>
       TABS.filter((tab) => {
-        if (!isStaff && tab.id === "ocr-insights") return false;
         if (!canEdit && (tab.id === "offers" || tab.id === "notes")) return false;
         return true;
       }),

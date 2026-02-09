@@ -1746,8 +1746,18 @@ a,
   background: var(--ui-surface-muted);
 }
 
+.offers-list__item--archived {
+  opacity: 0.75;
+}
+
 .offers-list__lender {
   font-weight: 600;
+}
+
+.offers-list__actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
 }
 
 .offers-list__meta {
@@ -1755,6 +1765,20 @@ a,
   flex-direction: column;
   gap: 4px;
   font-size: 12px;
+  color: var(--ui-text-muted);
+}
+
+.offers-archived {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.offers-archived__title {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
   color: var(--ui-text-muted);
 }
 

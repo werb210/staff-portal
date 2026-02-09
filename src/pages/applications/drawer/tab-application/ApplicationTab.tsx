@@ -237,6 +237,7 @@ const ApplicationTab = () => {
       if (applicationId) {
         await queryClient.invalidateQueries({ queryKey: ["portal-application", applicationId] });
       }
+      await queryClient.invalidateQueries({ queryKey: ["pipeline"] });
     },
     onError: (mutationError) => {
       setFeedback({ type: "error", message: getErrorMessage(mutationError, "Unable to save changes.") });

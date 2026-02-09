@@ -1,9 +1,10 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { PipelineApplication, PipelineStage } from "./pipeline.types";
 import { evaluateStageTransition, normalizeStageId, sortPipelineStages } from "./pipeline.types";
 import { updatePortalApplication } from "@/api/applications";
 import { pipelineApi } from "./pipeline.api";
+import Modal from "@/components/ui/Modal";
 
 type PipelineBulkActionsProps = {
   selectedCards: PipelineApplication[];
@@ -28,6 +29,7 @@ const resolveNextStage = (card: PipelineApplication, stages: PipelineStage[]) =>
 const PipelineBulkActions = ({ selectedCards, stages, onClearSelection }: PipelineBulkActionsProps) => {
   const queryClient = useQueryClient();
   const selectedCount = selectedCards.length;
+  const [confirmAction, setConfirmAction] = useState<"export" | "stage" | null>(null);
 
   const stageTransitions = useMemo(
     () =>
@@ -92,7 +94,7 @@ const PipelineBulkActions = ({ selectedCards, stages, onClearSelection }: Pipeli
         </button>
       </div>
       <div className="pipeline-bulk__actions">
-        <button className="btn btn--ghost" type="button" onClick={() => exportMutation.mutate()}>
+        <button className="btn btn--ghost" type="button" onClick={() => setConfirmAction("export")}>
           Export CSV
         </button>
         <button
@@ -100,12 +102,43 @@ const PipelineBulkActions = ({ selectedCards, stages, onClearSelection }: Pipeli
           type="button"
           disabled={Boolean(stageError) || stageMutation.isPending}
           title={stageError ?? undefined}
-          onClick={() => stageMutation.mutate()}
+          onClick={() => setConfirmAction("stage")}
         >
           {stageMutation.isPending ? "Updating…" : "Move to next stage"}
         </button>
         {stageError ? <span className="pipeline-bulk__hint">{stageError}</span> : null}
       </div>
+      {confirmAction ? (
+        <Modal title={confirmAction === "export" ? "Confirm export" : "Confirm stage update"} onClose={() => setConfirmAction(null)}>
+          <div className="space-y-4">
+            <p>
+              {confirmAction === "export"
+                ? "Export the selected applications to CSV?"
+                : "Move the selected applications to the next stage?"}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                className="btn btn--primary"
+                onClick={() => {
+                  if (confirmAction === "export") {
+                    exportMutation.mutate();
+                  } else {
+                    stageMutation.mutate();
+                  }
+                  setConfirmAction(null);
+                }}
+                disabled={confirmAction === "stage" ? Boolean(stageError) || stageMutation.isPending : exportMutation.isPending}
+              >
+                Confirm
+              </button>
+              <button type="button" className="btn btn--secondary" onClick={() => setConfirmAction(null)}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </Modal>
+      ) : null}
     </div>
   );
 };

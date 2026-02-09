@@ -3,9 +3,8 @@ import clsx from "clsx";
 
 export type DrawerTabId =
   | "application"
-  | "financials"
   | "banking"
-  | "ocr-insights"
+  | "financials"
   | "credit-summary"
   | "documents"
   | "notes"
@@ -20,14 +19,13 @@ export type DrawerTab = {
 
 export const TABS: DrawerTab[] = [
   { id: "application", label: "Application" },
-  { id: "financials", label: "Financials (OCR output)" },
   { id: "banking", label: "Banking Analysis" },
-  { id: "ocr-insights", label: "OCR Insights" },
-  { id: "credit-summary", label: "Credit Summary" },
+  { id: "financials", label: "Financials / OCR" },
   { id: "documents", label: "Documents" },
+  { id: "credit-summary", label: "Credit Summary" },
   { id: "notes", label: "Notes (internal staff only)" },
-  { id: "offers", label: "Offers" },
-  { id: "lenders", label: "Lender Matching" }
+  { id: "lenders", label: "Lender Matching" },
+  { id: "offers", label: "Offers" }
 ];
 
 type DrawerTabsProps = {

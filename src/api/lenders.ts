@@ -22,6 +22,9 @@ export type { Lender, LenderPayload, LenderProduct, LenderProductPayload, Lender
 export type LenderMatch = {
   id: string;
   lenderName: string;
+  matchPercent?: number | string | null;
+  matchPercentage?: number | string | null;
+  matchScore?: number | string | null;
   productCategory?: string;
   terms?: string;
   requiredDocsStatus?: string;

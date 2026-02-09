@@ -61,6 +61,20 @@ const PipelineFilters = ({ stages }: PipelineFiltersProps) => {
         onChange={(event) => setFilters({ lenderAssigned: event.target.value || undefined })}
       />
       <Select
+        label="Lender Status"
+        value={filters.lenderStatus ?? ""}
+        onChange={(event) =>
+          setFilters({
+            lenderStatus: event.target.value ? (event.target.value as typeof filters.lenderStatus) : undefined
+          })
+        }
+        options={[
+          { value: "", label: "Any" },
+          { value: "assigned", label: "Assigned" },
+          { value: "unassigned", label: "Unassigned" }
+        ]}
+      />
+      <Select
         label="Processing Status"
         value={filters.processingStatus ?? ""}
         onChange={(event) =>
@@ -70,8 +84,8 @@ const PipelineFilters = ({ stages }: PipelineFiltersProps) => {
         }
         options={[
           { value: "", label: "Any" },
-          { value: "OCR", label: "OCR Pending" },
-          { value: "BANKING", label: "Banking In Progress" },
+          { value: "OCR", label: "Pending" },
+          { value: "BANKING", label: "In progress" },
           { value: "DONE", label: "Complete" }
         ]}
       />

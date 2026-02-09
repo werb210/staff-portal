@@ -176,6 +176,7 @@ const filterKeyParts = (filters: PipelineFilters) => [
   filters.productCategory ?? "",
   filters.stageId ?? "",
   filters.lenderAssigned ?? "",
+  filters.lenderStatus ?? "",
   filters.processingStatus ?? "",
   filters.submissionMethod ?? "",
   filters.dateFrom ?? "",

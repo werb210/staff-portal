@@ -26,20 +26,20 @@ const baseCard: PipelineApplication = {
 describe("processing status displays", () => {
   it.each([
     {
-      label: "Processing: OCR Pending",
-      badge: "OCR",
+      label: "Processing: Pending",
+      badge: "Pending",
       ocrCompletedAt: null,
       bankingCompletedAt: null
     },
     {
-      label: "Processing: Banking In Progress",
-      badge: "BANKING",
+      label: "Processing: In progress",
+      badge: "In progress",
       ocrCompletedAt: "2025-07-10T12:00:00Z",
       bankingCompletedAt: null
     },
     {
       label: "Processing: Complete",
-      badge: "DONE",
+      badge: "Complete",
       ocrCompletedAt: "2025-07-10T12:00:00Z",
       bankingCompletedAt: "2025-07-11T12:00:00Z"
     }

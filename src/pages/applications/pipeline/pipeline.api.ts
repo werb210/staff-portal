@@ -264,6 +264,7 @@ const buildPipelineQuery = (filters?: PipelineFilters) => {
   if (filters.productCategory) params.set("productCategory", filters.productCategory);
   if (filters.stageId) params.set("stage", filters.stageId);
   if (filters.lenderAssigned) params.set("lenderAssigned", filters.lenderAssigned);
+  if (filters.lenderStatus) params.set("lenderStatus", filters.lenderStatus);
   if (filters.processingStatus) params.set("processingStatus", filters.processingStatus);
   if (filters.submissionMethod) params.set("submissionMethod", filters.submissionMethod);
   if (filters.dateFrom) params.set("dateFrom", filters.dateFrom);

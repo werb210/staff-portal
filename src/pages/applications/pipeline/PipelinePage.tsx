@@ -38,6 +38,7 @@ const buildSearchParams = (filters: PipelineFiltersState) => {
   if (filters.productCategory) params.set("productCategory", filters.productCategory);
   if (filters.stageId) params.set("stage", filters.stageId);
   if (filters.lenderAssigned) params.set("lenderAssigned", filters.lenderAssigned);
+  if (filters.lenderStatus) params.set("lenderStatus", filters.lenderStatus);
   if (filters.processingStatus) params.set("processingStatus", filters.processingStatus);
   if (filters.submissionMethod) params.set("submissionMethod", filters.submissionMethod);
   if (filters.dateFrom) params.set("dateFrom", filters.dateFrom);
@@ -89,6 +90,7 @@ const PipelinePage = () => {
       productCategory: params.productCategory ?? undefined,
       stageId: params.stage ?? undefined,
       lenderAssigned: params.lenderAssigned ?? undefined,
+      lenderStatus: params.lenderStatus as typeof filters.lenderStatus | undefined,
       processingStatus: params.processingStatus as typeof filters.processingStatus | undefined,
       submissionMethod: params.submissionMethod ?? undefined,
       dateFrom: params.dateFrom ?? undefined,
@@ -116,9 +118,16 @@ const PipelinePage = () => {
     navigate(`/applications/${id}`);
   };
 
+  const matchesLenderStatus = (application: (typeof applications)[number]) => {
+    if (!filters.lenderStatus) return true;
+    const hasAssignedLender = Boolean(application.assignedLender);
+    return filters.lenderStatus === "assigned" ? hasAssignedLender : !hasAssignedLender;
+  };
+
   const sortStageApplications = (stageId: string) => {
     const stageApplications = applications.filter(
-      (application) => normalizeStageId(application.stage) === normalizeStageId(stageId)
+      (application) =>
+        normalizeStageId(application.stage) === normalizeStageId(stageId) && matchesLenderStatus(application)
     );
     const tieBreaker = (a: (typeof stageApplications)[number], b: (typeof stageApplications)[number]) =>
       a.id.localeCompare(b.id);

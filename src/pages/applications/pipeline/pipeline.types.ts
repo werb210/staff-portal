@@ -40,6 +40,7 @@ export type PipelineFilters = {
   productCategory?: string;
   stageId?: string;
   lenderAssigned?: string;
+  lenderStatus?: "assigned" | "unassigned";
   processingStatus?: "OCR" | "BANKING" | "DONE";
   submissionMethod?: string;
   dateFrom?: string;
