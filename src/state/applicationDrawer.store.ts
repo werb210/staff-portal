@@ -3,9 +3,8 @@ import { readPortalDraft, updatePortalDraft } from "@/utils/portalDraft";
 
 export type DrawerTabId =
   | "application"
-  | "financials"
   | "banking"
-  | "ocr-insights"
+  | "financials"
   | "credit-summary"
   | "documents"
   | "notes"

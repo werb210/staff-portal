@@ -14,7 +14,8 @@ describe("PORTAL_FIELD_SURFACE", () => {
     drawer_documents: PORTAL_FIELD_SURFACE.drawer.documents,
     drawer_credit_summary: PORTAL_FIELD_SURFACE.drawer.credit_summary,
     drawer_notes: PORTAL_FIELD_SURFACE.drawer.notes,
-    drawer_lenders: PORTAL_FIELD_SURFACE.drawer.lenders
+    drawer_lenders: PORTAL_FIELD_SURFACE.drawer.lenders,
+    drawer_offers: PORTAL_FIELD_SURFACE.drawer.offers
   };
 
   it("exposes all top-level sections", () => {
@@ -28,6 +29,7 @@ describe("PORTAL_FIELD_SURFACE", () => {
     expect(PORTAL_FIELD_SURFACE.drawer.credit_summary).toBeDefined();
     expect(PORTAL_FIELD_SURFACE.drawer.notes).toBeDefined();
     expect(PORTAL_FIELD_SURFACE.drawer.lenders).toBeDefined();
+    expect(PORTAL_FIELD_SURFACE.drawer.offers).toBeDefined();
   });
 
   it("contains at least one field per section", () => {

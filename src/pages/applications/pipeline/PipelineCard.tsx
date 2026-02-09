@@ -43,8 +43,16 @@ const PipelineCard = ({ card, stageId, onClick, isSelected, selectable, onSelect
 
   const updatedAtLabel = `Updated ${formatTimeAgo(card.updatedAt ?? card.createdAt)} ago`;
   const normalizedStage = normalizeStageId(stageId);
-  const isDocumentsRequired = normalizedStage === "DOCUMENTSREQUIRED";
-  const stageWarningLabel = PIPELINE_STAGE_LABELS.DOCUMENTSREQUIRED;
+  const stageLabel = PIPELINE_STAGE_LABELS[normalizedStage] ?? stageId;
+  const documentCounts = card.documents ?? {};
+  const requiredDocuments = documentCounts.required ?? 0;
+  const submittedDocuments = documentCounts.submitted ?? 0;
+  const hasDocumentGap = requiredDocuments > 0 && submittedDocuments < requiredDocuments;
+  const isDocumentsRequiredStage = normalizedStage === "DOCUMENTSREQUIRED";
+  const showDocumentWarning = isDocumentsRequiredStage || hasDocumentGap;
+  const stageWarningLabel = hasDocumentGap
+    ? `Documents required (${submittedDocuments}/${requiredDocuments})`
+    : PIPELINE_STAGE_LABELS.DOCUMENTSREQUIRED;
   const processingStatus = getProcessingStatus({
     ocrCompletedAt: (card as { ocr_completed_at?: string | null } | null)?.ocr_completed_at,
     bankingCompletedAt: (card as { banking_completed_at?: string | null } | null)?.banking_completed_at
@@ -73,7 +81,8 @@ const PipelineCard = ({ card, stageId, onClick, isSelected, selectable, onSelect
         <div className="pipeline-card__amount">{formatAmount(card.requestedAmount)}</div>
       </div>
       <div className="pipeline-card__meta">
-        {isDocumentsRequired ? (
+        <span className="pipeline-card__pill">{stageLabel}</span>
+        {showDocumentWarning ? (
           <span className="pipeline-card__pill pipeline-card__pill--warning">{stageWarningLabel}</span>
         ) : null}
         {processingStatus ? (

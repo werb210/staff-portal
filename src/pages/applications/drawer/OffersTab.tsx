@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState, type ChangeEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchPortalApplication } from "@/api/applications";
-import { fetchOffers, uploadOffer, type OfferRecord } from "@/api/offers";
+import { archiveOffer, fetchOffers, uploadOffer, type OfferRecord } from "@/api/offers";
 import OfferComparisonTable from "./OfferComparisonTable";
 import { useApplicationDrawerStore } from "@/state/applicationDrawer.store";
 import { getErrorMessage } from "@/utils/errors";
@@ -78,8 +78,17 @@ const OffersTab = () => {
     onSuccess: () => {
       setUploadError(null);
       queryClient.invalidateQueries({ queryKey: ["offers", applicationId] });
+      queryClient.invalidateQueries({ queryKey: ["pipeline"] });
     },
     onError: (err) => setUploadError(getErrorMessage(err, "Unable to upload the offer."))
+  });
+
+  const archiveMutation = useMutation({
+    mutationFn: (offerId: string) => archiveOffer(offerId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["offers", applicationId] });
+      queryClient.invalidateQueries({ queryKey: ["pipeline"] });
+    }
   });
 
   const handleUploadClick = () => {
@@ -101,6 +110,9 @@ const OffersTab = () => {
   if (isLoading) return <div className="drawer-placeholder">Loading offers…</div>;
   if (error) return <div className="drawer-placeholder">{getErrorMessage(error, "Unable to load offers.")}</div>;
 
+  const activeOffers = useMemo(() => offers.filter((offer) => offer.status !== "archived"), [offers]);
+  const archivedOffers = useMemo(() => offers.filter((offer) => offer.status === "archived"), [offers]);
+
   return (
     <div className="drawer-tab drawer-tab__offers">
       <div className="offers-header">
@@ -108,11 +120,11 @@ const OffersTab = () => {
           <div className="offers-title">Lender term sheets</div>
           <div className="offers-subtitle">Upload and review offers received from lenders.</div>
         </div>
-        {offers.length > 1 ? (
-          <button className="btn btn--ghost" type="button" onClick={() => setShowComparison((prev) => !prev)}>
-            {showComparison ? "View list" : "Compare offers"}
-          </button>
-        ) : null}
+      {activeOffers.length > 1 ? (
+        <button className="btn btn--ghost" type="button" onClick={() => setShowComparison((prev) => !prev)}>
+          {showComparison ? "View list" : "Compare offers"}
+        </button>
+      ) : null}
       </div>
 
       <div className="offers-upload">
@@ -139,11 +151,11 @@ const OffersTab = () => {
       </div>
 
       {showComparison ? (
-        <OfferComparisonTable offers={offers} />
+        <OfferComparisonTable offers={activeOffers} />
       ) : (
         <div className="offers-list">
-          {offers.length ? (
-            offers.map((offer) => (
+          {activeOffers.length ? (
+            activeOffers.map((offer) => (
               <div key={offer.id} className="offers-list__item">
                 <div>
                   <div className="offers-list__lender">{offer.lenderName}</div>
@@ -152,16 +164,47 @@ const OffersTab = () => {
                     <span>Uploaded {formatTimestamp(offer.uploadedAt)}</span>
                   </div>
                 </div>
-                {offer.fileUrl ? (
-                  <a className="btn btn--ghost" href={offer.fileUrl} target="_blank" rel="noreferrer">
-                    View PDF
-                  </a>
-                ) : null}
+                <div className="offers-list__actions">
+                  {offer.fileUrl ? (
+                    <a className="btn btn--ghost" href={offer.fileUrl} target="_blank" rel="noreferrer">
+                      View PDF
+                    </a>
+                  ) : null}
+                  <button
+                    className="btn btn--secondary"
+                    type="button"
+                    onClick={() => archiveMutation.mutate(offer.id)}
+                    disabled={archiveMutation.isPending}
+                  >
+                    Archive
+                  </button>
+                </div>
               </div>
             ))
           ) : (
-            <div className="drawer-placeholder">No lender offers have been uploaded yet.</div>
+            <div className="drawer-placeholder">No active offers yet.</div>
           )}
+          {archivedOffers.length ? (
+            <div className="offers-archived">
+              <div className="offers-archived__title">Archived offers</div>
+              {archivedOffers.map((offer) => (
+                <div key={offer.id} className="offers-list__item offers-list__item--archived">
+                  <div>
+                    <div className="offers-list__lender">{offer.lenderName}</div>
+                    <div className="offers-list__meta">
+                      <span>{offer.fileName ?? "Term sheet"}</span>
+                      <span>Uploaded {formatTimestamp(offer.uploadedAt)}</span>
+                    </div>
+                  </div>
+                  {offer.fileUrl ? (
+                    <a className="btn btn--ghost" href={offer.fileUrl} target="_blank" rel="noreferrer">
+                      View PDF
+                    </a>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          ) : null}
         </div>
       )}
     </div>

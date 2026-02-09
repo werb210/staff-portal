@@ -140,6 +140,7 @@ describe("PipelinePage filters and bulk actions", () => {
 
     const exportButton = screen.getByRole("button", { name: /Export CSV/i });
     await userEvent.click(exportButton);
+    await userEvent.click(await screen.findByRole("button", { name: /Confirm/i }));
 
     await waitFor(() => expect(pipelineApi.exportApplications).toHaveBeenCalled());
     expect(await new Response(csvBlob).text()).toMatchSnapshot();
@@ -185,6 +186,7 @@ describe("PipelinePage filters and bulk actions", () => {
     await userEvent.click(await screen.findByLabelText("Select Acme Co"));
     const moveButton = screen.getByRole("button", { name: /Move to next stage/i });
     await userEvent.click(moveButton);
+    await userEvent.click(await screen.findByRole("button", { name: /Confirm/i }));
 
     await waitFor(() => {
       expect(updatePortalApplication).toHaveBeenCalledWith("app-1", { stage: "IN_REVIEW" });

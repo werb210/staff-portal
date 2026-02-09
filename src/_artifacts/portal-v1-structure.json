@@ -17,21 +17,12 @@
         "actions": ["Save"]
       },
       {
-        "name": "Financials (OCR output)",
-        "editable": false
-      },
-      {
         "name": "Banking Analysis",
         "editable": false
       },
       {
-        "name": "OCR Insights",
+        "name": "Financials / OCR",
         "editable": false
-      },
-      {
-        "name": "Credit Summary",
-        "editable": true,
-        "actions": ["Regenerate Summary", "Download PDF"]
       },
       {
         "name": "Documents",
@@ -39,19 +30,23 @@
         "actions": ["Accept", "Reject"]
       },
       {
+        "name": "Credit Summary",
+        "editable": false
+      },
+      {
         "name": "Notes (internal staff only)",
         "editable": true,
         "actions": ["Send Note"]
       },
       {
-        "name": "Offers",
-        "editable": true,
-        "actions": ["Upload term sheet"]
-      },
-      {
         "name": "Lender Matching",
         "editable": true,
         "actions": ["Send to Lender", "Retry send", "Retry", "Retry submission", "Confirm submission", "Confirm retry"]
+      },
+      {
+        "name": "Offers",
+        "editable": true,
+        "actions": ["Upload term sheet", "Archive offer"]
       }
     ]
   }

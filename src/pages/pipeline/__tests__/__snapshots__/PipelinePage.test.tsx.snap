@@ -142,6 +142,34 @@ exports[`PipelinePage filters and bulk actions > renders role-based views 1`] = 
             <span
               class="ui-field__label "
             >
+              Lender Status
+            </span>
+            <select
+              class="ui-select"
+            >
+              <option
+                value=""
+              >
+                Any
+              </option>
+              <option
+                value="assigned"
+              >
+                Assigned
+              </option>
+              <option
+                value="unassigned"
+              >
+                Unassigned
+              </option>
+            </select>
+          </label>
+          <label
+            class="ui-field"
+          >
+            <span
+              class="ui-field__label "
+            >
               Processing Status
             </span>
             <select
@@ -155,12 +183,12 @@ exports[`PipelinePage filters and bulk actions > renders role-based views 1`] = 
               <option
                 value="OCR"
               >
-                OCR Pending
+                Pending
               </option>
               <option
                 value="BANKING"
               >
-                Banking In Progress
+                In progress
               </option>
               <option
                 value="DONE"
@@ -411,6 +439,34 @@ exports[`PipelinePage filters and bulk actions > renders role-based views 2`] = 
             <span
               class="ui-field__label "
             >
+              Lender Status
+            </span>
+            <select
+              class="ui-select"
+            >
+              <option
+                value=""
+              >
+                Any
+              </option>
+              <option
+                value="assigned"
+              >
+                Assigned
+              </option>
+              <option
+                value="unassigned"
+              >
+                Unassigned
+              </option>
+            </select>
+          </label>
+          <label
+            class="ui-field"
+          >
+            <span
+              class="ui-field__label "
+            >
               Processing Status
             </span>
             <select
@@ -424,12 +480,12 @@ exports[`PipelinePage filters and bulk actions > renders role-based views 2`] = 
               <option
                 value="OCR"
               >
-                OCR Pending
+                Pending
               </option>
               <option
                 value="BANKING"
               >
-                Banking In Progress
+                In progress
               </option>
               <option
                 value="DONE"
@@ -680,6 +736,34 @@ exports[`PipelinePage filters and bulk actions > renders role-based views 3`] = 
             <span
               class="ui-field__label "
             >
+              Lender Status
+            </span>
+            <select
+              class="ui-select"
+            >
+              <option
+                value=""
+              >
+                Any
+              </option>
+              <option
+                value="assigned"
+              >
+                Assigned
+              </option>
+              <option
+                value="unassigned"
+              >
+                Unassigned
+              </option>
+            </select>
+          </label>
+          <label
+            class="ui-field"
+          >
+            <span
+              class="ui-field__label "
+            >
               Processing Status
             </span>
             <select
@@ -693,12 +777,12 @@ exports[`PipelinePage filters and bulk actions > renders role-based views 3`] = 
               <option
                 value="OCR"
               >
-                OCR Pending
+                Pending
               </option>
               <option
                 value="BANKING"
               >
-                Banking In Progress
+                In progress
               </option>
               <option
                 value="DONE"

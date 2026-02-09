@@ -57,6 +57,20 @@ export const PORTAL_FIELD_SURFACE = {
       file: "src/pages/applications/pipeline/PipelineCard.tsx"
     },
     {
+      key: "documents.required",
+      location: "pipeline_card",
+      mode: "read-only",
+      source: "documents",
+      file: "src/pages/applications/pipeline/PipelineCard.tsx"
+    },
+    {
+      key: "documents.submitted",
+      location: "pipeline_card",
+      mode: "read-only",
+      source: "documents",
+      file: "src/pages/applications/pipeline/PipelineCard.tsx"
+    },
+    {
       key: "contactName",
       location: "pipeline_card",
       mode: "read-only",
@@ -1390,6 +1404,27 @@ export const PORTAL_FIELD_SURFACE = {
         file: "src/pages/applications/drawer/tab-lenders/LendersTab.tsx"
       },
       {
+        key: "matchPercentage",
+        location: "drawer_lenders",
+        mode: "read-only",
+        source: "derived",
+        file: "src/pages/applications/drawer/tab-lenders/LendersTab.tsx"
+      },
+      {
+        key: "matchPercent",
+        location: "drawer_lenders",
+        mode: "read-only",
+        source: "derived",
+        file: "src/pages/applications/drawer/tab-lenders/LendersTab.tsx"
+      },
+      {
+        key: "matchScore",
+        location: "drawer_lenders",
+        mode: "read-only",
+        source: "derived",
+        file: "src/pages/applications/drawer/tab-lenders/LendersTab.tsx"
+      },
+      {
         key: "status",
         location: "drawer_lenders",
         mode: "read-only",
@@ -1528,6 +1563,78 @@ export const PORTAL_FIELD_SURFACE = {
         mode: "action",
         source: "application",
         file: "src/components/lenders/GoogleSheetMappingEditor.tsx"
+      }
+    ],
+    offers: [
+      {
+        key: "id",
+        location: "drawer_offers",
+        mode: "action",
+        source: "derived",
+        file: "src/pages/applications/drawer/OffersTab.tsx"
+      },
+      {
+        key: "lenderName",
+        location: "drawer_offers",
+        mode: "read-only",
+        source: "derived",
+        file: "src/pages/applications/drawer/OffersTab.tsx"
+      },
+      {
+        key: "status",
+        location: "drawer_offers",
+        mode: "read-only",
+        source: "derived",
+        file: "src/pages/applications/drawer/OffersTab.tsx"
+      },
+      {
+        key: "amount",
+        location: "drawer_offers",
+        mode: "read-only",
+        source: "derived",
+        file: "src/pages/applications/drawer/OffersTab.tsx"
+      },
+      {
+        key: "rate",
+        location: "drawer_offers",
+        mode: "read-only",
+        source: "derived",
+        file: "src/pages/applications/drawer/OffersTab.tsx"
+      },
+      {
+        key: "term",
+        location: "drawer_offers",
+        mode: "read-only",
+        source: "derived",
+        file: "src/pages/applications/drawer/OffersTab.tsx"
+      },
+      {
+        key: "fees",
+        location: "drawer_offers",
+        mode: "read-only",
+        source: "derived",
+        file: "src/pages/applications/drawer/OffersTab.tsx"
+      },
+      {
+        key: "uploadedAt",
+        location: "drawer_offers",
+        mode: "read-only",
+        source: "derived",
+        file: "src/pages/applications/drawer/OffersTab.tsx"
+      },
+      {
+        key: "fileName",
+        location: "drawer_offers",
+        mode: "read-only",
+        source: "derived",
+        file: "src/pages/applications/drawer/OffersTab.tsx"
+      },
+      {
+        key: "fileUrl",
+        location: "drawer_offers",
+        mode: "read-only",
+        source: "derived",
+        file: "src/pages/applications/drawer/OffersTab.tsx"
       }
     ]
   }

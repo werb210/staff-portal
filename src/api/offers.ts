@@ -4,6 +4,7 @@ import { apiClient, type RequestOptions } from "./httpClient";
 export type OfferRecord = {
   id: string;
   lenderName: string;
+  status?: "active" | "archived";
   amount?: number;
   rate?: number;
   term?: string;
@@ -55,9 +56,20 @@ const parseOffer = (value: unknown): OfferRecord | null => {
       : typeof value.uploaded_at === "string"
         ? value.uploaded_at
         : undefined;
+  const status =
+    typeof value.status === "string"
+      ? value.status.toLowerCase() === "archived"
+        ? "archived"
+        : "active"
+      : typeof value.offer_status === "string"
+        ? value.offer_status.toLowerCase() === "archived"
+          ? "archived"
+          : "active"
+        : undefined;
   return {
     id,
     lenderName,
+    status,
     amount:
       typeof value.amount === "number"
         ? value.amount
@@ -94,5 +106,10 @@ export const uploadOffer = async (applicationId: string, file: File) => {
   formData.append("applicationId", applicationId);
   formData.append("file", file);
   const response = await api.post(`/api/portal/offers`, formData);
+  return response.data;
+};
+
+export const archiveOffer = async (offerId: string) => {
+  const response = await api.post(`/api/portal/offers/${offerId}/archive`);
   return response.data;
 };

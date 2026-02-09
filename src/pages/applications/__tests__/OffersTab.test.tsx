@@ -10,7 +10,8 @@ import { fetchOffers, uploadOffer, type OfferRecord } from "@/api/offers";
 
 vi.mock("@/api/offers", () => ({
   fetchOffers: vi.fn(),
-  uploadOffer: vi.fn()
+  uploadOffer: vi.fn(),
+  archiveOffer: vi.fn()
 }));
 
 vi.mock("@/api/applications", () => ({

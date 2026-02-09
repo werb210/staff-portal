@@ -85,6 +85,7 @@ const LendersTab = () => {
       setSubmitSuccess("Submission sent successfully.");
       showToast("Submission sent to lender.");
       queryClient.invalidateQueries({ queryKey: ["lenders", applicationId, "submissions"] });
+      queryClient.invalidateQueries({ queryKey: ["pipeline"] });
     },
     onError: (err) => {
       const nextError = getSubmissionErrorMessage(err);
@@ -97,6 +98,7 @@ const LendersTab = () => {
     mutationFn: (transmissionId: string) => retryLenderTransmission(transmissionId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["lenders", applicationId, "submissions"] });
+      queryClient.invalidateQueries({ queryKey: ["pipeline"] });
     }
   });
 
@@ -128,6 +130,7 @@ const LendersTab = () => {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["lenders", applicationId, "submissions"] });
+      queryClient.invalidateQueries({ queryKey: ["pipeline"] });
     }
   });
 
@@ -170,6 +173,24 @@ const LendersTab = () => {
   const getMatchSubmissionMethod = (match: LenderMatch) => {
     const matchWithMethod = match as MatchWithMethod;
     return matchWithMethod.submissionMethod ?? matchWithMethod.submission_method ?? matchWithMethod.submissionConfig?.method ?? null;
+  };
+
+  const getMatchLikelihood = (match: LenderMatch) => {
+    const raw =
+      match.matchPercentage ??
+      match.matchPercent ??
+      match.matchScore ??
+      (match as { match_percentage?: number | string | null }).match_percentage ??
+      (match as { match_percent?: number | string | null }).match_percent ??
+      null;
+    if (raw === null || raw === undefined || raw === "") return "—";
+    const numeric = typeof raw === "number" ? raw : Number(raw);
+    if (!Number.isNaN(numeric)) {
+      const rounded = numeric > 1 ? Math.round(numeric) : Math.round(numeric * 100);
+      return `${rounded}%`;
+    }
+    const trimmed = String(raw).trim();
+    return trimmed.endsWith("%") ? trimmed : `${trimmed}%`;
   };
 
   const googleSheetMatchIds = useMemo(
@@ -255,6 +276,7 @@ const LendersTab = () => {
                   <div>Product: {match.productCategory ?? "—"}</div>
                   <div>Terms: {match.terms ?? "—"}</div>
                   <div>Documents: {match.requiredDocsStatus ?? "—"}</div>
+                  <div>Likelihood: {getMatchLikelihood(match)}</div>
                   <div>
                     Status:{" "}
                     <SubmissionStatus
