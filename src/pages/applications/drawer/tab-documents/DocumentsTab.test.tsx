@@ -31,8 +31,8 @@ describe("DocumentsTab OCR status", () => {
     useApplicationDrawerStore.setState({ isOpen: true, selectedApplicationId: "app-1", selectedTab: "documents" });
     vi.mocked(useApplicationDetails).mockReturnValue({
       applicationId: "app-1",
-      data: { ocr_completed_at: null }
-    });
+      data: { id: "app-1", ocr_completed_at: null }
+    } as unknown as ReturnType<typeof useApplicationDetails>);
     vi.mocked(fetchDocumentRequirements).mockResolvedValue([]);
 
     renderWithProviders(<DocumentsTab />);
@@ -44,8 +44,8 @@ describe("DocumentsTab OCR status", () => {
     useApplicationDrawerStore.setState({ isOpen: true, selectedApplicationId: "app-2", selectedTab: "documents" });
     vi.mocked(useApplicationDetails).mockReturnValue({
       applicationId: "app-2",
-      data: { ocr_completed_at: "2025-07-10T12:00:00Z" }
-    });
+      data: { id: "app-2", ocr_completed_at: "2025-07-10T12:00:00Z" }
+    } as unknown as ReturnType<typeof useApplicationDetails>);
     vi.mocked(fetchDocumentRequirements).mockResolvedValue([]);
 
     renderWithProviders(<DocumentsTab />);

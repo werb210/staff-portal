@@ -35,6 +35,10 @@ export type ApplicationDetails = {
   owners?: Array<Record<string, unknown>>;
   fundingRequest?: Record<string, unknown> | null;
   productCategory?: string | null;
+  ocr_completed_at?: string | null;
+  banking_completed_at?: string | null;
+  ocrCompletedAt?: string | null;
+  bankingCompletedAt?: string | null;
 };
 
 export type PortalApplicationRecord = {

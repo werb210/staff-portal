@@ -1,0 +1,810 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`PipelinePage filters and bulk actions > renders role-based views 1`] = `
+<div>
+  <div
+    class="pipeline-page"
+  >
+    <div
+      class="ui-card"
+    >
+      <div
+        class="ui-card__header"
+      >
+        <div
+          class="ui-card__title"
+        >
+          Application Pipeline
+        </div>
+        <div />
+      </div>
+      <div
+        class="ui-card__body"
+      >
+        <div
+          class="pipeline-filters"
+        >
+          <label
+            class="ui-field"
+          >
+            <span
+              class="ui-field__label"
+            >
+              Search
+            </span>
+            <input
+              class="ui-input"
+              placeholder="Business or applicant name"
+              value=""
+            />
+          </label>
+          <label
+            class="ui-field"
+          >
+            <span
+              class="ui-field__label "
+            >
+              Stage
+            </span>
+            <select
+              class="ui-select"
+            >
+              <option
+                value=""
+              >
+                All stages
+              </option>
+            </select>
+          </label>
+          <label
+            class="ui-field"
+          >
+            <span
+              class="ui-field__label "
+            >
+              Product Type
+            </span>
+            <select
+              class="ui-select"
+            >
+              <option
+                value=""
+              >
+                All
+              </option>
+              <option
+                value="startup"
+              >
+                Start-Up
+              </option>
+              <option
+                value="sba"
+              >
+                SBA
+              </option>
+              <option
+                value="term-loan"
+              >
+                Term Loan
+              </option>
+            </select>
+          </label>
+          <label
+            class="ui-field"
+          >
+            <span
+              class="ui-field__label "
+            >
+              Submission Method
+            </span>
+            <select
+              class="ui-select"
+            >
+              <option
+                value=""
+              >
+                Any
+              </option>
+              <option
+                value="API"
+              >
+                API
+              </option>
+              <option
+                value="EMAIL"
+              >
+                Email
+              </option>
+              <option
+                value="GOOGLE_SHEET"
+              >
+                Google Sheet
+              </option>
+            </select>
+          </label>
+          <label
+            class="ui-field"
+          >
+            <span
+              class="ui-field__label"
+            >
+              Lender Assigned
+            </span>
+            <input
+              class="ui-input"
+              placeholder="Lender name"
+              value=""
+            />
+          </label>
+          <label
+            class="ui-field"
+          >
+            <span
+              class="ui-field__label "
+            >
+              Processing Status
+            </span>
+            <select
+              class="ui-select"
+            >
+              <option
+                value=""
+              >
+                Any
+              </option>
+              <option
+                value="OCR"
+              >
+                OCR Pending
+              </option>
+              <option
+                value="BANKING"
+              >
+                Banking In Progress
+              </option>
+              <option
+                value="DONE"
+              >
+                Complete
+              </option>
+            </select>
+          </label>
+          <div
+            class="pipeline-filters__dates"
+          >
+            <label
+              class="ui-field"
+            >
+              <span
+                class="ui-field__label"
+              >
+                From
+              </span>
+              <input
+                class="ui-input"
+                type="date"
+                value=""
+              />
+            </label>
+            <label
+              class="ui-field"
+            >
+              <span
+                class="ui-field__label"
+              >
+                To
+              </span>
+              <input
+                class="ui-input"
+                type="date"
+                value=""
+              />
+            </label>
+          </div>
+          <label
+            class="ui-field"
+          >
+            <span
+              class="ui-field__label "
+            >
+              Sort
+            </span>
+            <select
+              class="ui-select"
+            >
+              <option
+                value="updated_desc"
+              >
+                Updated Date (Newest)
+              </option>
+              <option
+                value="updated_asc"
+              >
+                Updated Date (Oldest)
+              </option>
+              <option
+                value="amount_desc"
+              >
+                Requested Amount (High)
+              </option>
+              <option
+                value="amount_asc"
+              >
+                Requested Amount (Low)
+              </option>
+              <option
+                value="stage"
+              >
+                Stage
+              </option>
+            </select>
+          </label>
+          <button
+            class="ui-button ui-button--ghost pipeline-filters__reset"
+            type="button"
+          >
+            Reset Filters
+          </button>
+        </div>
+        <div
+          class="app-loading"
+        >
+          <div
+            aria-label="Loading"
+            class="spinner"
+          />
+          <p>
+            Loading experience...
+          </p>
+        </div>
+        <div
+          class="pipeline-columns"
+        />
+      </div>
+    </div>
+  </div>
+  <div
+    data-testid="location-display"
+  />
+</div>
+`;
+
+exports[`PipelinePage filters and bulk actions > renders role-based views 2`] = `
+<div>
+  <div
+    class="pipeline-page"
+  >
+    <div
+      class="ui-card"
+    >
+      <div
+        class="ui-card__header"
+      >
+        <div
+          class="ui-card__title"
+        >
+          Application Pipeline
+        </div>
+        <div />
+      </div>
+      <div
+        class="ui-card__body"
+      >
+        <div
+          class="pipeline-filters"
+        >
+          <label
+            class="ui-field"
+          >
+            <span
+              class="ui-field__label"
+            >
+              Search
+            </span>
+            <input
+              class="ui-input"
+              placeholder="Business or applicant name"
+              value=""
+            />
+          </label>
+          <label
+            class="ui-field"
+          >
+            <span
+              class="ui-field__label "
+            >
+              Stage
+            </span>
+            <select
+              class="ui-select"
+            >
+              <option
+                value=""
+              >
+                All stages
+              </option>
+            </select>
+          </label>
+          <label
+            class="ui-field"
+          >
+            <span
+              class="ui-field__label "
+            >
+              Product Type
+            </span>
+            <select
+              class="ui-select"
+            >
+              <option
+                value=""
+              >
+                All
+              </option>
+              <option
+                value="startup"
+              >
+                Start-Up
+              </option>
+              <option
+                value="sba"
+              >
+                SBA
+              </option>
+              <option
+                value="term-loan"
+              >
+                Term Loan
+              </option>
+            </select>
+          </label>
+          <label
+            class="ui-field"
+          >
+            <span
+              class="ui-field__label "
+            >
+              Submission Method
+            </span>
+            <select
+              class="ui-select"
+            >
+              <option
+                value=""
+              >
+                Any
+              </option>
+              <option
+                value="API"
+              >
+                API
+              </option>
+              <option
+                value="EMAIL"
+              >
+                Email
+              </option>
+              <option
+                value="GOOGLE_SHEET"
+              >
+                Google Sheet
+              </option>
+            </select>
+          </label>
+          <label
+            class="ui-field"
+          >
+            <span
+              class="ui-field__label"
+            >
+              Lender Assigned
+            </span>
+            <input
+              class="ui-input"
+              placeholder="Lender name"
+              value=""
+            />
+          </label>
+          <label
+            class="ui-field"
+          >
+            <span
+              class="ui-field__label "
+            >
+              Processing Status
+            </span>
+            <select
+              class="ui-select"
+            >
+              <option
+                value=""
+              >
+                Any
+              </option>
+              <option
+                value="OCR"
+              >
+                OCR Pending
+              </option>
+              <option
+                value="BANKING"
+              >
+                Banking In Progress
+              </option>
+              <option
+                value="DONE"
+              >
+                Complete
+              </option>
+            </select>
+          </label>
+          <div
+            class="pipeline-filters__dates"
+          >
+            <label
+              class="ui-field"
+            >
+              <span
+                class="ui-field__label"
+              >
+                From
+              </span>
+              <input
+                class="ui-input"
+                type="date"
+                value=""
+              />
+            </label>
+            <label
+              class="ui-field"
+            >
+              <span
+                class="ui-field__label"
+              >
+                To
+              </span>
+              <input
+                class="ui-input"
+                type="date"
+                value=""
+              />
+            </label>
+          </div>
+          <label
+            class="ui-field"
+          >
+            <span
+              class="ui-field__label "
+            >
+              Sort
+            </span>
+            <select
+              class="ui-select"
+            >
+              <option
+                value="updated_desc"
+              >
+                Updated Date (Newest)
+              </option>
+              <option
+                value="updated_asc"
+              >
+                Updated Date (Oldest)
+              </option>
+              <option
+                value="amount_desc"
+              >
+                Requested Amount (High)
+              </option>
+              <option
+                value="amount_asc"
+              >
+                Requested Amount (Low)
+              </option>
+              <option
+                value="stage"
+              >
+                Stage
+              </option>
+            </select>
+          </label>
+          <button
+            class="ui-button ui-button--ghost pipeline-filters__reset"
+            type="button"
+          >
+            Reset Filters
+          </button>
+        </div>
+        <div
+          class="app-loading"
+        >
+          <div
+            aria-label="Loading"
+            class="spinner"
+          />
+          <p>
+            Loading experience...
+          </p>
+        </div>
+        <div
+          class="pipeline-columns"
+        />
+      </div>
+    </div>
+  </div>
+  <div
+    data-testid="location-display"
+  />
+</div>
+`;
+
+exports[`PipelinePage filters and bulk actions > renders role-based views 3`] = `
+<div>
+  <div
+    class="pipeline-page"
+  >
+    <div
+      class="ui-card"
+    >
+      <div
+        class="ui-card__header"
+      >
+        <div
+          class="ui-card__title"
+        >
+          Application Pipeline
+        </div>
+        <div />
+      </div>
+      <div
+        class="ui-card__body"
+      >
+        <div
+          class="pipeline-filters"
+        >
+          <label
+            class="ui-field"
+          >
+            <span
+              class="ui-field__label"
+            >
+              Search
+            </span>
+            <input
+              class="ui-input"
+              placeholder="Business or applicant name"
+              value=""
+            />
+          </label>
+          <label
+            class="ui-field"
+          >
+            <span
+              class="ui-field__label "
+            >
+              Stage
+            </span>
+            <select
+              class="ui-select"
+            >
+              <option
+                value=""
+              >
+                All stages
+              </option>
+            </select>
+          </label>
+          <label
+            class="ui-field"
+          >
+            <span
+              class="ui-field__label "
+            >
+              Product Type
+            </span>
+            <select
+              class="ui-select"
+            >
+              <option
+                value=""
+              >
+                All
+              </option>
+              <option
+                value="startup"
+              >
+                Start-Up
+              </option>
+              <option
+                value="sba"
+              >
+                SBA
+              </option>
+              <option
+                value="term-loan"
+              >
+                Term Loan
+              </option>
+            </select>
+          </label>
+          <label
+            class="ui-field"
+          >
+            <span
+              class="ui-field__label "
+            >
+              Submission Method
+            </span>
+            <select
+              class="ui-select"
+            >
+              <option
+                value=""
+              >
+                Any
+              </option>
+              <option
+                value="API"
+              >
+                API
+              </option>
+              <option
+                value="EMAIL"
+              >
+                Email
+              </option>
+              <option
+                value="GOOGLE_SHEET"
+              >
+                Google Sheet
+              </option>
+            </select>
+          </label>
+          <label
+            class="ui-field"
+          >
+            <span
+              class="ui-field__label"
+            >
+              Lender Assigned
+            </span>
+            <input
+              class="ui-input"
+              placeholder="Lender name"
+              value=""
+            />
+          </label>
+          <label
+            class="ui-field"
+          >
+            <span
+              class="ui-field__label "
+            >
+              Processing Status
+            </span>
+            <select
+              class="ui-select"
+            >
+              <option
+                value=""
+              >
+                Any
+              </option>
+              <option
+                value="OCR"
+              >
+                OCR Pending
+              </option>
+              <option
+                value="BANKING"
+              >
+                Banking In Progress
+              </option>
+              <option
+                value="DONE"
+              >
+                Complete
+              </option>
+            </select>
+          </label>
+          <div
+            class="pipeline-filters__dates"
+          >
+            <label
+              class="ui-field"
+            >
+              <span
+                class="ui-field__label"
+              >
+                From
+              </span>
+              <input
+                class="ui-input"
+                type="date"
+                value=""
+              />
+            </label>
+            <label
+              class="ui-field"
+            >
+              <span
+                class="ui-field__label"
+              >
+                To
+              </span>
+              <input
+                class="ui-input"
+                type="date"
+                value=""
+              />
+            </label>
+          </div>
+          <label
+            class="ui-field"
+          >
+            <span
+              class="ui-field__label "
+            >
+              Sort
+            </span>
+            <select
+              class="ui-select"
+            >
+              <option
+                value="updated_desc"
+              >
+                Updated Date (Newest)
+              </option>
+              <option
+                value="updated_asc"
+              >
+                Updated Date (Oldest)
+              </option>
+              <option
+                value="amount_desc"
+              >
+                Requested Amount (High)
+              </option>
+              <option
+                value="amount_asc"
+              >
+                Requested Amount (Low)
+              </option>
+              <option
+                value="stage"
+              >
+                Stage
+              </option>
+            </select>
+          </label>
+          <button
+            class="ui-button ui-button--ghost pipeline-filters__reset"
+            type="button"
+          >
+            Reset Filters
+          </button>
+        </div>
+        <div
+          class="app-loading"
+        >
+          <div
+            aria-label="Loading"
+            class="spinner"
+          />
+          <p>
+            Loading experience...
+          </p>
+        </div>
+        <div
+          class="pipeline-columns"
+        />
+      </div>
+    </div>
+  </div>
+  <div
+    data-testid="location-display"
+  />
+</div>
+`;
+
+exports[`PipelinePage filters and bulk actions > supports bulk selection with stage enforcement and CSV export snapshot 1`] = `"[object Blob]"`;

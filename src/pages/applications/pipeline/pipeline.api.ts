@@ -1,4 +1,5 @@
 import { apiClient } from "@/api/httpClient";
+import api from "@/lib/api";
 import type { PipelineApplication, PipelineFilters, PipelineStage, PipelineStageId } from "./pipeline.types";
 import { PIPELINE_STAGE_LABELS, PIPELINE_STAGE_ORDER, normalizeStageId } from "./pipeline.types";
 
@@ -193,6 +194,12 @@ const normalizePipelineApplication = (value: unknown): PipelineApplication | nul
         : typeof value.assigned_staff === "string"
           ? value.assigned_staff
           : undefined,
+    assignedLender:
+      typeof value.assignedLender === "string"
+        ? value.assignedLender
+        : typeof value.assigned_lender === "string"
+          ? value.assigned_lender
+          : undefined,
     createdAt,
     updatedAt
   };
@@ -250,42 +257,25 @@ const buildLockedStages = (): PipelineStage[] =>
     label: PIPELINE_STAGE_LABELS[normalizeStageId(stageId)] ?? toTitleCase(stageId)
   }));
 
-const matchesSearch = (value: string | undefined, searchTerm: string) =>
-  value?.toLowerCase().includes(searchTerm.toLowerCase());
-
-const applyPipelineFilters = (applications: PipelineApplication[], filters: PipelineFilters) => {
-  let filtered = [...applications];
-  if (filters.searchTerm) {
-    filtered = filtered.filter(
-      (application) =>
-        matchesSearch(application.businessName, filters.searchTerm ?? "") ||
-        matchesSearch(application.contactName, filters.searchTerm ?? "")
-    );
-  }
-  if (filters.productCategory) {
-    filtered = filtered.filter((application) => application.productCategory === filters.productCategory);
-  }
-  if (filters.submissionMethod) {
-    filtered = filtered.filter((application) => application.submissionMethod === filters.submissionMethod);
-  }
-  if (filters.dateFrom || filters.dateTo) {
-    const from = filters.dateFrom ? new Date(filters.dateFrom).getTime() : null;
-    const to = filters.dateTo ? new Date(filters.dateTo).getTime() : null;
-    filtered = filtered.filter((application) => {
-      const dateValue = application.updatedAt ?? application.createdAt;
-      const parsed = dateValue ? new Date(dateValue).getTime() : Number.NaN;
-      if (Number.isNaN(parsed)) return false;
-      if (from !== null && parsed < from) return false;
-      if (to !== null && parsed > to) return false;
-      return true;
-    });
-  }
-  return filtered;
+const buildPipelineQuery = (filters?: PipelineFilters) => {
+  if (!filters) return "";
+  const params = new URLSearchParams();
+  if (filters.searchTerm) params.set("search", filters.searchTerm);
+  if (filters.productCategory) params.set("productCategory", filters.productCategory);
+  if (filters.stageId) params.set("stage", filters.stageId);
+  if (filters.lenderAssigned) params.set("lenderAssigned", filters.lenderAssigned);
+  if (filters.processingStatus) params.set("processingStatus", filters.processingStatus);
+  if (filters.submissionMethod) params.set("submissionMethod", filters.submissionMethod);
+  if (filters.dateFrom) params.set("dateFrom", filters.dateFrom);
+  if (filters.dateTo) params.set("dateTo", filters.dateTo);
+  if (filters.sort) params.set("sort", filters.sort);
+  const query = params.toString();
+  return query ? `?${query}` : "";
 };
 
 export const pipelineApi = {
-  fetchPipeline: async (options?: { signal?: AbortSignal }) => {
-    const res = await apiClient.get<unknown>("/api/pipeline", options);
+  fetchPipeline: async (filters?: PipelineFilters, options?: { signal?: AbortSignal }) => {
+    const res = await apiClient.get<unknown>(`/api/pipeline${buildPipelineQuery(filters)}`, options);
     const parsed = parsePipelineResponse(res);
     return {
       stages: parsed.stages.length ? parsed.stages : buildLockedStages(),
@@ -293,14 +283,17 @@ export const pipelineApi = {
     };
   },
   fetchStages: async (options?: { signal?: AbortSignal }) => {
-    const { stages } = await pipelineApi.fetchPipeline(options);
+    const { stages } = await pipelineApi.fetchPipeline(undefined, options);
     return stages;
   },
   fetchColumn: async (stage: PipelineStageId, filters: PipelineFilters, options?: { signal?: AbortSignal }) => {
-    const { applications } = await pipelineApi.fetchPipeline(options);
+    const { applications } = await pipelineApi.fetchPipeline(filters, options);
     const normalizedStage = normalizeStageId(stage);
-    const filtered = applyPipelineFilters(applications, filters);
-    return filtered.filter((application) => normalizeStageId(application.stage) === normalizedStage);
+    return applications.filter((application) => normalizeStageId(application.stage) === normalizedStage);
+  },
+  exportApplications: async (applicationIds: string[]) => {
+    const response = await api.post(`/api/portal/applications/export`, { applicationIds }, { responseType: "blob" });
+    return response.data as Blob;
   }
 };
 

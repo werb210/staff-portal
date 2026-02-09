@@ -17,6 +17,7 @@ import { useAuth } from "@/hooks/useAuth";
 import AccessRestricted from "@/components/auth/AccessRestricted";
 import Modal from "@/components/ui/Modal";
 import { fullStaffRoles, hasRequiredRole, resolveUserRole } from "@/utils/roles";
+import { canWrite } from "@/auth/can";
 import { getSubmissionMethodBadgeTone, getSubmissionMethodLabel } from "@/utils/submissionMethods";
 
 type MatchWithMethod = LenderMatch & {
@@ -144,10 +145,8 @@ const LendersTab = () => {
     [selected, submissionByProductId]
   );
 
-  const canManageSubmissions = hasRequiredRole(
-    resolveUserRole((user as { role?: string | null } | null)?.role ?? null),
-    fullStaffRoles
-  );
+  const resolvedRole = resolveUserRole((user as { role?: string | null } | null)?.role ?? null);
+  const canManageSubmissions = canWrite(resolvedRole ?? null) && hasRequiredRole(resolvedRole, fullStaffRoles);
 
   const submissionRows = useMemo(
     () =>

@@ -44,6 +44,11 @@
         "actions": ["Send Note"]
       },
       {
+        "name": "Offers",
+        "editable": true,
+        "actions": ["Upload term sheet"]
+      },
+      {
         "name": "Lender Matching",
         "editable": true,
         "actions": ["Send to Lender", "Retry send", "Retry", "Retry submission", "Confirm submission", "Confirm retry"]

@@ -1,14 +1,19 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { fetchNotesThread, sendNoteMessage, type NoteMessage } from "@/api/notes";
+import { fetchNotesThread, sendNoteMessage, updateNoteMessage, type NoteMessage } from "@/api/notes";
 import { useApplicationDrawerStore } from "@/state/applicationDrawer.store";
 import NotesComposer from "./NotesComposer";
+import NotesList from "./NotesList";
 import { getErrorMessage } from "@/utils/errors";
+import { useAuth } from "@/hooks/useAuth";
+import { canWrite } from "@/auth/can";
 
 const NotesTab = () => {
   const applicationId = useApplicationDrawerStore((state) => state.selectedApplicationId);
   const queryClient = useQueryClient();
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const { user } = useAuth();
+  const canEdit = canWrite((user as { role?: string | null } | null)?.role ?? null);
   const { data: messages = [], isLoading, error } = useQuery<NoteMessage[]>({
     queryKey: ["notes", applicationId],
     queryFn: ({ signal }) => fetchNotesThread(applicationId ?? "", { signal }),
@@ -20,14 +25,32 @@ const NotesTab = () => {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notes", applicationId] })
   });
 
+  const editMutation = useMutation({
+    mutationFn: ({ noteId, body }: { noteId: string; body: string }) =>
+      updateNoteMessage(applicationId ?? "", noteId, body),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notes", applicationId] })
+  });
+
+  const sortedMessages = useMemo(
+    () =>
+      [...messages].sort(
+        (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      ),
+    [messages]
+  );
+
   useEffect(() => {
     if (containerRef.current) {
       containerRef.current.scrollTop = containerRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [sortedMessages]);
 
   const handleSend = async (text: string) => {
     await mutation.mutateAsync(text);
+  };
+
+  const handleEdit = async (noteId: string, body: string) => {
+    await editMutation.mutateAsync({ noteId, body });
   };
 
   if (!applicationId) return <div className="drawer-placeholder">Select an application to view notes.</div>;
@@ -36,23 +59,18 @@ const NotesTab = () => {
 
   return (
     <div className="drawer-tab drawer-tab__notes">
-      <div className="notes-thread" ref={containerRef}>
-        {messages.length ? (
-          messages.map((message) => (
-            <div key={message.id} className="note-message">
-              <div className="note-message__avatar">{message.author.slice(0, 2).toUpperCase()}</div>
-              <div className="note-message__body">
-                <div className="note-message__author">{message.author}</div>
-                <div className="note-message__text">{message.body}</div>
-                <div className="note-message__timestamp">{message.createdAt}</div>
-              </div>
-            </div>
-          ))
+      <div ref={containerRef}>
+        {sortedMessages.length ? (
+          <NotesList notes={sortedMessages} canEdit={canEdit} onEdit={handleEdit} />
         ) : (
           <div className="drawer-placeholder">No notes yet.</div>
         )}
       </div>
-      <NotesComposer onSend={handleSend} />
+      {canEdit ? (
+        <NotesComposer onSend={handleSend} />
+      ) : (
+        <div className="drawer-placeholder">Notes are read-only for your role.</div>
+      )}
     </div>
   );
 };

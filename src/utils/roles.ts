@@ -1,4 +1,4 @@
-export const roleValues = ["Admin", "Staff", "Lender", "Referrer"] as const;
+export const roleValues = ["Admin", "Staff", "Viewer", "Lender", "Referrer"] as const;
 
 export type UserRole = (typeof roleValues)[number];
 
@@ -31,6 +31,8 @@ export const getRoleLabel = (role?: UserRole | null) => {
       return "Admin";
     case "Staff":
       return "Staff";
+    case "Viewer":
+      return "Viewer";
     case "Lender":
       return "Lender";
     case "Referrer":

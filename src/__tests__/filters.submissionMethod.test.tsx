@@ -10,15 +10,16 @@ import { usePipelineStore } from "@/pages/applications/pipeline/pipeline.store";
 describe("submission method filters", () => {
   it("updates the submission method filter", async () => {
     usePipelineStore.setState({
-      currentFilters: { sort: "newest" },
+      currentFilters: { sort: "updated_desc" },
       selectedApplicationId: null,
       selectedStageId: null,
       isDrawerOpen: false,
       draggingCardId: null,
-      draggingFromStage: null
+      draggingFromStage: null,
+      selectedApplicationIds: []
     });
 
-    renderWithProviders(<PipelineFilters />);
+    renderWithProviders(<PipelineFilters stages={[]} />);
 
     await userEvent.selectOptions(screen.getByLabelText(/Submission Method/i), "GOOGLE_SHEET");
 

@@ -9,6 +9,7 @@ export type DrawerTabId =
   | "credit-summary"
   | "documents"
   | "notes"
+  | "offers"
   | "lenders";
 
 export type ApplicationDrawerState = {

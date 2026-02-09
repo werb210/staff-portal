@@ -46,10 +46,11 @@ export type PipelineStoreState = {
   draggingCardId: string | null;
   draggingFromStage: PipelineStageId | null;
   currentFilters: PipelineFilters;
+  selectedApplicationIds: string[];
 };
 
 const defaultFilters: PipelineFilters = {
-  sort: "newest"
+  sort: "updated_desc"
 };
 
 const getInitialFilters = (): PipelineFilters => {
@@ -71,6 +72,8 @@ export type PipelineStoreActions = {
   closeDrawer: () => void;
   setDragging: (cardId: string | null, stageId: PipelineStageId | null) => void;
   setFilters: (filters: Partial<PipelineFilters>) => void;
+  toggleSelection: (applicationId: string) => void;
+  clearSelection: () => void;
   resetFilters: () => void;
   resetPipeline: () => void;
 };
@@ -86,6 +89,7 @@ export const usePipelineStore = create<PipelineStore>((set) => {
     draggingCardId: null,
     draggingFromStage: null,
     currentFilters: getInitialFilters(),
+    selectedApplicationIds: [],
     selectApplication: (id, stageId) =>
       set((state) => {
         const nextState = {
@@ -131,6 +135,14 @@ export const usePipelineStore = create<PipelineStore>((set) => {
         persistPipelineState(nextState);
         return nextState;
       }),
+    toggleSelection: (applicationId) =>
+      set((state) => {
+        const selected = state.selectedApplicationIds.includes(applicationId)
+          ? state.selectedApplicationIds.filter((id) => id !== applicationId)
+          : [...state.selectedApplicationIds, applicationId];
+        return { ...state, selectedApplicationIds: selected };
+      }),
+    clearSelection: () => set((state) => ({ ...state, selectedApplicationIds: [] })),
     resetFilters: () =>
       set((state) => {
         const nextState = {
@@ -138,7 +150,8 @@ export const usePipelineStore = create<PipelineStore>((set) => {
           currentFilters: { ...defaultFilters },
           selectedApplicationId: null,
           selectedStageId: null,
-          isDrawerOpen: false
+          isDrawerOpen: false,
+          selectedApplicationIds: []
         };
         persistPipelineState(nextState);
         return nextState;
@@ -151,7 +164,8 @@ export const usePipelineStore = create<PipelineStore>((set) => {
         isDrawerOpen: false,
         draggingCardId: null,
         draggingFromStage: null,
-        currentFilters: { ...defaultFilters }
+        currentFilters: { ...defaultFilters },
+        selectedApplicationIds: []
       });
     }
   };
@@ -160,12 +174,16 @@ export const usePipelineStore = create<PipelineStore>((set) => {
 const filterKeyParts = (filters: PipelineFilters) => [
   filters.searchTerm ?? "",
   filters.productCategory ?? "",
+  filters.stageId ?? "",
+  filters.lenderAssigned ?? "",
+  filters.processingStatus ?? "",
   filters.submissionMethod ?? "",
   filters.dateFrom ?? "",
   filters.dateTo ?? "",
-  filters.sort ?? "newest"
+  filters.sort ?? "updated_desc"
 ];
 
 export const pipelineQueryKeys = {
-  column: (stage: PipelineStageId, filters: PipelineFilters) => ["pipeline", stage, ...filterKeyParts(filters)]
+  column: (stage: PipelineStageId, filters: PipelineFilters) => ["pipeline", stage, ...filterKeyParts(filters)],
+  list: (filters: PipelineFilters) => ["pipeline", ...filterKeyParts(filters)]
 };

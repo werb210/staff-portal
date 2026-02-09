@@ -1,12 +1,22 @@
 import Input from "@/components/ui/Input";
 import Select from "@/components/ui/Select";
+import type { PipelineStage } from "./pipeline.types";
 import { usePipelineStore } from "./pipeline.store";
 import { SUBMISSION_METHOD_LABELS } from "@/utils/submissionMethods";
 
-const PipelineFilters = () => {
+type PipelineFiltersProps = {
+  stages: PipelineStage[];
+};
+
+const PipelineFilters = ({ stages }: PipelineFiltersProps) => {
   const filters = usePipelineStore((state) => state.currentFilters);
   const setFilters = usePipelineStore((state) => state.setFilters);
   const resetFilters = usePipelineStore((state) => state.resetFilters);
+
+  const stageOptions = [{ value: "", label: "All stages" }, ...stages.map((stage) => ({
+    value: stage.id,
+    label: stage.label
+  }))];
 
   return (
     <div className="pipeline-filters">
@@ -17,7 +27,13 @@ const PipelineFilters = () => {
         onChange={(event) => setFilters({ searchTerm: event.target.value })}
       />
       <Select
-        label="Product Category"
+        label="Stage"
+        value={filters.stageId ?? ""}
+        onChange={(event) => setFilters({ stageId: event.target.value || undefined })}
+        options={stageOptions}
+      />
+      <Select
+        label="Product Type"
         value={filters.productCategory ?? ""}
         onChange={(event) => setFilters({ productCategory: event.target.value || undefined })}
         options={[
@@ -38,6 +54,27 @@ const PipelineFilters = () => {
           { value: "GOOGLE_SHEET", label: SUBMISSION_METHOD_LABELS.GOOGLE_SHEET }
         ]}
       />
+      <Input
+        label="Lender Assigned"
+        placeholder="Lender name"
+        value={filters.lenderAssigned ?? ""}
+        onChange={(event) => setFilters({ lenderAssigned: event.target.value || undefined })}
+      />
+      <Select
+        label="Processing Status"
+        value={filters.processingStatus ?? ""}
+        onChange={(event) =>
+          setFilters({
+            processingStatus: event.target.value ? (event.target.value as typeof filters.processingStatus) : undefined
+          })
+        }
+        options={[
+          { value: "", label: "Any" },
+          { value: "OCR", label: "OCR Pending" },
+          { value: "BANKING", label: "Banking In Progress" },
+          { value: "DONE", label: "Complete" }
+        ]}
+      />
       <div className="pipeline-filters__dates">
         <Input
           label="From"
@@ -54,13 +91,14 @@ const PipelineFilters = () => {
       </div>
       <Select
         label="Sort"
-        value={filters.sort ?? "newest"}
+        value={filters.sort ?? "updated_desc"}
         onChange={(event) => setFilters({ sort: event.target.value as typeof filters.sort })}
         options={[
-          { value: "newest", label: "Newest" },
-          { value: "oldest", label: "Oldest" },
-          { value: "highest_amount", label: "Highest Amount" },
-          { value: "lowest_amount", label: "Lowest Amount" }
+          { value: "updated_desc", label: "Updated Date (Newest)" },
+          { value: "updated_asc", label: "Updated Date (Oldest)" },
+          { value: "amount_desc", label: "Requested Amount (High)" },
+          { value: "amount_asc", label: "Requested Amount (Low)" },
+          { value: "stage", label: "Stage" }
         ]}
       />
       <button className="ui-button ui-button--ghost pipeline-filters__reset" onClick={resetFilters} type="button">

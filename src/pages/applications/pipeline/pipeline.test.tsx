@@ -12,7 +12,7 @@ import { fetchPortalApplication, openPortalApplication } from "@/api/application
 
 vi.mock("./pipeline.api", () => {
   const fetchPipeline = vi.fn().mockResolvedValue({ stages: [], applications: [] });
-  return { pipelineApi: { fetchPipeline } };
+  return { pipelineApi: { fetchPipeline, exportApplications: vi.fn() } };
 });
 
 vi.mock("@/api/applications", () => ({

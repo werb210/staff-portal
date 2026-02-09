@@ -21,7 +21,7 @@ describe("BankingTab", () => {
     vi.mocked(useApplicationDetails).mockReturnValue({
       applicationId: null,
       data: undefined
-    });
+    } as unknown as ReturnType<typeof useApplicationDetails>);
   });
 
   it("renders only when the banking tab is available", () => {
@@ -38,7 +38,7 @@ describe("BankingTab", () => {
     vi.mocked(useApplicationDetails).mockReturnValue({
       applicationId: "app-123",
       data: { banking_completed_at: null, bank_statement_count: 4 }
-    });
+    } as unknown as ReturnType<typeof useApplicationDetails>);
     vi.mocked(fetchBankingAnalysis).mockResolvedValue({
       monthsDetected: "6 of 6 months received",
       monthGroups: [{ year: "2025", months: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"] }]
@@ -54,7 +54,7 @@ describe("BankingTab", () => {
     vi.mocked(useApplicationDetails).mockReturnValue({
       applicationId: "app-124",
       data: { banking_completed_at: null, bank_statement_count: 6 }
-    });
+    } as unknown as ReturnType<typeof useApplicationDetails>);
     vi.mocked(fetchBankingAnalysis).mockResolvedValue({
       monthsDetected: "6 of 6 months received",
       monthGroups: [{ year: "2025", months: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"] }]
@@ -70,7 +70,7 @@ describe("BankingTab", () => {
     vi.mocked(useApplicationDetails).mockReturnValue({
       applicationId: "app-125",
       data: { banking_completed_at: "2025-07-01T12:00:00Z", bank_statement_count: 6 }
-    });
+    } as unknown as ReturnType<typeof useApplicationDetails>);
     vi.mocked(fetchBankingAnalysis).mockResolvedValue({
       monthsDetected: "6 of 6 months received",
       monthGroups: [{ year: "2025", months: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"] }]
@@ -86,7 +86,7 @@ describe("BankingTab", () => {
     vi.mocked(useApplicationDetails).mockReturnValue({
       applicationId: "app-456",
       data: { banking_completed_at: "2025-07-01T12:00:00Z", bank_statement_count: 6 }
-    });
+    } as unknown as ReturnType<typeof useApplicationDetails>);
     vi.mocked(fetchBankingAnalysis).mockResolvedValue({
       bankingCompletedAt: "2025-07-01T12:00:00Z",
       monthsDetected: "6 of 6 months received",

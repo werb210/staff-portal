@@ -9,11 +9,13 @@ import CreditSummaryTab from "./tab-credit-summary/CreditSummaryTab";
 import DocumentsTab from "./tab-documents/DocumentsTab";
 import NotesTab from "./tab-notes/NotesTab";
 import LendersTab from "./tab-lenders/LendersTab";
+import OffersTab from "./OffersTab";
 import OCRInsightsTab from "./tabs/OCRInsightsTab";
 import { useApplicationDrawerStore } from "@/state/applicationDrawer.store";
 import { usePipelineStore } from "@/pages/applications/pipeline/pipeline.store";
 import { useAuth } from "@/hooks/useAuth";
 import { canAccessStaffPortal, resolveUserRole } from "@/utils/roles";
+import { canWrite } from "@/auth/can";
 
 const tabContentMap: Record<DrawerTabId, JSX.Element> = {
   application: <ApplicationTab />,
@@ -23,6 +25,7 @@ const tabContentMap: Record<DrawerTabId, JSX.Element> = {
   "credit-summary": <CreditSummaryTab />,
   documents: <DocumentsTab />,
   notes: <NotesTab />,
+  offers: <OffersTab />,
   lenders: <LendersTab />
 };
 
@@ -34,10 +37,17 @@ const ApplicationDrawer = () => {
   const selectedApplicationId = usePipelineStore((state) => state.selectedApplicationId);
   const closeDrawer = usePipelineStore((state) => state.closeDrawer);
   const { user } = useAuth();
-  const isStaff = canAccessStaffPortal(resolveUserRole((user as { role?: string | null } | null)?.role ?? null));
+  const resolvedRole = resolveUserRole((user as { role?: string | null } | null)?.role ?? null);
+  const isStaff = canAccessStaffPortal(resolvedRole);
+  const canEdit = canWrite(resolvedRole ?? null);
   const visibleTabs = useMemo(
-    () => (isStaff ? TABS : TABS.filter((tab) => tab.id !== "ocr-insights")),
-    [isStaff]
+    () =>
+      TABS.filter((tab) => {
+        if (!isStaff && tab.id === "ocr-insights") return false;
+        if (!canEdit && (tab.id === "offers" || tab.id === "notes")) return false;
+        return true;
+      }),
+    [isStaff, canEdit]
   );
   const tabOrder = visibleTabs.map((tab) => tab.id);
   const activeTab = tabOrder.includes(selectedTab) ? selectedTab : tabOrder[0];
