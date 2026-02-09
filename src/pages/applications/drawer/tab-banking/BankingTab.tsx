@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { fetchBankingAnalysis, type BankingAnalysis } from "@/api/banking";
+import { useApplicationDetails } from "@/pages/applications/hooks/useApplicationDetails";
 import { useApplicationDrawerStore } from "@/state/applicationDrawer.store";
 import { getErrorMessage } from "@/utils/errors";
 
@@ -30,6 +31,7 @@ const BankingSkeleton = () => (
 
 const BankingTab = () => {
   const applicationId = useApplicationDrawerStore((state) => state.selectedApplicationId);
+  const { data: applicationDetails } = useApplicationDetails();
   const { data: analysis, isLoading, error } = useQuery<BankingAnalysis>({
     queryKey: ["banking", applicationId, "analysis"],
     queryFn: ({ signal }) => fetchBankingAnalysis(applicationId ?? "", { signal }),
@@ -40,9 +42,20 @@ const BankingTab = () => {
   if (isLoading) return <BankingSkeleton />;
   if (error) return <div className="drawer-placeholder">{getErrorMessage(error, "Unable to load banking analysis.")}</div>;
 
-  const completedAt =
-    analysis?.bankingCompletedAt === undefined ? analysis?.banking_completed_at : analysis?.bankingCompletedAt;
-  const isPending = completedAt === null;
+  const bankingCompletedAt = (applicationDetails as { banking_completed_at?: string | null } | null)?.banking_completed_at;
+  const statementCount =
+    (applicationDetails as { bankStatementCount?: number | null } | null)?.bankStatementCount ??
+    (applicationDetails as { bank_statement_count?: number | null } | null)?.bank_statement_count ??
+    (applicationDetails as { bankStatementsCount?: number | null } | null)?.bankStatementsCount ??
+    (applicationDetails as { bank_statements_count?: number | null } | null)?.bank_statements_count ??
+    null;
+  const statusLabel = (() => {
+    if (bankingCompletedAt === undefined) return "Unknown";
+    if (bankingCompletedAt !== null) return "Completed";
+    if (typeof statementCount !== "number") return "Unknown";
+    if (statementCount < 6) return "Waiting for statements";
+    return "Processing…";
+  })();
   const monthGroups = Array.isArray(analysis?.monthsDetected) ? analysis?.monthsDetected : analysis?.monthGroups;
   const monthsDetectedValue = Array.isArray(analysis?.monthsDetected)
     ? resolveValue(analysis?.monthsDetectedSummary)
@@ -50,12 +63,10 @@ const BankingTab = () => {
 
   return (
     <div className="drawer-tab drawer-tab__banking">
-      {isPending ? (
-        <div className="drawer-section" role="status" aria-live="polite">
-          <div className="drawer-section__title">Status</div>
-          <div className="drawer-section__body">Banking analysis in progress.</div>
-        </div>
-      ) : null}
+      <div className="drawer-section" role="status" aria-live="polite">
+        <div className="drawer-section__title">Status</div>
+        <div className="drawer-section__body">{statusLabel}</div>
+      </div>
       <div className="drawer-section">
         <div className="drawer-section__title">Coverage Summary</div>
         <div className="drawer-section__body">
