@@ -1,81 +1,204 @@
-import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { fetchBankingSummary, type BankingSummary } from "@/api/banking";
+import { fetchBankingAnalysis, type BankingAnalysis } from "@/api/banking";
 import { useApplicationDrawerStore } from "@/state/applicationDrawer.store";
 import { getErrorMessage } from "@/utils/errors";
 
-const Metric = ({ label, value }: { label: string; value?: number }) => (
-  <div className="drawer-metric">
-    <div className="drawer-metric__label">{label}</div>
-    <div className="drawer-metric__value">{value !== undefined ? value : "—"}</div>
+const resolveValue = (value?: number | string | boolean | null) => (value === null || value === undefined ? "—" : value);
+
+const BankingSkeleton = () => (
+  <div className="drawer-tab drawer-tab__banking" role="status" aria-live="polite">
+    <div className="drawer-metric-grid">
+      {Array.from({ length: 6 }).map((_, index) => (
+        <div className="drawer-metric" key={`banking-skeleton-${index}`}>
+          <div className="skeleton-line skeleton-line--short" />
+          <div className="skeleton-line" />
+        </div>
+      ))}
+    </div>
+    <div className="drawer-section">
+      <div className="skeleton-line skeleton-line--short" />
+      <div className="skeleton-line" />
+      <div className="skeleton-line" />
+    </div>
+    <div className="drawer-section">
+      <div className="skeleton-line skeleton-line--short" />
+      <div className="skeleton-line" />
+      <div className="skeleton-line" />
+    </div>
   </div>
 );
 
 const BankingTab = () => {
   const applicationId = useApplicationDrawerStore((state) => state.selectedApplicationId);
-  const { data: summary, isLoading, error } = useQuery<BankingSummary>({
-    queryKey: ["banking", applicationId, "summary"],
-    queryFn: ({ signal }) => fetchBankingSummary(applicationId ?? "", { signal }),
+  const { data: analysis, isLoading, error } = useQuery<BankingAnalysis>({
+    queryKey: ["banking", applicationId, "analysis"],
+    queryFn: ({ signal }) => fetchBankingAnalysis(applicationId ?? "", { signal }),
     enabled: Boolean(applicationId)
   });
 
-  const trend = useMemo(() => summary?.revenueTrend ?? [], [summary]);
-
   if (!applicationId) return <div className="drawer-placeholder">Select an application to view banking analysis.</div>;
-  if (isLoading) return <div className="drawer-placeholder">Loading banking analysis…</div>;
+  if (isLoading) return <BankingSkeleton />;
   if (error) return <div className="drawer-placeholder">{getErrorMessage(error, "Unable to load banking analysis.")}</div>;
+
+  const completedAt =
+    analysis?.bankingCompletedAt === undefined ? analysis?.banking_completed_at : analysis?.bankingCompletedAt;
+  const isPending = completedAt === null;
+  const monthGroups = Array.isArray(analysis?.monthsDetected) ? analysis?.monthsDetected : analysis?.monthGroups;
+  const monthsDetectedValue = Array.isArray(analysis?.monthsDetected)
+    ? resolveValue(analysis?.monthsDetectedSummary)
+    : resolveValue(analysis?.monthsDetected);
 
   return (
     <div className="drawer-tab drawer-tab__banking">
-      <div className="drawer-metric-grid">
-        <Metric label="Avg Monthly Revenue" value={summary?.avgMonthlyRevenue} />
-        <Metric label="Avg Monthly Expenses" value={summary?.avgMonthlyExpenses} />
-        <Metric label="Burn Rate" value={summary?.burnRate} />
-        <Metric label="Days Cash on Hand" value={summary?.daysCashOnHand} />
-        <Metric label="NSF Count" value={summary?.nsfCount} />
-        <Metric label="Volatility Index" value={summary?.volatilityIndex} />
+      {isPending ? (
+        <div className="drawer-section" role="status" aria-live="polite">
+          <div className="drawer-section__title">Status</div>
+          <div className="drawer-section__body">Banking analysis in progress.</div>
+        </div>
+      ) : null}
+      <div className="drawer-section">
+        <div className="drawer-section__title">Coverage Summary</div>
+        <div className="drawer-section__body">
+          {monthGroups?.length ? (
+            <div className="drawer-list">
+              {monthGroups.map((group) => (
+                <div key={`${group.year}-${group.months.join("-")}`} className="drawer-list__item">
+                  <strong>{group.year}</strong>
+                  <div>{group.months.join(" • ")}</div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="drawer-placeholder">No statement months detected.</div>
+          )}
+          <dl className="drawer-kv-list">
+            <div className="drawer-kv-list__item">
+              <dt>Months detected</dt>
+              <dd>{monthsDetectedValue}</dd>
+            </div>
+            <div className="drawer-kv-list__item">
+              <dt>Date range</dt>
+              <dd>{resolveValue(analysis?.dateRange)}</dd>
+            </div>
+            {analysis?.bankCount && analysis.bankCount > 1 ? (
+              <div className="drawer-kv-list__item">
+                <dt>Bank count</dt>
+                <dd>{resolveValue(analysis.bankCount)}</dd>
+              </div>
+            ) : null}
+          </dl>
+        </div>
       </div>
       <div className="drawer-section">
-        <div className="drawer-section__title">Revenue Trend</div>
-        {trend.length ? (
-          <ul className="drawer-list">
-            {trend.map((point) => (
-              <li key={point.month}>
-                <strong>{point.month}:</strong> {point.revenue}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <div className="drawer-placeholder">No revenue trend data.</div>
-        )}
+        <div className="drawer-section__title">Inflows</div>
+        <div className="drawer-section__body">
+          <dl className="drawer-kv-list">
+            <div className="drawer-kv-list__item">
+              <dt>Total deposits (6-month)</dt>
+              <dd>{resolveValue(analysis?.inflows?.totalDeposits)}</dd>
+            </div>
+            <div className="drawer-kv-list__item">
+              <dt>Average monthly deposits</dt>
+              <dd>{resolveValue(analysis?.inflows?.averageMonthlyDeposits)}</dd>
+            </div>
+          </dl>
+          {analysis?.inflows?.topDepositSources?.length ? (
+            <div className="drawer-list">
+              {analysis.inflows.topDepositSources.map((source) => (
+                <div key={`${source.name}-${source.percentage ?? "na"}`} className="drawer-list__item">
+                  <strong>{source.name}</strong>
+                  {source.percentage !== undefined ? ` — ${source.percentage}` : ""}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="drawer-placeholder">No deposit sources reported.</div>
+          )}
+        </div>
       </div>
       <div className="drawer-section">
-        <div className="drawer-section__title">Largest Deposits</div>
-        {summary?.largestDeposits?.length ? (
-          <ul className="drawer-list">
-            {summary.largestDeposits.map((deposit, idx) => (
-              <li key={idx}>
-                {deposit.date}: {deposit.amount} {deposit.description ? `— ${deposit.description}` : ""}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <div className="drawer-placeholder">No deposit data.</div>
-        )}
+        <div className="drawer-section__title">Outflows</div>
+        <div className="drawer-section__body">
+          <dl className="drawer-kv-list">
+            <div className="drawer-kv-list__item">
+              <dt>Total withdrawals (6-month)</dt>
+              <dd>{resolveValue(analysis?.outflows?.totalWithdrawals)}</dd>
+            </div>
+            <div className="drawer-kv-list__item">
+              <dt>Average monthly withdrawals</dt>
+              <dd>{resolveValue(analysis?.outflows?.averageMonthlyWithdrawals)}</dd>
+            </div>
+          </dl>
+          {analysis?.outflows?.topExpenseCategories?.length ? (
+            <div className="drawer-list">
+              {analysis.outflows.topExpenseCategories.map((category) => (
+                <div key={`${category.name}-${category.percentage ?? "na"}`} className="drawer-list__item">
+                  <strong>{category.name}</strong>
+                  {category.percentage !== undefined ? ` — ${category.percentage}` : ""}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="drawer-placeholder">No expense categories reported.</div>
+          )}
+        </div>
       </div>
       <div className="drawer-section">
-        <div className="drawer-section__title">Statement Coverage</div>
-        {summary?.statementCoverage?.length ? (
-          <div className="drawer-chip-row">
-            {summary.statementCoverage.map((month) => (
-              <span key={month} className="drawer-chip">
-                {month}
-              </span>
-            ))}
-          </div>
-        ) : (
-          <div className="drawer-placeholder">No statements detected.</div>
-        )}
+        <div className="drawer-section__title">Cash Flow</div>
+        <div className="drawer-section__body">
+          <dl className="drawer-kv-list">
+            <div className="drawer-kv-list__item">
+              <dt>Net cash flow (monthly average)</dt>
+              <dd>{resolveValue(analysis?.cashFlow?.netCashFlowMonthlyAverage)}</dd>
+            </div>
+            <div className="drawer-kv-list__item">
+              <dt>Volatility indicator</dt>
+              <dd>{resolveValue(analysis?.cashFlow?.volatility)}</dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+      <div className="drawer-section">
+        <div className="drawer-section__title">Balances</div>
+        <div className="drawer-section__body">
+          <dl className="drawer-kv-list">
+            <div className="drawer-kv-list__item">
+              <dt>Average daily balance</dt>
+              <dd>{resolveValue(analysis?.balances?.averageDailyBalance)}</dd>
+            </div>
+            <div className="drawer-kv-list__item">
+              <dt>Lowest balance</dt>
+              <dd>{resolveValue(analysis?.balances?.lowestBalance)}</dd>
+            </div>
+            <div className="drawer-kv-list__item">
+              <dt>NSF / overdraft count</dt>
+              <dd>{resolveValue(analysis?.balances?.nsfOverdraftCount)}</dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+      <div className="drawer-section">
+        <div className="drawer-section__title">Risk Flags</div>
+        <div className="drawer-section__body">
+          <dl className="drawer-kv-list">
+            <div className="drawer-kv-list__item">
+              <dt>Irregular deposits</dt>
+              <dd>{resolveValue(analysis?.riskFlags?.irregularDeposits)}</dd>
+            </div>
+            <div className="drawer-kv-list__item">
+              <dt>Revenue concentration</dt>
+              <dd>{resolveValue(analysis?.riskFlags?.revenueConcentration)}</dd>
+            </div>
+            <div className="drawer-kv-list__item">
+              <dt>Declining balances</dt>
+              <dd>{resolveValue(analysis?.riskFlags?.decliningBalances)}</dd>
+            </div>
+            <div className="drawer-kv-list__item">
+              <dt>NSF/overdraft events</dt>
+              <dd>{resolveValue(analysis?.riskFlags?.nsfOverdraftEvents)}</dd>
+            </div>
+          </dl>
+        </div>
       </div>
     </div>
   );
