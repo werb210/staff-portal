@@ -1,5 +1,5 @@
 import { apiClient, type ListResponse, type RequestOptions } from "./httpClient";
-import type { ApplicationDetails, ApplicationAuditEvent } from "@/types/application.types";
+import type { ApplicationDetails, ApplicationAuditEvent, PortalApplicationRecord } from "@/types/application.types";
 
 export type ApplicationSummary = {
   id: string;
@@ -27,7 +27,10 @@ export const fetchApplicationDetails = (id: string, options?: RequestOptions) =>
   apiClient.get<ApplicationDetails>(`/applications/${id}`, options);
 
 export const fetchPortalApplication = (id: string, options?: RequestOptions) =>
-  apiClient.get<unknown>(`/api/applications/${id}`, options);
+  apiClient.get<PortalApplicationRecord>(`/api/applications/${id}`, options);
+
+export const updatePortalApplication = (id: string, updates: Partial<PortalApplicationRecord>) =>
+  apiClient.patch<PortalApplicationRecord>(`/api/applications/${id}`, updates);
 
 export const openPortalApplication = (id: string) =>
   apiClient.post(`/api/applications/${id}/open`, {});
