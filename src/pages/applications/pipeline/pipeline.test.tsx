@@ -1,246 +1,166 @@
-import { screen, waitFor } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { QueryClient } from "@tanstack/react-query";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
 import type { MockedFunction } from "vitest";
 import PipelinePage from "./PipelinePage";
 import { renderWithProviders } from "@/test/testUtils";
 import { pipelineApi } from "./pipeline.api";
-import { createPipelineDragEndHandler, usePipelineStore } from "./pipeline.store";
-import { type PipelineApplication, type PipelineDragEndEvent, type PipelineStage } from "./pipeline.types";
-import { useApplicationDrawerStore } from "@/state/applicationDrawer.store";
+import { usePipelineStore } from "./pipeline.store";
+import { type PipelineApplication, type PipelineStage } from "./pipeline.types";
+import ApplicationShellPage from "@/pages/applications/ApplicationShellPage";
+import { fetchPortalApplication, openPortalApplication } from "@/api/applications";
 
 vi.mock("./pipeline.api", () => {
-  const fetchColumn = vi.fn().mockResolvedValue([]);
-  const fetchStages = vi.fn().mockResolvedValue([]);
-  const moveCard = vi.fn().mockResolvedValue({});
-  const fetchSummary = vi.fn();
-  return { pipelineApi: { fetchColumn, fetchStages, moveCard, fetchSummary } };
+  const fetchPipeline = vi.fn().mockResolvedValue({ stages: [], applications: [] });
+  return { pipelineApi: { fetchPipeline } };
 });
 
+vi.mock("@/api/applications", () => ({
+  fetchPortalApplication: vi.fn(),
+  openPortalApplication: vi.fn()
+}));
+
 const pipelineStages: PipelineStage[] = [
+  { id: "OFFER", label: "Offer" },
   { id: "RECEIVED", label: "Received" },
   { id: "DOCUMENTS_REQUIRED", label: "Documents Required" },
   { id: "IN_REVIEW", label: "In Review" },
-  { id: "STARTUP", label: "Startup" },
+  { id: "STARTUP", label: "Start-up" },
   { id: "OFF_TO_LENDER", label: "Off to Lender" },
-  { id: "ACCEPTED", label: "Accepted", terminal: true },
-  { id: "DECLINED", label: "Declined", terminal: true }
+  { id: "ACCEPTED", label: "Accepted" },
+  { id: "REJECTED", label: "Rejected" }
 ];
 
-const sampleCard: PipelineApplication = {
-  id: "app-1",
-  businessName: "Acme Co",
-  contactName: "John Doe",
-  requestedAmount: 50000,
-  productCategory: "startup",
-  stage: "RECEIVED",
-  status: "New",
-  documents: { submitted: 1, required: 3 },
-  bankingComplete: false,
-  ocrComplete: false,
-  assignedStaff: "Alex Agent",
-  createdAt: new Date().toISOString()
-};
-
-const buildDragEvent = (toStage: string): PipelineDragEndEvent => ({
-  active: {
-    id: sampleCard.id,
-    data: { current: { card: sampleCard, stageId: sampleCard.stage } }
+const sampleCards: PipelineApplication[] = [
+  {
+    id: "app-1",
+    businessName: "Acme Co",
+    requestedAmount: 50000,
+    productCategory: "startup",
+    stage: "RECEIVED",
+    createdAt: "2024-01-01T10:00:00.000Z",
+    updatedAt: "2024-01-03T10:00:00.000Z"
   },
-  over: { id: toStage }
-}) as PipelineDragEndEvent;
+  {
+    id: "app-2",
+    businessName: "Beacon LLC",
+    requestedAmount: 250000,
+    productCategory: "sba",
+    stage: "DOCUMENTS_REQUIRED",
+    createdAt: "2024-01-02T10:00:00.000Z",
+    updatedAt: "2024-01-04T10:00:00.000Z"
+  }
+];
 
-describe("Pipeline foundation", () => {
+const renderPipeline = () =>
+  renderWithProviders(
+    <MemoryRouter initialEntries={["/pipeline"]}>
+      <Routes>
+        <Route path="/pipeline" element={<PipelinePage />} />
+        <Route path="/applications/:id" element={<ApplicationShellPage />} />
+      </Routes>
+    </MemoryRouter>
+  );
+
+describe("Pipeline board", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    (pipelineApi.fetchColumn as MockedFunction<typeof pipelineApi.fetchColumn>).mockResolvedValue([]);
-    (pipelineApi.fetchStages as MockedFunction<typeof pipelineApi.fetchStages>).mockResolvedValue(pipelineStages);
+    (pipelineApi.fetchPipeline as MockedFunction<typeof pipelineApi.fetchPipeline>).mockResolvedValue({
+      stages: pipelineStages,
+      applications: sampleCards
+    });
+    (fetchPortalApplication as MockedFunction<typeof fetchPortalApplication>).mockResolvedValue({
+      id: "app-1",
+      business_name: "Acme Co",
+      current_stage: "RECEIVED"
+    });
+    (openPortalApplication as MockedFunction<typeof openPortalApplication>).mockResolvedValue({});
     usePipelineStore.getState().resetPipeline();
-    useApplicationDrawerStore.setState({ selectedTab: "application" });
     window.localStorage.clear();
+    window.sessionStorage.clear();
   });
 
-  it("renders all BF pipeline columns", async () => {
-    const { container } = renderWithProviders(<PipelinePage />);
+  it("renders all pipeline stages in locked order", async () => {
+    const { container } = renderPipeline();
 
     await waitFor(() => {
-      pipelineStages.forEach((stage) => {
-        const headers = screen.getAllByText(stage.label, { selector: ".pipeline-column__title" });
+      [
+        "Received",
+        "In Review",
+        "Documents Required",
+        "Start-up",
+        "Off to Lender",
+        "Offer",
+        "Accepted",
+        "Rejected"
+      ].forEach((label) => {
+        const headers = screen.getAllByText(label, { selector: ".pipeline-column__title" });
         expect(headers.length).toBeGreaterThan(0);
       });
     });
 
-    await waitFor(() => expect(pipelineApi.fetchColumn).toHaveBeenCalled());
+    await waitFor(() => expect(pipelineApi.fetchPipeline).toHaveBeenCalled());
 
     const orderedLabels = Array.from(container.querySelectorAll(".pipeline-column__title")).map(
       (node) => node.textContent
     );
     expect(orderedLabels).toEqual([
       "Received",
-      "Documents Required",
       "In Review",
-      "Startup",
+      "Documents Required",
+      "Start-up",
       "Off to Lender",
+      "Offer",
       "Accepted",
-      "Declined"
+      "Rejected"
     ]);
   });
 
-  it("blocks pipeline for non-BF silos", () => {
-    renderWithProviders(<PipelinePage />, { silo: "BI" });
-    expect(screen.getByText(/Pipeline is not available/)).toBeInTheDocument();
+  it("groups cards by current stage", async () => {
+    renderPipeline();
+
+    const receivedColumn = await screen.findByTestId("pipeline-column-RECEIVED");
+    const docsColumn = await screen.findByTestId("pipeline-column-DOCUMENTS_REQUIRED");
+
+    expect(within(receivedColumn).getByText("Acme Co")).toBeInTheDocument();
+    expect(within(docsColumn).getByText("Beacon LLC")).toBeInTheDocument();
   });
 
-  it("applies search filter when updated", async () => {
-    renderWithProviders(<PipelinePage />);
-    const searchInput = screen.getByLabelText(/Search/i);
-    await userEvent.type(searchInput, "Acme");
+  it("opens the application shell when clicking a card", async () => {
+    renderPipeline();
 
-    await waitFor(() =>
-      expect(pipelineApi.fetchColumn).toHaveBeenCalledWith(
-        expect.any(String),
-        expect.objectContaining({ searchTerm: "Acme" }),
-        expect.any(Object)
-      )
-    );
-  }, 10000);
+    await userEvent.click(await screen.findByText("Acme Co"));
 
-  it("resets filters without breaking the pipeline view", async () => {
-    renderWithProviders(<PipelinePage />);
-    const searchInput = screen.getByLabelText(/Search/i);
-    await userEvent.type(searchInput, "Atlas");
-
-    await userEvent.click(screen.getByRole("button", { name: /Reset Filters/i }));
-
-    await waitFor(() => {
-      expect(searchInput).toHaveValue("");
-    });
-  }, 10000);
-
-  it("prevents movement from terminal stages", async () => {
-    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    const handler = createPipelineDragEndHandler({ queryClient, filters: {}, stages: pipelineStages });
-    const terminalEvent = {
-      active: { id: sampleCard.id, data: { current: { card: { ...sampleCard, stage: "ACCEPTED" }, stageId: "ACCEPTED" } } },
-      over: { id: "RECEIVED" }
-    } as PipelineDragEndEvent;
-
-    await handler(terminalEvent);
-    expect(pipelineApi.moveCard).not.toHaveBeenCalled();
+    expect(await screen.findByText("Coming in next block.")).toBeInTheDocument();
+    expect(screen.getByText("Acme Co")).toBeInTheDocument();
   });
 
-  it("invokes API when dragging to new stage", async () => {
-    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    const handler = createPipelineDragEndHandler({ queryClient, filters: {}, stages: pipelineStages });
-    const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
+  it("calls the open endpoint once on first open", async () => {
+    renderPipeline();
 
-    await handler(buildDragEvent("DOCUMENTS_REQUIRED"));
+    await userEvent.click(await screen.findByText("Acme Co"));
+    await waitFor(() => expect(openPortalApplication).toHaveBeenCalledWith("app-1"));
 
-    expect(pipelineApi.moveCard).toHaveBeenCalledWith(sampleCard.id, "DOCUMENTS_REQUIRED");
-    expect(invalidateSpy).toHaveBeenCalled();
+    await userEvent.click(screen.getByRole("button", { name: "Documents" }));
+
+    expect(openPortalApplication).toHaveBeenCalledTimes(1);
   });
 
-  it("avoids refetch storms when dragging applications", async () => {
-    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    const handler = createPipelineDragEndHandler({ queryClient, filters: {}, stages: pipelineStages });
-    const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
+  it("does not render drag and drop affordances", async () => {
+    renderPipeline();
 
-    await handler(buildDragEvent("DOCUMENTS_REQUIRED"));
+    await screen.findByText("Acme Co");
 
-    expect(invalidateSpy).toHaveBeenCalledTimes(4);
+    expect(document.querySelectorAll("[data-dnd-kit-draggable]").length).toBe(0);
+    expect(document.querySelectorAll("[draggable='true']").length).toBe(0);
   });
 
-  it("keeps queries in sync after drag", async () => {
-    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    const handler = createPipelineDragEndHandler({ queryClient, filters: { searchTerm: "" }, stages: pipelineStages });
-    const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
+  it("does not allow manual stage changes", async () => {
+    renderPipeline();
 
-    await handler(buildDragEvent("DOCUMENTS_REQUIRED"));
+    await screen.findByText("Acme Co");
 
-    expect(invalidateSpy).toHaveBeenCalledWith({
-      queryKey: ["pipeline", "RECEIVED", "", "", "", "", "", "newest"]
-    });
-    expect(invalidateSpy).toHaveBeenCalledWith({
-      queryKey: ["pipeline", "DOCUMENTS_REQUIRED", "", "", "", "", "", "newest"]
-    });
-  });
-});
-
-describe("Pipeline determinism", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    (pipelineApi.fetchColumn as MockedFunction<typeof pipelineApi.fetchColumn>).mockResolvedValue([]);
-    (pipelineApi.fetchStages as MockedFunction<typeof pipelineApi.fetchStages>).mockResolvedValue(pipelineStages);
-    usePipelineStore.getState().resetPipeline();
-    useApplicationDrawerStore.setState({ selectedTab: "application" });
-    window.localStorage.clear();
-  });
-
-  it("preserves selection across tab changes", () => {
-    const { selectApplication } = usePipelineStore.getState();
-    selectApplication("app-1", "RECEIVED");
-    useApplicationDrawerStore.getState().setTab("documents");
-    expect(usePipelineStore.getState().selectedApplicationId).toBe("app-1");
-  });
-
-  it("preserves selection when stage still contains application", async () => {
-    (pipelineApi.fetchColumn as MockedFunction<typeof pipelineApi.fetchColumn>).mockImplementation(async (stage) => {
-      if (stage === "RECEIVED" || stage === "DOCUMENTS_REQUIRED") {
-        return [{ ...sampleCard }];
-      }
-      return [];
-    });
-
-    renderWithProviders(<PipelinePage />);
-    await waitFor(() => expect(pipelineApi.fetchColumn).toHaveBeenCalled());
-    await screen.findByLabelText(new RegExp(`${sampleCard.businessName} in Received`, "i"));
-    await screen.findByLabelText(new RegExp(`${sampleCard.businessName} in Documents Required`, "i"));
-    usePipelineStore.getState().selectApplication(sampleCard.id, "RECEIVED");
-    usePipelineStore.getState().setSelectedStageId("DOCUMENTS_REQUIRED");
-
-    await waitFor(() => expect(usePipelineStore.getState().selectedApplicationId).toBe(sampleCard.id));
-  });
-
-  it("clears selection when stage no longer contains application", async () => {
-    (pipelineApi.fetchColumn as MockedFunction<typeof pipelineApi.fetchColumn>).mockImplementation(async (stage) => {
-      if (stage === "RECEIVED") {
-        return [{ ...sampleCard }];
-      }
-      return [];
-    });
-
-    renderWithProviders(<PipelinePage />);
-    await waitFor(() => expect(pipelineApi.fetchColumn).toHaveBeenCalled());
-    const businessName = sampleCard.businessName ?? "Acme Co";
-    await userEvent.click(await screen.findByText(businessName));
-    await userEvent.click(screen.getAllByRole("button", { name: /Documents Required/i })[0]);
-
-    expect(usePipelineStore.getState().selectedApplicationId).toBeNull();
-  });
-
-  it("keeps selection when closing drawer", () => {
-    const { selectApplication, closeDrawer } = usePipelineStore.getState();
-    selectApplication("app-1", "RECEIVED");
-    closeDrawer();
-    expect(usePipelineStore.getState().selectedApplicationId).toBe("app-1");
-  });
-
-  it("restores state from storage on reload", async () => {
-    window.localStorage.setItem(
-      "portal.application.pipeline",
-      JSON.stringify({
-        selectedStageId: "DOCUMENTS_REQUIRED",
-        selectedApplicationId: "app-55",
-        filters: { searchTerm: "Atlas" },
-        isDrawerOpen: true
-      })
-    );
-
-    vi.resetModules();
-    const { usePipelineStore: reloadedStore } = await import("./pipeline.store");
-    expect(reloadedStore.getState().selectedStageId).toBe("DOCUMENTS_REQUIRED");
-    expect(reloadedStore.getState().selectedApplicationId).toBe("app-55");
-    expect(reloadedStore.getState().currentFilters.searchTerm).toBe("Atlas");
-    expect(reloadedStore.getState().isDrawerOpen).toBe(true);
+    expect(screen.queryByRole("button", { name: /Received/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /In Review/i })).not.toBeInTheDocument();
   });
 });

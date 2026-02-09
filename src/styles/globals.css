@@ -1464,8 +1464,12 @@ a,
   border-radius: 16px;
   padding: 12px;
   box-shadow: var(--ui-shadow-soft);
-  cursor: grab;
+  cursor: pointer;
   transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.pipeline-card--readonly {
+  cursor: pointer;
 }
 
 .pipeline-card--dragging {
@@ -1564,6 +1568,12 @@ a,
 .pipeline-card__pill--muted {
   background: var(--ui-surface-muted);
   color: var(--ui-text-muted);
+}
+
+.pipeline-card__pill--warning {
+  background: rgba(248, 113, 113, 0.2);
+  color: #fecaca;
+  box-shadow: inset 0 0 0 1px rgba(248, 113, 113, 0.4);
 }
 
 .pipeline-card__progress {
@@ -1752,6 +1762,45 @@ a,
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.application-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.application-shell__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 0 12px;
+}
+
+.application-shell__title {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.application-shell__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(59, 130, 246, 0.2);
+  color: #bfdbfe;
+  box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.4);
+}
+
+.application-shell__placeholder {
+  padding: 24px;
+  border-radius: 12px;
+  background: var(--ui-surface-muted);
+  color: var(--ui-text-muted);
+  text-align: center;
 }
 
 .ocr-insights {

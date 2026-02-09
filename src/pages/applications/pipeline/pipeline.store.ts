@@ -1,8 +1,5 @@
 import { create } from "zustand";
-import type { QueryClient } from "@tanstack/react-query";
-import type { PipelineFilters, PipelineStageId, PipelineApplication, PipelineDragEndEvent, PipelineStage } from "./pipeline.types";
-import { evaluateStageTransition, getStageById } from "./pipeline.types";
-import { pipelineApi } from "./pipeline.api";
+import type { PipelineFilters, PipelineStageId } from "./pipeline.types";
 const STORAGE_KEY = "portal.application.pipeline";
 
 type PipelinePersistedState = {
@@ -172,58 +169,3 @@ const filterKeyParts = (filters: PipelineFilters) => [
 export const pipelineQueryKeys = {
   column: (stage: PipelineStageId, filters: PipelineFilters) => ["pipeline", stage, ...filterKeyParts(filters)]
 };
-
-export const createPipelineDragEndHandler = (options: {
-  queryClient: QueryClient;
-  filters: PipelineFilters;
-  stages: PipelineStage[];
-  onInvalidMove?: (message: string | null) => void;
-}) => {
-  const { queryClient, filters, stages, onInvalidMove } = options;
-  return async (event: PipelineDragEndEvent) => {
-    const destinationStageId = event.over?.id as PipelineStageId | undefined;
-    const sourceStageId = event.active.data.current?.stageId ?? null;
-    const card = event.active.data.current?.card ?? null;
-    if (!destinationStageId || !card || !sourceStageId) return;
-
-    const destinationStage = getStageById(stages, destinationStageId);
-    if (!destinationStage) return;
-
-    const transition = evaluateStageTransition({
-      card,
-      fromStage: sourceStageId,
-      toStage: destinationStageId,
-      stages
-    });
-    if (!transition.allowed) {
-      if (transition.reason) {
-        onInvalidMove?.(transition.reason);
-      }
-      return;
-    }
-
-    onInvalidMove?.(null);
-
-    try {
-      await pipelineApi.moveCard(card.id, destinationStageId);
-
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: pipelineQueryKeys.column(sourceStageId, filters) }),
-        queryClient.invalidateQueries({ queryKey: pipelineQueryKeys.column(destinationStageId, filters) }),
-        queryClient.invalidateQueries({ queryKey: ["applications", card.id, "details"] }),
-        queryClient.invalidateQueries({ queryKey: ["applications", card.id, "audit"] })
-      ]);
-    } catch (error) {
-      console.error("Failed to move pipeline card", { error, cardId: card.id, destinationStageId });
-      onInvalidMove?.("Unable to move this application right now.");
-    }
-  };
-};
-
-export const createPipelineDragStartHandler = (setDragging: PipelineStoreActions["setDragging"]) => (cardId: string, stageId: PipelineStageId) => {
-  setDragging(cardId, stageId);
-};
-
-export const clearDraggingState = (setDragging: PipelineStoreActions["setDragging"]) => () => setDragging(null, null);
-
-export type { PipelineApplication };

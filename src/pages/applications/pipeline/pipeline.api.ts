@@ -1,17 +1,6 @@
 import { apiClient } from "@/api/httpClient";
 import type { PipelineApplication, PipelineFilters, PipelineStage, PipelineStageId } from "./pipeline.types";
-
-const buildQueryParams = (filters: PipelineFilters, stage?: PipelineStageId): string => {
-  const params = new URLSearchParams();
-  if (stage) params.set("stage", stage);
-  if (filters.searchTerm) params.set("search", filters.searchTerm);
-  if (filters.productCategory) params.set("productCategory", filters.productCategory);
-  if (filters.submissionMethod) params.set("submissionMethod", filters.submissionMethod);
-  if (filters.dateFrom) params.set("from", filters.dateFrom);
-  if (filters.dateTo) params.set("to", filters.dateTo);
-  if (filters.sort) params.set("sort", filters.sort);
-  return params.toString();
-};
+import { PIPELINE_STAGE_LABELS, PIPELINE_STAGE_ORDER, normalizeStageId } from "./pipeline.types";
 
 const toTitleCase = (value: string) =>
   value
@@ -20,16 +9,8 @@ const toTitleCase = (value: string) =>
     .map((segment) => (segment ? segment[0].toUpperCase() + segment.slice(1) : segment))
     .join(" ");
 
-const normalizeStageId = (value: string) => value.replace(/[\s_-]+/g, "").toUpperCase();
-
 const STAGE_LABEL_OVERRIDES: Record<string, string> = {
-  RECEIVED: "Received",
-  DOCUMENTSREQUIRED: "Documents Required",
-  INREVIEW: "In Review",
-  STARTUP: "Startup",
-  OFFTOLENDER: "Off to Lender",
-  ACCEPTED: "Accepted",
-  DECLINED: "Declined"
+  ...PIPELINE_STAGE_LABELS
 };
 
 const parseStage = (item: unknown): PipelineStage | null => {
@@ -89,6 +70,16 @@ const normalizePipelineApplication = (value: unknown): PipelineApplication | nul
       : typeof value.created_at === "string"
         ? value.created_at
         : "";
+  const updatedAt =
+    typeof value.updatedAt === "string"
+      ? value.updatedAt
+      : typeof value.updated_at === "string"
+        ? value.updated_at
+        : typeof value.last_updated_at === "string"
+          ? value.last_updated_at
+          : typeof value.lastUpdatedAt === "string"
+            ? value.lastUpdatedAt
+            : undefined;
   const documents = isRecord(value.documents)
     ? {
         submitted:
@@ -202,7 +193,8 @@ const normalizePipelineApplication = (value: unknown): PipelineApplication | nul
         : typeof value.assigned_staff === "string"
           ? value.assigned_staff
           : undefined,
-    createdAt
+    createdAt,
+    updatedAt
   };
 };
 
@@ -225,28 +217,90 @@ const parsePipelineApplications = (data: unknown): PipelineApplication[] => {
   return [];
 };
 
-export const pipelineApi = {
-  fetchStages: async (options?: { signal?: AbortSignal }) => {
-    const res = await apiClient.get<unknown>("/portal/applications/stages", options);
-    if (!res) return [];
-    const rawItems = Array.isArray(res)
-      ? res
-      : typeof res === "object" && res && Array.isArray((res as { items?: unknown[] }).items)
-        ? (res as { items: unknown[] }).items
+const parsePipelineResponse = (data: unknown) => {
+  if (Array.isArray(data)) {
+    return { stages: [] as PipelineStage[], applications: parsePipelineApplications(data) };
+  }
+  if (!isRecord(data)) {
+    return { stages: [] as PipelineStage[], applications: [] as PipelineApplication[] };
+  }
+  const rawStages = Array.isArray(data.stages)
+    ? data.stages
+    : Array.isArray(data.pipelineStages)
+      ? data.pipelineStages
+      : Array.isArray(data.stage)
+        ? data.stage
         : [];
-    return rawItems.map(parseStage).filter((stage): stage is PipelineStage => Boolean(stage));
+  const rawApplications = Array.isArray(data.applications)
+    ? data.applications
+    : Array.isArray(data.items)
+      ? data.items
+      : Array.isArray(data.data)
+        ? data.data
+        : [];
+  return {
+    stages: rawStages.map(parseStage).filter((stage): stage is PipelineStage => Boolean(stage)),
+    applications: parsePipelineApplications(rawApplications)
+  };
+};
+
+const buildLockedStages = (): PipelineStage[] =>
+  PIPELINE_STAGE_ORDER.map((stageId) => ({
+    id: stageId,
+    label: PIPELINE_STAGE_LABELS[normalizeStageId(stageId)] ?? toTitleCase(stageId)
+  }));
+
+const matchesSearch = (value: string | undefined, searchTerm: string) =>
+  value?.toLowerCase().includes(searchTerm.toLowerCase());
+
+const applyPipelineFilters = (applications: PipelineApplication[], filters: PipelineFilters) => {
+  let filtered = [...applications];
+  if (filters.searchTerm) {
+    filtered = filtered.filter(
+      (application) =>
+        matchesSearch(application.businessName, filters.searchTerm ?? "") ||
+        matchesSearch(application.contactName, filters.searchTerm ?? "")
+    );
+  }
+  if (filters.productCategory) {
+    filtered = filtered.filter((application) => application.productCategory === filters.productCategory);
+  }
+  if (filters.submissionMethod) {
+    filtered = filtered.filter((application) => application.submissionMethod === filters.submissionMethod);
+  }
+  if (filters.dateFrom || filters.dateTo) {
+    const from = filters.dateFrom ? new Date(filters.dateFrom).getTime() : null;
+    const to = filters.dateTo ? new Date(filters.dateTo).getTime() : null;
+    filtered = filtered.filter((application) => {
+      const dateValue = application.updatedAt ?? application.createdAt;
+      const parsed = dateValue ? new Date(dateValue).getTime() : Number.NaN;
+      if (Number.isNaN(parsed)) return false;
+      if (from !== null && parsed < from) return false;
+      if (to !== null && parsed > to) return false;
+      return true;
+    });
+  }
+  return filtered;
+};
+
+export const pipelineApi = {
+  fetchPipeline: async (options?: { signal?: AbortSignal }) => {
+    const res = await apiClient.get<unknown>("/api/pipeline", options);
+    const parsed = parsePipelineResponse(res);
+    return {
+      stages: parsed.stages.length ? parsed.stages : buildLockedStages(),
+      applications: parsed.applications
+    };
+  },
+  fetchStages: async (options?: { signal?: AbortSignal }) => {
+    const { stages } = await pipelineApi.fetchPipeline(options);
+    return stages;
   },
   fetchColumn: async (stage: PipelineStageId, filters: PipelineFilters, options?: { signal?: AbortSignal }) => {
-    const query = buildQueryParams(filters, stage);
-    const path = query ? `/portal/applications?${query}` : "/portal/applications";
-    const res = await apiClient.get<unknown>(path, options);
-    return parsePipelineApplications(res);
-  },
-  moveCard: async (applicationId: string, newStage: PipelineStageId) => {
-    return apiClient.patch<PipelineApplication>(`/applications/${applicationId}/status`, { stage: newStage });
-  },
-  fetchSummary: async (applicationId: string) => {
-    return apiClient.get<PipelineApplication>(`/applications/${applicationId}/summary`);
+    const { applications } = await pipelineApi.fetchPipeline(options);
+    const normalizedStage = normalizeStageId(stage);
+    const filtered = applyPipelineFilters(applications, filters);
+    return filtered.filter((application) => normalizeStageId(application.stage) === normalizedStage);
   }
 };
 

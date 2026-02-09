@@ -1,15 +1,5 @@
-import { useEffect, useMemo } from "react";
-import { useDroppable } from "@dnd-kit/core";
-import { useQuery } from "@tanstack/react-query";
-import clsx from "clsx";
 import PipelineCard from "./PipelineCard";
-import { pipelineApi } from "./pipeline.api";
-import { pipelineQueryKeys } from "./pipeline.store";
-import type { PipelineApplication, PipelineFilters, PipelineStage, PipelineStageId } from "./pipeline.types";
-import { evaluateStageTransition } from "./pipeline.types";
-import { retryUnlessClientError } from "@/api/retryPolicy";
-import { getErrorMessage } from "@/utils/errors";
-import { emitUiTelemetry } from "@/utils/uiTelemetry";
+import type { PipelineApplication, PipelineStage } from "./pipeline.types";
 
 const LoadingSkeleton = () => (
   <div className="pipeline-card pipeline-card--skeleton">
@@ -29,141 +19,44 @@ const EmptyState = ({ label }: { label: string }) => (
 
 type PipelineColumnProps = {
   stage: PipelineStage;
-  stages: PipelineStage[];
-  filters: PipelineFilters;
-  onCardClick: (id: string, stageId: PipelineStageId) => void;
-  onStageSelect: (stageId: PipelineStageId) => void;
-  onSelectionInvalid: (stageId: PipelineStageId) => void;
-  selectedApplicationId: string | null;
-  selectedStageId: PipelineStageId | null;
-  activeCard?: PipelineApplication | null;
-  draggingFromStage?: PipelineStageId | null;
+  stageLabel: string;
+  cards: PipelineApplication[];
+  isLoading: boolean;
+  onCardClick: (id: string) => void;
 };
 
 const PipelineColumn = ({
   stage,
-  filters,
-  onCardClick,
-  onStageSelect,
-  onSelectionInvalid,
-  selectedApplicationId,
-  selectedStageId,
-  activeCard,
-  draggingFromStage,
-  stages
+  stageLabel,
+  cards,
+  isLoading,
+  onCardClick
 }: PipelineColumnProps) => {
-  const { setNodeRef, isOver } = useDroppable({ id: stage.id });
-  const { data = [], isLoading, isFetching, error } = useQuery<PipelineApplication[]>({
-    queryKey: pipelineQueryKeys.column(stage.id, filters),
-    queryFn: ({ signal }) => pipelineApi.fetchColumn(stage.id, filters, { signal }),
-    placeholderData: (previousData) => previousData ?? [],
-    staleTime: 30_000,
-    refetchOnWindowFocus: false,
-    retry: retryUnlessClientError
-  });
-
-  const sortedData = useMemo(() => {
-    const items = [...data];
-    const tieBreaker = (a: PipelineApplication, b: PipelineApplication) => a.id.localeCompare(b.id);
-    switch (filters.sort) {
-      case "oldest":
-        return items.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime() || tieBreaker(a, b));
-      case "highest_amount":
-        return items.sort((a, b) => {
-          const aAmount = a.requestedAmount ?? 0;
-          const bAmount = b.requestedAmount ?? 0;
-          return bAmount - aAmount || tieBreaker(a, b);
-        });
-      case "lowest_amount":
-        return items.sort((a, b) => {
-          const aAmount = a.requestedAmount ?? 0;
-          const bAmount = b.requestedAmount ?? 0;
-          return aAmount - bAmount || tieBreaker(a, b);
-        });
-      case "newest":
-      default:
-        return items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime() || tieBreaker(a, b));
-    }
-  }, [data, filters.sort]);
-
-  useEffect(() => {
-    if (!isLoading && !isFetching && !error) {
-      emitUiTelemetry("data_loaded", { view: "pipeline", stage: stage.id, count: sortedData.length });
-    }
-  }, [error, isFetching, isLoading, sortedData.length, stage.id]);
-
-  const transition = activeCard
-    ? evaluateStageTransition({ card: activeCard, fromStage: draggingFromStage ?? null, toStage: stage.id, stages })
-    : { allowed: true };
-  const canReceive = transition.allowed;
-  const isSelectedStage = selectedStageId === stage.id;
-
-  useEffect(() => {
-    if (!selectedApplicationId || !isSelectedStage) return;
-    if (isLoading || isFetching || error) return;
-    const isSelectionValid = sortedData.some((application) => application.id === selectedApplicationId);
-    if (!isSelectionValid) {
-      onSelectionInvalid(stage.id);
-    }
-  }, [
-    error,
-    isFetching,
-    isLoading,
-    isSelectedStage,
-    onSelectionInvalid,
-    selectedApplicationId,
-    sortedData,
-    stage.id
-  ]);
-
   return (
-    <div className="pipeline-column" ref={setNodeRef} data-stage={stage.id}>
-      <div
-        className="pipeline-column__header"
-        onClick={() => onStageSelect(stage.id)}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(event) => {
-          if (event.key === "Enter" || event.key === " ") {
-            event.preventDefault();
-            onStageSelect(stage.id);
-          }
-        }}
-        aria-pressed={isSelectedStage}
-      >
+    <div className="pipeline-column" data-stage={stage.id} data-testid={`pipeline-column-${stage.id}`}>
+      <div className="pipeline-column__header">
         <div>
-          <div className="pipeline-column__title">{stage.label}</div>
+          <div className="pipeline-column__title">{stageLabel}</div>
           {stage.description && <div className="pipeline-column__subtitle">{stage.description}</div>}
         </div>
         {stage.terminal && <span className="pipeline-column__pill">Terminal</span>}
       </div>
-      <div
-        className={clsx("pipeline-column__body", {
-          "pipeline-column__body--over": isOver && canReceive,
-          "pipeline-column__body--blocked": isOver && !canReceive
-        })}
-      >
-        {(isLoading || isFetching) && (
+      <div className="pipeline-column__body">
+        {isLoading && (
           <>
             <LoadingSkeleton />
             <LoadingSkeleton />
           </>
         )}
-        {error && !isLoading && !isFetching && (
-          <div className="pipeline-column__empty">{getErrorMessage(error, "Unable to load applications.")}</div>
-        )}
-        {!error && !isLoading && !data.length && <EmptyState label={stage.label} />}
-        {sortedData.map((card) => (
+        {!isLoading && !cards.length && <EmptyState label={stageLabel} />}
+        {cards.map((card) => (
           <PipelineCard
             key={card.id}
             card={card}
             stageId={stage.id}
-            stageLabel={stage.label}
-            isTerminalStage={Boolean(stage.terminal)}
             onClick={onCardClick}
           />
         ))}
-        {activeCard && <div className="pipeline-column__spacer" />}
       </div>
     </div>
   );

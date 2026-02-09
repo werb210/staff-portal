@@ -11,17 +11,29 @@ export type PipelineStage = {
   order?: number;
 };
 
-const PIPELINE_STAGE_ORDER = [
+export const PIPELINE_STAGE_ORDER = [
   "RECEIVED",
-  "DOCUMENTS_REQUIRED",
   "IN_REVIEW",
+  "DOCUMENTS_REQUIRED",
   "STARTUP",
   "OFF_TO_LENDER",
+  "OFFER",
   "ACCEPTED",
-  "DECLINED"
+  "REJECTED"
 ];
 
-const normalizeStageId = (value: string) => value.replace(/[\s_-]+/g, "").toUpperCase();
+export const PIPELINE_STAGE_LABELS: Record<string, string> = {
+  RECEIVED: "Received",
+  INREVIEW: "In Review",
+  DOCUMENTSREQUIRED: "Documents Required",
+  STARTUP: "Start-up",
+  OFFTOLENDER: "Off to Lender",
+  OFFER: "Offer",
+  ACCEPTED: "Accepted",
+  REJECTED: "Rejected"
+};
+
+export const normalizeStageId = (value: string) => value.replace(/[\s_-]+/g, "").toUpperCase();
 
 export type PipelineFilters = {
   searchTerm?: string;
@@ -56,6 +68,7 @@ export type PipelineApplication = {
   referrerName?: string;
   assignedStaff?: string;
   createdAt: string;
+  updatedAt?: string;
 };
 
 export type PipelineStageColumns = Record<PipelineStageId, PipelineApplication[]>;

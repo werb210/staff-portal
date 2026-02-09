@@ -26,6 +26,12 @@ export const fetchApplications = async () => {
 export const fetchApplicationDetails = (id: string, options?: RequestOptions) =>
   apiClient.get<ApplicationDetails>(`/applications/${id}`, options);
 
+export const fetchPortalApplication = (id: string, options?: RequestOptions) =>
+  apiClient.get<unknown>(`/api/applications/${id}`, options);
+
+export const openPortalApplication = (id: string) =>
+  apiClient.post(`/api/applications/${id}/open`, {});
+
 export const fetchApplicationDocuments = async (id: string, options?: RequestOptions) => {
   const res: ListResponse<ApplicationDocumentsResponse[number]> = await apiClient.getList(
     `/applications/${id}/documents`,
