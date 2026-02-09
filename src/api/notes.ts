@@ -5,10 +5,14 @@ export type NoteMessage = {
   author: string;
   body: string;
   createdAt: string;
+  updatedAt?: string;
 };
 
 export const fetchNotesThread = (applicationId: string, options?: RequestOptions) =>
-  apiClient.get<NoteMessage[]>(`/communications/chat/thread/${applicationId}`, options);
+  apiClient.get<NoteMessage[]>(`/api/portal/applications/${applicationId}/notes`, options);
 
 export const sendNoteMessage = (applicationId: string, body: string) =>
-  apiClient.post(`/communications/chat/send`, { applicationId, body, internalOnly: true });
+  apiClient.post(`/api/portal/applications/${applicationId}/notes`, { body });
+
+export const updateNoteMessage = (applicationId: string, noteId: string, body: string) =>
+  apiClient.patch(`/api/portal/applications/${applicationId}/notes/${noteId}`, { body });

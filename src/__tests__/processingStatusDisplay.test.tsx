@@ -68,7 +68,16 @@ describe("processing status displays", () => {
       banking_completed_at: bankingCompletedAt
     } as PipelineApplication;
 
-    renderWithProviders(<PipelineCard card={cardWithProcessing} stageId="RECEIVED" onClick={() => undefined} />);
+    renderWithProviders(
+      <PipelineCard
+        card={cardWithProcessing}
+        stageId="RECEIVED"
+        onClick={() => undefined}
+        isSelected={false}
+        selectable={false}
+        onSelectChange={() => undefined}
+      />
+    );
 
     expect(screen.getByText(badge)).toBeInTheDocument();
   });

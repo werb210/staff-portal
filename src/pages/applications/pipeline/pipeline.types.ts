@@ -38,10 +38,13 @@ export const normalizeStageId = (value: string) => value.replace(/[\s_-]+/g, "")
 export type PipelineFilters = {
   searchTerm?: string;
   productCategory?: string;
+  stageId?: string;
+  lenderAssigned?: string;
+  processingStatus?: "OCR" | "BANKING" | "DONE";
   submissionMethod?: string;
   dateFrom?: string;
   dateTo?: string;
-  sort?: "newest" | "oldest" | "highest_amount" | "lowest_amount";
+  sort?: "updated_desc" | "updated_asc" | "amount_desc" | "amount_asc" | "stage";
 };
 
 export type PipelineApplication = {
@@ -67,6 +70,7 @@ export type PipelineApplication = {
   referrerId?: string;
   referrerName?: string;
   assignedStaff?: string;
+  assignedLender?: string;
   createdAt: string;
   updatedAt?: string;
 };

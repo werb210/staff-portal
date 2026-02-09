@@ -23,6 +23,9 @@ type PipelineColumnProps = {
   cards: PipelineApplication[];
   isLoading: boolean;
   onCardClick: (id: string) => void;
+  selectedIds: string[];
+  selectable: boolean;
+  onSelectCard: (id: string) => void;
 };
 
 const PipelineColumn = ({
@@ -30,7 +33,10 @@ const PipelineColumn = ({
   stageLabel,
   cards,
   isLoading,
-  onCardClick
+  onCardClick,
+  selectedIds,
+  selectable,
+  onSelectCard
 }: PipelineColumnProps) => {
   return (
     <div className="pipeline-column" data-stage={stage.id} data-testid={`pipeline-column-${stage.id}`}>
@@ -55,6 +61,9 @@ const PipelineColumn = ({
             card={card}
             stageId={stage.id}
             onClick={onCardClick}
+            isSelected={selectedIds.includes(card.id)}
+            selectable={selectable}
+            onSelectChange={onSelectCard}
           />
         ))}
       </div>

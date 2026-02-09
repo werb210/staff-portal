@@ -20,6 +20,9 @@ describe("PipelineCard", () => {
         card={baseCard}
         stageId="DOCUMENTS_REQUIRED"
         onClick={() => undefined}
+        isSelected={false}
+        selectable={false}
+        onSelectChange={() => undefined}
       />
     );
 

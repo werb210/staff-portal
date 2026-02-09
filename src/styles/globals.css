@@ -1466,6 +1466,24 @@ a,
   box-shadow: var(--ui-shadow-soft);
   cursor: pointer;
   transition: box-shadow 0.2s ease, transform 0.2s ease;
+  position: relative;
+}
+
+.pipeline-card--selected {
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4), var(--ui-shadow-soft);
+}
+
+.pipeline-card__select {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 2;
+}
+
+.pipeline-card__select input {
+  width: 16px;
+  height: 16px;
+  accent-color: #3b82f6;
 }
 
 .pipeline-card--readonly {
@@ -1613,6 +1631,144 @@ a,
 .pipeline-card__footer {
   font-size: 12px;
   color: var(--ui-text-muted);
+}
+
+.pipeline-bulk {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  margin-bottom: 12px;
+}
+
+.pipeline-bulk__summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--ui-text-muted);
+}
+
+.pipeline-bulk__actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.pipeline-bulk__hint {
+  font-size: 12px;
+  color: #fca5a5;
+}
+
+.note-mention {
+  color: #38bdf8;
+  font-weight: 600;
+}
+
+.note-message__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.note-message__edit {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.note-message__actions {
+  display: flex;
+  gap: 8px;
+}
+
+.note-message__edit-button {
+  align-self: flex-start;
+  margin-top: 8px;
+}
+
+.offers-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.offers-title {
+  font-weight: 700;
+}
+
+.offers-subtitle {
+  font-size: 13px;
+  color: var(--ui-text-muted);
+}
+
+.offers-upload {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.offers-upload__input {
+  display: none;
+}
+
+.offers-upload__hint {
+  font-size: 12px;
+  color: var(--ui-text-muted);
+}
+
+.offers-upload__error {
+  font-size: 12px;
+  color: #f87171;
+}
+
+.offers-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.offers-list__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--ui-surface-muted);
+}
+
+.offers-list__lender {
+  font-weight: 600;
+}
+
+.offers-list__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--ui-text-muted);
+}
+
+.offer-comparison__table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.offer-comparison__table th,
+.offer-comparison__table td {
+  text-align: left;
+  padding: 10px 8px;
+  font-size: 13px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
 }
 
 .pipeline-card--skeleton {

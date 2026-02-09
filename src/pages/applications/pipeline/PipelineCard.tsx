@@ -1,3 +1,4 @@
+import type { ChangeEvent } from "react";
 import type { PipelineApplication, PipelineStageId } from "./pipeline.types";
 import { PIPELINE_STAGE_LABELS, normalizeStageId } from "./pipeline.types";
 import { getProcessingStatus } from "@/pages/applications/utils/processingStatus";
@@ -6,6 +7,9 @@ type PipelineCardProps = {
   card: PipelineApplication;
   stageId: PipelineStageId;
   onClick: (id: string) => void;
+  isSelected: boolean;
+  selectable: boolean;
+  onSelectChange: (id: string) => void;
 };
 
 const formatAmount = (value?: number) => {
@@ -29,8 +33,13 @@ const formatTimeAgo = (value?: string) => {
   return `${weeks}w`;
 };
 
-const PipelineCard = ({ card, stageId, onClick }: PipelineCardProps) => {
+const PipelineCard = ({ card, stageId, onClick, isSelected, selectable, onSelectChange }: PipelineCardProps) => {
   const handleClick = () => onClick(card.id);
+  const handleSelect = (event: ChangeEvent<HTMLInputElement>) => {
+    event.stopPropagation();
+    if (!selectable) return;
+    onSelectChange(card.id);
+  };
 
   const updatedAtLabel = `Updated ${formatTimeAgo(card.updatedAt ?? card.createdAt)} ago`;
   const normalizedStage = normalizeStageId(stageId);
@@ -44,9 +53,18 @@ const PipelineCard = ({ card, stageId, onClick }: PipelineCardProps) => {
   return (
     <div
       onClick={handleClick}
-      className="pipeline-card pipeline-card--readonly"
+      className={`pipeline-card pipeline-card--readonly${isSelected ? " pipeline-card--selected" : ""}`}
       aria-label={`${card.businessName ?? "Application"} in ${stageId}`}
     >
+      <div className="pipeline-card__select" onClick={(event) => event.stopPropagation()}>
+        <input
+          type="checkbox"
+          aria-label={`Select ${card.businessName ?? "application"}`}
+          checked={isSelected}
+          onChange={handleSelect}
+          disabled={!selectable}
+        />
+      </div>
       <div className="pipeline-card__header">
         <div>
           <div className="pipeline-card__title">{card.businessName ?? "Unknown business"}</div>
