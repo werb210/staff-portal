@@ -33,10 +33,10 @@ export const fetchDocumentRequirements = (applicationId: string, options?: Reque
 export const updateDocumentStatus = (documentId: string, status: DocumentStatus, reason?: string) =>
   apiClient.patch(`/documents/${documentId}/status`, { status, reason });
 
-export const acceptDocument = (documentId: string) => apiClient.patch(`/documents/${documentId}/accept`);
+export const acceptDocument = (documentId: string) => apiClient.post(`/documents/${documentId}/accept`);
 
 export const rejectDocument = (documentId: string, reason?: string) =>
-  apiClient.patch(`/documents/${documentId}/reject`, { reason });
+  apiClient.post(`/documents/${documentId}/reject`, { reason });
 
 export const restoreDocumentVersion = (documentId: string, version: number) =>
   apiClient.post(`/documents/${documentId}/version/restore`, { version });

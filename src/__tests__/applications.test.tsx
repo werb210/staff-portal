@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { screen, waitFor } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import OverviewTab from "@/pages/applications/drawer/tab-overview/OverviewTab";
 import ApplicantDetailsTab from "@/pages/applications/drawer/tab-applicant/ApplicantDetailsTab";
@@ -8,24 +8,22 @@ import DocumentsTab from "@/pages/applications/drawer/tab-documents/DocumentsTab
 import { renderWithProviders } from "@/test/testUtils";
 import { useApplicationDrawerStore } from "@/state/applicationDrawer.store";
 import { fetchApplicationDetails } from "@/api/applications";
-import { fetchDocumentPresign, fetchDocumentRequirements, fetchDocumentVersions, updateDocumentStatus } from "@/api/documents";
+import { acceptDocument, fetchDocumentRequirements, rejectDocument } from "@/api/documents";
 
 vi.mock("@/api/applications", () => ({
   fetchApplicationDetails: vi.fn()
 }));
 
 vi.mock("@/api/documents", () => ({
-  fetchDocumentPresign: vi.fn(),
   fetchDocumentRequirements: vi.fn(),
-  updateDocumentStatus: vi.fn(),
-  fetchDocumentVersions: vi.fn()
+  acceptDocument: vi.fn(),
+  rejectDocument: vi.fn()
 }));
 
 const fetchApplicationDetailsMock = vi.mocked(fetchApplicationDetails);
 const fetchDocumentRequirementsMock = vi.mocked(fetchDocumentRequirements);
-const fetchDocumentPresignMock = vi.mocked(fetchDocumentPresign);
-const fetchDocumentVersionsMock = vi.mocked(fetchDocumentVersions);
-const updateDocumentStatusMock = vi.mocked(updateDocumentStatus);
+const acceptDocumentMock = vi.mocked(acceptDocument);
+const rejectDocumentMock = vi.mocked(rejectDocument);
 
 describe("application visibility requirements", () => {
   beforeEach(() => {
@@ -36,9 +34,8 @@ describe("application visibility requirements", () => {
     });
     fetchApplicationDetailsMock.mockReset();
     fetchDocumentRequirementsMock.mockReset();
-    fetchDocumentPresignMock.mockReset();
-    fetchDocumentVersionsMock.mockReset();
-    updateDocumentStatusMock.mockReset();
+    acceptDocumentMock.mockReset();
+    rejectDocumentMock.mockReset();
   });
 
   it("renders full overview payload data", async () => {
@@ -72,26 +69,104 @@ describe("application visibility requirements", () => {
     });
   });
 
-  it("propagates document status updates", async () => {
+  it("renders documents grouped by category with required labels", async () => {
     fetchDocumentRequirementsMock.mockResolvedValue([
-      { id: "doc-1", name: "Bank Statement", status: "uploaded", version: 2 }
+      { id: "doc-1", name: "Bank Statement", status: "uploaded", category: "Financials", required: true },
+      { id: "doc-2", name: "Driver License", status: "uploaded", category: "Identity", required: false }
     ]);
-    fetchDocumentPresignMock.mockResolvedValueOnce({ url: "https://example.com/doc.pdf", expiresAt: "soon" });
-    fetchDocumentVersionsMock.mockResolvedValueOnce([]);
-    updateDocumentStatusMock.mockResolvedValueOnce({});
+
+    renderWithProviders(<DocumentsTab />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("documents-category-financials")).toBeInTheDocument();
+      expect(screen.getByTestId("documents-category-identity")).toBeInTheDocument();
+    });
+
+    expect(screen.getAllByText("Required").length).toBeGreaterThan(0);
+    expect(screen.getByText("Optional")).toBeInTheDocument();
+  });
+
+  it("accepts documents via the accept endpoint and updates the UI", async () => {
+    fetchDocumentRequirementsMock
+      .mockResolvedValueOnce([
+        { id: "doc-1", name: "Bank Statement", status: "uploaded", category: "Financials", required: true }
+      ])
+      .mockResolvedValueOnce([
+        { id: "doc-1", name: "Bank Statement", status: "accepted", category: "Financials", required: true }
+      ]);
+    acceptDocumentMock.mockResolvedValueOnce({});
+
+    renderWithProviders(<DocumentsTab />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Bank Statement")).toBeInTheDocument();
+    });
+
+    await userEvent.click(screen.getByRole("button", { name: "Accept" }));
+    const modal = screen.getByRole("dialog");
+    await userEvent.click(within(modal).getByRole("button", { name: "Accept" }));
+
+    await waitFor(() => {
+      expect(acceptDocumentMock).toHaveBeenCalledWith("doc-1");
+      expect(screen.getByText("Accepted")).toBeInTheDocument();
+    });
+  });
+
+  it("requires a rejection reason before submitting", async () => {
+    fetchDocumentRequirementsMock.mockResolvedValue([
+      { id: "doc-1", name: "Bank Statement", status: "uploaded", category: "Financials", required: true }
+    ]);
+
+    renderWithProviders(<DocumentsTab />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Bank Statement")).toBeInTheDocument();
+    });
+
+    await userEvent.click(screen.getByRole("button", { name: "Reject" }));
+    const modal = screen.getByRole("dialog");
+    await userEvent.click(within(modal).getByRole("button", { name: "Reject" }));
+
+    expect(screen.getByText("Rejection reason is required.")).toBeInTheDocument();
+    expect(rejectDocumentMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects documents and refreshes application details for stage updates", async () => {
+    fetchDocumentRequirementsMock.mockResolvedValue([
+      { id: "doc-1", name: "Bank Statement", status: "uploaded", category: "Financials", required: true }
+    ]);
+    rejectDocumentMock.mockResolvedValueOnce({});
 
     const { queryClient } = renderWithProviders(<DocumentsTab />);
     const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
 
     await waitFor(() => {
-      expect(screen.getAllByText("Bank Statement").length).toBeGreaterThan(0);
+      expect(screen.getByText("Bank Statement")).toBeInTheDocument();
     });
 
-    await userEvent.click(screen.getByRole("button", { name: "Approve" }));
+    await userEvent.click(screen.getByRole("button", { name: "Reject" }));
+    const modal = screen.getByRole("dialog");
+    await userEvent.type(within(modal).getByLabelText("Rejection reason"), "Missing pages");
+    await userEvent.click(within(modal).getByRole("button", { name: "Reject" }));
 
     await waitFor(() => {
-      expect(updateDocumentStatusMock).toHaveBeenCalledWith("doc-1", "approved");
-      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["applications", "app-1", "documents"] });
+      expect(rejectDocumentMock).toHaveBeenCalledWith("doc-1", "Missing pages");
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["applications", "app-1", "details"] });
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["pipeline"] });
     });
+  });
+
+  it("does not render download actions", async () => {
+    fetchDocumentRequirementsMock.mockResolvedValue([
+      { id: "doc-1", name: "Bank Statement", status: "uploaded", category: "Financials", required: true }
+    ]);
+
+    renderWithProviders(<DocumentsTab />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Bank Statement")).toBeInTheDocument();
+    });
+
+    expect(screen.queryByText("Download")).not.toBeInTheDocument();
   });
 });
