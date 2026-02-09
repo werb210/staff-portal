@@ -4,6 +4,7 @@ import PrivateRoute from "./PrivateRoute";
 import LoginPage from "@/pages/login/LoginPage";
 import DashboardPage from "@/pages/dashboard/DashboardPage";
 import ApplicationsPage from "@/pages/applications/ApplicationsPage";
+import ApplicationShellPage from "@/pages/applications/ApplicationShellPage";
 import CRMPage from "@/pages/crm/CRMPage";
 import CommunicationsPage from "@/pages/communications/CommunicationsPage";
 import CalendarPage from "@/pages/calendar/CalendarPage";
@@ -32,7 +33,9 @@ const AppRouter = () => (
         >
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<DashboardPage />} />
+          <Route path="pipeline" element={<ApplicationsPage />} />
           <Route path="applications" element={<ApplicationsPage />} />
+          <Route path="applications/:id" element={<ApplicationShellPage />} />
           <Route path="crm/*" element={<CRMPage />} />
           <Route path="communications" element={<CommunicationsPage />} />
           <Route path="calendar" element={<CalendarPage />} />

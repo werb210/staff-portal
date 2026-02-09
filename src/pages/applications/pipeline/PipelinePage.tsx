@@ -1,28 +1,19 @@
-import { useEffect, useMemo, useState } from "react";
-import { DndContext, DragOverlay, closestCenter, type DragStartEvent } from "@dnd-kit/core";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import Card from "@/components/ui/Card";
 import ErrorBanner from "@/components/ui/ErrorBanner";
 import AppLoading from "@/components/layout/AppLoading";
 import PipelineColumn from "./PipelineColumn";
 import PipelineFilters from "./PipelineFilters";
-import PipelineCard from "./PipelineCard";
 import {
   buildStageLabelMap,
   sortPipelineStages,
-  type PipelineApplication,
-  type PipelineStageId,
-  type PipelineDragEndEvent,
   type PipelineStage
 } from "./pipeline.types";
-import {
-  clearDraggingState,
-  createPipelineDragEndHandler,
-  createPipelineDragStartHandler,
-  usePipelineStore
-} from "./pipeline.store";
+import { normalizeStageId } from "./pipeline.types";
+import { usePipelineStore } from "./pipeline.store";
 import { useSilo } from "@/hooks/useSilo";
-import ApplicationDrawer from "@/pages/applications/drawer/ApplicationDrawer";
 import { pipelineApi } from "./pipeline.api";
 
 const NoPipelineAvailable = ({ silo }: { silo: string }) => (
@@ -31,96 +22,56 @@ const NoPipelineAvailable = ({ silo }: { silo: string }) => (
 
 const PipelinePage = () => {
   const { silo } = useSilo();
-  const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const filters = usePipelineStore((state) => state.currentFilters);
-  const draggingFromStage = usePipelineStore((state) => state.draggingFromStage);
-  const selectedApplicationId = usePipelineStore((state) => state.selectedApplicationId);
-  const selectedStageId = usePipelineStore((state) => state.selectedStageId);
-  const setDragging = usePipelineStore((state) => state.setDragging);
-  const selectApplication = usePipelineStore((state) => state.selectApplication);
-  const setSelectedStageId = usePipelineStore((state) => state.setSelectedStageId);
   const resetPipeline = usePipelineStore((state) => state.resetPipeline);
 
-  const [activeCard, setActiveCard] = useState<PipelineApplication | null>(null);
-  const [activeStage, setActiveStage] = useState<PipelineStageId | null>(null);
-  const [dragError, setDragError] = useState<string | null>(null);
   const {
-    data: stages = [],
-    isLoading: stagesLoading
-  } = useQuery<PipelineStage[]>({
-    queryKey: ["pipeline", "stages"],
-    queryFn: async ({ signal }) => {
-      try {
-        const result = await pipelineApi.fetchStages({ signal });
-        return result;
-      } catch (error) {
-        if (signal?.aborted) {
-          return [];
-        }
-        return [];
-      }
-    },
+    data,
+    isLoading,
+    error
+  } = useQuery({
+    queryKey: ["pipeline"],
+    queryFn: ({ signal }) => pipelineApi.fetchPipeline({ signal }),
     staleTime: 60_000,
-    refetchOnWindowFocus: false
+    refetchOnWindowFocus: false,
+    refetchInterval: 15_000
   });
 
-  const orderedStages = useMemo(() => sortPipelineStages(stages), [stages]);
+  const orderedStages = useMemo(() => sortPipelineStages(data?.stages ?? []), [data?.stages]);
   const stageLabelMap = useMemo(() => buildStageLabelMap(orderedStages), [orderedStages]);
-  const stageTerminalMap = useMemo(
-    () => new Map(orderedStages.map((stage) => [stage.id, Boolean(stage.terminal)])),
-    [orderedStages]
-  );
+  const applications = data?.applications ?? [];
 
-  const handleCardClick = (id: string, stageId: PipelineStageId) => selectApplication(id, stageId);
-
-  const handleStageSelect = (stageId: PipelineStageId) => {
-    setSelectedStageId(stageId);
-  };
-
-  const handleInvalidSelection = (stageId: PipelineStageId) => {
-    if (selectedStageId !== stageId) return;
-    selectApplication(null);
-  };
-
-  const handleDragStart = (event: DragStartEvent) => {
-    const card = event.active.data.current?.card ?? null;
-    const stageId = event.active.data.current?.stageId ?? null;
-    if (card && stageId) {
-      setActiveCard(card);
-      setActiveStage(stageId);
-      createPipelineDragStartHandler(setDragging)(card.id, stageId);
-      setDragError(null);
+  const filteredApplications = useMemo(() => {
+    let filtered = [...applications];
+    if (filters.searchTerm) {
+      const term = filters.searchTerm.toLowerCase();
+      filtered = filtered.filter(
+        (application) =>
+          application.businessName?.toLowerCase().includes(term) ||
+          application.contactName?.toLowerCase().includes(term)
+      );
     }
-  };
-
-  const dragEndHandler = useMemo(
-    () =>
-      createPipelineDragEndHandler({
-        queryClient,
-        filters,
-        stages: orderedStages,
-        onInvalidMove: setDragError
-      }),
-    [queryClient, filters, orderedStages]
-  );
-
-  const handleDragEnd = async (event: PipelineDragEndEvent) => {
-    try {
-      await dragEndHandler(event);
-    } catch (error) {
-      console.error("Pipeline drag end failed", { error });
+    if (filters.productCategory) {
+      filtered = filtered.filter((application) => application.productCategory === filters.productCategory);
     }
-    setActiveCard(null);
-    setActiveStage(null);
-    clearDraggingState(setDragging)();
-  };
-
-  useEffect(() => {
-    if (!orderedStages.length) return;
-    if (!selectedStageId || !stageLabelMap[selectedStageId]) {
-      setSelectedStageId(orderedStages[0].id);
+    if (filters.submissionMethod) {
+      filtered = filtered.filter((application) => application.submissionMethod === filters.submissionMethod);
     }
-  }, [orderedStages, selectedStageId, setSelectedStageId, stageLabelMap]);
+    if (filters.dateFrom || filters.dateTo) {
+      const from = filters.dateFrom ? new Date(filters.dateFrom).getTime() : null;
+      const to = filters.dateTo ? new Date(filters.dateTo).getTime() : null;
+      filtered = filtered.filter((application) => {
+        const dateValue = application.updatedAt ?? application.createdAt;
+        const parsed = dateValue ? new Date(dateValue).getTime() : Number.NaN;
+        if (Number.isNaN(parsed)) return false;
+        if (from !== null && parsed < from) return false;
+        if (to !== null && parsed > to) return false;
+        return true;
+      });
+    }
+    return filtered;
+  }, [applications, filters]);
 
   useEffect(() => () => resetPipeline(), [resetPipeline]);
 
@@ -128,48 +79,62 @@ const PipelinePage = () => {
     return <NoPipelineAvailable silo={silo} />;
   }
 
+  const handleCardClick = (id: string) => {
+    navigate(`/applications/${id}`);
+  };
+
+  const sortStageApplications = (stageId: string) => {
+    const stageApplications = filteredApplications.filter(
+      (application) => normalizeStageId(application.stage) === normalizeStageId(stageId)
+    );
+    const tieBreaker = (a: (typeof stageApplications)[number], b: (typeof stageApplications)[number]) =>
+      a.id.localeCompare(b.id);
+    switch (filters.sort) {
+      case "oldest":
+        return stageApplications.sort(
+          (a, b) =>
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime() || tieBreaker(a, b)
+        );
+      case "highest_amount":
+        return stageApplications.sort((a, b) => {
+          const aAmount = a.requestedAmount ?? 0;
+          const bAmount = b.requestedAmount ?? 0;
+          return bAmount - aAmount || tieBreaker(a, b);
+        });
+      case "lowest_amount":
+        return stageApplications.sort((a, b) => {
+          const aAmount = a.requestedAmount ?? 0;
+          const bAmount = b.requestedAmount ?? 0;
+          return aAmount - bAmount || tieBreaker(a, b);
+        });
+      case "newest":
+      default:
+        return stageApplications.sort(
+          (a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime() || tieBreaker(a, b)
+        );
+    }
+  };
+
   return (
     <div className="pipeline-page">
       <Card title="Application Pipeline">
         <PipelineFilters />
-        {stagesLoading && <AppLoading />}
-        {dragError && <ErrorBanner message={dragError} />}
-        <DndContext
-          collisionDetection={closestCenter}
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
-        >
-          <div className="pipeline-columns">
-            {orderedStages.map((stage) => (
-              <PipelineColumn
-                key={stage.id}
-                stage={stage}
-                stages={orderedStages}
-                filters={filters}
-                onCardClick={handleCardClick}
-                onStageSelect={handleStageSelect}
-                onSelectionInvalid={handleInvalidSelection}
-                selectedApplicationId={selectedApplicationId}
-                selectedStageId={selectedStageId}
-                activeCard={activeCard}
-                draggingFromStage={draggingFromStage}
-              />
-            ))}
-          </div>
-          <DragOverlay>
-            {activeCard ? (
-              <PipelineCard
-                card={activeCard}
-                stageId={activeStage ?? ""}
-                stageLabel={stageLabelMap[activeStage ?? ""] ?? "Unknown stage"}
-                isTerminalStage={stageTerminalMap.get(activeStage ?? "") ?? false}
-                onClick={handleCardClick}
-              />
-            ) : null}
-          </DragOverlay>
-        </DndContext>
+        {isLoading && <AppLoading />}
+        {error && <ErrorBanner message="Unable to load the pipeline right now." />}
+        <div className="pipeline-columns">
+          {orderedStages.map((stage) => (
+            <PipelineColumn
+              key={stage.id}
+              stage={stage}
+              stageLabel={stageLabelMap[stage.id] ?? stage.label}
+              cards={sortStageApplications(stage.id)}
+              isLoading={isLoading}
+              onCardClick={handleCardClick}
+            />
+          ))}
+        </div>
       </Card>
-      <ApplicationDrawer />
     </div>
   );
 };
