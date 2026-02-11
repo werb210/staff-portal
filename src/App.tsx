@@ -14,6 +14,9 @@ import LendersPage from "./pages/lenders/LendersPage";
 import SettingsPage from "./pages/settings/SettingsPage";
 import TaskPane from "./pages/tasks/TaskPane";
 import ReferrerPortal from "./pages/referrer/ReferrerPortal";
+import AiKnowledgePage from "./pages/admin/AiKnowledgePage";
+import AiChatDashboard from "./pages/admin/AiChatDashboard";
+import AiIssueReports from "./pages/admin/AiIssueReports";
 import { emitUiTelemetry } from "./utils/uiTelemetry";
 import { useApiHealthCheck } from "./hooks/useApiHealthCheck";
 import UiFailureBanner from "./components/UiFailureBanner";
@@ -39,6 +42,7 @@ import type { PushNotificationPayload } from "@/types/notifications";
 import { usePortalSessionGuard } from "@/auth/portalSessionGuard";
 import { triggerSafeReload } from "@/utils/reloadGuard";
 import ReferrerLayout from "@/components/layout/ReferrerLayout";
+import { disconnectAiSocket, initializeAiSocketClient } from "@/services/aiSocket";
 
 const RouteChangeObserver = () => {
   const location = useLocation();
@@ -175,6 +179,13 @@ export default function App() {
     return () => {
       window.removeEventListener("online", handleOnline);
       navigator.serviceWorker?.removeEventListener("message", handleSyncMessage);
+    };
+  }, []);
+
+  useEffect(() => {
+    initializeAiSocketClient();
+    return () => {
+      disconnectAiSocket();
     };
   }, []);
 
@@ -338,6 +349,9 @@ export default function App() {
               />
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="/settings/:tab" element={<SettingsPage />} />
+              <Route path="/admin/ai" element={<AiKnowledgePage />} />
+              <Route path="/admin/ai/chats" element={<AiChatDashboard />} />
+              <Route path="/admin/ai/issues" element={<AiIssueReports />} />
           </Route>
         </Routes>
       </BrowserRouter>

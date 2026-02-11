@@ -14,15 +14,32 @@ type NavigationItem = {
   roles?: UserRole[];
 };
 
-const baseNavigation: NavigationItem[] = [
-  { label: "Dashboard", path: "/dashboard" },
-  { label: "Applications", path: "/applications" },
-  { label: "CRM", path: "/crm" },
-  { label: "Communications", path: "/communications" },
-  { label: "Calendar", path: "/calendar" },
-  { label: "Marketing", path: "/marketing" },
-  { label: "Lenders", path: "/lenders" },
-  { label: "Settings", path: "/settings" }
+type NavigationSection = {
+  title?: string;
+  items: NavigationItem[];
+};
+
+const navigationSections: NavigationSection[] = [
+  {
+    items: [
+      { label: "Dashboard", path: "/dashboard" },
+      { label: "Applications", path: "/applications" },
+      { label: "CRM", path: "/crm" },
+      { label: "Communications", path: "/communications" },
+      { label: "Calendar", path: "/calendar" },
+      { label: "Marketing", path: "/marketing" },
+      { label: "Lenders", path: "/lenders" },
+      { label: "Settings", path: "/settings" }
+    ]
+  },
+  {
+    title: "AI & Support",
+    items: [
+      { label: "Knowledge", path: "/admin/ai", roles: ["Admin"] },
+      { label: "Chats", path: "/admin/ai/chats", roles: ["Admin", "Staff"] },
+      { label: "Issues", path: "/admin/ai/issues", roles: ["Admin", "Staff"] }
+    ]
+  }
 ];
 
 const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
@@ -30,8 +47,13 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
   const { user } = useAuth();
   const role = resolveUserRole((user as { role?: string | null } | null)?.role ?? null);
   const canViewStaffNav = role === "Admin" || role === "Staff";
-  const navigation = canViewStaffNav
-    ? baseNavigation.filter((item) => !item.roles || hasRequiredRole(role, item.roles))
+  const visibleSections = canViewStaffNav
+    ? navigationSections
+        .map((section) => ({
+          ...section,
+          items: section.items.filter((item) => !item.roles || hasRequiredRole(role, item.roles))
+        }))
+        .filter((section) => section.items.length > 0)
     : [];
 
   return (
@@ -43,18 +65,23 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
         </button>
       </div>
       <nav className="sidebar__nav">
-        {navigation.map((item) => (
-          <NavLink
-            key={item.path}
-            to={item.path}
-            end={item.path === "/dashboard"}
-            className={({ isActive }) =>
-              `sidebar__link ${isActive ? "sidebar__link--active" : ""}`
-            }
-            onClick={onClose}
-          >
-            {item.label}
-          </NavLink>
+        {visibleSections.map((section) => (
+          <div key={section.title ?? "main"} className="mb-4">
+            {section.title ? <p className="px-2 pb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">{section.title}</p> : null}
+            {section.items.map((item) => (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                end={item.path === "/dashboard"}
+                className={({ isActive }) =>
+                  `sidebar__link ${isActive ? "sidebar__link--active" : ""}`
+                }
+                onClick={onClose}
+              >
+                {item.label}
+              </NavLink>
+            ))}
+          </div>
         ))}
       </nav>
     </aside>
