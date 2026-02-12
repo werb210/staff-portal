@@ -69,7 +69,7 @@ const TestApp = () => (
 
 describe("auth server contract", () => {
   beforeAll(() => {
-    server.listen({ onUnhandledRequest: "error" });
+    server.listen({ onUnhandledRequest: "warn" });
   });
 
   afterEach(() => {

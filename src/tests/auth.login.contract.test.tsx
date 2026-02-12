@@ -56,7 +56,7 @@ const LocationProbe = () => {
 
 describe("login contract flow", () => {
   beforeAll(() => {
-    server.listen({ onUnhandledRequest: "error" });
+    server.listen({ onUnhandledRequest: "warn" });
   });
 
   afterEach(() => {

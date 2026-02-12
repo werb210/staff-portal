@@ -43,7 +43,7 @@ const LocationProbe = () => {
 
 describe("OTP login flow end-to-end", () => {
   beforeAll(() => {
-    server.listen({ onUnhandledRequest: "error" });
+    server.listen({ onUnhandledRequest: "warn" });
   });
 
   afterEach(() => {

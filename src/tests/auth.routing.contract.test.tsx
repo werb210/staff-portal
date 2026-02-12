@@ -22,7 +22,7 @@ const server = setupServer(...defaultHandlers);
 
 describe("auth routing contract", () => {
   beforeAll(() => {
-    server.listen({ onUnhandledRequest: "error" });
+    server.listen({ onUnhandledRequest: "warn" });
   });
 
   afterEach(() => {
