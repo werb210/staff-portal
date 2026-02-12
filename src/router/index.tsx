@@ -16,6 +16,9 @@ import LenderRoutes from "./lenderRoutes";
 import { AuthProvider } from "@/auth/AuthContext";
 import RequireRole from "@/components/auth/RequireRole";
 import UnauthorizedPage from "@/pages/Unauthorized";
+import AIKnowledgeManager from "@/pages/admin/AIKnowledgeManager";
+import SupportDashboard from "@/pages/admin/SupportDashboard";
+import AnalyticsDashboard from "@/pages/admin/AnalyticsDashboard";
 
 const AppRouter = () => (
   <AuthProvider>
@@ -46,6 +49,30 @@ const AppRouter = () => (
           <Route path="settings" element={<SettingsPage />} />
           <Route path="settings/:tab" element={<SettingsPage />} />
           <Route path="unauthorized" element={<UnauthorizedPage />} />
+          <Route
+            path="admin/ai"
+            element={
+              <RequireRole roles={["Admin"]} fallback={<Navigate to="/unauthorized" replace />}>
+                <AIKnowledgeManager />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="admin/support"
+            element={
+              <RequireRole roles={["Admin"]} fallback={<Navigate to="/unauthorized" replace />}>
+                <SupportDashboard />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="admin/analytics"
+            element={
+              <RequireRole roles={["Admin"]} fallback={<Navigate to="/unauthorized" replace />}>
+                <AnalyticsDashboard />
+              </RequireRole>
+            }
+          />
           <Route
             path="admin/lenders"
             element={
