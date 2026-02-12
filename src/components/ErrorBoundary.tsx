@@ -25,7 +25,7 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, ErrorBound
     if (this.state.hasError) {
       return (
         <div className="error-panel" role="alert">
-          <p>An unexpected error occurred. Please refresh.</p>
+          <p>Unexpected error. Please refresh.</p>
         </div>
       );
     }

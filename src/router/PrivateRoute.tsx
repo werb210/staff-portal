@@ -17,7 +17,7 @@ type PrivateRouteProps = {
 export default function PrivateRoute({
   children,
   allowedRoles = [],
-  requiredCapabilities = [],
+  requiredCapabilities = []
 }: PrivateRouteProps) {
   const auth = useAuth();
   const location = useLocation();
@@ -31,20 +31,20 @@ export default function PrivateRoute({
     return <AppLoading />;
   }
 
-  // Hard block unauthenticated users
   if (auth.authStatus === "unauthenticated") {
-    console.info("Route guard decision", {
-      requestId,
-      route: location.pathname,
-      authState: auth.authStatus,
-      reason: "unauthenticated_redirect",
-    });
+    if (import.meta.env.DEV) {
+      console.info("Route guard decision", {
+        requestId,
+        route: location.pathname,
+        authState: auth.authStatus,
+        reason: "unauthenticated_redirect"
+      });
+    }
 
     recordRedirect(location.pathname, "unauthenticated", location.key);
     return <Navigate to="/login" replace />;
   }
 
-  // Role restriction check
   if (
     auth.authStatus === "authenticated" &&
     !canAccess({
@@ -54,22 +54,26 @@ export default function PrivateRoute({
       userCapabilities: (auth.user as { capabilities?: Capability[] } | null)?.capabilities ?? null
     })
   ) {
-    console.info("Route guard decision", {
-      requestId,
-      route: location.pathname,
-      authState: auth.authStatus,
-      reason: "role_restricted",
-    });
+    if (import.meta.env.DEV) {
+      console.info("Route guard decision", {
+        requestId,
+        route: location.pathname,
+        authState: auth.authStatus,
+        reason: "role_restricted"
+      });
+    }
 
     return <AccessRestricted requiredRoles={allowedRoles} />;
   }
 
-  console.info("Route guard decision", {
-    requestId,
-    route: location.pathname,
-    authState: auth.authStatus,
-    reason: "authenticated",
-  });
+  if (import.meta.env.DEV) {
+    console.info("Route guard decision", {
+      requestId,
+      route: location.pathname,
+      authState: auth.authStatus,
+      reason: "authenticated"
+    });
+  }
 
   return children;
 }

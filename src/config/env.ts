@@ -1,26 +1,14 @@
-import { z } from "zod";
+const REQUIRED = ["VITE_API_BASE_URL"] as const;
 
-const envSchema = z.object({
-  VITE_API_BASE_URL: z.string().trim().min(1, "VITE_API_BASE_URL is required"),
-  VITE_APP_ENV: z.string().trim().min(1, "VITE_APP_ENV is required"),
-  VITE_JWT_STORAGE_KEY: z.string().trim().min(1, "VITE_JWT_STORAGE_KEY is required"),
-  VITE_GA_ID: z.string().trim().min(1).optional(),
-  VITE_SENTRY_DSN: z.string().trim().min(1).optional()
-});
-
-export type AppEnv = z.infer<typeof envSchema>;
-
-export const validateEnv = (): AppEnv => {
-  const parsed = envSchema.safeParse(import.meta.env);
-
-  if (!parsed.success) {
-    const message = parsed.error.issues
-      .map((issue) => `${issue.path.join(".")}: ${issue.message}`)
-      .join("; ");
-    throw new Error(`Invalid environment configuration: ${message}`);
+export function validateEnv() {
+  const missing = REQUIRED.filter((key) => !import.meta.env[key]);
+  if (missing.length) {
+    throw new Error(`Missing required environment variables: ${missing.join(", ")}`);
   }
+}
 
-  return parsed.data;
-};
-
-export const env = validateEnv();
+export const env = new Proxy({} as ImportMetaEnv, {
+  get(_target, key) {
+    return import.meta.env[key as keyof ImportMetaEnv];
+  }
+});

@@ -35,7 +35,6 @@ import UiFailureBanner from "./components/UiFailureBanner";
 import { getRequestId } from "./utils/requestId";
 import { setUiFailure } from "./utils/uiFailureStore";
 import { runRouteAudit } from "./utils/routeAudit";
-import { fullStaffRoles } from "./utils/roles";
 import ErrorBoundary from "./components/system/ErrorBoundary";
 import OfflineBanner from "./components/OfflineBanner";
 import InstallPromptBanner from "./components/InstallPromptBanner";
@@ -56,8 +55,8 @@ import ReferrerLayout from "@/components/layout/ReferrerLayout";
 import { disconnectAiSocket, initializeAiSocketClient } from "@/services/aiSocket";
 import RoleGuard from "@/auth/RoleGuard";
 import Unauthorized from "@/pages/Unauthorized";
-import { FEATURE_FLAGS } from "@/config/featureFlags";
 import { logger } from "@/utils/logger";
+import RequireAuth from "@/routes/RequireAuth";
 
 const RouteChangeObserver = () => {
   const location = useLocation();
@@ -80,11 +79,13 @@ const RouteChangeObserver = () => {
 };
 
 const ProtectedApp = () => (
-  <PrivateRoute allowedRoles={fullStaffRoles}>
-    <DataReadyGuard>
-      <AppLayout />
-    </DataReadyGuard>
-  </PrivateRoute>
+  <RequireAuth roles={["Admin", "Staff", "Lender", "Referrer"]}>
+    <PrivateRoute allowedRoles={["Admin", "Staff", "Lender", "Referrer"]}>
+      <DataReadyGuard>
+        <AppLayout />
+      </DataReadyGuard>
+    </PrivateRoute>
+  </RequireAuth>
 );
 
 const PortalSessionGuard = () => {
@@ -375,13 +376,9 @@ export default function App() {
               <Route
                 path="/applications"
                 element={
-                  FEATURE_FLAGS.PIPELINE_ADMIN ? (
-                    <RoleGuard roles={["Admin", "Staff"]}>
-                      <ApplicationsPage />
-                    </RoleGuard>
-                  ) : (
+                  <RoleGuard roles={["Admin", "Staff"]}>
                     <ApplicationsPage />
-                  )
+                  </RoleGuard>
                 }
               />
               <Route path="/crm" element={<CRMPage />} />
@@ -537,7 +534,7 @@ export default function App() {
                 }
               />
           </Route>
-            <Route path="*" element={<Navigate to="/login" replace />} />
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </BrowserRouter>
       </ErrorBoundary>
