@@ -37,7 +37,8 @@ const navigationSections: NavigationSection[] = [
     items: [
       { label: "Knowledge", path: "/admin/ai", roles: ["Admin"] },
       { label: "Chats", path: "/admin/ai/chats", roles: ["Admin", "Staff"] },
-      { label: "Issues", path: "/admin/ai/issues", roles: ["Admin", "Staff"] }
+      { label: "Issues", path: "/admin/ai/issues", roles: ["Admin", "Staff"] },
+      { label: "Operations", path: "/admin/operations", roles: ["Admin"] }
     ]
   }
 ];

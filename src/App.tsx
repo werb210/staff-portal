@@ -17,6 +17,7 @@ import ReferrerPortal from "./pages/referrer/ReferrerPortal";
 import AiKnowledgePage from "./pages/admin/AiKnowledgePage";
 import AiChatDashboard from "./pages/admin/AiChatDashboard";
 import AiIssueReports from "./pages/admin/AiIssueReports";
+import Operations from "./pages/admin/Operations";
 import { emitUiTelemetry } from "./utils/uiTelemetry";
 import { useApiHealthCheck } from "./hooks/useApiHealthCheck";
 import UiFailureBanner from "./components/UiFailureBanner";
@@ -352,6 +353,14 @@ export default function App() {
               <Route path="/admin/ai" element={<AiKnowledgePage />} />
               <Route path="/admin/ai/chats" element={<AiChatDashboard />} />
               <Route path="/admin/ai/issues" element={<AiIssueReports />} />
+              <Route
+                path="/admin/operations"
+                element={
+                  <RequireClientRole allow={["Admin"]}>
+                    <Operations />
+                  </RequireClientRole>
+                }
+              />
           </Route>
         </Routes>
       </BrowserRouter>
