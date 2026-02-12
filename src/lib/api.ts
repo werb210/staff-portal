@@ -49,7 +49,9 @@ export class ApiError extends Error {
 }
 
 const rawBaseUrl = getApiBaseUrl();
-const apiBaseUrl = rawBaseUrl.endsWith("/api") ? rawBaseUrl : `${rawBaseUrl}/api`;
+const testBaseUrl = typeof process !== "undefined" && process.env?.NODE_ENV === "test" ? "http://localhost" : "";
+const resolvedBaseUrl = rawBaseUrl || testBaseUrl;
+const apiBaseUrl = resolvedBaseUrl.endsWith("/api") ? resolvedBaseUrl : `${resolvedBaseUrl}/api`;
 
 export type AuthRequestConfig = AxiosRequestConfig & {
   skipAuth?: boolean;

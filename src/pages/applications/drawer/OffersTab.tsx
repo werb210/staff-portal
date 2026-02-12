@@ -105,13 +105,20 @@ const OffersTab = () => {
     uploadMutation.mutate(file);
   };
 
+  const activeOffers = useMemo(() => {
+    if (!offers) return [];
+    return offers.filter((offer) => offer.status !== "archived");
+  }, [offers]);
+
+  const archivedOffers = useMemo(() => {
+    if (!offers) return [];
+    return offers.filter((offer) => offer.status === "archived");
+  }, [offers]);
+
   if (!applicationId) return <div className="drawer-placeholder">Select an application to view offers.</div>;
   if (!canEdit) return <div className="drawer-placeholder">Offers are available to staff members only.</div>;
   if (isLoading) return <div className="drawer-placeholder">Loading offers…</div>;
   if (error) return <div className="drawer-placeholder">{getErrorMessage(error, "Unable to load offers.")}</div>;
-
-  const activeOffers = useMemo(() => offers.filter((offer) => offer.status !== "archived"), [offers]);
-  const archivedOffers = useMemo(() => offers.filter((offer) => offer.status === "archived"), [offers]);
 
   return (
     <div className="drawer-tab drawer-tab__offers">
