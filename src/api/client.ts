@@ -28,6 +28,8 @@ api.interceptors.response.use(
       navigateTo("/unauthorized");
     } else if (!error.response) {
       showApiToast("Network error. Please check your connection and try again.");
+    } else if (error.response?.status >= 500) {
+      showApiToast("We hit a server issue. Please retry in a moment.");
     }
     return Promise.reject(error);
   }

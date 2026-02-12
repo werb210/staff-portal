@@ -15,6 +15,8 @@ export default defineConfig(({ mode }) => ({
   },
   esbuild: mode === "production" ? { drop: ["console", "debugger"] } : undefined,
   build: {
+    sourcemap: false,
+    minify: "esbuild",
     outDir: "dist",
     emptyOutDir: true,
     rollupOptions: {

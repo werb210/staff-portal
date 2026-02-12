@@ -15,7 +15,9 @@ import { startUiHeartbeat } from "./utils/uiHeartbeat";
 const rootElement = document.getElementById("root") as HTMLElement;
 enforceRequestIdOnConsoleError();
 startUiHeartbeat(rootElement);
-validateEnv();
+if (import.meta.env.PROD) {
+  validateEnv();
+}
 
 if (import.meta.env.PROD && "serviceWorker" in navigator) {
   window.addEventListener("load", () => {

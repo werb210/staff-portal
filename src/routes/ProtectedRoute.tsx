@@ -20,21 +20,27 @@ export function ProtectedRoute({ children }: { children: JSX.Element }) {
   }
 
   if (auth.authStatus === "unauthenticated") {
-    console.info("Route guard decision", {
-      requestId,
-      route: location.pathname,
-      authState: auth.authStatus,
-      reason: "unauthenticated_redirect"
-    });
+    if (import.meta.env.DEV) {
+      console.info("Route guard decision", {
+        requestId,
+        route: location.pathname,
+        authState: auth.authStatus,
+        reason: "unauthenticated_redirect"
+      });
+    }
+
     recordRedirect(location.pathname, "unauthenticated", location.key);
     return <Navigate to="/login" replace />;
   }
 
-  console.info("Route guard decision", {
-    requestId,
-    route: location.pathname,
-    authState: auth.authStatus,
-    reason: auth.rolesStatus === "resolved" ? "authenticated" : "roles_loading"
-  });
+  if (import.meta.env.DEV) {
+    console.info("Route guard decision", {
+      requestId,
+      route: location.pathname,
+      authState: auth.authStatus,
+      reason: auth.rolesStatus === "resolved" ? "authenticated" : "roles_loading"
+    });
+  }
+
   return children;
 }
