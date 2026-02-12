@@ -15,7 +15,7 @@ const createErrorId = () => {
   return `err_${Math.random().toString(36).slice(2, 10)}`;
 };
 
-class ErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryState> {
+export class ErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryState> {
   state: ErrorBoundaryState = { hasError: false };
 
   static getDerivedStateFromError(error: Error) {
