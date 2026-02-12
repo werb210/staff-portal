@@ -1,14 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { AnalyticsService } from "@/services/analyticsService";
+import { VisitorActivity } from "@/features/analytics/VisitorActivity";
 
 type ReadinessPayload = {
   score?: number;
   lenderNetworkCount?: number;
 };
 
+type AnalyticsView = "overview" | "visitor-tracking";
+
 export default function AnalyticsDashboard() {
   const [events, setEvents] = useState<any[]>([]);
   const [readiness, setReadiness] = useState<ReadinessPayload>({});
+  const [view, setView] = useState<AnalyticsView>("overview");
 
   useEffect(() => {
     async function load() {
@@ -36,38 +40,48 @@ export default function AnalyticsDashboard() {
   }, [events, readiness.lenderNetworkCount]);
 
   return (
-    <div className="p-6 space-y-4">
-      <h1 className="text-2xl font-bold mb-4">Website Analytics</h1>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="border rounded p-4">
-          <p className="text-sm text-gray-500">Readiness Score</p>
-          <p className="text-3xl font-semibold">{readiness.score ?? "—"}</p>
-        </div>
-        <div className="border rounded p-4">
-          <p className="text-sm text-gray-500">Lender Network Count</p>
-          <p className="text-3xl font-semibold">{lenderNetworkCount}</p>
-        </div>
+    <div className="space-y-4 p-6">
+      <h1 className="mb-4 text-2xl font-bold">Website Analytics</h1>
+      <div className="flex gap-2">
+        <button onClick={() => setView("overview")}>Overview</button>
+        <button onClick={() => setView("visitor-tracking")}>Visitor Tracking</button>
       </div>
 
-      <table className="w-full border">
-        <thead>
-          <tr className="bg-gray-100">
-            <th className="p-2 border">Event</th>
-            <th className="p-2 border">Metadata</th>
-            <th className="p-2 border">Date</th>
-          </tr>
-        </thead>
-        <tbody>
-          {events.map((e) => (
-            <tr key={e.id}>
-              <td className="p-2 border">{e.event}</td>
-              <td className="p-2 border text-xs">{JSON.stringify(e.metadata)}</td>
-              <td className="p-2 border">{e.created_at}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      {view === "visitor-tracking" ? (
+        <VisitorActivity />
+      ) : (
+        <>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="rounded border p-4">
+              <p className="text-sm text-gray-500">Readiness Score</p>
+              <p className="text-3xl font-semibold">{readiness.score ?? "—"}</p>
+            </div>
+            <div className="rounded border p-4">
+              <p className="text-sm text-gray-500">Lender Network Count</p>
+              <p className="text-3xl font-semibold">{lenderNetworkCount}</p>
+            </div>
+          </div>
+
+          <table className="w-full border">
+            <thead>
+              <tr className="bg-gray-100">
+                <th className="border p-2">Event</th>
+                <th className="border p-2">Metadata</th>
+                <th className="border p-2">Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              {events.map((event) => (
+                <tr key={event.id}>
+                  <td className="border p-2">{event.event}</td>
+                  <td className="border p-2 text-xs">{JSON.stringify(event.metadata)}</td>
+                  <td className="border p-2">{event.created_at}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
+      )}
     </div>
   );
 }

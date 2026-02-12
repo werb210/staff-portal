@@ -4,9 +4,16 @@ import ContactsPage from "./contacts/ContactsPage";
 import CompaniesPage from "./companies/CompaniesPage";
 import TimelineFeed from "./timeline/TimelineFeed";
 import RequireRole from "@/components/auth/RequireRole";
+import { ContactSubmissions } from "@/features/support/ContactSubmissions";
+import { useAuth } from "@/hooks/useAuth";
+
+type CrmView = "contacts" | "companies" | "timeline" | "website-leads";
 
 const CRMContent = () => {
-  const [view, setView] = useState<"contacts" | "companies" | "timeline">("contacts");
+  const [view, setView] = useState<CrmView>("contacts");
+  const { user } = useAuth();
+  const isAdmin = user?.role?.toLowerCase() === "admin";
+
   return (
     <div className="page">
       <Card
@@ -16,6 +23,7 @@ const CRMContent = () => {
             <button onClick={() => setView("contacts")}>Contacts</button>
             <button onClick={() => setView("companies")}>Companies</button>
             <button onClick={() => setView("timeline")}>Global Timeline</button>
+            {isAdmin && <button onClick={() => setView("website-leads")}>Website Leads</button>}
           </div>
         }
       >
@@ -28,6 +36,11 @@ const CRMContent = () => {
       {view === "timeline" && (
         <Card title="Global Timeline">
           <TimelineFeed entityType="contact" entityId="c1" />
+        </Card>
+      )}
+      {view === "website-leads" && (
+        <Card title="Website Contact Leads">
+          <ContactSubmissions isAdmin={isAdmin} />
         </Card>
       )}
     </div>

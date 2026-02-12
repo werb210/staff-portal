@@ -9,21 +9,24 @@ import ProfileSettings from "./tabs/ProfileSettings";
 import RuntimeSettings from "./tabs/RuntimeSettings";
 import UserManagement from "./tabs/UserManagement";
 import SettingsOverview from "./tabs/SettingsOverview";
+import { KnowledgeBaseAdmin } from "@/features/ai/KnowledgeBaseAdmin";
 
 const SettingsPage = () => {
   const [searchParams] = useSearchParams();
   const { tab: tabParam } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const isAdmin = user?.role?.toLowerCase() === "admin";
 
   const tabs = useMemo(
     () => [
       { id: "users", label: "User Management", visible: user?.role === "Admin", content: <UserManagement /> },
+      { id: "ai-knowledge", label: "AI Knowledge", visible: isAdmin, content: <KnowledgeBaseAdmin isAdmin={isAdmin} /> },
       { id: "profile", label: "My Profile", visible: true, content: <ProfileSettings /> },
       { id: "branding", label: "Branding", visible: true, content: <BrandingSettings /> },
       { id: "runtime", label: "Runtime Verification", visible: true, content: <RuntimeSettings /> }
     ],
-    [user?.role]
+    [isAdmin, user?.role]
   );
 
   const safeTabs = Array.isArray(tabs) ? tabs : [];
