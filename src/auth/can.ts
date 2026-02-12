@@ -1,4 +1,4 @@
-export type PortalRole = "Admin" | "Staff" | "Viewer" | "Lender" | "Referrer";
+export type PortalRole = "Admin" | "Staff" | "Marketing" | "Viewer" | "Lender" | "Referrer";
 
 export type PortalCapabilities = {
   canRead: boolean;
@@ -9,13 +9,21 @@ export type PortalCapabilities = {
 const roleCapabilities: Record<PortalRole, PortalCapabilities> = {
   Admin: { canRead: true, canWrite: true, canOverride: true },
   Staff: { canRead: true, canWrite: true, canOverride: false },
+  Marketing: { canRead: true, canWrite: true, canOverride: false },
   Viewer: { canRead: true, canWrite: false, canOverride: false },
   Lender: { canRead: false, canWrite: false, canOverride: false },
   Referrer: { canRead: false, canWrite: false, canOverride: false }
 };
 
 export const resolvePortalRole = (role?: string | null): PortalRole => {
-  if (role === "Admin" || role === "Staff" || role === "Viewer" || role === "Lender" || role === "Referrer") {
+  if (
+    role === "Admin" ||
+    role === "Staff" ||
+    role === "Marketing" ||
+    role === "Viewer" ||
+    role === "Lender" ||
+    role === "Referrer"
+  ) {
     return role;
   }
   return "Viewer";

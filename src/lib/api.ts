@@ -48,7 +48,7 @@ export class ApiError extends Error {
   }
 }
 
-const rawBaseUrl = import.meta.env.VITE_API_BASE_URL || getApiBaseUrl();
+const rawBaseUrl = getApiBaseUrl();
 const apiBaseUrl = rawBaseUrl.endsWith("/api") ? rawBaseUrl : `${rawBaseUrl}/api`;
 
 export type AuthRequestConfig = AxiosRequestConfig & {

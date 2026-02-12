@@ -9,6 +9,7 @@ import Button from "../ui/Button";
 import SiloSelector from "./SiloSelector";
 import PushNotificationCta from "@/components/PushNotificationCta";
 import NotificationCenter from "@/components/notifications/NotificationCenter";
+import { logger } from "@/utils/logger";
 
 type TopbarProps = {
   onToggleSidebar: () => void;
@@ -38,7 +39,7 @@ const Topbar = ({ onToggleSidebar }: TopbarProps) => {
     fetch("/api/_int/production-readiness")
       .then((res) => res.json())
       .then((data) => {
-        console.log(data);
+        logger.info("Production readiness payload", { data });
         setProductionStatus(data?.status ?? "ok");
       })
       .catch(() => setProductionStatus("degraded"));
