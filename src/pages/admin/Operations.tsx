@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { useAuth } from "@/auth/useAuth";
+import { Navigate } from "react-router-dom";
 
 type Contact = {
   id: string;
@@ -29,9 +31,21 @@ type ChatEscalation = {
 };
 
 export default function Operations() {
+  const auth = useAuth();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [issues, setIssues] = useState<Issue[]>([]);
   const [chats, setChats] = useState<ChatEscalation[]>([]);
+  const [issueFilter, setIssueFilter] = useState("ALL");
+
+  if (auth.status !== "authenticated" || auth.user.role !== "ADMIN") {
+    return <Navigate to="/" replace />;
+  }
+
+  async function updateIssueStatus(id: string, status: string) {
+    await axios.patch(`/api/admin/issues/${id}`, { status });
+    const refreshed = await axios.get("/api/admin/issues");
+    setIssues(refreshed.data);
+  }
 
   useEffect(() => {
     axios.get("/api/admin/contacts").then((res) => setContacts(res.data));
@@ -46,7 +60,15 @@ export default function Operations() {
       <section>
         <h2>New Contacts</h2>
         {contacts.map((c) => (
-          <div key={c.id}>
+          <div
+            key={c.id}
+            style={{
+              border: "1px solid #e5e7eb",
+              padding: 16,
+              borderRadius: 8,
+              marginBottom: 16,
+            }}
+          >
             <strong>{c.company}</strong> — {c.firstName} {c.lastName}
             <div>
               {c.email} | {c.phone}
@@ -57,11 +79,30 @@ export default function Operations() {
 
       <section>
         <h2>Issue Reports</h2>
-        {issues.map((i) => (
-          <div key={i.id} style={{ marginBottom: 16 }}>
+        <select onChange={(e) => setIssueFilter(e.target.value)}>
+          <option value="ALL">All</option>
+          <option value="OPEN">Open</option>
+          <option value="IN_PROGRESS">In Progress</option>
+          <option value="CLOSED">Closed</option>
+        </select>
+        {[...issues]
+          .filter((i) => issueFilter === "ALL" || i.status === issueFilter)
+          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+          .map((i) => (
+          <div
+            key={i.id}
+            style={{
+              border: "1px solid #e5e7eb",
+              padding: 16,
+              borderRadius: 8,
+              marginBottom: 16,
+            }}
+          >
             <p>{i.message}</p>
             {i.screenshotBase64 && <img src={`data:image/png;base64,${i.screenshotBase64}`} style={{ maxWidth: 400 }} />}
             <div>Status: {i.status}</div>
+            <button onClick={() => updateIssueStatus(i.id, "IN_PROGRESS")}>Start</button>
+            <button onClick={() => updateIssueStatus(i.id, "CLOSED")}>Close</button>
           </div>
         ))}
       </section>
@@ -69,7 +110,15 @@ export default function Operations() {
       <section>
         <h2>Chat Escalations</h2>
         {chats.map((chat) => (
-          <div key={chat.id}>
+          <div
+            key={chat.id}
+            style={{
+              border: "1px solid #e5e7eb",
+              padding: 16,
+              borderRadius: 8,
+              marginBottom: 16,
+            }}
+          >
             <strong>
               {chat.name} ({chat.email})
             </strong>
