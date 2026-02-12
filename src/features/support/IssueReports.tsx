@@ -1,42 +1,43 @@
 import { useEffect, useState } from "react";
-
-type IssueReport = {
-  id: string;
-  description: string;
-  screenshot?: string;
-};
+import { getIssueReports } from "@/api/support";
 
 type IssueReportsProps = {
-  isAdmin: boolean;
+  isAdmin?: boolean;
 };
 
-export function IssueReports({ isAdmin }: IssueReportsProps) {
-  const [reports, setReports] = useState<IssueReport[]>([]);
-
-  async function load() {
-    const res = await fetch("/api/support/reports");
-    const data = (await res.json()) as IssueReport[];
-    setReports(data);
-  }
+function IssueReports({ isAdmin = true }: IssueReportsProps) {
+  const [issues, setIssues] = useState<any[]>([]);
 
   useEffect(() => {
-    if (!isAdmin) return;
+    if (!isAdmin) {
+      return;
+    }
     void load();
   }, [isAdmin]);
 
-  if (!isAdmin) return null;
+  async function load() {
+    const data = await getIssueReports();
+    setIssues(data.issues || []);
+  }
+
+  if (!isAdmin) {
+    return null;
+  }
 
   return (
     <div>
-      <h2 className="mb-4 text-lg font-semibold">Reported Issues</h2>
-      <div className="space-y-4">
-        {reports.map((report) => (
-          <div key={report.id} className="rounded border border-slate-200 p-3">
-            <p>{report.description}</p>
-            {report.screenshot && <img src={report.screenshot} width="300" alt="Issue screenshot" className="mt-2" />}
+      <h2>Reported Issues</h2>
+      {issues.map((i) => (
+        <div key={i.id} style={{ marginBottom: 20 }}>
+          <div>
+            <strong>Description:</strong> {i.description}
           </div>
-        ))}
-      </div>
+          <img src={i.screenshot} alt="screenshot" style={{ maxWidth: "100%", borderRadius: 8 }} />
+        </div>
+      ))}
     </div>
   );
 }
+
+export default IssueReports;
+export { IssueReports };
