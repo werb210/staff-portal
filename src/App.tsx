@@ -24,9 +24,8 @@ import UiFailureBanner from "./components/UiFailureBanner";
 import { getRequestId } from "./utils/requestId";
 import { setUiFailure } from "./utils/uiFailureStore";
 import { runRouteAudit } from "./utils/routeAudit";
-import { RequireRole as RequireClientRole } from "./guards/RequireRole";
 import { fullStaffRoles } from "./utils/roles";
-import ErrorBoundary from "./components/ErrorBoundary";
+import ErrorBoundary from "./components/system/ErrorBoundary";
 import OfflineBanner from "./components/OfflineBanner";
 import InstallPromptBanner from "./components/InstallPromptBanner";
 import { flushQueuedMutations, registerBackgroundSync } from "./utils/backgroundSyncQueue";
@@ -44,6 +43,9 @@ import { usePortalSessionGuard } from "@/auth/portalSessionGuard";
 import { triggerSafeReload } from "@/utils/reloadGuard";
 import ReferrerLayout from "@/components/layout/ReferrerLayout";
 import { disconnectAiSocket, initializeAiSocketClient } from "@/services/aiSocket";
+import RequireRole from "@/auth/RequireRole";
+import Unauthorized from "@/pages/Unauthorized";
+import { FEATURE_FLAGS } from "@/config/featureFlags";
 
 const RouteChangeObserver = () => {
   const location = useLocation();
@@ -318,7 +320,18 @@ export default function App() {
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route element={<ProtectedApp />}>
               <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="/applications" element={<ApplicationsPage />} />
+              <Route
+                path="/applications"
+                element={
+                  FEATURE_FLAGS.PIPELINE_ADMIN ? (
+                    <RequireRole roles={["Admin", "Staff"]}>
+                      <ApplicationsPage />
+                    </RequireRole>
+                  ) : (
+                    <ApplicationsPage />
+                  )
+                }
+              />
               <Route path="/crm" element={<CRMPage />} />
               <Route path="/communications" element={<CommunicationsPage />} />
               <Route path="/calendar" element={<CalendarPage />} />
@@ -327,38 +340,60 @@ export default function App() {
               <Route
                 path="/lenders"
                 element={
-                  <RequireClientRole allow={["Admin", "Staff", "Lender"]}>
+                  <RequireRole roles={["Admin", "Staff", "Lender"]}>
                     <LendersPage />
-                  </RequireClientRole>
+                  </RequireRole>
                 }
               />
               <Route
                 path="/lenders/new"
                 element={
-                  <RequireClientRole allow={["Admin", "Staff", "Lender"]}>
+                  <RequireRole roles={["Admin", "Staff", "Lender"]}>
                     <LendersPage />
-                  </RequireClientRole>
+                  </RequireRole>
                 }
               />
               <Route
                 path="/lenders/:lenderId/edit"
                 element={
-                  <RequireClientRole allow={["Admin", "Staff", "Lender"]}>
+                  <RequireRole roles={["Admin", "Staff", "Lender"]}>
                     <LendersPage />
-                  </RequireClientRole>
+                  </RequireRole>
                 }
               />
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="/settings/:tab" element={<SettingsPage />} />
-              <Route path="/admin/ai" element={<AiKnowledgePage />} />
-              <Route path="/admin/ai/chats" element={<AiChatDashboard />} />
-              <Route path="/admin/ai/issues" element={<AiIssueReports />} />
+              <Route path="/unauthorized" element={<Unauthorized />} />
+              <Route
+                path="/admin/ai"
+                element={
+                  <RequireRole roles={["Admin"]}>
+                    <AiKnowledgePage />
+                  </RequireRole>
+                }
+              />
+              <Route
+                path="/admin/ai/chats"
+                element={
+                  <RequireRole roles={["Admin"]}>
+                    <AiChatDashboard />
+                  </RequireRole>
+                }
+              />
+              <Route
+                path="/admin/ai/issues"
+                element={
+                  <RequireRole roles={["Admin"]}>
+                    <AiIssueReports />
+                  </RequireRole>
+                }
+              />
               <Route
                 path="/admin/operations"
                 element={
-                  <RequireClientRole allow={["Admin"]}>
+                  <RequireRole roles={["Admin"]}>
                     <Operations />
-                  </RequireClientRole>
+                  </RequireRole>
                 }
               />
           </Route>

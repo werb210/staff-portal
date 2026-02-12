@@ -1,43 +1,41 @@
 import axios from "axios";
-import api from "@/lib/api";
+import { showApiToast } from "@/state/apiNotifications";
 
-export const clientApi = axios.create({
-  baseURL: "https://api.staff.boreal.financial",
-  withCredentials: true,
-  headers: { "Content-Type": "application/json" }
+const baseURL = import.meta.env.VITE_API_BASE_URL;
+
+const navigateTo = (path: string) => {
+  if (typeof window === "undefined") return;
+  if (window.location.pathname === path) return;
+  const isTestEnv = typeof process !== "undefined" && process.env?.NODE_ENV === "test";
+  if (isTestEnv) {
+    window.history.pushState({}, "", path);
+    window.dispatchEvent(new PopStateEvent("popstate"));
+    return;
+  }
+  window.location.assign(path);
+};
+
+const api = axios.create({
+  baseURL
 });
 
-export type OtpStartPayload = {
-  phone: string;
-};
-
-export type OtpStartResponse =
-  | {
-      requestId?: string;
-      twilioSid?: string;
-      sid?: string;
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      navigateTo("/login");
+    } else if (error.response?.status === 403) {
+      navigateTo("/unauthorized");
+    } else if (!error.response) {
+      showApiToast("Network error. Please check your connection and try again.");
     }
-  | null;
+    return Promise.reject(error);
+  }
+);
 
-export type OtpVerifyPayload = {
-  phone: string;
-  code: string;
-};
+export const clientApi = api;
 
-export type OtpVerifyResponse = {
-  accessToken: string;
-  refreshToken: string;
-};
-
-export const otpStart = (payload: OtpStartPayload) =>
-  api.post<OtpStartResponse>("/auth/otp/start", payload);
-
-export const otpVerify = (payload: OtpVerifyPayload) =>
-  api.post<OtpVerifyResponse>("/auth/otp/verify", payload);
-
-export const otp = {
-  start: otpStart,
-  verify: otpVerify
-};
+export const otpStart = (payload: { phone: string }) => api.post("/auth/otp/start", payload);
+export const otpVerify = (payload: { phone: string; code: string }) => api.post("/auth/otp/verify", payload);
 
 export default api;
