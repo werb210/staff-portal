@@ -18,6 +18,13 @@ import AiKnowledgePage from "./pages/admin/AiKnowledgePage";
 import AiChatDashboard from "./pages/admin/AiChatDashboard";
 import AiIssueReports from "./pages/admin/AiIssueReports";
 import Operations from "./pages/admin/Operations";
+import SupportDashboard from "./pages/admin/SupportDashboard";
+import AnalyticsDashboard from "./pages/admin/AnalyticsDashboard";
+import WebsiteLeadsPage from "./pages/admin/WebsiteLeadsPage";
+import AIKnowledgeBasePage from "./pages/admin/AIKnowledgeBasePage";
+import IssueReportsPage from "./pages/admin/IssueReportsPage";
+import LiveChatQueuePage from "./pages/admin/LiveChatQueuePage";
+import ConversionDashboardPage from "./pages/admin/ConversionDashboardPage";
 import { emitUiTelemetry } from "./utils/uiTelemetry";
 import { useApiHealthCheck } from "./hooks/useApiHealthCheck";
 import UiFailureBanner from "./components/UiFailureBanner";
@@ -393,6 +400,62 @@ export default function App() {
                 element={
                   <RequireRole roles={["Admin"]}>
                     <Operations />
+                  </RequireRole>
+                }
+              />
+              <Route
+                path="/admin/support"
+                element={
+                  <RequireRole roles={["Admin"]}>
+                    <SupportDashboard />
+                  </RequireRole>
+                }
+              />
+              <Route
+                path="/admin/analytics"
+                element={
+                  <RequireRole roles={["Admin"]}>
+                    <AnalyticsDashboard />
+                  </RequireRole>
+                }
+              />
+              <Route
+                path="/admin/website-leads"
+                element={
+                  <RequireRole roles={["Admin"]}>
+                    <WebsiteLeadsPage />
+                  </RequireRole>
+                }
+              />
+              <Route
+                path="/admin/ai-knowledge"
+                element={
+                  <RequireRole roles={["Admin"]}>
+                    <AIKnowledgeBasePage />
+                  </RequireRole>
+                }
+              />
+              <Route
+                path="/admin/issue-reports"
+                element={
+                  <RequireRole roles={["Admin"]}>
+                    <IssueReportsPage />
+                  </RequireRole>
+                }
+              />
+              <Route
+                path="/admin/live-chat"
+                element={
+                  <RequireRole roles={["Admin"]}>
+                    <LiveChatQueuePage />
+                  </RequireRole>
+                }
+              />
+              <Route
+                path="/admin/conversions"
+                element={
+                  <RequireRole roles={["Admin"]}>
+                    <ConversionDashboardPage />
                   </RequireRole>
                 }
               />

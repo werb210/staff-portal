@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useSilo } from "@/hooks/useSilo";
 import { useSettingsStore } from "@/state/settings.store";
@@ -23,6 +23,21 @@ const Topbar = ({ onToggleSidebar }: TopbarProps) => {
   );
   const openDialer = useDialerStore((state) => state.openDialer);
   const [isCenterOpen, setIsCenterOpen] = useState(false);
+  const [liveCount, setLiveCount] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch("/api/support/live/count");
+        const data = (await res.json()) as { count?: number };
+        setLiveCount(data.count ?? 0);
+      } catch {
+        setLiveCount(0);
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <header className="topbar">
@@ -50,6 +65,11 @@ const Topbar = ({ onToggleSidebar }: TopbarProps) => {
       </div>
       <div className="topbar__right">
         <SiloSelector />
+        {liveCount > 0 && (
+          <span className="rounded-full bg-red-600 px-2 py-0.5 text-[10px] font-semibold text-white" aria-label="Live chat queue count">
+            Live {liveCount}
+          </span>
+        )}
         <button
           type="button"
           className="topbar__icon-button"
