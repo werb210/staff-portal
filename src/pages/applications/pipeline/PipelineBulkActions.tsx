@@ -5,6 +5,8 @@ import { evaluateStageTransition, normalizeStageId, sortPipelineStages } from ".
 import { updatePortalApplication } from "@/api/applications";
 import { pipelineApi } from "./pipeline.api";
 import Modal from "@/components/ui/Modal";
+import { FEATURE_FLAGS } from "@/config/featureFlags";
+import { logActivity } from "@/hooks/useActivityLog";
 
 type PipelineBulkActionsProps = {
   selectedCards: PipelineApplication[];
@@ -56,6 +58,10 @@ const PipelineBulkActions = ({ selectedCards, stages, onClearSelection }: Pipeli
   const exportMutation = useMutation({
     mutationFn: () => pipelineApi.exportApplications(selectedCards.map((card) => card.id)),
     onSuccess: (blob) => {
+      void logActivity("bulk_export", {
+        count: selectedCards.length,
+        applicationIds: selectedCards.map((card) => card.id)
+      });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
@@ -78,6 +84,14 @@ const PipelineBulkActions = ({ selectedCards, stages, onClearSelection }: Pipeli
       );
     },
     onSuccess: () => {
+      void logActivity("pipeline_move", {
+        count: selectedCards.length,
+        transitions: stageTransitions.map((entry) => ({
+          applicationId: entry.card.id,
+          from: entry.card.stage,
+          to: entry.nextStage
+        }))
+      });
       queryClient.invalidateQueries({ queryKey: ["pipeline"] });
       onClearSelection();
     }
@@ -94,9 +108,11 @@ const PipelineBulkActions = ({ selectedCards, stages, onClearSelection }: Pipeli
         </button>
       </div>
       <div className="pipeline-bulk__actions">
-        <button className="btn btn--ghost" type="button" onClick={() => setConfirmAction("export")}>
-          Export CSV
-        </button>
+        {FEATURE_FLAGS.BULK_EXPORT ? (
+          <button className="btn btn--ghost" type="button" onClick={() => setConfirmAction("export")}>
+            Export CSV
+          </button>
+        ) : null}
         <button
           className="btn btn--primary"
           type="button"

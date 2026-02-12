@@ -11,6 +11,18 @@ import { getApiBaseUrl } from "@/config/api";
 import { reportAuthFailure } from "@/auth/authEvents";
 import { showApiToast } from "@/state/apiNotifications";
 
+const redirectTo = (path: string) => {
+  if (typeof window === "undefined") return;
+  if (window.location.pathname === path) return;
+  const isTestEnv = typeof process !== "undefined" && process.env?.NODE_ENV === "test";
+  if (isTestEnv) {
+    window.history.pushState({}, "", path);
+    window.dispatchEvent(new PopStateEvent("popstate"));
+    return;
+  }
+  window.location.assign(path);
+};
+
 export type ApiErrorOptions = {
   status: number;
   message: string;
@@ -102,6 +114,9 @@ api.interceptors.response.use(
       handleUnauthorized(error.config?.url);
     } else if (status === 403) {
       reportAuthFailure("forbidden");
+      redirectTo("/unauthorized");
+    } else if (!error.response) {
+      showApiToast("Network error. Please check your connection and try again.");
     } else if (status >= 500) {
       showApiToast("We hit a server issue. Please retry in a moment.", error.response?.headers?.["x-request-id"]);
     }
