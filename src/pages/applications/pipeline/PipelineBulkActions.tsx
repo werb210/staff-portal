@@ -61,7 +61,7 @@ const PipelineBulkActions = ({ selectedCards, stages, onClearSelection }: Pipeli
       void logActivity("bulk_export", {
         count: selectedCards.length,
         applicationIds: selectedCards.map((card) => card.id)
-      });
+      }).catch(() => undefined);
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
@@ -91,7 +91,7 @@ const PipelineBulkActions = ({ selectedCards, stages, onClearSelection }: Pipeli
           from: entry.card.stage,
           to: entry.nextStage
         }))
-      });
+      }).catch(() => undefined);
       queryClient.invalidateQueries({ queryKey: ["pipeline"] });
       onClearSelection();
     }

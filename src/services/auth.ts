@@ -1,6 +1,7 @@
 import { apiClient } from "@/api/apiClient";
+import clientApi from "@/api/client";
+import { apiRequest, ApiError } from "@/lib/api";
 import type { AuthRequestConfig } from "@/lib/api";
-import { ApiError } from "@/lib/api";
 
 export type AuthenticatedUser = Record<string, any>;
 
@@ -26,7 +27,7 @@ export async function startOtp(payload: { phone: string }): Promise<OtpStartResu
   const response = await apiClient.post<OtpStartResponse>("/auth/otp/start", payload, {
     skipAuth: true,
     skipRequestId: true
-  } as AuthRequestConfig);
+  });
 
   if (!response.success) {
     throw new ApiError({
@@ -44,20 +45,37 @@ export async function startOtp(payload: { phone: string }): Promise<OtpStartResu
   };
 }
 
-export async function verifyOtp(payload: { phone: string; code: string }): Promise<OtpVerifyResponse> {
-  const response = await apiClient.post<OtpVerifyResponse>("/auth/otp/verify", payload, {
-    skipAuth: true,
-    skipRequestId: true
-  } as AuthRequestConfig);
+export async function verifyOtp({
+  phone,
+  code
+}: {
+  phone: string;
+  code: string;
+}): Promise<OtpVerifyResponse> {
+  const otpResponse = await clientApi.post<OtpVerifyResponse>(
+    "/auth/otp/verify",
+    { phone, code },
+    {
+      skipAuth: true,
+      skipRequestId: true
+    } as AuthRequestConfig
+  );
 
-  if (!response.success) {
-    throw new ApiError({
-      status: response.error.status ?? 500,
-      message: response.error.message,
-      code: response.error.code,
-      requestId: response.error.requestId,
-      details: response.error.details
+  const response = {
+    success: true as const,
+    data: otpResponse.data
+  };
+
+  try {
+    await apiRequest<{ id: string; role: string }>({
+      method: "GET",
+      url: "/auth/me",
+      headers: { Authorization: `Bearer ${response.data.accessToken}` },
+      skipAuth: true,
+      skipRequestId: true
     });
+  } catch {
+    // Auth context will retry /auth/me; do not block OTP success on profile fetch.
   }
 
   return response.data;

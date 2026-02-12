@@ -62,23 +62,25 @@ type AuthRequestInternalConfig = InternalAxiosRequestConfig & {
   skipRequestId?: boolean;
 };
 
-export async function apiRequest(url: string, options: RequestInit = {}) {
-  const res = await fetch(url, {
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers || {})
-    },
-    ...options
-  });
+export async function apiRequest<T>(config: AxiosRequestConfig): Promise<T> {
+  try {
+    const response = await api.request<T>(config);
+    const data = response.data as T;
 
-  const data = await res.json().catch(() => ({}));
+    return data;
+  } catch (error: unknown) {
+    const axiosError = error as AxiosError<{ message?: string; code?: string }>;
+    const status = axiosError.response?.status ?? 500;
+    const message = axiosError.response?.data?.message ?? axiosError.message;
 
-  if (!res.ok) {
-    throw new Error((data as { error?: string }).error || "api_error");
+    throw new ApiError({
+      status,
+      message,
+      code: axiosError.response?.data?.code,
+      requestId: axiosError.response?.headers?.["x-request-id"],
+      details: axiosError.response?.data
+    });
   }
-
-  return data;
 }
 
 export const api = axios.create({

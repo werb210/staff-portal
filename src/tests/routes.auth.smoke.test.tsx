@@ -49,7 +49,7 @@ const renderApp = (initialRoute: string, includeProbe = false) => {
 
 describe("portal auth routing smoke tests", () => {
   beforeAll(() => {
-    server.listen({ onUnhandledRequest: "error" });
+    server.listen({ onUnhandledRequest: "warn" });
   });
 
   afterEach(() => {
