@@ -1,3 +1,4 @@
+import axios from "axios";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import apiClient from "@/api/httpClient";
 
@@ -171,4 +172,11 @@ export const useResolveIssueMutation = () => {
       void queryClient.invalidateQueries({ queryKey: aiQueryKeys.issues });
     }
   });
+};
+
+
+export const AIService = {
+  listKnowledge: () => axios.get("/api/ai/knowledge"),
+  createKnowledge: (data: any) => axios.post("/api/ai/knowledge", data),
+  deleteKnowledge: (id: string) => axios.delete(`/api/ai/knowledge/${id}`)
 };
