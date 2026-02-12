@@ -1,7 +1,3 @@
-/*
- * Centralised API base URL configuration.
- */
+import { env } from "@/config/env";
 
-const STAFF_API_BASE_URL = "https://api.staff.boreal.financial";
-
-export const getApiBaseUrl = (): string => STAFF_API_BASE_URL;
+export const getApiBaseUrl = (): string => env.VITE_API_BASE_URL;

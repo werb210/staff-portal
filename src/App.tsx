@@ -54,9 +54,10 @@ import { usePortalSessionGuard } from "@/auth/portalSessionGuard";
 import { triggerSafeReload } from "@/utils/reloadGuard";
 import ReferrerLayout from "@/components/layout/ReferrerLayout";
 import { disconnectAiSocket, initializeAiSocketClient } from "@/services/aiSocket";
-import RequireRole from "@/auth/RequireRole";
+import RoleGuard from "@/auth/RoleGuard";
 import Unauthorized from "@/pages/Unauthorized";
 import { FEATURE_FLAGS } from "@/config/featureFlags";
+import { logger } from "@/utils/logger";
 
 const RouteChangeObserver = () => {
   const location = useLocation();
@@ -67,7 +68,7 @@ const RouteChangeObserver = () => {
     const from = previousPath.current ?? "initial";
     const to = location.pathname;
     previousPath.current = to;
-    console.info("Route transition", {
+    logger.info("Route transition", {
       from,
       to,
       requestId: getRequestId(),
@@ -93,7 +94,7 @@ const PortalSessionGuard = () => {
 
 export default function App() {
   useApiHealthCheck();
-  const { accessToken } = useAuth();
+  const { accessToken, authStatus, logout } = useAuth();
   const { playNotificationSound } = useNotificationAudio();
   const addNotification = useNotificationsStore((state) => state.addNotification);
   const queryClient = useMemo(
@@ -111,7 +112,7 @@ export default function App() {
   useEffect(() => {
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
       const requestId = getRequestId();
-      console.error("Unhandled promise rejection", { requestId, reason: event.reason });
+      logger.error("Unhandled promise rejection", { requestId, reason: event.reason });
       setUiFailure({
         message: "A background task failed unexpectedly.",
         details: `Request ID: ${requestId}`,
@@ -121,7 +122,7 @@ export default function App() {
 
     const handleWindowError = (event: ErrorEvent) => {
       const requestId = getRequestId();
-      console.error("Window error", { requestId, error: event.error, message: event.message });
+      logger.error("Window error", { requestId, error: event.error, message: event.message });
       setUiFailure({
         message: "An error occurred while loading the page.",
         details: `Request ID: ${requestId}`,
@@ -269,11 +270,51 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    if (authStatus !== "authenticated") return;
+
+    const timeoutMs = 30 * 60 * 1000;
+    let timeoutId: number | undefined;
+
+    const expireSession = () => {
+      void logout();
+      addNotification(
+        buildNotification(
+          {
+            title: "Session expired",
+            body: "Session expired.",
+            type: "auth_alert"
+          },
+          "in_app"
+        )
+      );
+      window.location.assign("/login");
+    };
+
+    const resetTimer = () => {
+      if (timeoutId) {
+        window.clearTimeout(timeoutId);
+      }
+      timeoutId = window.setTimeout(expireSession, timeoutMs);
+    };
+
+    const events: Array<keyof WindowEventMap> = ["mousemove", "mousedown", "keydown", "scroll", "touchstart"];
+    events.forEach((eventName) => window.addEventListener(eventName, resetTimer, { passive: true }));
+    resetTimer();
+
+    return () => {
+      if (timeoutId) {
+        window.clearTimeout(timeoutId);
+      }
+      events.forEach((eventName) => window.removeEventListener(eventName, resetTimer));
+    };
+  }, [addNotification, authStatus, logout]);
+
+  useEffect(() => {
     const handleSubmit = (event: SubmitEvent) => {
       if (typeof navigator === "undefined" || navigator.onLine) return;
       event.preventDefault();
       event.stopPropagation();
-      console.info("Blocked submit while offline.");
+      logger.warn("Blocked submit while offline.");
     };
     document.addEventListener("submit", handleSubmit, true);
     return () => document.removeEventListener("submit", handleSubmit, true);
@@ -335,9 +376,9 @@ export default function App() {
                 path="/applications"
                 element={
                   FEATURE_FLAGS.PIPELINE_ADMIN ? (
-                    <RequireRole roles={["Admin", "Staff"]}>
+                    <RoleGuard roles={["Admin", "Staff"]}>
                       <ApplicationsPage />
-                    </RequireRole>
+                    </RoleGuard>
                   ) : (
                     <ApplicationsPage />
                   )
@@ -351,25 +392,25 @@ export default function App() {
               <Route
                 path="/lenders"
                 element={
-                  <RequireRole roles={["Admin", "Staff", "Lender"]}>
+                  <RoleGuard roles={["Admin", "Staff", "Lender"]}>
                     <LendersPage />
-                  </RequireRole>
+                  </RoleGuard>
                 }
               />
               <Route
                 path="/lenders/new"
                 element={
-                  <RequireRole roles={["Admin", "Staff", "Lender"]}>
+                  <RoleGuard roles={["Admin", "Staff", "Lender"]}>
                     <LendersPage />
-                  </RequireRole>
+                  </RoleGuard>
                 }
               />
               <Route
                 path="/lenders/:lenderId/edit"
                 element={
-                  <RequireRole roles={["Admin", "Staff", "Lender"]}>
+                  <RoleGuard roles={["Admin", "Staff", "Lender"]}>
                     <LendersPage />
-                  </RequireRole>
+                  </RoleGuard>
                 }
               />
               <Route path="/settings" element={<SettingsPage />} />
@@ -378,124 +419,125 @@ export default function App() {
               <Route
                 path="/admin/ai"
                 element={
-                  <RequireRole roles={["Admin"]}>
+                  <RoleGuard roles={["Admin"]}>
                     <AiKnowledgePage />
-                  </RequireRole>
+                  </RoleGuard>
                 }
               />
               <Route
                 path="/admin/ai/chats"
                 element={
-                  <RequireRole roles={["Admin"]}>
+                  <RoleGuard roles={["Admin"]}>
                     <AiChatDashboard />
-                  </RequireRole>
+                  </RoleGuard>
                 }
               />
               <Route
                 path="/admin/ai/issues"
                 element={
-                  <RequireRole roles={["Admin"]}>
+                  <RoleGuard roles={["Admin"]}>
                     <AiIssueReports />
-                  </RequireRole>
+                  </RoleGuard>
                 }
               />
               <Route
                 path="/admin/operations"
                 element={
-                  <RequireRole roles={["Admin"]}>
+                  <RoleGuard roles={["Admin"]}>
                     <Operations />
-                  </RequireRole>
+                  </RoleGuard>
                 }
               />
               <Route
                 path="/admin/support"
                 element={
-                  <RequireRole roles={["Admin"]}>
+                  <RoleGuard roles={["Admin"]}>
                     <SupportDashboard />
-                  </RequireRole>
+                  </RoleGuard>
                 }
               />
               <Route
                 path="/admin/analytics"
                 element={
-                  <RequireRole roles={["Admin"]}>
+                  <RoleGuard roles={["Admin"]}>
                     <AnalyticsDashboard />
-                  </RequireRole>
+                  </RoleGuard>
                 }
               />
               <Route
                 path="/admin/website-leads"
                 element={
-                  <RequireRole roles={["Admin"]}>
+                  <RoleGuard roles={["Admin"]}>
                     <WebsiteLeadsPage />
-                  </RequireRole>
+                  </RoleGuard>
                 }
               />
               <Route
                 path="/admin/ai-knowledge"
                 element={
-                  <RequireRole roles={["Admin"]}>
+                  <RoleGuard roles={["Admin"]}>
                     <AIKnowledgeBasePage />
-                  </RequireRole>
+                  </RoleGuard>
                 }
               />
               <Route
                 path="/admin/issue-reports"
                 element={
-                  <RequireRole roles={["Admin"]}>
+                  <RoleGuard roles={["Admin"]}>
                     <IssueReportsPage />
-                  </RequireRole>
+                  </RoleGuard>
                 }
               />
               <Route
                 path="/admin/live-chat"
                 element={
-                  <RequireRole roles={["Admin"]}>
+                  <RoleGuard roles={["Admin"]}>
                     <LiveChatQueuePage />
-                  </RequireRole>
+                  </RoleGuard>
                 }
               />
               <Route
                 path="/admin/conversions"
                 element={
-                  <RequireRole roles={["Admin"]}>
+                  <RoleGuard roles={["Admin"]}>
                     <ConversionDashboardPage />
-                  </RequireRole>
+                  </RoleGuard>
                 }
               />
               <Route
                 path="/admin/leads"
                 element={
-                  <RequireRole roles={["Admin"]}>
+                  <RoleGuard roles={["Admin"]}>
                     <LeadsPage />
-                  </RequireRole>
+                  </RoleGuard>
                 }
               />
               <Route
                 path="/admin/analytics-events"
                 element={
-                  <RequireRole roles={["Admin"]}>
+                  <RoleGuard roles={["Admin"]}>
                     <AnalyticsPage />
-                  </RequireRole>
+                  </RoleGuard>
                 }
               />
               <Route
                 path="/admin/comparison"
                 element={
-                  <RequireRole roles={["Admin"]}>
+                  <RoleGuard roles={["Admin"]}>
                     <ComparisonEditor />
-                  </RequireRole>
+                  </RoleGuard>
                 }
               />
               <Route
                 path="/admin/ai-knowledge-upload"
                 element={
-                  <RequireRole roles={["Admin"]}>
+                  <RoleGuard roles={["Admin"]}>
                     <AIKnowledge />
-                  </RequireRole>
+                  </RoleGuard>
                 }
               />
           </Route>
+            <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </BrowserRouter>
       </ErrorBoundary>

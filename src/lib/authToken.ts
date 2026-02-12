@@ -1,4 +1,7 @@
-const ACCESS_TOKEN_KEY = "staff_access_token";
+import { env } from "@/config/env";
+import { decodeJwt } from "@/auth/jwt";
+
+const ACCESS_TOKEN_KEY = env.VITE_JWT_STORAGE_KEY;
 
 let inMemoryAccessToken: string | null = null;
 
@@ -27,11 +30,20 @@ const writeStoredToken = (token: string | null) => {
   }
 };
 
+const isExpired = (token: string | null) => {
+  const payload = decodeJwt(token);
+  if (!payload?.exp) return false;
+  return payload.exp * 1000 <= Date.now();
+};
+
 export function getAccessToken(): string | null {
-  if (inMemoryAccessToken) return inMemoryAccessToken;
-  const stored = readStoredToken();
-  inMemoryAccessToken = stored;
-  return stored;
+  const token = inMemoryAccessToken ?? readStoredToken();
+  if (isExpired(token)) {
+    clearAccessToken();
+    return null;
+  }
+  inMemoryAccessToken = token;
+  return token;
 }
 
 export function setAccessToken(token: string) {
