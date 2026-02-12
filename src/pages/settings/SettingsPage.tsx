@@ -3,30 +3,39 @@ import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import RequireRole from "@/components/auth/RequireRole";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { useAuth } from "@/hooks/useAuth";
+import IssueReports from "@/features/support/IssueReports";
+import SupportQueue from "@/features/support/SupportQueue";
+import KnowledgeManager from "@/features/ai/KnowledgeManager";
+import WebLeads from "@/features/crm/WebLeads";
+import LiveActivity from "@/features/analytics/LiveActivity";
 import SettingsSectionLayout from "./components/SettingsSectionLayout";
 import BrandingSettings from "./tabs/BrandingSettings";
 import ProfileSettings from "./tabs/ProfileSettings";
 import RuntimeSettings from "./tabs/RuntimeSettings";
 import UserManagement from "./tabs/UserManagement";
 import SettingsOverview from "./tabs/SettingsOverview";
-import { KnowledgeBaseAdmin } from "@/features/ai/KnowledgeBaseAdmin";
 
 const SettingsPage = () => {
   const [searchParams] = useSearchParams();
   const { tab: tabParam } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const isAdmin = user?.role?.toLowerCase() === "admin";
+  const isAdmin = user?.role === "Admin";
+  const canViewSupport = user?.role === "Admin" || user?.role === "Staff";
 
   const tabs = useMemo(
     () => [
-      { id: "users", label: "User Management", visible: user?.role === "Admin", content: <UserManagement /> },
-      { id: "ai-knowledge", label: "AI Knowledge", visible: isAdmin, content: <KnowledgeBaseAdmin isAdmin={isAdmin} /> },
+      { id: "users", label: "User Management", visible: isAdmin, content: <UserManagement /> },
+      { id: "support", label: "Support Queue", visible: canViewSupport, content: <SupportQueue /> },
+      { id: "issues", label: "Issue Reports", visible: canViewSupport, content: <IssueReports /> },
+      { id: "ai-knowledge", label: "AI Knowledge", visible: isAdmin, content: isAdmin ? <KnowledgeManager /> : null },
+      { id: "web-leads", label: "Website Leads", visible: canViewSupport, content: <WebLeads /> },
+      { id: "live-activity", label: "Live Activity", visible: canViewSupport, content: <LiveActivity /> },
       { id: "profile", label: "My Profile", visible: true, content: <ProfileSettings /> },
       { id: "branding", label: "Branding", visible: true, content: <BrandingSettings /> },
       { id: "runtime", label: "Runtime Verification", visible: true, content: <RuntimeSettings /> }
     ],
-    [isAdmin, user?.role]
+    [canViewSupport, isAdmin]
   );
 
   const safeTabs = Array.isArray(tabs) ? tabs : [];
