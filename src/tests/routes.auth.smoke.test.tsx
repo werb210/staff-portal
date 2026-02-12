@@ -5,6 +5,7 @@ import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
+import { defaultHandlers } from "@/tests/msw/defaultHandlers";
 import App from "@/App";
 import { AuthProvider, useAuth } from "@/auth/AuthContext";
 import { portalApiRoutes } from "@/utils/routeAudit";
@@ -12,6 +13,7 @@ import { SiloProvider } from "@/context/SiloContext";
 import { clearStoredAuth, setStoredAccessToken } from "@/services/token";
 
 const server = setupServer(
+  ...defaultHandlers,
   http.get("*/api/health", () => HttpResponse.json({ status: "ok" })),
   http.get("*/api/_int/routes", () => HttpResponse.json({ routes: portalApiRoutes })),
   http.post("*/api/auth/otp/start", () =>

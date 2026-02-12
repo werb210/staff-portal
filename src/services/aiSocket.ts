@@ -142,6 +142,7 @@ export const subscribeAiSocket = (event: AiSocketEventName, listener: Listener) 
 };
 
 export const initializeAiSocketClient = () => {
+  if (import.meta.env.MODE === "test") return;
   connectAiSocket();
   if (typeof window !== "undefined") {
     (window as Window & { portalRealtime?: { reconnect?: () => void } }).portalRealtime = {

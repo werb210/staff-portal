@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
+import { defaultHandlers } from "@/tests/msw/defaultHandlers";
 import { AuthProvider, useAuth } from "@/auth/AuthContext";
 import LoginPage from "@/pages/login/LoginPage";
 import { clearStoredAuth } from "@/services/token";
@@ -13,6 +14,7 @@ const verifyOtpSpy = vi.fn();
 const meSpy = vi.fn();
 
 const server = setupServer(
+  ...defaultHandlers,
   http.post("http://localhost/api/auth/otp/start", async ({ request }) => {
     const contentType = request.headers.get("content-type") ?? "";
     expect(contentType.toLowerCase()).toContain("application/json");

@@ -6,6 +6,7 @@ import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
+import { defaultHandlers } from "@/tests/msw/defaultHandlers";
 import { AuthContext, type AuthContextValue, AuthProvider } from "@/auth/AuthContext";
 import LoginPage from "@/pages/login/LoginPage";
 import RequireAuth from "@/routes/RequireAuth";
@@ -17,7 +18,7 @@ const LocationProbe = () => {
   return <div data-testid="location">{location.pathname}</div>;
 };
 
-const server = setupServer();
+const server = setupServer(...defaultHandlers);
 
 describe("auth routing contract", () => {
   beforeAll(() => {

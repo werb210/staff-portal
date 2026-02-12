@@ -6,6 +6,7 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
+import { defaultHandlers } from "@/tests/msw/defaultHandlers";
 import { AuthProvider, useAuth } from "@/auth/AuthContext";
 import LoginPage from "@/pages/login/LoginPage";
 import apiClient from "@/api/httpClient";
@@ -18,6 +19,7 @@ const meSpy = vi.fn();
 let lendersAuthHeader: string | null = null;
 
 const server = setupServer(
+  ...defaultHandlers,
   http.post("http://localhost/api/auth/otp/start", async ({ request }) => {
     startOtpSpy(await request.json());
     return new HttpResponse(null, { status: 204 });

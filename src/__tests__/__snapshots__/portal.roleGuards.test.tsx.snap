@@ -23,54 +23,157 @@ exports[`portal role & permission guards > matches role snapshots 1`] = `
     <nav
       class="sidebar__nav"
     >
-      <a
-        class="sidebar__link "
-        href="/dashboard"
+      <div
+        class="mb-4"
       >
-        Dashboard
-      </a>
-      <a
-        class="sidebar__link "
-        href="/applications"
+        <a
+          class="sidebar__link "
+          href="/dashboard"
+        >
+          Dashboard
+        </a>
+        <a
+          class="sidebar__link "
+          href="/applications"
+        >
+          Applications
+        </a>
+        <a
+          class="sidebar__link "
+          href="/crm"
+        >
+          CRM
+        </a>
+        <a
+          class="sidebar__link "
+          href="/communications"
+        >
+          Communications
+        </a>
+        <a
+          class="sidebar__link "
+          href="/calendar"
+        >
+          Calendar
+        </a>
+        <a
+          class="sidebar__link "
+          href="/marketing"
+        >
+          Marketing
+        </a>
+        <a
+          class="sidebar__link "
+          href="/lenders"
+        >
+          Lenders
+        </a>
+        <a
+          class="sidebar__link "
+          href="/settings"
+        >
+          Settings
+        </a>
+      </div>
+      <div
+        class="mb-4"
       >
-        Applications
-      </a>
-      <a
-        class="sidebar__link "
-        href="/crm"
-      >
-        CRM
-      </a>
-      <a
-        class="sidebar__link "
-        href="/communications"
-      >
-        Communications
-      </a>
-      <a
-        class="sidebar__link "
-        href="/calendar"
-      >
-        Calendar
-      </a>
-      <a
-        class="sidebar__link "
-        href="/marketing"
-      >
-        Marketing
-      </a>
-      <a
-        class="sidebar__link "
-        href="/lenders"
-      >
-        Lenders
-      </a>
-      <a
-        class="sidebar__link "
-        href="/settings"
-      >
-        Settings
-      </a>
+        <p
+          class="px-2 pb-2 text-xs font-semibold uppercase tracking-wide text-slate-500"
+        >
+          AI & Support
+        </p>
+        <a
+          class="sidebar__link "
+          href="/admin/ai"
+        >
+          AI Knowledge
+        </a>
+        <a
+          class="sidebar__link "
+          href="/admin/support"
+        >
+          Support
+        </a>
+        <a
+          class="sidebar__link "
+          href="/admin/analytics"
+        >
+          Analytics
+        </a>
+        <a
+          class="sidebar__link "
+          href="/admin/analytics-events"
+        >
+          Analytics Events
+        </a>
+        <a
+          class="sidebar__link "
+          href="/admin/website-leads"
+        >
+          Website Leads
+        </a>
+        <a
+          class="sidebar__link "
+          href="/admin/leads"
+        >
+          Website Leads Table
+        </a>
+        <a
+          class="sidebar__link "
+          href="/admin/ai-knowledge"
+        >
+          AI Knowledge Base
+        </a>
+        <a
+          class="sidebar__link "
+          href="/admin/ai-knowledge-upload"
+        >
+          AI Knowledge Upload
+        </a>
+        <a
+          class="sidebar__link "
+          href="/admin/comparison"
+        >
+          Comparison Editor
+        </a>
+        <a
+          class="sidebar__link "
+          href="/admin/issue-reports"
+        >
+          Issue Reports
+        </a>
+        <a
+          class="sidebar__link "
+          href="/admin/live-chat"
+        >
+          Live Chat Queue
+        </a>
+        <a
+          class="sidebar__link "
+          href="/admin/conversions"
+        >
+          Conversions
+        </a>
+        <a
+          class="sidebar__link "
+          href="/admin/ai/chats"
+        >
+          Chats
+        </a>
+        <a
+          class="sidebar__link "
+          href="/admin/ai/issues"
+        >
+          Issues
+        </a>
+        <a
+          class="sidebar__link "
+          href="/admin/operations"
+        >
+          Operations
+        </a>
+      </div>
     </nav>
   </aside>
 </div>
@@ -99,54 +202,79 @@ exports[`portal role & permission guards > matches role snapshots 2`] = `
     <nav
       class="sidebar__nav"
     >
-      <a
-        class="sidebar__link "
-        href="/dashboard"
+      <div
+        class="mb-4"
       >
-        Dashboard
-      </a>
-      <a
-        class="sidebar__link "
-        href="/applications"
+        <a
+          class="sidebar__link "
+          href="/dashboard"
+        >
+          Dashboard
+        </a>
+        <a
+          class="sidebar__link "
+          href="/applications"
+        >
+          Applications
+        </a>
+        <a
+          class="sidebar__link "
+          href="/crm"
+        >
+          CRM
+        </a>
+        <a
+          class="sidebar__link "
+          href="/communications"
+        >
+          Communications
+        </a>
+        <a
+          class="sidebar__link "
+          href="/calendar"
+        >
+          Calendar
+        </a>
+        <a
+          class="sidebar__link "
+          href="/marketing"
+        >
+          Marketing
+        </a>
+        <a
+          class="sidebar__link "
+          href="/lenders"
+        >
+          Lenders
+        </a>
+        <a
+          class="sidebar__link "
+          href="/settings"
+        >
+          Settings
+        </a>
+      </div>
+      <div
+        class="mb-4"
       >
-        Applications
-      </a>
-      <a
-        class="sidebar__link "
-        href="/crm"
-      >
-        CRM
-      </a>
-      <a
-        class="sidebar__link "
-        href="/communications"
-      >
-        Communications
-      </a>
-      <a
-        class="sidebar__link "
-        href="/calendar"
-      >
-        Calendar
-      </a>
-      <a
-        class="sidebar__link "
-        href="/marketing"
-      >
-        Marketing
-      </a>
-      <a
-        class="sidebar__link "
-        href="/lenders"
-      >
-        Lenders
-      </a>
-      <a
-        class="sidebar__link "
-        href="/settings"
-      >
-        Settings
-      </a>
+        <p
+          class="px-2 pb-2 text-xs font-semibold uppercase tracking-wide text-slate-500"
+        >
+          AI & Support
+        </p>
+        <a
+          class="sidebar__link "
+          href="/admin/ai/chats"
+        >
+          Chats
+        </a>
+        <a
+          class="sidebar__link "
+          href="/admin/ai/issues"
+        >
+          Issues
+        </a>
+      </div>
     </nav>
   </aside>
 </div>
