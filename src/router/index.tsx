@@ -19,6 +19,11 @@ import UnauthorizedPage from "@/pages/Unauthorized";
 import AIKnowledgeManager from "@/pages/admin/AIKnowledgeManager";
 import SupportDashboard from "@/pages/admin/SupportDashboard";
 import AnalyticsDashboard from "@/pages/admin/AnalyticsDashboard";
+import WebsiteLeadsPage from "@/pages/admin/WebsiteLeadsPage";
+import AIKnowledgeBasePage from "@/pages/admin/AIKnowledgeBasePage";
+import IssueReportsPage from "@/pages/admin/IssueReportsPage";
+import LiveChatQueuePage from "@/pages/admin/LiveChatQueuePage";
+import ConversionDashboardPage from "@/pages/admin/ConversionDashboardPage";
 
 const AppRouter = () => (
   <AuthProvider>
@@ -86,6 +91,46 @@ const AppRouter = () => (
             element={
               <RequireRole roles={["Admin"]} fallback={<Navigate to="/unauthorized" replace />}>
                 <LendersPage />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="admin/website-leads"
+            element={
+              <RequireRole roles={["Admin"]} fallback={<Navigate to="/unauthorized" replace />}>
+                <WebsiteLeadsPage />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="admin/ai-knowledge"
+            element={
+              <RequireRole roles={["Admin"]} fallback={<Navigate to="/unauthorized" replace />}>
+                <AIKnowledgeBasePage />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="admin/issue-reports"
+            element={
+              <RequireRole roles={["Admin"]} fallback={<Navigate to="/unauthorized" replace />}>
+                <IssueReportsPage />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="admin/live-chat"
+            element={
+              <RequireRole roles={["Admin"]} fallback={<Navigate to="/unauthorized" replace />}>
+                <LiveChatQueuePage />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="admin/conversions"
+            element={
+              <RequireRole roles={["Admin"]} fallback={<Navigate to="/unauthorized" replace />}>
+                <ConversionDashboardPage />
               </RequireRole>
             }
           />

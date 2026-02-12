@@ -38,6 +38,11 @@ const navigationSections: NavigationSection[] = [
       { label: "AI Knowledge", path: "/admin/ai", roles: ["Admin"] },
       { label: "Support", path: "/admin/support", roles: ["Admin"] },
       { label: "Analytics", path: "/admin/analytics", roles: ["Admin"] },
+      { label: "Website Leads", path: "/admin/website-leads", roles: ["Admin"] },
+      { label: "AI Knowledge Base", path: "/admin/ai-knowledge", roles: ["Admin"] },
+      { label: "Issue Reports", path: "/admin/issue-reports", roles: ["Admin"] },
+      { label: "Live Chat Queue", path: "/admin/live-chat", roles: ["Admin"] },
+      { label: "Conversions", path: "/admin/conversions", roles: ["Admin"] },
       { label: "Chats", path: "/admin/ai/chats", roles: ["Admin", "Staff"] },
       { label: "Issues", path: "/admin/ai/issues", roles: ["Admin", "Staff"] },
       { label: "Operations", path: "/admin/operations", roles: ["Admin"] }
