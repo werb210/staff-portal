@@ -6,12 +6,15 @@ import "./theme";
 import { SiloProvider } from "./context/SiloContext";
 import { AuthProvider } from "./auth/AuthContext";
 import ErrorBoundary from "./components/ErrorBoundary";
+import { ToastProvider } from "./context/ToastContext";
+import { checkEnv } from "./lib/envCheck";
 import { enforceRequestIdOnConsoleError } from "./utils/consoleGuard";
 import { startUiHeartbeat } from "./utils/uiHeartbeat";
 
 const rootElement = document.getElementById("root") as HTMLElement;
 enforceRequestIdOnConsoleError();
 startUiHeartbeat(rootElement);
+checkEnv();
 
 if (import.meta.env.PROD && "serviceWorker" in navigator) {
   window.addEventListener("load", () => {
@@ -48,7 +51,9 @@ ReactDOM.createRoot(rootElement).render(
     <AuthProvider>
       <SiloProvider>
         <ErrorBoundary>
-          <App />
+          <ToastProvider>
+            <App />
+          </ToastProvider>
         </ErrorBoundary>
       </SiloProvider>
     </AuthProvider>
