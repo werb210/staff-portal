@@ -25,6 +25,10 @@ import AIKnowledgeBasePage from "./pages/admin/AIKnowledgeBasePage";
 import IssueReportsPage from "./pages/admin/IssueReportsPage";
 import LiveChatQueuePage from "./pages/admin/LiveChatQueuePage";
 import ConversionDashboardPage from "./pages/admin/ConversionDashboardPage";
+import LeadsPage from "./pages/admin/LeadsPage";
+import AnalyticsPage from "./pages/admin/AnalyticsPage";
+import ComparisonEditor from "./pages/admin/ComparisonEditor";
+import AIKnowledge from "./pages/admin/AIKnowledge";
 import { emitUiTelemetry } from "./utils/uiTelemetry";
 import { useApiHealthCheck } from "./hooks/useApiHealthCheck";
 import UiFailureBanner from "./components/UiFailureBanner";
@@ -456,6 +460,38 @@ export default function App() {
                 element={
                   <RequireRole roles={["Admin"]}>
                     <ConversionDashboardPage />
+                  </RequireRole>
+                }
+              />
+              <Route
+                path="/admin/leads"
+                element={
+                  <RequireRole roles={["Admin"]}>
+                    <LeadsPage />
+                  </RequireRole>
+                }
+              />
+              <Route
+                path="/admin/analytics-events"
+                element={
+                  <RequireRole roles={["Admin"]}>
+                    <AnalyticsPage />
+                  </RequireRole>
+                }
+              />
+              <Route
+                path="/admin/comparison"
+                element={
+                  <RequireRole roles={["Admin"]}>
+                    <ComparisonEditor />
+                  </RequireRole>
+                }
+              />
+              <Route
+                path="/admin/ai-knowledge-upload"
+                element={
+                  <RequireRole roles={["Admin"]}>
+                    <AIKnowledge />
                   </RequireRole>
                 }
               />

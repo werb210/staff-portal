@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { useAuth } from "@/auth/useAuth";
 import { Navigate } from "react-router-dom";
+import CapitalScorePreview from "@/components/CapitalScorePreview";
 
 type Contact = {
   id: string;
@@ -56,6 +57,11 @@ export default function Operations() {
   return (
     <div style={{ padding: 24 }}>
       <h1>Operations Dashboard</h1>
+
+      <section>
+        <h2>Capital Readiness Preview</h2>
+        <CapitalScorePreview />
+      </section>
 
       <section>
         <h2>New Contacts</h2>

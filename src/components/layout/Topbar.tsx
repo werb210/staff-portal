@@ -24,6 +24,25 @@ const Topbar = ({ onToggleSidebar }: TopbarProps) => {
   const openDialer = useDialerStore((state) => state.openDialer);
   const [isCenterOpen, setIsCenterOpen] = useState(false);
   const [liveCount, setLiveCount] = useState(0);
+  const [leadCount, setLeadCount] = useState(0);
+  const [productionStatus, setProductionStatus] = useState("checking");
+
+  useEffect(() => {
+    fetch("/api/crm/leads/count")
+      .then((res) => res.json())
+      .then((data) => setLeadCount(data.count ?? 0))
+      .catch(() => setLeadCount(0));
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/_int/production-readiness")
+      .then((res) => res.json())
+      .then((data) => {
+        console.log(data);
+        setProductionStatus(data?.status ?? "ok");
+      })
+      .catch(() => setProductionStatus("degraded"));
+  }, []);
 
   useEffect(() => {
     const interval = setInterval(async () => {
@@ -68,6 +87,17 @@ const Topbar = ({ onToggleSidebar }: TopbarProps) => {
         {liveCount > 0 && (
           <span className="rounded-full bg-red-600 px-2 py-0.5 text-[10px] font-semibold text-white" aria-label="Live chat queue count">
             Live {liveCount}
+          </span>
+        )}
+        <span
+          className={`rounded-full px-2 py-0.5 text-[10px] font-semibold text-white ${productionStatus === "ok" ? "bg-emerald-600" : productionStatus === "checking" ? "bg-amber-500" : "bg-red-600"}`}
+          aria-label="Production readiness status"
+        >
+          Prod: {productionStatus}
+        </span>
+        {leadCount > 0 && (
+          <span className="rounded-full bg-indigo-600 px-2 py-0.5 text-[10px] font-semibold text-white" aria-label="Website lead count">
+            Leads {leadCount}
           </span>
         )}
         <button
