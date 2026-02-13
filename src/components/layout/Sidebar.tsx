@@ -27,6 +27,7 @@ const navigationSections: NavigationSection[] = [
       { label: "CRM", path: "/crm" },
       { label: "Communications", path: "/communications" },
       { label: "Live Chat", path: "/chat" },
+      { label: "AI Chat", path: "/ai-chat", roles: ["Admin", "Staff"] },
       { label: "Calendar", path: "/calendar" },
       { label: "Marketing", path: "/marketing" },
       { label: "Lenders", path: "/lenders" },
