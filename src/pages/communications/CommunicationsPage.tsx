@@ -11,10 +11,11 @@ import { getRequestId } from "@/utils/requestId";
 import RequireRole from "@/components/auth/RequireRole";
 import { emitUiTelemetry } from "@/utils/uiTelemetry";
 import { useAuth } from "@/hooks/useAuth";
-import { LiveChatQueue } from "@/features/support/LiveChatQueue";
 import { IssueReports } from "@/features/support/IssueReports";
+import { ContactSubmissions } from "@/features/support/ContactSubmissions";
+import AiQueueView from "@/modules/ai/AiQueueView";
 
-type CommsView = "threads" | "live-chat" | "issue-reports";
+type CommsView = "threads" | "ai-live-chat" | "issue-reports" | "contact-forms";
 
 const CommunicationsContent = () => {
   const {
@@ -63,8 +64,9 @@ const CommunicationsContent = () => {
         actions={
           <div className="flex gap-2">
             <button onClick={() => setView("threads")}>Threads</button>
-            {isAdmin && <button onClick={() => setView("live-chat")}>Live Chat</button>}
+            {isAdmin && <button onClick={() => setView("ai-live-chat")}>AI Live Chat</button>}
             {isAdmin && <button onClick={() => setView("issue-reports")}>Issue Reports</button>}
+            {isAdmin && <button onClick={() => setView("contact-forms")}>Contact Forms</button>}
           </div>
         }
       >
@@ -98,8 +100,9 @@ const CommunicationsContent = () => {
             )}
           </>
         )}
-        {view === "live-chat" && <LiveChatQueue isAdmin={isAdmin} />}
+        {view === "ai-live-chat" && <AiQueueView />}
         {view === "issue-reports" && <IssueReports isAdmin={isAdmin} />}
+        {view === "contact-forms" && <ContactSubmissions isAdmin={isAdmin} />}
       </Card>
     </div>
   );
