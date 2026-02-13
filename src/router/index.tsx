@@ -26,6 +26,8 @@ import LiveChatQueuePage from "@/pages/admin/LiveChatQueuePage";
 import ConversionDashboardPage from "@/pages/admin/ConversionDashboardPage";
 import ChatPage from "@/modules/chat/pages/ChatPage";
 import AIChatDashboard from "@/pages/AIChatDashboard";
+import AiCommsPage from "@/pages/AiCommsPage";
+import IssueInboxPage from "@/pages/IssueInboxPage";
 
 const AppRouter = () => (
   <AuthProvider>
@@ -50,6 +52,8 @@ const AppRouter = () => (
           <Route path="communications" element={<CommunicationsPage />} />
           <Route path="chat" element={<ChatPage />} />
           <Route path="ai-chat" element={<AIChatDashboard />} />
+          <Route path="ai-comms" element={<AiCommsPage />} />
+          <Route path="issues" element={<IssueInboxPage />} />
           <Route path="calendar" element={<CalendarPage />} />
           <Route path="marketing" element={<MarketingPage />} />
           <Route path="lenders" element={<LendersPage />} />
