@@ -25,6 +25,7 @@ import IssueReportsPage from "@/pages/admin/IssueReportsPage";
 import LiveChatQueuePage from "@/pages/admin/LiveChatQueuePage";
 import ConversionDashboardPage from "@/pages/admin/ConversionDashboardPage";
 import ChatPage from "@/modules/chat/pages/ChatPage";
+import AIChatDashboard from "@/pages/AIChatDashboard";
 
 const AppRouter = () => (
   <AuthProvider>
@@ -48,6 +49,7 @@ const AppRouter = () => (
           <Route path="crm/*" element={<CRMPage />} />
           <Route path="communications" element={<CommunicationsPage />} />
           <Route path="chat" element={<ChatPage />} />
+          <Route path="ai-chat" element={<AIChatDashboard />} />
           <Route path="calendar" element={<CalendarPage />} />
           <Route path="marketing" element={<MarketingPage />} />
           <Route path="lenders" element={<LendersPage />} />
