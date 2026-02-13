@@ -29,6 +29,9 @@ import LeadsPage from "./pages/admin/LeadsPage";
 import AnalyticsPage from "./pages/admin/AnalyticsPage";
 import ComparisonEditor from "./pages/admin/ComparisonEditor";
 import AIKnowledge from "./pages/admin/AIKnowledge";
+import AiPolicyEditorPage from "./pages/admin/AiPolicyEditorPage";
+import AiQueuePage from "./pages/ai/AiQueuePage";
+import AiLiveChatPage from "./pages/ai/AiLiveChatPage";
 import { emitUiTelemetry } from "./utils/uiTelemetry";
 import { useApiHealthCheck } from "./hooks/useApiHealthCheck";
 import UiFailureBanner from "./components/UiFailureBanner";
@@ -522,6 +525,30 @@ export default function App() {
                 element={
                   <RoleGuard roles={["Admin"]}>
                     <ComparisonEditor />
+                  </RoleGuard>
+                }
+              />
+              <Route
+                path="/portal/ai"
+                element={
+                  <RoleGuard roles={["Admin", "Staff"]}>
+                    <AiQueuePage />
+                  </RoleGuard>
+                }
+              />
+              <Route
+                path="/portal/ai/:sessionId"
+                element={
+                  <RoleGuard roles={["Admin", "Staff"]}>
+                    <AiLiveChatPage />
+                  </RoleGuard>
+                }
+              />
+              <Route
+                path="/admin/ai-policy"
+                element={
+                  <RoleGuard roles={["Admin"]}>
+                    <AiPolicyEditorPage />
                   </RoleGuard>
                 }
               />

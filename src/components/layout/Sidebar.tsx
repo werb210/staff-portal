@@ -47,7 +47,9 @@ const navigationSections: NavigationSection[] = [
       { label: "Issue Reports", path: "/admin/issue-reports", roles: ["Admin"] },
       { label: "Live Chat Queue", path: "/admin/live-chat", roles: ["Admin"] },
       { label: "Conversions", path: "/admin/conversions", roles: ["Admin"] },
+      { label: "AI Live Chat", path: "/portal/ai", roles: ["Admin", "Staff"] },
       { label: "Chats", path: "/admin/ai/chats", roles: ["Admin", "Staff"] },
+      { label: "AI Policy", path: "/admin/ai-policy", roles: ["Admin"] },
       { label: "Issues", path: "/admin/ai/issues", roles: ["Admin", "Staff"] },
       { label: "Operations", path: "/admin/operations", roles: ["Admin"] }
     ]

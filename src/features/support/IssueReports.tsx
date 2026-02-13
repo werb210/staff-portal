@@ -1,12 +1,18 @@
 import { useEffect, useState } from "react";
-import { getIssueReports } from "@/api/support";
+
+type IssueReport = {
+  id: string;
+  description: string;
+  screenshot?: string;
+  crmRecordUrl?: string;
+};
 
 type IssueReportsProps = {
   isAdmin?: boolean;
 };
 
 function IssueReports({ isAdmin = true }: IssueReportsProps) {
-  const [issues, setIssues] = useState<any[]>([]);
+  const [issues, setIssues] = useState<IssueReport[]>([]);
 
   useEffect(() => {
     if (!isAdmin) {
@@ -16,8 +22,14 @@ function IssueReports({ isAdmin = true }: IssueReportsProps) {
   }, [isAdmin]);
 
   async function load() {
-    const data = await getIssueReports();
-    setIssues(data.issues || []);
+    const res = await fetch("/api/support/report");
+    const data = (await res.json()) as { issues?: IssueReport[] } | IssueReport[];
+    setIssues(Array.isArray(data) ? data : (data.issues ?? []));
+  }
+
+  async function resolveIssue(id: string) {
+    await fetch(`/api/support/report/${id}`, { method: "DELETE" });
+    setIssues((prev) => prev.filter((issue) => issue.id !== id));
   }
 
   if (!isAdmin) {
@@ -26,15 +38,29 @@ function IssueReports({ isAdmin = true }: IssueReportsProps) {
 
   return (
     <div>
-      <h2>Reported Issues</h2>
-      {issues.map((i) => (
-        <div key={i.id} style={{ marginBottom: 20 }}>
-          <div>
-            <strong>Description:</strong> {i.description}
+      <h2 className="mb-4 text-lg font-semibold">Issue Reports</h2>
+      <div className="space-y-4">
+        {issues.map((issue) => (
+          <div key={issue.id} className="rounded border border-slate-200 p-4">
+            <p className="mb-2">
+              <strong>Description:</strong> {issue.description}
+            </p>
+            {issue.crmRecordUrl ? (
+              <p className="mb-2 text-sm">
+                <a href={issue.crmRecordUrl} target="_blank" rel="noreferrer" className="text-blue-700 underline">
+                  Open CRM record
+                </a>
+              </p>
+            ) : null}
+            {issue.screenshot ? (
+              <img src={issue.screenshot} alt="Reported issue screenshot" className="mb-3 max-h-64 rounded object-contain" />
+            ) : null}
+            <button onClick={() => resolveIssue(issue.id)} className="rounded bg-emerald-600 px-3 py-1 text-white">
+              Mark Resolved
+            </button>
           </div>
-          <img src={i.screenshot} alt="screenshot" style={{ maxWidth: "100%", borderRadius: 8 }} />
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }
