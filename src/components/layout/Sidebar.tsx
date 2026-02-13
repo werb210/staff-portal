@@ -26,6 +26,7 @@ const navigationSections: NavigationSection[] = [
       { label: "Applications", path: "/applications" },
       { label: "CRM", path: "/crm" },
       { label: "Communications", path: "/communications" },
+      { label: "Live Chat", path: "/chat" },
       { label: "Calendar", path: "/calendar" },
       { label: "Marketing", path: "/marketing" },
       { label: "Lenders", path: "/lenders" },
