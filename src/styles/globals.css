@@ -2875,3 +2875,44 @@ a,
     transform: rotate(360deg);
   }
 }
+
+.badge {
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.badge-website_contact {
+  background: #eef2ff;
+  color: #4338ca;
+}
+
+.badge-website_credit_check {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.badge-chat_start {
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+.badge-startup_interest {
+  background: #fdf2f8;
+  color: #be185d;
+}
+
+.issue-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.coming-soon {
+  border: 1px dashed #94a3b8;
+  border-radius: 8px;
+  padding: 10px;
+  color: #334155;
+}
