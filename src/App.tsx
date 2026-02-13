@@ -32,6 +32,7 @@ import AIKnowledge from "./pages/admin/AIKnowledge";
 import AiPolicyEditorPage from "./pages/admin/AiPolicyEditorPage";
 import AiQueuePage from "./pages/ai/AiQueuePage";
 import AiLiveChatPage from "./pages/ai/AiLiveChatPage";
+import Leads from "./pages/Leads";
 import { emitUiTelemetry } from "./utils/uiTelemetry";
 import { useApiHealthCheck } from "./hooks/useApiHealthCheck";
 import UiFailureBanner from "./components/UiFailureBanner";
@@ -387,6 +388,7 @@ export default function App() {
               <Route path="/crm" element={<CRMPage />} />
               <Route path="/communications" element={<CommunicationsPage />} />
               <Route path="/calendar" element={<CalendarPage />} />
+              <Route path="/leads" element={<Leads />} />
               <Route path="/tasks" element={<TaskPane />} />
               <Route path="/marketing" element={<MarketingPage />} />
               <Route
