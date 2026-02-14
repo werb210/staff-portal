@@ -12,6 +12,9 @@ export type AiKnowledgeDocument = {
   category: AiKnowledgeCategory;
   isActive: boolean;
   status: AiDocumentStatus;
+  uploadStatus?: "Queued" | "Uploaded" | "Failed";
+  ocrStatus?: "Pending" | "Processed" | "Failed";
+  embeddingStatus?: "Pending" | "Embedded" | "Failed";
   chunkCount: number;
   lastIndexedAt: string | null;
   failureReason?: string | null;

@@ -1,23 +1,24 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   applyHumanActiveState,
   archiveIssue,
   closeEscalatedChat,
-  createHumanEscalation,
   deleteIssue,
   fetchCommunicationThreads,
   fetchConversationById,
+  fetchCrmLeads,
   sendCommunication
 } from "@/api/communications";
 import { connectAiSocket, subscribeAiSocket, subscribeAiSocketConnection } from "@/services/aiSocket";
-import type { CommunicationConversation, CommunicationMessage } from "@/api/communications";
+import type { CommunicationConversation, CommunicationMessage, CrmLead } from "@/api/communications";
 
 type ConnectionState = "connecting" | "connected" | "disconnected";
 
+type SessionSocketState = "idle" | "connecting" | "connected" | "reconnecting" | "disconnected";
+
 const conversationLabel = (conversation: CommunicationConversation) => {
   if (conversation.status === "closed") return "Closed";
-  if (conversation.metadata?.aiPaused) return "AI paused";
-  if (conversation.status === "human" || conversation.type === "human") return "Human";
+  if (conversation.status === "human" || conversation.metadata?.aiPaused) return "Staff Active";
   return "AI";
 };
 
@@ -34,12 +35,24 @@ export default function ChatSessionsPanel() {
   const [messages, setMessages] = useState<CommunicationMessage[]>([]);
   const [input, setInput] = useState("");
   const [connectionState, setConnectionState] = useState<ConnectionState>("connecting");
+  const [sessionSocketState, setSessionSocketState] = useState<SessionSocketState>("idle");
+  const [staffConnected, setStaffConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [leads, setLeads] = useState<CrmLead[]>([]);
+
+  const sessionSocketRef = useRef<WebSocket | null>(null);
+  const reconnectTimerRef = useRef<number | null>(null);
+  const reconnectAttemptRef = useRef(0);
 
   const selected = useMemo(
     () => (selectedId ? sessions.find((session) => session.id === selectedId) ?? null : null),
     [selectedId, sessions]
   );
+
+  const selectedLead = useMemo(() => {
+    if (!selected?.leadId) return null;
+    return leads.find((lead) => lead.id === selected.leadId) ?? null;
+  }, [leads, selected?.leadId]);
 
   const issueReports = useMemo(() => sessions.filter((session) => session.type === "issue"), [sessions]);
 
@@ -47,6 +60,14 @@ export default function ChatSessionsPanel() {
     () =>
       sessions.filter(
         (session) => (session.type === "human" || session.type === "chat" || session.type === "credit_readiness") && session.status !== "closed"
+      ),
+    [sessions]
+  );
+
+  const closedEscalations = useMemo(
+    () =>
+      sessions.filter(
+        (session) => (session.type === "human" || session.type === "chat" || session.type === "credit_readiness") && session.status === "closed"
       ),
     [sessions]
   );
@@ -61,13 +82,85 @@ export default function ChatSessionsPanel() {
 
   const loadSessions = async () => {
     try {
-      const data = await fetchCommunicationThreads();
-      setSessions(dedupeSessions(data));
+      const [sessionData, leadData] = await Promise.all([fetchCommunicationThreads(), fetchCrmLeads()]);
+      setSessions(dedupeSessions(sessionData));
+      setLeads(leadData);
       setError(null);
-    } catch (loadError) {
-      console.error("Failed to load chat sessions", loadError);
+    } catch {
       setError("Unable to refresh sessions.");
     }
+  };
+
+  const cleanupSessionSocket = () => {
+    if (reconnectTimerRef.current) {
+      window.clearTimeout(reconnectTimerRef.current);
+      reconnectTimerRef.current = null;
+    }
+    if (sessionSocketRef.current) {
+      sessionSocketRef.current.close();
+      sessionSocketRef.current = null;
+    }
+    reconnectAttemptRef.current = 0;
+    setSessionSocketState("disconnected");
+    setStaffConnected(false);
+  };
+
+  const connectSessionSocket = (sessionId: string) => {
+    cleanupSessionSocket();
+    setSessionSocketState("connecting");
+
+    const openSocket = () => {
+      const ws = new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws/chat?sessionId=${sessionId}`);
+      sessionSocketRef.current = ws;
+
+      ws.addEventListener("open", () => {
+        reconnectAttemptRef.current = 0;
+        ws.send(JSON.stringify({ type: "staff_joined", sessionId }));
+        setSessionSocketState("connected");
+        setStaffConnected(true);
+      });
+
+      ws.addEventListener("message", (event) => {
+        try {
+          const payload = JSON.parse(String(event.data)) as { message?: string; body?: string };
+          const text = payload.message ?? payload.body;
+          if (!text) return;
+          setMessages((current) => [
+            ...current,
+            {
+              id: `live-${Date.now()}-${Math.random().toString(16).slice(2, 6)}`,
+              conversationId: selectedId ?? sessionId,
+              direction: "in",
+              message: text,
+              createdAt: new Date().toISOString(),
+              type: "chat",
+              silo: selected?.silo ?? "BF"
+            }
+          ]);
+        } catch {
+          // ignore non-json socket payloads
+        }
+      });
+
+      ws.addEventListener("close", () => {
+        sessionSocketRef.current = null;
+        if (!selectedId) {
+          setSessionSocketState("disconnected");
+          return;
+        }
+        reconnectAttemptRef.current += 1;
+        const delay = Math.min(500 * 2 ** reconnectAttemptRef.current, 10_000);
+        setSessionSocketState("reconnecting");
+        reconnectTimerRef.current = window.setTimeout(() => {
+          reconnectTimerRef.current = null;
+          openSocket();
+        }, delay);
+      });
+
+      ws.addEventListener("error", () => ws.close());
+    };
+
+    openSocket();
   };
 
   useEffect(() => {
@@ -83,11 +176,7 @@ export default function ChatSessionsPanel() {
     });
     const unsubscribeHumanActive = subscribeAiSocket("HUMAN_ACTIVE", (payload) => {
       if (payload.sessionId) {
-        void applyHumanActiveState(payload.sessionId)
-          .then(() => loadSessions())
-          .catch((stateError) => {
-            console.error("Failed to apply HUMAN_ACTIVE state", stateError);
-          });
+        void applyHumanActiveState(payload.sessionId).then(loadSessions);
       } else {
         void loadSessions();
       }
@@ -104,6 +193,7 @@ export default function ChatSessionsPanel() {
       unsubscribeIssue();
       unsubscribeHumanActive();
       disconnectAiSocketSafe(disconnect);
+      cleanupSessionSocket();
       setConnectionState("disconnected");
     };
   }, []);
@@ -111,6 +201,7 @@ export default function ChatSessionsPanel() {
   useEffect(() => {
     if (!selectedId) {
       setMessages([]);
+      cleanupSessionSocket();
       return;
     }
 
@@ -118,8 +209,8 @@ export default function ChatSessionsPanel() {
       .then((conversation) => {
         setMessages(conversation.messages);
       })
-      .catch((fetchError) => {
-        console.error("Failed to fetch selected conversation", fetchError);
+      .catch(() => {
+        setError("Unable to load selected session.");
       });
   }, [selectedId, sessions]);
 
@@ -128,27 +219,25 @@ export default function ChatSessionsPanel() {
       setSelectedId(conversation.id);
       const updated = await fetchConversationById(conversation.id);
       setMessages(updated.messages);
-    } catch (openError) {
-      console.error("Failed to open session", openError);
+      if (conversation.sessionId) {
+        connectSessionSocket(conversation.sessionId);
+      }
+      if (conversation.status !== "human") {
+        await applyHumanActiveState(conversation.id);
+        await loadSessions();
+      }
+    } catch {
       setError("Unable to open the selected session.");
     }
   }
 
-  async function joinAsHuman(conversation: CommunicationConversation) {
-    if (conversation.type === "human") return;
+  async function transferToStaff(conversation: CommunicationConversation) {
     try {
-      await createHumanEscalation({
-        applicationId: conversation.applicationId,
-        applicationName: conversation.applicationName,
-        contactId: conversation.contactId,
-        contactName: conversation.contactName,
-        silo: conversation.silo,
-        message: "Staff joined this AI chat."
-      });
+      await applyHumanActiveState(conversation.id);
+      await sendCommunication(conversation.id, "Transfer event: AI handoff to staff completed.", "system");
       await loadSessions();
-    } catch (joinError) {
-      console.error("Failed to join session as human", joinError);
-      setError("Unable to join the session.");
+    } catch {
+      setError("Unable to transfer this session.");
     }
   }
 
@@ -158,8 +247,7 @@ export default function ChatSessionsPanel() {
       await sendCommunication(selected.id, input, selected.type);
       setInput("");
       await loadSessions();
-    } catch (sendError) {
-      console.error("Failed to send message", sendError);
+    } catch {
       setError("Unable to send message.");
     }
   }
@@ -169,10 +257,13 @@ export default function ChatSessionsPanel() {
     try {
       const transcript = messages.map((message) => `${message.direction}: ${message.message}`).join("\n");
       await closeEscalatedChat(selected.id, transcript);
+      if (sessionSocketRef.current && selected.sessionId) {
+        sessionSocketRef.current.send(JSON.stringify({ type: "close_session", sessionId: selected.sessionId, transcript }));
+      }
       await loadSessions();
       setSelectedId(null);
-    } catch (closeError) {
-      console.error("Failed to close session", closeError);
+      cleanupSessionSocket();
+    } catch {
       setError("Unable to close the session.");
     }
   }
@@ -181,8 +272,7 @@ export default function ChatSessionsPanel() {
     try {
       await closeEscalatedChat(conversationId, "Issue resolved by staff.");
       await loadSessions();
-    } catch (resolveError) {
-      console.error("Failed to resolve issue", resolveError);
+    } catch {
       setError("Unable to mark issue resolved.");
     }
   }
@@ -191,8 +281,7 @@ export default function ChatSessionsPanel() {
     try {
       await archiveIssue(conversationId);
       await loadSessions();
-    } catch (archiveError) {
-      console.error("Failed to archive issue", archiveError);
+    } catch {
       setError("Unable to archive issue.");
     }
   }
@@ -201,8 +290,7 @@ export default function ChatSessionsPanel() {
     try {
       await deleteIssue(conversationId);
       await loadSessions();
-    } catch (deleteError) {
-      console.error("Failed to delete issue", deleteError);
+    } catch {
       setError("Unable to delete issue.");
     }
   }
@@ -213,31 +301,35 @@ export default function ChatSessionsPanel() {
         <h3 className="mb-2 font-semibold">AI Escalations</h3>
 
         <div className="mb-2 text-sm text-slate-600">Connection: {connectionState}</div>
+        <div className="mb-2 text-sm text-slate-600">Chat socket: {sessionSocketState === "reconnecting" ? "Reconnecting…" : sessionSocketState}</div>
         <div className="mb-2 text-sm text-slate-600">Active sessions: {activeEscalations.length}</div>
         {error ? <div className="mb-2 text-sm text-rose-700">{error}</div> : null}
 
         <div className="flex gap-4">
           <div className="w-1/3 border-r pr-2">
+            <div className="mb-2 text-xs font-semibold uppercase text-slate-500">Active</div>
             {activeEscalations.map((session) => (
               <div key={session.id} className="cursor-pointer p-2 hover:bg-gray-100" onClick={() => void openSession(session)}>
-                <div>Session {(session.sessionId ?? session.id).slice(0, 10)}</div>
-                {session.readinessToken ? (
-                  <div className="text-xs text-slate-500">Readiness token: {session.readinessToken}</div>
-                ) : null}
+                <div>Session {session.sessionId ?? session.id}</div>
+                <div className="text-xs text-slate-500">Lead: {session.contactName ?? "Unknown"}</div>
+                <div className="text-xs text-slate-500">Last message: {new Date(session.updatedAt).toLocaleString()}</div>
                 <div className="text-xs text-slate-500">Status: {conversationLabel(session)}</div>
-                {(session.contactName || session.contactEmail || session.contactPhone) && (
-                  <div className="text-xs text-slate-500">
-                    Contact: {session.contactName ?? "Unknown"}
-                    {session.contactEmail ? ` · ${session.contactEmail}` : ""}
-                    {session.contactPhone ? ` · ${session.contactPhone}` : ""}
-                  </div>
-                )}
+              </div>
+            ))}
+            {!activeEscalations.length && <div className="text-xs text-slate-500">No active sessions.</div>}
+            <div className="mb-2 mt-4 text-xs font-semibold uppercase text-slate-500">Closed</div>
+            {closedEscalations.map((session) => (
+              <div key={session.id} className="p-2">
+                <div>Session {session.sessionId ?? session.id}</div>
+                <div className="text-xs text-slate-500">Lead: {session.contactName ?? "Unknown"}</div>
+                <div className="text-xs text-slate-500">Closed at: {session.closedAt ? new Date(session.closedAt).toLocaleString() : "-"}</div>
               </div>
             ))}
           </div>
 
-          <div className="flex flex-1 flex-col">
+          <div className="flex flex-1 flex-col gap-3">
             <div className="mb-2 text-xs text-slate-500">Status: {selected ? conversationLabel(selected) : "N/A"}</div>
+            {staffConnected ? <div className="text-xs font-semibold text-emerald-700">Staff Connected</div> : null}
             {selected?.type === "credit_readiness" ? (
               <div className="mb-2 inline-block rounded border border-slate-300 px-2 py-1 text-xs text-slate-600">
                 {readinessBadge(selected)}
@@ -251,6 +343,23 @@ export default function ChatSessionsPanel() {
               ))}
             </div>
 
+            {selectedLead ? (
+              <div className="rounded border p-3 text-xs text-slate-700">
+                <div className="mb-2 font-semibold">CRM Lead Panel</div>
+                <div>Company: {selectedLead.company ?? "-"}</div>
+                <div>Contact: {selectedLead.contact ?? selectedLead.name}</div>
+                <div>Industry: {selectedLead.industry ?? "-"}</div>
+                <div>Revenue: {selectedLead.revenue ?? "-"}</div>
+                <div>Status: {selectedLead.status ?? "-"}</div>
+                <div>Tags: {selectedLead.tags.join(", ") || "-"}</div>
+                <div className="mt-2 font-semibold">Readiness</div>
+                <div>Score: {selectedLead.readinessScore ?? "-"}</div>
+                <div>Answers: {selectedLead.readinessAnswers ? JSON.stringify(selectedLead.readinessAnswers) : "-"}</div>
+                <div>Timestamp: {selectedLead.readinessCapturedAt ?? "-"}</div>
+                <div>Continue Application: {selectedLead.continueApplication ? "Yes" : "No"}</div>
+              </div>
+            ) : null}
+
             {selected && (
               <div className="mt-2 flex gap-2">
                 <input
@@ -262,8 +371,8 @@ export default function ChatSessionsPanel() {
                 <button onClick={() => void send()} className="rounded bg-blue-600 px-4 text-white">
                   Send
                 </button>
-                <button onClick={() => void joinAsHuman(selected)} className="rounded bg-amber-600 px-4 text-white">
-                  Join
+                <button onClick={() => void transferToStaff(selected)} className="rounded bg-amber-600 px-4 text-white">
+                  Transfer
                 </button>
                 <button onClick={() => void closeSession()} className="rounded bg-slate-700 px-4 text-white">
                   Close
@@ -287,15 +396,6 @@ export default function ChatSessionsPanel() {
               {typeof issue.metadata?.screenshot === "string" ? (
                 <div className="mt-1 space-y-1">
                   <img src={issue.metadata.screenshot as string} alt="Issue screenshot" className="max-h-32 border" />
-                  <a
-                    className="text-blue-600 underline"
-                    href={issue.metadata.screenshot as string}
-                    rel="noreferrer"
-                    target="_blank"
-                    download
-                  >
-                    Download screenshot
-                  </a>
                 </div>
               ) : null}
               <div className="mt-2 flex gap-2">
