@@ -20,8 +20,8 @@ type SessionSocketState = "idle" | "connecting" | "connected" | "reconnecting" |
 
 const conversationLabel = (conversation: CommunicationConversation) => {
   if (conversation.status === "closed") return "Closed";
-  if (conversation.status === "human" || conversation.metadata?.aiPaused) return "Staff Active";
-  return "AI";
+  if (conversation.status === "human" || conversation.metadata?.aiPaused) return "Human Mode";
+  return "AI Mode";
 };
 
 const readinessBadge = (conversation: CommunicationConversation) => {
@@ -189,10 +189,16 @@ export default function ChatSessionsPanel() {
         }
       });
 
-      ws.addEventListener("close", () => {
+      ws.addEventListener("close", (event) => {
         sessionSocketRef.current = null;
         if (!selectedId) {
           setSessionSocketState("disconnected");
+          return;
+        }
+        if (event.wasClean) {
+          setSessionSocketState("disconnected");
+          setStaffConnected(false);
+          setError("Client disconnected. Waiting for reconnection…");
           return;
         }
         reconnectAttemptRef.current += 1;
@@ -414,7 +420,7 @@ export default function ChatSessionsPanel() {
           </div>
 
           <div className="flex flex-1 flex-col gap-3">
-            <div className="mb-2 text-xs text-slate-500">Status: {selected ? conversationLabel(selected) : "N/A"}</div>
+            <div className="mb-2 text-xs text-slate-500">Mode: {selected ? conversationLabel(selected) : "N/A"}</div>
             {staffConnected ? <div className="text-xs font-semibold text-emerald-700">Staff Connected</div> : null}
             {selected?.type === "credit_readiness" ? (
               <div className="mb-2 inline-block rounded border border-slate-300 px-2 py-1 text-xs text-slate-600">
@@ -437,10 +443,15 @@ export default function ChatSessionsPanel() {
             {selectedLead ? (
               <div className="rounded border p-3 text-xs text-slate-700">
                 <div className="mb-2 font-semibold">CRM Lead Panel</div>
-                <div>Company: {selectedLead.company ?? "-"}</div>
-                <div>Contact: {selectedLead.contact ?? selectedLead.name}</div>
+                <div>Company Name: {selectedLead.company ?? "-"}</div>
+                <div>Full Name: {selectedLead.fullName ?? selectedLead.contact ?? selectedLead.name}</div>
+                <div>Email: {selectedLead.email ?? selected?.contactEmail ?? "-"}</div>
+                <div>Phone: {selectedLead.phone ?? selected?.contactPhone ?? "-"}</div>
                 <div>Industry: {selectedLead.industry ?? "-"}</div>
+                <div>YIB: {selectedLead.yib ?? "-"}</div>
                 <div>Revenue: {selectedLead.revenue ?? "-"}</div>
+                <div>A/R: {selectedLead.ar ?? "-"}</div>
+                <div>Existing Debt: {selectedLead.existingDebt ?? "-"}</div>
                 <div>Status: {selectedLead.status ?? "-"}</div>
                 <div>Tags: {selectedLead.tags.join(", ") || "-"}</div>
                 <div className="mt-2 font-semibold">Readiness</div>

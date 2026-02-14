@@ -45,6 +45,27 @@ describe("chat session lifecycle", () => {
     expect(readinessLeads[0].tags).toEqual(expect.arrayContaining(["readiness", "startup_interest"]));
   });
 
+
+  it("captures readiness profile fields and links lead to conversation", async () => {
+    const readinessConversation = (await fetchCommunicationThreads()).find((item) => item.type === "credit_readiness");
+    expect(readinessConversation).toBeTruthy();
+
+    if (!readinessConversation) return;
+    const leads = await fetchCrmLeads();
+    const readinessLead = leads.find((lead) => lead.id === readinessConversation.leadId);
+    expect(readinessLead).toBeTruthy();
+    expect(readinessLead?.company).toBe("Readiness Session");
+    expect(readinessLead?.fullName).toBe("Nora Readiness");
+    expect(readinessLead?.email).toBe("nora@ventures.example");
+    expect(readinessLead?.phone).toBe("+1-555-0404");
+    expect(readinessLead?.industry).toBe("Technology");
+    expect(readinessLead?.yib).toBe("2");
+    expect(readinessLead?.revenue).toBe("$85,000/mo");
+    expect(readinessLead?.ar).toBe("$18,000");
+    expect(readinessLead?.existingDebt).toBe("$12,000");
+    expect(readinessLead?.conversationIds).toContain(readinessConversation.id);
+  });
+
   it("stores issue report metadata for context and screenshot", async () => {
     const issue = await createIssueReport({
       silo: "BF",

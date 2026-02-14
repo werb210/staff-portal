@@ -46,10 +46,14 @@ export type CommunicationConversation = {
 export type CrmLead = {
   id: string;
   name: string;
+  fullName?: string;
   company?: string;
   contact?: string;
   industry?: string;
+  yib?: string;
   revenue?: string;
+  ar?: string;
+  existingDebt?: string;
   status?: string;
   email?: string;
   phone?: string;
@@ -212,9 +216,16 @@ const baseConversations: CommunicationConversation[] = [
     metadata: {
       status: "in_review",
       progression: "readiness_only",
+      companyName: "Nora Ventures LLC",
+      fullName: "Nora Readiness",
+      email: "nora@ventures.example",
+      phone: "+1-555-0404",
       kyc: { legalName: "Nora Ventures LLC", taxId: "XX-1234567" },
       industry: "Technology",
+      yib: "2",
       revenue: "$85,000/mo",
+      ar: "$18,000",
+      existingDebt: "$12,000",
       readinessScore: 84,
       readinessAnswers: { creditHistory: "strong", timeInBusiness: "18 months", cashFlow: "stable" },
       readinessCapturedAt: now(),
@@ -312,9 +323,13 @@ const normalized = (value?: string) => value?.trim().toLowerCase() ?? "";
 
 export const ensureCrmLead = (payload: {
   name?: string;
+  fullName?: string;
   company?: string;
   industry?: string;
+  yib?: string;
   revenue?: string;
+  ar?: string;
+  existingDebt?: string;
   status?: string;
   email?: string;
   phone?: string;
@@ -337,9 +352,13 @@ export const ensureCrmLead = (payload: {
       existing.conversationIds.push(payload.conversationId);
     }
     existing.company = existing.company ?? payload.company;
+    existing.fullName = existing.fullName ?? payload.fullName;
     existing.contact = existing.contact ?? payload.name;
     existing.industry = existing.industry ?? payload.industry;
+    existing.yib = existing.yib ?? payload.yib;
     existing.revenue = existing.revenue ?? payload.revenue;
+    existing.ar = existing.ar ?? payload.ar;
+    existing.existingDebt = existing.existingDebt ?? payload.existingDebt;
     existing.status = existing.status ?? payload.status;
     existing.readinessScore = existing.readinessScore ?? payload.readinessScore;
     existing.readinessAnswers = existing.readinessAnswers ?? payload.readinessAnswers;
@@ -354,10 +373,14 @@ export const ensureCrmLead = (payload: {
   const created: CrmLead = {
     id: `lead-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
     name: payload.name || "Unknown Lead",
+    fullName: payload.fullName ?? payload.name,
     company: payload.company,
     contact: payload.name,
     industry: payload.industry,
+    yib: payload.yib,
     revenue: payload.revenue,
+    ar: payload.ar,
+    existingDebt: payload.existingDebt,
     status: payload.status,
     email: payload.email,
     phone: payload.phone,
@@ -379,12 +402,17 @@ const ensureConversationLead = (conversation: CommunicationConversation) => {
   const tags = conversation.type === "credit_readiness" ? ["readiness", "startup_interest"] : ["startup_interest", "confidence_check"];
   const lead = ensureCrmLead({
     name: conversation.contactName,
+    fullName:
+      typeof conversation.metadata?.fullName === "string" ? conversation.metadata.fullName : conversation.contactName,
     company: conversation.applicationName,
     industry: typeof conversation.metadata?.industry === "string" ? conversation.metadata.industry : "Unknown",
+    yib: typeof conversation.metadata?.yib === "string" ? conversation.metadata.yib : undefined,
     revenue: typeof conversation.metadata?.revenue === "string" ? conversation.metadata.revenue : "Unknown",
+    ar: typeof conversation.metadata?.ar === "string" ? conversation.metadata.ar : undefined,
+    existingDebt: typeof conversation.metadata?.existingDebt === "string" ? conversation.metadata.existingDebt : undefined,
     status: typeof conversation.metadata?.status === "string" ? conversation.metadata.status : "new",
-    email: conversation.contactEmail,
-    phone: conversation.contactPhone,
+    email: typeof conversation.metadata?.email === "string" ? conversation.metadata.email : conversation.contactEmail,
+    phone: typeof conversation.metadata?.phone === "string" ? conversation.metadata.phone : conversation.contactPhone,
     readinessToken: conversation.readinessToken,
     readinessScore: typeof conversation.metadata?.readinessScore === "number" ? conversation.metadata.readinessScore : undefined,
     readinessAnswers:
