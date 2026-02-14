@@ -3,7 +3,7 @@ import { buildNotification } from "@/utils/notifications";
 import { useNotificationsStore } from "@/state/notifications.store";
 
 type AiSocketEventName = "escalated_chat" | "new_issue_report" | "new_chat_message" | "HUMAN_ACTIVE";
-type ConnectionEventName = "connecting" | "connected" | "disconnected";
+export type ConnectionEventName = "connecting" | "connected" | "disconnected";
 
 type AiSocketEventPayload = {
   type?: AiSocketEventName;
