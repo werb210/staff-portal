@@ -46,9 +46,18 @@ export type CommunicationConversation = {
 export type CrmLead = {
   id: string;
   name: string;
+  company?: string;
+  contact?: string;
+  industry?: string;
+  revenue?: string;
+  status?: string;
   email?: string;
   phone?: string;
   readinessToken?: string;
+  readinessScore?: number;
+  readinessAnswers?: Record<string, string>;
+  readinessCapturedAt?: string;
+  continueApplication?: boolean;
   tags: string[];
   conversationIds: string[];
   transcriptIds: string[];
@@ -203,7 +212,13 @@ const baseConversations: CommunicationConversation[] = [
     metadata: {
       status: "in_review",
       progression: "readiness_only",
-      kyc: { legalName: "Nora Ventures LLC", taxId: "XX-1234567" }
+      kyc: { legalName: "Nora Ventures LLC", taxId: "XX-1234567" },
+      industry: "Technology",
+      revenue: "$85,000/mo",
+      readinessScore: 84,
+      readinessAnswers: { creditHistory: "strong", timeInBusiness: "18 months", cashFlow: "stable" },
+      readinessCapturedAt: now(),
+      continueApplication: true
     },
     messages: [
       {
@@ -297,9 +312,17 @@ const normalized = (value?: string) => value?.trim().toLowerCase() ?? "";
 
 export const ensureCrmLead = (payload: {
   name?: string;
+  company?: string;
+  industry?: string;
+  revenue?: string;
+  status?: string;
   email?: string;
   phone?: string;
   readinessToken?: string;
+  readinessScore?: number;
+  readinessAnswers?: Record<string, string>;
+  readinessCapturedAt?: string;
+  continueApplication?: boolean;
   tags?: string[];
   conversationId?: string;
 }) => {
@@ -313,6 +336,15 @@ export const ensureCrmLead = (payload: {
     if (payload.conversationId && !existing.conversationIds.includes(payload.conversationId)) {
       existing.conversationIds.push(payload.conversationId);
     }
+    existing.company = existing.company ?? payload.company;
+    existing.contact = existing.contact ?? payload.name;
+    existing.industry = existing.industry ?? payload.industry;
+    existing.revenue = existing.revenue ?? payload.revenue;
+    existing.status = existing.status ?? payload.status;
+    existing.readinessScore = existing.readinessScore ?? payload.readinessScore;
+    existing.readinessAnswers = existing.readinessAnswers ?? payload.readinessAnswers;
+    existing.readinessCapturedAt = existing.readinessCapturedAt ?? payload.readinessCapturedAt;
+    existing.continueApplication = existing.continueApplication ?? payload.continueApplication;
     payload.tags?.forEach((tag) => {
       if (!existing.tags.includes(tag)) existing.tags.push(tag);
     });
@@ -322,9 +354,18 @@ export const ensureCrmLead = (payload: {
   const created: CrmLead = {
     id: `lead-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
     name: payload.name || "Unknown Lead",
+    company: payload.company,
+    contact: payload.name,
+    industry: payload.industry,
+    revenue: payload.revenue,
+    status: payload.status,
     email: payload.email,
     phone: payload.phone,
     readinessToken: payload.readinessToken,
+    readinessScore: payload.readinessScore,
+    readinessAnswers: payload.readinessAnswers,
+    readinessCapturedAt: payload.readinessCapturedAt,
+    continueApplication: payload.continueApplication,
     tags: payload.tags ?? [],
     conversationIds: payload.conversationId ? [payload.conversationId] : [],
     transcriptIds: []
@@ -338,9 +379,22 @@ const ensureConversationLead = (conversation: CommunicationConversation) => {
   const tags = conversation.type === "credit_readiness" ? ["readiness", "startup_interest"] : ["startup_interest", "confidence_check"];
   const lead = ensureCrmLead({
     name: conversation.contactName,
+    company: conversation.applicationName,
+    industry: typeof conversation.metadata?.industry === "string" ? conversation.metadata.industry : "Unknown",
+    revenue: typeof conversation.metadata?.revenue === "string" ? conversation.metadata.revenue : "Unknown",
+    status: typeof conversation.metadata?.status === "string" ? conversation.metadata.status : "new",
     email: conversation.contactEmail,
     phone: conversation.contactPhone,
     readinessToken: conversation.readinessToken,
+    readinessScore: typeof conversation.metadata?.readinessScore === "number" ? conversation.metadata.readinessScore : undefined,
+    readinessAnswers:
+      conversation.metadata?.readinessAnswers && typeof conversation.metadata.readinessAnswers === "object"
+        ? (conversation.metadata.readinessAnswers as Record<string, string>)
+        : undefined,
+    readinessCapturedAt:
+      typeof conversation.metadata?.readinessCapturedAt === "string" ? conversation.metadata.readinessCapturedAt : undefined,
+    continueApplication:
+      typeof conversation.metadata?.continueApplication === "boolean" ? conversation.metadata.continueApplication : undefined,
     tags,
     conversationId: conversation.id
   });

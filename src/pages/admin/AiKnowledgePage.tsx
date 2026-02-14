@@ -129,7 +129,9 @@ const AiKnowledgeContent = () => {
                 <tr className="border-b border-slate-200 text-left text-slate-600">
                   <th className="px-3 py-2">Document</th>
                   <th className="px-3 py-2">Category</th>
-                  <th className="px-3 py-2">Status</th>
+                  <th className="px-3 py-2">Upload</th>
+                  <th className="px-3 py-2">OCR</th>
+                  <th className="px-3 py-2">Embedding</th>
                   <th className="px-3 py-2">Active</th>
                   <th className="px-3 py-2">Chunks</th>
                   <th className="px-3 py-2">Last indexed</th>
@@ -151,9 +153,11 @@ const AiKnowledgeContent = () => {
                               : "bg-amber-100 text-amber-700"
                         }`}
                       >
-                        {document.status}
+                        {document.uploadStatus ?? "Uploaded"}
                       </span>
                     </td>
+                    <td className="px-3 py-2">{document.ocrStatus ?? (document.status === "Embedded" ? "Processed" : "Pending")}</td>
+                    <td className="px-3 py-2">{document.embeddingStatus ?? document.status}</td>
                     <td className="px-3 py-2">{document.isActive ? "Active" : "Inactive"}</td>
                     <td className="px-3 py-2">{document.chunkCount}</td>
                     <td className="px-3 py-2">{formatDateTime(document.lastIndexedAt)}</td>
