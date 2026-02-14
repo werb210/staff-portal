@@ -30,6 +30,10 @@ type ApplicationFormState = {
   primaryContactName: string;
   primaryContactEmail: string;
   primaryContactPhone: string;
+  source: string;
+  prequalAnnualRevenue: string;
+  prequalMonthlyRevenue: string;
+  prequalCreditRange: string;
 };
 
 const EMPTY_FORM_STATE: ApplicationFormState = {
@@ -46,7 +50,11 @@ const EMPTY_FORM_STATE: ApplicationFormState = {
   operationsRequestedAmount: "",
   primaryContactName: "",
   primaryContactEmail: "",
-  primaryContactPhone: ""
+  primaryContactPhone: "",
+  source: "",
+  prequalAnnualRevenue: "",
+  prequalMonthlyRevenue: "",
+  prequalCreditRange: ""
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null;
@@ -127,7 +135,14 @@ const normalizeFormState = (data: PortalApplicationRecord | null | undefined): A
     ),
     primaryContactName: readValue([contactRecord, data], ["name", "contactName", "contact_name"]),
     primaryContactEmail: readValue([contactRecord, data], ["email", "contactEmail", "contact_email"]),
-    primaryContactPhone: readValue([contactRecord, data], ["phone", "contactPhone", "contact_phone"])
+    primaryContactPhone: readValue([contactRecord, data], ["phone", "contactPhone", "contact_phone"]),
+    source: readValue([data], ["source", "leadSource", "lead_source"]),
+    prequalAnnualRevenue: readValue(
+      [operationsRecord, data],
+      ["annualRevenue", "annual_revenue", "yearlyRevenue", "yearly_revenue"]
+    ),
+    prequalMonthlyRevenue: readValue([operationsRecord, data], ["monthlyRevenue", "monthly_revenue"]),
+    prequalCreditRange: readValue([operationsRecord, data], ["creditRange", "credit_range"])
   };
 };
 
@@ -290,6 +305,15 @@ const ApplicationTab = () => {
           onChange={handleFieldChange("businessWebsiteUrl")}
         />
       </Section>
+      {formState.source === "website" ? (
+        <Section title="Website Pre-Application Data">
+          <div>Years in Business: {formState.operationsYearsInBusiness || "—"}</div>
+          <div>Annual Revenue: {formState.prequalAnnualRevenue || "—"}</div>
+          <div>Monthly Revenue: {formState.prequalMonthlyRevenue || "—"}</div>
+          <div>Requested Amount: {formState.operationsRequestedAmount || "—"}</div>
+          <div>Credit Range: {formState.prequalCreditRange || "—"}</div>
+        </Section>
+      ) : null}
       <Section title="Operations">
         <Input
           label="Start date"

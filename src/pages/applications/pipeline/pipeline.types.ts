@@ -12,6 +12,7 @@ export type PipelineStage = {
 };
 
 export const PIPELINE_STAGE_ORDER = [
+  "DRAFT",
   "RECEIVED",
   "IN_REVIEW",
   "DOCUMENTS_REQUIRED",
@@ -23,6 +24,7 @@ export const PIPELINE_STAGE_ORDER = [
 ];
 
 export const PIPELINE_STAGE_LABELS: Record<string, string> = {
+  DRAFT: "New (Website)",
   RECEIVED: "Received",
   INREVIEW: "In Review",
   DOCUMENTSREQUIRED: "Documents Required",
@@ -55,6 +57,7 @@ export type PipelineApplication = {
   requestedAmount?: number;
   productCategory?: string;
   submissionMethod?: string;
+  source?: string;
   stage: PipelineStageId;
   status?: string;
   matchPercentage?: number | string | null;

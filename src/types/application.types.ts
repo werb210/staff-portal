@@ -45,6 +45,7 @@ export type PortalApplicationRecord = {
   id: string;
   stage?: string;
   current_stage?: string;
+  source?: string;
   business?: Record<string, unknown> | null;
   operations?: Record<string, unknown> | null;
   primaryContact?: Record<string, unknown> | null;

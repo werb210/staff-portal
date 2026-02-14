@@ -126,6 +126,12 @@ const normalizePipelineApplication = (value: unknown): PipelineApplication | nul
         : typeof value.submission_method === "string"
           ? value.submission_method
           : undefined,
+    source:
+      typeof value.source === "string"
+        ? value.source
+        : typeof value.lead_source === "string"
+          ? value.lead_source
+          : undefined,
     stage:
       typeof value.stage === "string"
         ? value.stage
