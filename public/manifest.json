@@ -1,11 +1,10 @@
 {
-  "name": "Boreal Financial Staff Portal",
-  "short_name": "BF Staff",
+  "name": "Boreal Financial Portal",
+  "short_name": "Boreal",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0b1220",
-  "theme_color": "#1f3cff",
-  "orientation": "portrait-primary",
+  "background_color": "#000000",
+  "theme_color": "#000000",
   "icons": [
     {
       "src": "/icons/icon-192x192.png",
