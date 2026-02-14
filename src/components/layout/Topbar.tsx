@@ -71,7 +71,7 @@ const Topbar = ({ onToggleSidebar }: TopbarProps) => {
         <img
           src="/images/Header.png"
           alt="Boreal Financial"
-          className="h-10 w-auto"
+          className="h-10 w-auto object-contain"
         />
         <div className="topbar__title-stack">
           <h1 className="topbar__title">Boreal Financial</h1>

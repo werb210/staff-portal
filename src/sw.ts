@@ -18,7 +18,7 @@ const isApiRequest = (request: Request) => {
 sw.addEventListener("install", (event: ExtendableEvent) => {
   event.waitUntil(
     caches.open(APP_SHELL_CACHE).then((cache) =>
-      cache.addAll([OFFLINE_URL, "/", "/manifest.json"]).catch(() => undefined)
+      cache.addAll([OFFLINE_URL, "/", "/manifest.webmanifest"]).catch(() => undefined)
     )
   );
   sw.skipWaiting();
