@@ -1,3 +1,4 @@
+import api from "@/api/client";
 import { useCrmStore } from "@/state/crm.store";
 
 export type Contact = {
@@ -468,3 +469,12 @@ export const createContactApplication = async (payload: {
   }
   return delay(application);
 };
+
+
+export async function fetchLeads() {
+  return api.get("/crm/leads");
+}
+
+export async function fetchLeadById(id: string) {
+  return api.get(`/crm/leads/${id}`);
+}

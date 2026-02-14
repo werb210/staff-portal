@@ -2,6 +2,10 @@ export type LeadSource = "website_contact" | "website_credit_check" | "chat_star
 
 export type LeadMetadata = {
   yearsInBusiness?: string | number;
+  annualRevenue?: string | number;
+  monthlyRevenue?: string | number;
+  requestedAmount?: string | number;
+  creditScoreRange?: string | number;
   revenue?: string | number;
   accountsReceivable?: string | number;
   existingDebt?: string | number;
@@ -15,6 +19,9 @@ export interface Lead {
   email: string;
   phone: string;
   industry?: string;
+  productInterest?: string;
+  industryInterest?: string;
+  tags?: string[];
   source: LeadSource;
   createdAt: string;
   metadata?: LeadMetadata;
