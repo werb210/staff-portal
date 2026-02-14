@@ -2,7 +2,13 @@ import { getApiBaseUrl } from "@/config/api";
 import { buildNotification } from "@/utils/notifications";
 import { useNotificationsStore } from "@/state/notifications.store";
 
-type AiSocketEventName = "escalated_chat" | "new_issue_report" | "new_chat_message" | "HUMAN_ACTIVE";
+type AiSocketEventName =
+  | "escalated_chat"
+  | "new_issue_report"
+  | "new_chat_message"
+  | "HUMAN_ACTIVE"
+  | "session_timeout"
+  | "session_closed";
 export type ConnectionEventName = "connecting" | "connected" | "disconnected";
 
 type AiSocketEventPayload = {
@@ -80,7 +86,14 @@ const handleMessage = (event: MessageEvent) => {
   const eventName = payload.type ?? payload.event;
   if (!eventName) return;
 
-  if (eventName === "escalated_chat" || eventName === "new_issue_report" || eventName === "new_chat_message" || eventName === "HUMAN_ACTIVE") {
+  if (
+    eventName === "escalated_chat" ||
+    eventName === "new_issue_report" ||
+    eventName === "new_chat_message" ||
+    eventName === "HUMAN_ACTIVE" ||
+    eventName === "session_timeout" ||
+    eventName === "session_closed"
+  ) {
     notify(payload);
     emit(eventName, payload);
   }

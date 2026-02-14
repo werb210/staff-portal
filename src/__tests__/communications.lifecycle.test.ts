@@ -7,6 +7,7 @@ import {
   createHumanEscalation,
   createIssueReport,
   deleteIssue,
+  ensureCrmLead,
   fetchCommunicationThreads,
   fetchCrmLeads,
   resetCommunicationsFixtures
@@ -116,4 +117,31 @@ describe("chat session lifecycle", () => {
     const crmLeads = await fetchCrmLeads();
     expect(crmLeads.some((lead) => lead.id === leadId)).toBe(true);
   });
+
+  it("deduplicates CRM leads by email and phone", async () => {
+    const first = ensureCrmLead({
+      name: "Lead One",
+      email: "same@example.com",
+      phone: "+1-555-5000",
+      tags: ["readiness"]
+    });
+
+    const second = ensureCrmLead({
+      name: "Lead Two",
+      email: "same@example.com",
+      phone: "+1-555-5000",
+      tags: ["chat_start"]
+    });
+
+    expect(first.id).toBe(second.id);
+
+    const byPhone = ensureCrmLead({
+      name: "Lead Three",
+      phone: "+1-555-5000"
+    });
+
+    expect(byPhone.id).toBe(first.id);
+    expect(byPhone.tags).toEqual(expect.arrayContaining(["readiness", "chat_start"]));
+  });
+
 });
