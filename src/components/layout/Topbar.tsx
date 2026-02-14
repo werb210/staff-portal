@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useSilo } from "@/hooks/useSilo";
-import { useSettingsStore } from "@/state/settings.store";
 import { useNotificationsStore } from "@/state/notifications.store";
 import { getRoleLabel, resolveUserRole } from "@/utils/roles";
 import { useDialerStore } from "@/state/dialer.store";
@@ -18,7 +17,6 @@ type TopbarProps = {
 const Topbar = ({ onToggleSidebar }: TopbarProps) => {
   const { user, logout } = useAuth();
   const { silo } = useSilo();
-  const { branding } = useSettingsStore();
   const unreadCount = useNotificationsStore(
     (state) => state.notifications.filter((item) => !item.read).length
   );
@@ -70,14 +68,11 @@ const Topbar = ({ onToggleSidebar }: TopbarProps) => {
         >
           ☰
         </button>
-        {branding.logoUrl && (
-          <img
-            src={branding.logoUrl}
-            alt="Company logo"
-            className="topbar__logo"
-            style={{ maxWidth: `${branding.logoWidth}px` }}
-          />
-        )}
+        <img
+          src="/images/Header.png"
+          alt="Boreal Financial"
+          className="h-10 w-auto object-contain"
+        />
         <div className="topbar__title-stack">
           <h1 className="topbar__title">Staff Portal</h1>
           <span className="topbar__subtitle">Silo: {silo}</span>
