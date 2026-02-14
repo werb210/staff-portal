@@ -14,7 +14,7 @@ import LendersPage from "./pages/lenders/LendersPage";
 import SettingsPage from "./pages/settings/SettingsPage";
 import TaskPane from "./pages/tasks/TaskPane";
 import ReferrerPortal from "./pages/referrer/ReferrerPortal";
-import AiKnowledgePage from "./pages/admin/AiKnowledgePage";
+import AiControlPage from "./pages/admin/AiControlPage";
 import AiChatDashboard from "./pages/admin/AiChatDashboard";
 import AiIssueReports from "./pages/admin/AiIssueReports";
 import Operations from "./pages/admin/Operations";
@@ -30,8 +30,10 @@ import AnalyticsPage from "./pages/admin/AnalyticsPage";
 import ComparisonEditor from "./pages/admin/ComparisonEditor";
 import AIKnowledge from "./pages/admin/AIKnowledge";
 import AiPolicyEditorPage from "./pages/admin/AiPolicyEditorPage";
+import AiKnowledgeUpload from "./pages/admin/AiKnowledgeUpload";
 import AiQueuePage from "./pages/ai/AiQueuePage";
 import AiLiveChatPage from "./pages/ai/AiLiveChatPage";
+import AiConversations from "./pages/comms/AiConversations";
 import Leads from "./pages/Leads";
 import { emitUiTelemetry } from "./utils/uiTelemetry";
 import { useApiHealthCheck } from "./hooks/useApiHealthCheck";
@@ -422,7 +424,7 @@ export default function App() {
                 path="/admin/ai"
                 element={
                   <RoleGuard roles={["Admin"]}>
-                    <AiKnowledgePage />
+                    <AiControlPage />
                   </RoleGuard>
                 }
               />
@@ -559,6 +561,22 @@ export default function App() {
                 element={
                   <RoleGuard roles={["Admin"]}>
                     <AIKnowledge />
+                  </RoleGuard>
+                }
+              />
+              <Route
+                path="/admin/ai-upload"
+                element={
+                  <RoleGuard roles={["Admin"]}>
+                    <AiKnowledgeUpload />
+                  </RoleGuard>
+                }
+              />
+              <Route
+                path="/ai-comms"
+                element={
+                  <RoleGuard roles={["Admin", "Staff"]}>
+                    <AiConversations />
                   </RoleGuard>
                 }
               />
