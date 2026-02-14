@@ -19,9 +19,13 @@ vi.mock("@/api/communications", () => ({
   closeEscalatedChat: vi.fn()
 }));
 
+const { subscribeAiSocketMock } = vi.hoisted(() => ({
+  subscribeAiSocketMock: vi.fn(() => () => undefined)
+}));
+
 vi.mock("@/services/aiSocket", () => ({
   reconnectAiSocket: vi.fn(),
-  subscribeAiSocket: vi.fn(() => () => undefined),
+  subscribeAiSocket: subscribeAiSocketMock,
   subscribeAiSocketConnection: vi.fn((listener: (state: "connected") => void) => {
     listener("connected");
     return () => undefined;
@@ -32,6 +36,7 @@ const thread: CommunicationConversation = {
   id: "conv-chat-1",
   sessionId: "chat-session-1001",
   contactName: "Jane Client",
+  contactEmail: "jane.client@example.com",
   type: "chat",
   createdAt: "2025-01-01T00:00:00Z",
   updatedAt: "2025-01-01T00:00:00Z",
@@ -75,7 +80,11 @@ describe("LiveChatPanel", () => {
     await waitFor(() => {
       expect(screen.getAllByText("Jane Client").length).toBeGreaterThan(0);
     });
+    expect(screen.getByText("jane.client@example.com")).toBeInTheDocument();
     expect(screen.getByText("Staff presence: Online")).toBeInTheDocument();
+    expect(subscribeAiSocketMock).toHaveBeenCalledWith("new_chat_message", expect.any(Function));
+    expect(subscribeAiSocketMock).toHaveBeenCalledWith("session_timeout", expect.any(Function));
+    expect(subscribeAiSocketMock).toHaveBeenCalledWith("session_closed", expect.any(Function));
 
     await userEvent.click(screen.getByRole("button", { name: "Join" }));
     await waitFor(() => {

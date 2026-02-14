@@ -4,6 +4,10 @@ export type WebsiteIssue = {
   id: string;
   message: string;
   screenshotUrl?: string;
+  screenshot?: string;
+  createdAt?: string;
+  resolved?: boolean;
+  sessionId?: string;
 };
 
 export async function resolveIssue(id: string) {
