@@ -35,6 +35,9 @@ import AiQueuePage from "./pages/ai/AiQueuePage";
 import AiLiveChatPage from "./pages/ai/AiLiveChatPage";
 import AiConversations from "./pages/comms/AiConversations";
 import Leads from "./pages/Leads";
+import ContinuationApplications from "./features/continuation/ContinuationApplications";
+import LiveChatPanel from "./features/chat/LiveChatPanel";
+import IssueInboxPage from "./pages/IssueInboxPage";
 import { emitUiTelemetry } from "./utils/uiTelemetry";
 import { useApiHealthCheck } from "./hooks/useApiHealthCheck";
 import UiFailureBanner from "./components/UiFailureBanner";
@@ -389,6 +392,30 @@ export default function App() {
               />
               <Route path="/crm" element={<CRMPage />} />
               <Route path="/communications" element={<CommunicationsPage />} />
+              <Route
+                path="/continuations"
+                element={
+                  <RoleGuard roles={["Admin", "Staff"]}>
+                    <ContinuationApplications />
+                  </RoleGuard>
+                }
+              />
+              <Route
+                path="/chat"
+                element={
+                  <RoleGuard roles={["Admin", "Staff"]}>
+                    <LiveChatPanel />
+                  </RoleGuard>
+                }
+              />
+              <Route
+                path="/issues"
+                element={
+                  <RoleGuard roles={["Admin", "Staff"]}>
+                    <IssueInboxPage />
+                  </RoleGuard>
+                }
+              />
               <Route path="/calendar" element={<CalendarPage />} />
               <Route path="/leads" element={<Leads />} />
               <Route path="/tasks" element={<TaskPane />} />

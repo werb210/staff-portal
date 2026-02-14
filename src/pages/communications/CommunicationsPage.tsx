@@ -12,7 +12,6 @@ import RequireRole from "@/components/auth/RequireRole";
 import { emitUiTelemetry } from "@/utils/uiTelemetry";
 import { useAuth } from "@/hooks/useAuth";
 import { ContactSubmissions } from "@/features/support/ContactSubmissions";
-import api from "@/api/client";
 import AiChatPanel from "@/features/comms/AiChatPanel";
 import ChatSessionsPanel from "./ChatSessionsPanel";
 
@@ -20,16 +19,29 @@ type CommsView = "threads" | "ai-live-chat" | "ai-sessions" | "issue-reports" | 
 
 
 
+type WebsiteIssue = {
+  id: string;
+  message: string;
+  screenshot?: string;
+  createdAt: string;
+};
+
 const WebsiteIssuesPanel = () => {
-  const [issues, setIssues] = useState<any[]>([]);
+  const [issues, setIssues] = useState<WebsiteIssue[]>([]);
 
   useEffect(() => {
     void loadIssues();
   }, []);
 
   async function loadIssues() {
-    const res = await api.get("/support/issues");
-    setIssues(Array.isArray(res.data) ? res.data : []);
+    const response = await fetch("/api/support/issues");
+    const data = await response.json();
+    setIssues(Array.isArray(data) ? data : []);
+  }
+
+  async function deleteIssue(id: string) {
+    await fetch(`/api/support/issues/${id}`, { method: "DELETE" });
+    setIssues((previous) => previous.filter((issue) => issue.id !== id));
   }
 
   return (
@@ -40,7 +52,17 @@ const WebsiteIssuesPanel = () => {
           <div>
             <strong>Message:</strong> {issue.message}
           </div>
-          {issue.screenshot && <img src={issue.screenshot} className="mt-2 rounded shadow" alt="Issue screenshot" />}
+          {issue.screenshot && (
+            <img
+              src={issue.screenshot}
+              className="mt-2 h-24 w-24 rounded border object-cover shadow"
+              alt="Issue screenshot thumbnail"
+            />
+          )}
+          <div className="mt-2 text-xs text-slate-500">{new Date(issue.createdAt).toLocaleString()}</div>
+          <button onClick={() => void deleteIssue(issue.id)} className="mt-2 text-sm text-red-600">
+            Delete
+          </button>
         </div>
       ))}
     </div>
