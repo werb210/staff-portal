@@ -4,6 +4,8 @@ import api from "@/lib/api";
 type KnowledgeFile = {
   id: string;
   name: string;
+  embedStatus?: string;
+  lastEmbeddedAt?: string | null;
 };
 
 export default function AIKnowledgeBasePage() {
@@ -11,22 +13,36 @@ export default function AIKnowledgeBasePage() {
   const [file, setFile] = useState<File | null>(null);
 
   useEffect(() => {
-    api.get("/admin/ai-documents").then((res) => {
-      setFiles(res.data || []);
-    });
+    api
+      .get("/admin/ai-documents")
+      .then((res) => {
+        setFiles(Array.isArray(res.data) ? res.data : []);
+      })
+      .catch((error) => {
+        console.error("Failed to load AI documents", error);
+        setFiles([]);
+      });
   }, []);
 
   async function upload() {
     if (!file) return;
     const formData = new FormData();
     formData.append("file", file);
-    await api.post("/admin/ai-documents", formData);
-    window.location.reload();
+    try {
+      await api.post("/admin/ai-documents", formData);
+      window.location.reload();
+    } catch (error) {
+      console.error("Failed to upload AI document", error);
+    }
   }
 
   async function remove(id: string) {
-    await api.delete(`/admin/ai-documents/${id}`);
-    window.location.reload();
+    try {
+      await api.delete(`/admin/ai-documents/${id}`);
+      window.location.reload();
+    } catch (error) {
+      console.error("Failed to delete AI document", error);
+    }
   }
 
   return (
@@ -43,7 +59,13 @@ export default function AIKnowledgeBasePage() {
       <div className="bg-white rounded shadow">
         {files.map((entry) => (
           <div key={entry.id} className="p-3 border-t flex justify-between">
-            <span>{entry.name}</span>
+            <div>
+              <div>{entry.name}</div>
+              <div className="text-xs text-slate-500">
+                Embed status: {entry.embedStatus ?? "Pending"}
+                {entry.lastEmbeddedAt ? ` · Last embedded ${new Date(entry.lastEmbeddedAt).toLocaleString()}` : ""}
+              </div>
+            </div>
             <button onClick={() => void remove(entry.id)} className="text-red-500">
               Delete
             </button>

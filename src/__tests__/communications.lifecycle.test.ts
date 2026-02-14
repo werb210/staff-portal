@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import {
+  applyHumanActiveState,
+  archiveIssue,
   attachTranscriptToLead,
   closeEscalatedChat,
   createHumanEscalation,
@@ -53,5 +55,25 @@ describe("chat session lifecycle", () => {
     expect(issue.metadata?.context).toBe("client");
     expect(issue.metadata?.screenshot).toBe("/secure/issues/img-1.png");
     expect(issue.metadata?.timestamp).toBeTypeOf("string");
+  });
+
+  it("archives issues and marks escalated sessions as AI paused when human becomes active", async () => {
+    const issue = await createIssueReport({
+      silo: "BF",
+      message: "Client issue",
+      screenshot: "/secure/issues/img-archive.png",
+      context: "website"
+    });
+    const archived = await archiveIssue(issue.id);
+    expect(archived.metadata?.archived).toBe(true);
+
+    const escalation = await createHumanEscalation({
+      silo: "BF",
+      contactName: "Portal User",
+      message: "Need staff now"
+    });
+    const paused = await applyHumanActiveState(escalation.id);
+    expect(paused.metadata?.aiPaused).toBe(true);
+    expect(paused.status).toBe("human");
   });
 });
