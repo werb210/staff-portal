@@ -39,6 +39,8 @@ const ConversationList = ({
           <option value="issue">Issue</option>
           <option value="sms">SMS</option>
           <option value="system">System</option>
+          <option value="credit_readiness">Credit Readiness</option>
+          <option value="contact_form">Contact Form</option>
         </Select>
         <Select
           label="Silo"

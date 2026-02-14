@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { closeSession, getMessages, sendStaffMessage } from "../api";
+import { attachTranscriptToLead } from "@/api/communications";
 import type { ChatMessage as ChatMessageType, ChatSession } from "../types";
 import ChatMessage from "./ChatMessage";
 import ChatQueue from "./ChatQueue";
@@ -58,6 +59,8 @@ const ChatWindow = () => {
   const handleCloseSession = async () => {
     if (!selectedSession || isClosed) return;
     await closeSession(selectedSession.id);
+    const transcript = messages.map((message) => `${message.role}: ${message.message}`).join("\n");
+    await attachTranscriptToLead(selectedSession.id, transcript);
     const updatedSession = { ...selectedSession, status: "closed" as const };
     setSelectedSession(updatedSession);
     setRefreshToken((prev) => prev + 1);
@@ -66,7 +69,7 @@ const ChatWindow = () => {
         new CustomEvent("crm:lead-refresh", {
           detail: {
             leadId: updatedSession.lead_id,
-            events: ["Chat Session Started", "Chat Session Closed"]
+            events: ["Chat Session Started", "Staff Handoff", "Chat Session Closed", "Transcript Attached"]
           }
         })
       );

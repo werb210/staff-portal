@@ -5,7 +5,9 @@ const channelIcons: Record<string, string> = {
   sms: "📱",
   human: "🧑‍💼",
   issue: "⚠️",
-  system: "🔔"
+  system: "🔔",
+  credit_readiness: "📄",
+  contact_form: "📝"
 };
 
 interface ConversationItemProps {
