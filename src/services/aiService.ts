@@ -4,14 +4,17 @@ import apiClient from "@/api/httpClient";
 
 export type AiKnowledgeCategory = "Product" | "Lender" | "Underwriting" | "Process";
 
+export type AiDocumentStatus = "Processing" | "Embedded" | "Failed";
+
 export type AiKnowledgeDocument = {
   id: string;
   name: string;
   category: AiKnowledgeCategory;
   isActive: boolean;
-  status: "Processing" | "Indexed";
+  status: AiDocumentStatus;
   chunkCount: number;
   lastIndexedAt: string | null;
+  failureReason?: string | null;
 };
 
 export type AiChatMessage = {
@@ -42,6 +45,7 @@ export type AiIssueReport = {
   assignedTo?: string | null;
   browserInfo?: string | null;
   chatSessionId?: string | null;
+  context?: "client" | "website";
 };
 
 export type UploadAiKnowledgePayload = {
@@ -115,6 +119,10 @@ export const resolveIssue = async (issueId: string): Promise<void> => {
   await apiClient.post<void>(`/admin/ai/issues/${issueId}/resolve`);
 };
 
+export const deleteIssue = async (issueId: string): Promise<void> => {
+  await apiClient.delete<void>(`/admin/ai/issues/${issueId}`);
+};
+
 export const aiQueryKeys = {
   knowledge: ["ai", "knowledge"] as const,
   chats: ["ai", "chats"] as const,
@@ -174,9 +182,18 @@ export const useResolveIssueMutation = () => {
   });
 };
 
+export const useDeleteIssueMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (issueId: string) => deleteIssue(issueId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: aiQueryKeys.issues });
+    }
+  });
+};
 
 export const AIService = {
   listKnowledge: () => axios.get("/api/ai/knowledge"),
-  createKnowledge: (data: any) => axios.post("/api/ai/knowledge", data),
+  createKnowledge: (data: unknown) => axios.post("/api/ai/knowledge", data),
   deleteKnowledge: (id: string) => axios.delete(`/api/ai/knowledge/${id}`)
 };

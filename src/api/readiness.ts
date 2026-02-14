@@ -13,8 +13,12 @@ export interface ReadinessLead {
   monthlyRevenue: number | null;
   accountsReceivable: number | null;
   status: ReadinessLeadStatus;
+  source?: string;
+  tags: string[];
+  debt: number | null;
   createdAt: string;
   transcriptHistory: string[];
+  activityLog: string[];
 }
 
 export interface ReadinessConvertResponse {
@@ -60,8 +64,12 @@ const parseLead = (value: unknown): ReadinessLead | null => {
     monthlyRevenue: asNumber(record.monthlyRevenue),
     accountsReceivable: asNumber(record.accountsReceivable ?? record.ar),
     status: typeof record.status === "string" ? record.status : "new",
+    source: typeof record.source === "string" ? record.source : "readiness",
+    tags: asStringArray(record.tags ?? ["readiness", "startup_interest"]),
+    debt: asNumber(record.debt),
     createdAt: typeof record.createdAt === "string" ? record.createdAt : new Date(0).toISOString(),
-    transcriptHistory: asStringArray(record.transcriptHistory)
+    transcriptHistory: asStringArray(record.transcriptHistory),
+    activityLog: asStringArray(record.activityLog)
   };
 };
 

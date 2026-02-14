@@ -35,6 +35,8 @@ export type CommunicationConversation = {
   highlighted?: boolean;
   acknowledged?: boolean;
   leadId?: string;
+  status?: "ai" | "human" | "closed";
+  closedAt?: string;
 };
 
 export type CrmLead = {
@@ -309,7 +311,7 @@ export const ensureCrmLead = (payload: {
 
 const ensureConversationLead = (conversation: CommunicationConversation) => {
   if (conversation.leadId) return conversation;
-  const tags = ["startup_interest", "confidence_check"];
+  const tags = conversation.type === "credit_readiness" ? ["readiness", "startup_interest"] : ["startup_interest", "confidence_check"];
   const lead = ensureCrmLead({ name: conversation.contactName, tags, conversationId: conversation.id });
   const updated = { ...conversation, leadId: lead.id };
   updateConversation(updated);
@@ -410,6 +412,7 @@ export const createHumanEscalation = async (payload: {
     assignedTo,
     highlighted: true,
     unread: 1,
+    status: "human",
     messages: [
       {
         id: `msg-${Date.now()}`,
@@ -436,6 +439,7 @@ export const createIssueReport = async (payload: {
   silo: string;
   message: string;
   screenshot?: string;
+  context?: "client" | "website";
 }) => {
   const conversationId = `issue-${Date.now()}`;
   const conversation: CommunicationConversation = {
@@ -463,7 +467,11 @@ export const createIssueReport = async (payload: {
         silo: payload.silo
       }
     ],
-    metadata: payload.screenshot ? { screenshot: payload.screenshot } : undefined
+    metadata: {
+      screenshot: payload.screenshot,
+      context: payload.context ?? "website",
+      timestamp: now()
+    }
   };
   const linked = ensureConversationLead(conversation);
   conversations = [linked, ...conversations];
@@ -494,6 +502,25 @@ export const attachTranscriptToLead = async (conversationId: string, transcript:
   lead.transcriptIds.push(`transcript-${Date.now()}`);
   logTimeline(linkedConversation, `Chat transcript attached to CRM lead: ${transcript.slice(0, 60)}`);
   return clone(lead);
+};
+
+export const closeEscalatedChat = async (conversationId: string, transcript: string) => {
+  const conversation = findConversation(conversationId);
+  if (!conversation) throw new Error("Conversation not found");
+
+  await attachTranscriptToLead(conversationId, transcript);
+  const updated: CommunicationConversation = {
+    ...conversation,
+    status: "closed",
+    closedAt: now(),
+    highlighted: false,
+    unread: 0,
+    updatedAt: now()
+  };
+
+  updateConversation(updated);
+  logTimeline(updated, "Escalated chat closed by staff.");
+  return clone(updated);
 };
 
 export const fetchCrmLeads = async () => Promise.resolve(clone(leads));

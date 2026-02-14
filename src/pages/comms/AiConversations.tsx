@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import AISessionList from "./AISessionList";
-import { useLiveChat } from "@/hooks/useLiveChat";
 
 type Conversation = {
   id: string;
@@ -18,7 +17,6 @@ export default function AiConversations() {
   const [convos, setConvos] = useState<Conversation[]>([]);
   const [selectedFilter, setSelectedFilter] = useState<Filter>("All");
 
-  useLiveChat();
 
   useEffect(() => {
     axios.get("/api/ai/conversations").then((res) => {

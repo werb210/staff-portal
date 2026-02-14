@@ -144,9 +144,11 @@ const AiKnowledgeContent = () => {
                     <td className="px-3 py-2">
                       <span
                         className={`rounded-full px-2 py-1 text-xs font-semibold ${
-                          document.status === "Indexed"
+                          document.status === "Embedded"
                             ? "bg-emerald-100 text-emerald-700"
-                            : "bg-amber-100 text-amber-700"
+                            : document.status === "Failed"
+                              ? "bg-rose-100 text-rose-700"
+                              : "bg-amber-100 text-amber-700"
                         }`}
                       >
                         {document.status}

@@ -52,10 +52,13 @@ const ReadinessLeadsPage = () => {
               <th className="px-3 py-2">Contact Name</th>
               <th className="px-3 py-2">Phone</th>
               <th className="px-3 py-2">Email</th>
+              <th className="px-3 py-2">Source</th>
+              <th className="px-3 py-2">Tags</th>
               <th className="px-3 py-2">Industry</th>
               <th className="px-3 py-2">Years</th>
               <th className="px-3 py-2">Monthly Revenue</th>
               <th className="px-3 py-2">A/R</th>
+              <th className="px-3 py-2">Debt</th>
               <th className="px-3 py-2">Created Date</th>
               <th className="px-3 py-2">Status</th>
             </tr>
@@ -71,10 +74,13 @@ const ReadinessLeadsPage = () => {
                 <td className="px-3 py-2">{lead.contactName || "-"}</td>
                 <td className="px-3 py-2">{lead.phone || "-"}</td>
                 <td className="px-3 py-2">{lead.email || "-"}</td>
+                <td className="px-3 py-2">{lead.source || "readiness"}</td>
+                <td className="px-3 py-2">{lead.tags.join(", ") || "-"}</td>
                 <td className="px-3 py-2">{lead.industry || "-"}</td>
                 <td className="px-3 py-2">{lead.yearsInBusiness ?? "-"}</td>
                 <td className="px-3 py-2">{formatCurrency(lead.monthlyRevenue)}</td>
                 <td className="px-3 py-2">{formatCurrency(lead.accountsReceivable)}</td>
+                <td className="px-3 py-2">{formatCurrency(lead.debt)}</td>
                 <td className="px-3 py-2">{formatDate(lead.createdAt)}</td>
                 <td className="px-3 py-2">{lead.status}</td>
               </tr>
@@ -103,13 +109,25 @@ const ReadinessLeadsPage = () => {
               <DetailRow label="Contact Name" value={selectedLead.contactName} />
               <DetailRow label="Phone" value={selectedLead.phone} />
               <DetailRow label="Email" value={selectedLead.email} />
+              <DetailRow label="Source" value={selectedLead.source || "readiness"} />
+              <DetailRow label="Tags" value={selectedLead.tags.join(", ")} />
               <DetailRow label="Industry" value={selectedLead.industry} />
               <DetailRow label="Years in Business" value={selectedLead.yearsInBusiness?.toString() ?? "-"} />
               <DetailRow label="Monthly Revenue" value={formatCurrency(selectedLead.monthlyRevenue)} />
               <DetailRow label="Accounts Receivable" value={formatCurrency(selectedLead.accountsReceivable)} />
+              <DetailRow label="Debt" value={formatCurrency(selectedLead.debt)} />
               <DetailRow label="Created Date" value={formatDate(selectedLead.createdAt)} />
               <DetailRow label="Status" value={selectedLead.status} />
             </dl>
+            <div className="mt-3">
+              <h3 className="font-semibold">Activity Log</h3>
+              <ul className="list-disc pl-5 text-sm text-slate-600">
+                {selectedLead.activityLog.map((entry) => (
+                  <li key={entry}>{entry}</li>
+                ))}
+                {selectedLead.activityLog.length === 0 ? <li>No activity yet.</li> : null}
+              </ul>
+            </div>
 
             <div className="mt-6">
               <button

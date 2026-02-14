@@ -44,6 +44,20 @@ const ContactsPage = () => {
 
   const filtered = useMemo(() => contacts, [contacts]);
 
+  const dedupeCount = useMemo(() => {
+    const seen = new Set<string>();
+    let duplicates = 0;
+    contacts.forEach((contact) => {
+      const key = `${contact.email.toLowerCase()}::${contact.phone}`;
+      if (seen.has(key)) {
+        duplicates += 1;
+      } else {
+        seen.add(key);
+      }
+    });
+    return duplicates;
+  }, [contacts]);
+
   const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
     setFilters({ search: event.target.value });
   };
@@ -90,6 +104,9 @@ const ContactsPage = () => {
           </Button>
         </div>
         {error && <p className="text-red-700">{getErrorMessage(error, "Unable to load contacts.")}</p>}
+        {!error && dedupeCount > 0 ? (
+          <p className="mb-2 text-amber-700" data-testid="dedupe-indicator">Potential duplicates detected: {dedupeCount}</p>
+        ) : null}
         {!error && (
           <Table headers={["Name", "Email", "Phone", "Silo", "Owner", "Active", "Actions"]}>
             {isLoading && (

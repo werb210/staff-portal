@@ -3,6 +3,7 @@ import { buildNotification } from "@/utils/notifications";
 import { useNotificationsStore } from "@/state/notifications.store";
 
 type AiSocketEventName = "escalated_chat" | "new_issue_report" | "new_chat_message";
+type ConnectionEventName = "connecting" | "connected" | "disconnected";
 
 type AiSocketEventPayload = {
   type?: AiSocketEventName;
@@ -15,10 +16,13 @@ type AiSocketEventPayload = {
 };
 
 type Listener = (payload: AiSocketEventPayload) => void;
+type ConnectionListener = (state: ConnectionEventName) => void;
 
 const listeners = new Map<AiSocketEventName, Set<Listener>>();
+const connectionListeners = new Set<ConnectionListener>();
 
 const MAX_RECONNECT_ATTEMPTS = 10;
+const BASE_RECONNECT_DELAY_MS = 500;
 let reconnectAttempts = 0;
 let reconnectTimer: number | null = null;
 let socket: WebSocket | null = null;
@@ -38,6 +42,10 @@ const resolveWebSocketUrl = () => {
   }
 
   return "ws://server-url/ws/chat";
+};
+
+const emitConnection = (state: ConnectionEventName) => {
+  connectionListeners.forEach((listener) => listener(state));
 };
 
 const notify = (payload: AiSocketEventPayload) => {
@@ -78,9 +86,13 @@ const handleMessage = (event: MessageEvent) => {
 };
 
 const scheduleReconnect = () => {
-  if (manuallyClosed || reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) return;
+  if (manuallyClosed || reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+    emitConnection("disconnected");
+    return;
+  }
+
   reconnectAttempts += 1;
-  const timeout = Math.min(1000 * reconnectAttempts, 10_000);
+  const timeout = Math.min(BASE_RECONNECT_DELAY_MS * 2 ** reconnectAttempts, 10_000);
   reconnectTimer = window.setTimeout(() => {
     reconnectTimer = null;
     connectAiSocket();
@@ -88,31 +100,38 @@ const scheduleReconnect = () => {
 };
 
 export const connectAiSocket = () => {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined") return () => undefined;
   manuallyClosed = false;
 
   if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) {
-    return;
+    return () => disconnectAiSocket();
   }
 
+  emitConnection("connecting");
   const wsUrl = resolveWebSocketUrl();
   socket = new WebSocket(wsUrl);
 
   socket.addEventListener("open", () => {
     reconnectAttempts = 0;
+    emitConnection("connected");
   });
 
   socket.addEventListener("message", handleMessage);
 
   socket.addEventListener("close", () => {
+    socket = null;
     if (!manuallyClosed) {
       scheduleReconnect();
+    } else {
+      emitConnection("disconnected");
     }
   });
 
   socket.addEventListener("error", () => {
     socket?.close();
   });
+
+  return () => disconnectAiSocket();
 };
 
 export const disconnectAiSocket = () => {
@@ -123,6 +142,7 @@ export const disconnectAiSocket = () => {
   }
   socket?.close();
   socket = null;
+  emitConnection("disconnected");
 };
 
 export const reconnectAiSocket = () => {
@@ -138,6 +158,13 @@ export const subscribeAiSocket = (event: AiSocketEventName, listener: Listener) 
   return () => {
     const current = listeners.get(event);
     current?.delete(listener);
+  };
+};
+
+export const subscribeAiSocketConnection = (listener: ConnectionListener) => {
+  connectionListeners.add(listener);
+  return () => {
+    connectionListeners.delete(listener);
   };
 };
 

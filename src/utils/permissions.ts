@@ -23,3 +23,15 @@ export const canAccess = (params: {
   const capabilityAllowed = hasCapabilities(userCapabilities, requiredCapabilities);
   return roleAllowed && capabilityAllowed;
 };
+
+
+export const canAccessLenderResource = (params: {
+  role?: UserRole | null;
+  userLenderId?: string | null;
+  resourceLenderId?: string | null;
+}) => {
+  if (params.role === "Admin") return true;
+  if (params.role !== "Lender") return false;
+  if (!params.userLenderId || !params.resourceLenderId) return false;
+  return params.userLenderId === params.resourceLenderId;
+};

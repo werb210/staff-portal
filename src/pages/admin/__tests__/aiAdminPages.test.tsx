@@ -63,6 +63,9 @@ vi.mock("@/services/aiService", () => ({
   })),
   useResolveIssueMutation: vi.fn(() => ({
     mutate: vi.fn()
+  })),
+  useDeleteIssueMutation: vi.fn(() => ({
+    mutate: vi.fn()
   }))
 }));
 
