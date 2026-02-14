@@ -14,8 +14,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { ContactSubmissions } from "@/features/support/ContactSubmissions";
 import { deleteIssue, fetchWebsiteIssues, type WebsiteIssue } from "@/api/issues";
 import AiChatPanel from "@/features/comms/AiChatPanel";
+import ChatSessionsPanel from "./ChatSessionsPanel";
 
-type CommsView = "threads" | "ai-live-chat" | "issue-reports" | "contact-forms";
+type CommsView = "threads" | "ai-live-chat" | "ai-sessions" | "issue-reports" | "contact-forms";
 
 
 
@@ -99,6 +100,7 @@ const CommunicationsContent = () => {
           <div className="flex gap-2">
             <button onClick={() => setView("threads")}>Threads</button>
             {isAdmin && <button onClick={() => setView("ai-live-chat")}>AI Live Chat</button>}
+            {isAdmin && <button onClick={() => setView("ai-sessions")}>AI Sessions</button>}
             {isAdmin && <button onClick={() => setView("issue-reports")}>Issue Report</button>}
             {isAdmin && <button onClick={() => setView("contact-forms")}>Contact Forms</button>}
           </div>
@@ -135,6 +137,7 @@ const CommunicationsContent = () => {
           </>
         )}
         {view === "ai-live-chat" && <AiChatPanel />}
+        {view === "ai-sessions" && isAdmin && <ChatSessionsPanel />}
         {view === "issue-reports" && isAdmin && <WebsiteIssuesPanel />}
         {view === "contact-forms" && <ContactSubmissions isAdmin={isAdmin} />}
       </Card>

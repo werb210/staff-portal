@@ -482,3 +482,13 @@ export async function fetchLeads() {
 export async function fetchLeadById(id: string) {
   return api.get(`/crm/leads/${id}`);
 }
+
+export async function fetchChatSessions() {
+  const res = await api.get("/api/ai/sessions");
+  return res.data;
+}
+
+export async function fetchContinuationLeads() {
+  const res = await api.get("/api/application/continuations");
+  return res.data;
+}
