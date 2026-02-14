@@ -1,11 +1,34 @@
+import axios from "axios";
 import api from "./client";
+
+const aiApi = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE_URL || "",
+});
+
+export async function fetchEscalatedSessions() {
+  const res = await aiApi.get("/api/ai/escalated");
+  return res.data;
+}
+
+export async function fetchSessionMessages(sessionId: string) {
+  const res = await aiApi.get(`/api/ai/session/${sessionId}`);
+  return res.data;
+}
+
+export async function sendStaffMessage(sessionId: string, message: string) {
+  const res = await aiApi.post("/api/ai/staff-message", {
+    sessionId,
+    message,
+  });
+  return res.data;
+}
 
 export async function fetchActiveChats() {
   const res = await api.get("/ai/portal/chats");
   return res.data;
 }
 
-export async function sendStaffMessage(sessionId: string, message: string) {
+export async function sendPortalStaffMessage(sessionId: string, message: string) {
   return api.post(`/ai/portal/chats/${sessionId}/message`, { message });
 }
 
