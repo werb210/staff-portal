@@ -7,6 +7,7 @@ export type DrawerTabId =
   | "financials"
   | "credit-summary"
   | "documents"
+  | "comms"
   | "notes"
   | "offers"
   | "lenders";
@@ -22,6 +23,7 @@ export const TABS: DrawerTab[] = [
   { id: "banking", label: "Banking Analysis" },
   { id: "financials", label: "Financials / OCR" },
   { id: "documents", label: "Documents" },
+  { id: "comms", label: "Comms" },
   { id: "credit-summary", label: "Credit Summary" },
   { id: "notes", label: "Notes (internal staff only)" },
   { id: "lenders", label: "Lender Matching" },

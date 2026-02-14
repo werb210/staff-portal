@@ -8,6 +8,7 @@ import ApplicationCard from "@/pages/applications/ApplicationCard";
 import type { DrawerTab } from "@/pages/applications/drawer/DrawerTabs";
 import { PIPELINE_STAGE_LABELS, normalizeStageId } from "@/pages/applications/pipeline/pipeline.types";
 import { fetchPortalApplication, openPortalApplication } from "@/api/applications";
+import { fetchApplicationReadiness } from "@/api/readiness";
 
 type PortalApplicationShell = {
   id: string;
@@ -20,6 +21,7 @@ const APPLICATION_TABS: DrawerTab[] = [
   { id: "banking", label: "Banking Analysis" },
   { id: "financials", label: "Financials" },
   { id: "documents", label: "Documents" },
+  { id: "comms", label: "Comms" },
   { id: "credit-summary", label: "Credit Summary" },
   { id: "notes", label: "Notes" },
   { id: "lenders", label: "Lenders" }
@@ -87,6 +89,13 @@ const ApplicationShellPage = () => {
     mutationFn: (applicationId: string) => openPortalApplication(applicationId)
   });
 
+  const readinessQuery = useQuery({
+    queryKey: ["portal-application", id, "readiness"],
+    queryFn: ({ signal }) => fetchApplicationReadiness(id ?? "", { signal }),
+    enabled: selectedTab === "comms" && Boolean(id),
+    retry: false
+  });
+
   useEffect(() => {
     if (!id) return;
     const openedApplications = readOpenedApplications();
@@ -120,7 +129,44 @@ const ApplicationShellPage = () => {
           </button>
         </div>
         <ApplicationCard tabs={APPLICATION_TABS} selectedTab={selectedTab} onSelect={setSelectedTab}>
-          <div className="application-shell__placeholder">Coming in next block.</div>
+          {selectedTab === "comms" ? (
+            <div className="space-y-4">
+              <div className="drawer-section">
+                <div className="drawer-section__title">Readiness Summary</div>
+                {readinessQuery.isLoading ? <div className="drawer-placeholder">Loading readiness details…</div> : null}
+                {readinessQuery.error ? <div className="drawer-placeholder">Unable to load readiness details.</div> : null}
+                {!readinessQuery.isLoading && !readinessQuery.error ? (
+                  readinessQuery.data?.lead ? (
+                    <div className="drawer-kv-list">
+                      <div className="drawer-kv-list__item"><dt>Company</dt><dd>{readinessQuery.data.lead.companyName || "-"}</dd></div>
+                      <div className="drawer-kv-list__item"><dt>Contact</dt><dd>{readinessQuery.data.lead.contactName || "-"}</dd></div>
+                      <div className="drawer-kv-list__item"><dt>Industry</dt><dd>{readinessQuery.data.lead.industry || "-"}</dd></div>
+                      <div className="drawer-kv-list__item"><dt>Monthly Revenue</dt><dd>{readinessQuery.data.lead.monthlyRevenue ?? "-"}</dd></div>
+                    </div>
+                  ) : (
+                    <div className="drawer-placeholder">No linked readiness lead.</div>
+                  )
+                ) : null}
+              </div>
+
+              <div className="drawer-section">
+                <div className="drawer-section__title">Transcript History</div>
+                {readinessQuery.data?.transcriptHistory.length ? (
+                  <ul className="drawer-list">
+                    {readinessQuery.data.transcriptHistory.map((item, index) => (
+                      <li className="drawer-list__item" key={`${index}-${item.slice(0, 16)}`}>
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div className="drawer-placeholder">No transcript history available yet.</div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="application-shell__placeholder">Coming in next block.</div>
+          )}
         </ApplicationCard>
       </Card>
     </div>

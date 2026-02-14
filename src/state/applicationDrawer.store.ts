@@ -1,15 +1,6 @@
 import { create } from "zustand";
 import { readPortalDraft, updatePortalDraft } from "@/utils/portalDraft";
-
-export type DrawerTabId =
-  | "application"
-  | "banking"
-  | "financials"
-  | "credit-summary"
-  | "documents"
-  | "notes"
-  | "offers"
-  | "lenders";
+import type { DrawerTabId } from "@/pages/applications/drawer/DrawerTabs";
 
 export type ApplicationDrawerState = {
   isOpen: boolean;

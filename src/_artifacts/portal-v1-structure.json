@@ -1,5 +1,6 @@
 {
   "pipelineStages": [
+    "DRAFT",
     "RECEIVED",
     "IN_REVIEW",
     "DOCUMENTS_REQUIRED",
@@ -14,7 +15,9 @@
       {
         "name": "Application",
         "editable": true,
-        "actions": ["Save"]
+        "actions": [
+          "Save"
+        ]
       },
       {
         "name": "Banking Analysis",
@@ -27,7 +30,14 @@
       {
         "name": "Documents",
         "editable": true,
-        "actions": ["Accept", "Reject"]
+        "actions": [
+          "Accept",
+          "Reject"
+        ]
+      },
+      {
+        "name": "Comms",
+        "editable": false
       },
       {
         "name": "Credit Summary",
@@ -36,17 +46,29 @@
       {
         "name": "Notes (internal staff only)",
         "editable": true,
-        "actions": ["Send Note"]
+        "actions": [
+          "Send Note"
+        ]
       },
       {
         "name": "Lender Matching",
         "editable": true,
-        "actions": ["Send to Lender", "Retry send", "Retry", "Retry submission", "Confirm submission", "Confirm retry"]
+        "actions": [
+          "Send to Lender",
+          "Retry send",
+          "Retry",
+          "Retry submission",
+          "Confirm submission",
+          "Confirm retry"
+        ]
       },
       {
         "name": "Offers",
         "editable": true,
-        "actions": ["Upload term sheet", "Archive offer"]
+        "actions": [
+          "Upload term sheet",
+          "Archive offer"
+        ]
       }
     ]
   }

@@ -29,6 +29,7 @@ import AIChatDashboard from "@/pages/AIChatDashboard";
 import AiCommsPage from "@/pages/AiCommsPage";
 import IssueInboxPage from "@/pages/IssueInboxPage";
 import CreditReadinessLeads from "@/pages/CreditReadinessLeads";
+import ReadinessLeadsPage from "@/pages/ReadinessLeadsPage";
 
 const AppRouter = () => (
   <AuthProvider>
@@ -49,6 +50,7 @@ const AppRouter = () => (
           <Route path="pipeline" element={<ApplicationsPage />} />
           <Route path="applications" element={<ApplicationsPage />} />
           <Route path="applications/:id" element={<ApplicationShellPage />} />
+          <Route path="/portal/applications/:id" element={<ApplicationShellPage />} />
           <Route path="crm/*" element={<CRMPage />} />
           <Route path="communications" element={<CommunicationsPage />} />
           <Route path="chat" element={<ChatPage />} />
@@ -56,6 +58,7 @@ const AppRouter = () => (
           <Route path="ai-comms" element={<AiCommsPage />} />
           <Route path="issues" element={<IssueInboxPage />} />
           <Route path="credit-readiness-leads" element={<CreditReadinessLeads />} />
+          <Route path="/portal/readiness" element={<ReadinessLeadsPage />} />
           <Route path="calendar" element={<CalendarPage />} />
           <Route path="marketing" element={<MarketingPage />} />
           <Route path="lenders" element={<LendersPage />} />
