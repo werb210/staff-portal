@@ -18,9 +18,13 @@ export type SmsMessage = CommunicationMessage;
 
 export type CommunicationConversation = {
   id: string;
+  sessionId?: string;
   applicationId?: string;
+  readinessToken?: string;
   contactId?: string;
   contactName?: string;
+  contactEmail?: string;
+  contactPhone?: string;
   applicationName?: string;
   type: CommunicationType;
   direction?: CommunicationDirection;
@@ -44,6 +48,7 @@ export type CrmLead = {
   name: string;
   email?: string;
   phone?: string;
+  readinessToken?: string;
   tags: string[];
   conversationIds: string[];
   transcriptIds: string[];
@@ -69,8 +74,11 @@ const now = () => new Date().toISOString();
 const baseConversations: CommunicationConversation[] = [
   {
     id: "conv-chat-1",
+    sessionId: "chat-session-1001",
     contactId: "contact-1",
     contactName: "Jane Client",
+    contactEmail: "jane.client@example.com",
+    contactPhone: "+1-555-0101",
     applicationId: "app-1001",
     applicationName: "BF Application 1001",
     type: "chat",
@@ -126,8 +134,10 @@ const baseConversations: CommunicationConversation[] = [
   },
   {
     id: "conv-human-1",
+    sessionId: "chat-session-3003",
     contactId: "contact-3",
     contactName: "Taylor Escalation",
+    contactEmail: "taylor@example.com",
     applicationId: "app-3003",
     applicationName: "SLF Application 3003",
     type: "human",
@@ -151,6 +161,7 @@ const baseConversations: CommunicationConversation[] = [
   },
   {
     id: "conv-issue-1",
+    sessionId: "issue-session-4004",
     contactId: "contact-4",
     contactName: "Jamie Issue",
     applicationId: "app-4004",
@@ -177,7 +188,11 @@ const baseConversations: CommunicationConversation[] = [
   },
   {
     id: "conv-readiness-1",
+    sessionId: "readiness-session-1",
+    readinessToken: "readiness-portal-001",
     contactName: "Nora Readiness",
+    contactEmail: "nora@ventures.example",
+    contactPhone: "+1-555-0404",
     applicationName: "Readiness Session",
     type: "credit_readiness",
     createdAt: now(),
@@ -185,7 +200,11 @@ const baseConversations: CommunicationConversation[] = [
     silo: "BF",
     assignedTo: "Alex",
     unread: 0,
-    metadata: { status: "in_review", kyc: { legalName: "Nora Ventures LLC", taxId: "XX-1234567" } },
+    metadata: {
+      status: "in_review",
+      progression: "readiness_only",
+      kyc: { legalName: "Nora Ventures LLC", taxId: "XX-1234567" }
+    },
     messages: [
       {
         id: "msg-readiness-1",
@@ -280,6 +299,7 @@ export const ensureCrmLead = (payload: {
   name?: string;
   email?: string;
   phone?: string;
+  readinessToken?: string;
   tags?: string[];
   conversationId?: string;
 }) => {
@@ -287,6 +307,9 @@ export const ensureCrmLead = (payload: {
   const phone = normalized(payload.phone);
   const existing = leads.find((lead) => (email && normalized(lead.email) === email) || (phone && normalized(lead.phone) === phone));
   if (existing) {
+    if (payload.readinessToken && !existing.readinessToken) {
+      existing.readinessToken = payload.readinessToken;
+    }
     if (payload.conversationId && !existing.conversationIds.includes(payload.conversationId)) {
       existing.conversationIds.push(payload.conversationId);
     }
@@ -301,6 +324,7 @@ export const ensureCrmLead = (payload: {
     name: payload.name || "Unknown Lead",
     email: payload.email,
     phone: payload.phone,
+    readinessToken: payload.readinessToken,
     tags: payload.tags ?? [],
     conversationIds: payload.conversationId ? [payload.conversationId] : [],
     transcriptIds: []
@@ -312,7 +336,14 @@ export const ensureCrmLead = (payload: {
 const ensureConversationLead = (conversation: CommunicationConversation) => {
   if (conversation.leadId) return conversation;
   const tags = conversation.type === "credit_readiness" ? ["readiness", "startup_interest"] : ["startup_interest", "confidence_check"];
-  const lead = ensureCrmLead({ name: conversation.contactName, tags, conversationId: conversation.id });
+  const lead = ensureCrmLead({
+    name: conversation.contactName,
+    email: conversation.contactEmail,
+    phone: conversation.contactPhone,
+    readinessToken: conversation.readinessToken,
+    tags,
+    conversationId: conversation.id
+  });
   const updated = { ...conversation, leadId: lead.id };
   updateConversation(updated);
   return updated;
@@ -401,6 +432,7 @@ export const createHumanEscalation = async (payload: {
   const conversationId = `human-${Date.now()}`;
   const conversation: CommunicationConversation = {
     id: conversationId,
+    sessionId: conversationId,
     contactId: payload.contactId,
     contactName: payload.contactName,
     applicationId: payload.applicationId,
@@ -444,6 +476,7 @@ export const createIssueReport = async (payload: {
   const conversationId = `issue-${Date.now()}`;
   const conversation: CommunicationConversation = {
     id: conversationId,
+    sessionId: conversationId,
     contactId: payload.contactId,
     contactName: payload.contactName,
     applicationId: payload.applicationId,
@@ -520,6 +553,42 @@ export const closeEscalatedChat = async (conversationId: string, transcript: str
 
   updateConversation(updated);
   logTimeline(updated, "Escalated chat closed by staff.");
+  return clone(updated);
+};
+
+export const archiveIssue = async (conversationId: string) => {
+  const conversation = findConversation(conversationId);
+  if (!conversation) throw new Error("Conversation not found");
+  const archived = {
+    ...conversation,
+    highlighted: false,
+    unread: 0,
+    metadata: {
+      ...conversation.metadata,
+      archived: true,
+      archivedAt: now()
+    },
+    updatedAt: now()
+  };
+  updateConversation(archived);
+  logTimeline(archived, "Issue archived by staff.");
+  return clone(archived);
+};
+
+export const applyHumanActiveState = async (conversationId: string) => {
+  const conversation = findConversation(conversationId);
+  if (!conversation) throw new Error("Conversation not found");
+  const updated: CommunicationConversation = {
+    ...conversation,
+    status: "human",
+    updatedAt: now(),
+    metadata: {
+      ...conversation.metadata,
+      aiPaused: true,
+      aiPausedAt: now()
+    }
+  };
+  updateConversation(updated);
   return clone(updated);
 };
 
