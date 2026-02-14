@@ -20,6 +20,7 @@ const tabContentMap: Record<DrawerTabId, JSX.Element> = {
   application: <ApplicationTab />,
   financials: <FinancialTab />,
   banking: <BankingTab />,
+  comms: <div className="drawer-placeholder">Communication history is available in the application shell.</div>,
   "credit-summary": <CreditSummaryTab />,
   documents: <DocumentsTab />,
   notes: <NotesTab />,

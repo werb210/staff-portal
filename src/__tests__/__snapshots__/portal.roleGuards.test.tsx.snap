@@ -46,9 +46,51 @@ exports[`portal role & permission guards > matches role snapshots 1`] = `
         </a>
         <a
           class="sidebar__link "
+          href="/leads"
+        >
+          Leads
+        </a>
+        <a
+          class="sidebar__link "
           href="/communications"
         >
           Communications
+        </a>
+        <a
+          class="sidebar__link "
+          href="/portal/readiness"
+        >
+          Readiness Leads
+        </a>
+        <a
+          class="sidebar__link "
+          href="/continuations"
+        >
+          Capital Readiness
+        </a>
+        <a
+          class="sidebar__link "
+          href="/chat"
+        >
+          Live Chat
+        </a>
+        <a
+          class="sidebar__link "
+          href="/ai-chat"
+        >
+          AI Chat
+        </a>
+        <a
+          class="sidebar__link "
+          href="/ai-comms"
+        >
+          AI Comms
+        </a>
+        <a
+          class="sidebar__link "
+          href="/issues"
+        >
+          Issues
         </a>
         <a
           class="sidebar__link "
@@ -157,9 +199,21 @@ exports[`portal role & permission guards > matches role snapshots 1`] = `
         </a>
         <a
           class="sidebar__link "
+          href="/portal/ai"
+        >
+          AI Live Chat
+        </a>
+        <a
+          class="sidebar__link "
           href="/admin/ai/chats"
         >
           Chats
+        </a>
+        <a
+          class="sidebar__link "
+          href="/admin/ai-policy"
+        >
+          AI Policy
         </a>
         <a
           class="sidebar__link "
@@ -225,9 +279,51 @@ exports[`portal role & permission guards > matches role snapshots 2`] = `
         </a>
         <a
           class="sidebar__link "
+          href="/leads"
+        >
+          Leads
+        </a>
+        <a
+          class="sidebar__link "
           href="/communications"
         >
           Communications
+        </a>
+        <a
+          class="sidebar__link "
+          href="/portal/readiness"
+        >
+          Readiness Leads
+        </a>
+        <a
+          class="sidebar__link "
+          href="/continuations"
+        >
+          Capital Readiness
+        </a>
+        <a
+          class="sidebar__link "
+          href="/chat"
+        >
+          Live Chat
+        </a>
+        <a
+          class="sidebar__link "
+          href="/ai-chat"
+        >
+          AI Chat
+        </a>
+        <a
+          class="sidebar__link "
+          href="/ai-comms"
+        >
+          AI Comms
+        </a>
+        <a
+          class="sidebar__link "
+          href="/issues"
+        >
+          Issues
         </a>
         <a
           class="sidebar__link "
@@ -262,6 +358,12 @@ exports[`portal role & permission guards > matches role snapshots 2`] = `
         >
           AI & Support
         </p>
+        <a
+          class="sidebar__link "
+          href="/portal/ai"
+        >
+          AI Live Chat
+        </a>
         <a
           class="sidebar__link "
           href="/admin/ai/chats"
