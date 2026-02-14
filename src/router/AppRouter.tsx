@@ -4,6 +4,7 @@ import DashboardPage from "@/pages/dashboard/DashboardPage";
 import AIKnowledgeManager from "@/pages/admin/AIKnowledgeManager";
 import SupportDashboard from "@/pages/admin/SupportDashboard";
 import AnalyticsDashboard from "@/pages/admin/AnalyticsDashboard";
+import PreApplications from "@/pages/PreApplications";
 
 export default function AppRouter() {
   return (
@@ -19,6 +20,14 @@ export default function AppRouter() {
       <Route path="/admin/ai" element={<AIKnowledgeManager />} />
       <Route path="/admin/support" element={<SupportDashboard />} />
       <Route path="/admin/analytics" element={<AnalyticsDashboard />} />
+      <Route
+        path="/pre-applications"
+        element={
+          <ProtectedRoute>
+            <PreApplications />
+          </ProtectedRoute>
+        }
+      />
     </Routes>
   );
 }
