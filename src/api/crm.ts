@@ -9,6 +9,7 @@ export type Contact = {
   silo: "BF" | "BI" | "SLF";
   owner: string;
   tags: string[];
+  source?: string;
   hasActiveApplication: boolean;
   companyIds: string[];
   applicationIds: string[];
@@ -78,7 +79,8 @@ const contacts: Contact[] = [
     email: "jane@example.com",
     silo: "BF",
     owner: "Alex",
-    tags: ["VIP"],
+    tags: ["VIP", "startup_interest"],
+    source: "ai",
     hasActiveApplication: true,
     companyIds: ["co1"],
     applicationIds: ["app-1001"]
@@ -91,6 +93,7 @@ const contacts: Contact[] = [
     silo: "SLF",
     owner: "Taylor",
     tags: ["Follow-up"],
+    source: "website_contact",
     hasActiveApplication: false,
     companyIds: ["co2"],
     applicationIds: [],
@@ -105,6 +108,7 @@ const contacts: Contact[] = [
     silo: "BI",
     owner: "Alex",
     tags: ["Repeat"],
+    source: "credit_readiness",
     hasActiveApplication: true,
     companyIds: [],
     applicationIds: ["app-2002"]

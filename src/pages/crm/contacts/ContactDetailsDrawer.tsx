@@ -95,11 +95,26 @@ const ContactDetailsDrawer = ({ contact, onClose }: ContactDetailsDrawerProps) =
       </div>
       <div className="drawer__content">
         <Card title="Basic Info">
+          <div className="mb-2 flex items-center gap-2">
+            {contact.source === "ai" && (
+              <span className="rounded bg-black px-2 py-1 text-xs text-white">
+                AI Lead
+              </span>
+            )}
+            {contact.source === "credit_readiness" && (
+              <span className="rounded bg-gray-200 px-2 py-1 text-xs">
+                Credit Readiness
+              </span>
+            )}
+          </div>
           <p>Email: {contact.email}</p>
           <p>Phone: {contact.phone}</p>
           <p>Silo: {contact.silo}</p>
           <p>Owner: {contact.owner}</p>
           <p>Tags: {contact.tags.join(", ")}</p>
+          {contact.tags.includes("startup_interest") ? (
+            <p>Startup Interest: Yes</p>
+          ) : null}
           {contact.referrerName ? <p>Referred by: {contact.referrerName}</p> : null}
         </Card>
         <Card title="Associated Companies">

@@ -12,10 +12,10 @@ import RequireRole from "@/components/auth/RequireRole";
 import { emitUiTelemetry } from "@/utils/uiTelemetry";
 import { useAuth } from "@/hooks/useAuth";
 import { ContactSubmissions } from "@/features/support/ContactSubmissions";
-import { fetchWebsiteIssues, resolveIssue, type WebsiteIssue } from "@/api/issues";
-import AiQueueView from "@/modules/ai/AiQueueView";
+import { deleteIssue, fetchWebsiteIssues, type WebsiteIssue } from "@/api/issues";
+import AiChatPanel from "@/features/comms/AiChatPanel";
 
-type CommsView = "threads" | "ai-live-chat" | "website-issues" | "contact-forms";
+type CommsView = "threads" | "ai-live-chat" | "issue-reports" | "contact-forms";
 
 
 
@@ -29,13 +29,13 @@ const WebsiteIssuesPanel = () => {
   }, []);
 
   const onResolveIssue = async (id: string) => {
-    await resolveIssue(id);
+    await deleteIssue(id);
     setIssues((prev) => prev.filter((issue) => issue.id !== id));
   };
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-semibold">Website Issues</h3>
+      <h3 className="text-lg font-semibold">Issue Reports</h3>
 
       {issues.map((issue) => (
         <div key={issue.id} className="issue-card">
@@ -43,13 +43,11 @@ const WebsiteIssuesPanel = () => {
             <strong>Message:</strong> {issue.message}
           </div>
           {issue.screenshotUrl ? <img src={issue.screenshotUrl} alt="Screenshot" /> : null}
-          <button onClick={() => void onResolveIssue(issue.id)}>Mark Resolved</button>
+          <button onClick={() => void onResolveIssue(issue.id)}>Delete Handled Report</button>
         </div>
       ))}
 
-      <h3 className="text-lg font-semibold">Active Website Chats</h3>
-      <div className="coming-soon">Live chat integration enabled (awaiting AI block)</div>
-    </div>
+          </div>
   );
 };
 
@@ -101,7 +99,7 @@ const CommunicationsContent = () => {
           <div className="flex gap-2">
             <button onClick={() => setView("threads")}>Threads</button>
             {isAdmin && <button onClick={() => setView("ai-live-chat")}>AI Live Chat</button>}
-            {isAdmin && <button onClick={() => setView("website-issues")}>Website Issues</button>}
+            {isAdmin && <button onClick={() => setView("issue-reports")}>Issue Report</button>}
             {isAdmin && <button onClick={() => setView("contact-forms")}>Contact Forms</button>}
           </div>
         }
@@ -136,8 +134,8 @@ const CommunicationsContent = () => {
             )}
           </>
         )}
-        {view === "ai-live-chat" && <AiQueueView />}
-        {view === "website-issues" && isAdmin && <WebsiteIssuesPanel />}
+        {view === "ai-live-chat" && <AiChatPanel />}
+        {view === "issue-reports" && isAdmin && <WebsiteIssuesPanel />}
         {view === "contact-forms" && <ContactSubmissions isAdmin={isAdmin} />}
       </Card>
     </div>

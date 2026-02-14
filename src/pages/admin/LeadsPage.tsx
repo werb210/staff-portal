@@ -36,7 +36,7 @@ type LeadFilter = "all" | "website";
 type LeadTab = "overview" | "comms";
 
 const normalizeSource = (source?: string): LeadSource => {
-  if (source === "website_contact" || source === "website_credit_check" || source === "chat_start" || source === "startup_interest") {
+  if (source === "website_contact" || source === "website_credit_check" || source === "chat_start" || source === "startup_interest" || source === "credit_readiness") {
     return source;
   }
   return "website_contact";
@@ -200,6 +200,11 @@ export default function LeadsPage() {
 
               {selectedLead.source === "website_contact" && (
                 <div className="text-sm text-green-600">SMS notification sent to intake specialist.</div>
+              )}
+              {selectedLead.source === "credit_readiness" && (
+                <span className="rounded bg-gray-200 px-2 py-1 text-xs">
+                  Credit Readiness
+                </span>
               )}
             </>
           )}
