@@ -8,6 +8,7 @@ import SMSComposer from "@/components/sms/SMSComposer";
 import EmailViewer from "@/components/email/EmailViewer";
 import TimelineFeed from "@/pages/crm/timeline/TimelineFeed";
 import { useDialerStore } from "@/state/dialer.store";
+import CreditReadinessPanel from "@/components/crm/CreditReadinessPanel";
 
 interface ContactDetailsDrawerProps {
   contact: Contact | null;
@@ -22,6 +23,7 @@ const ContactDetailsDrawer = ({ contact, onClose }: ContactDetailsDrawerProps) =
   const [showSms, setShowSms] = useState(false);
   const [showEmail, setShowEmail] = useState(false);
   const [incoming, setIncoming] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"overview" | "readiness">("overview");
   const openDialer = useDialerStore((state) => state.openDialer);
   const latestLog = useDialerStore((state) => state.logs[0]);
   const lastLogId = useRef<string | null>(null);
@@ -94,6 +96,17 @@ const ContactDetailsDrawer = ({ contact, onClose }: ContactDetailsDrawerProps) =
         </Button>
       </div>
       <div className="drawer__content">
+        <div className="mb-4 flex gap-2">
+          <Button variant={activeTab === "overview" ? "primary" : "secondary"} onClick={() => setActiveTab("overview")}>
+            Overview
+          </Button>
+          <Button variant={activeTab === "readiness" ? "primary" : "secondary"} onClick={() => setActiveTab("readiness")}>
+            Credit Readiness
+          </Button>
+        </div>
+        {activeTab === "readiness" ? <CreditReadinessPanel contactId={contact.id} /> : null}
+        {activeTab === "overview" ? (
+          <>
         <Card title="Basic Info">
           <div className="mb-2 flex items-center gap-2">
             {contact.source === "ai" && (
@@ -104,6 +117,11 @@ const ContactDetailsDrawer = ({ contact, onClose }: ContactDetailsDrawerProps) =
             {contact.source === "credit_readiness" && (
               <span className="rounded bg-gray-200 px-2 py-1 text-xs">
                 Credit Readiness
+              </span>
+            )}
+            {contact.tags?.includes("startup_interest") && (
+              <span className="rounded bg-yellow-100 px-2 py-1 text-xs text-yellow-700">
+                Startup Interest
               </span>
             )}
           </div>
@@ -161,6 +179,8 @@ const ContactDetailsDrawer = ({ contact, onClose }: ContactDetailsDrawerProps) =
         <Card title="CRM Timeline">
           <TimelineFeed entityId={contact.id} entityType="contact" initialEvents={timeline} />
         </Card>
+          </>
+        ) : null}
       </div>
       {incoming && (
         <IncomingCallToast
