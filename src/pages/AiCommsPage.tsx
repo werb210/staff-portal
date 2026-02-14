@@ -1,111 +1,126 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import {
+  closeSession,
+  fetchActiveAiSessions,
+  fetchAiMessages,
+  sendStaffMessage,
+  takeOverSession
+} from "@/api/ai";
+import { useAiSocket } from "@/hooks/useAiSocket";
 
-type ChatSession = {
+type AiSession = {
   id: string;
-  companyName?: string;
-  fullName?: string;
-  email?: string;
-  phone?: string;
-  status: "open" | "closed";
-  messages: { role: string; content: string }[];
+  source?: string;
+  status: string;
 };
 
-export default function AiCommsPage() {
-  const [sessions, setSessions] = useState<ChatSession[]>([]);
-  const [active, setActive] = useState<ChatSession | null>(null);
-  const [reply, setReply] = useState("");
+type AiMessage = {
+  role: string;
+  content: string;
+};
 
-  useEffect(() => {
-    fetch("/api/ai/sessions")
-      .then((response) => response.json())
-      .then(setSessions);
+function AiSessionsPanel() {
+  const [sessions, setSessions] = useState<AiSession[]>([]);
+  const [selected, setSelected] = useState<AiSession | null>(null);
+  const [messages, setMessages] = useState<AiMessage[]>([]);
+  const [input, setInput] = useState("");
+
+  const loadSessions = useCallback(async () => {
+    const data = await fetchActiveAiSessions();
+    setSessions(data);
   }, []);
 
-  async function sendReply() {
-    if (!active || !reply.trim()) {
-      return;
-    }
+  const loadMessages = useCallback(async (sessionId: string) => {
+    const data = await fetchAiMessages(sessionId);
+    setSelected(data.session);
+    setMessages(data.messages);
+  }, []);
 
-    await fetch(`/api/ai/sessions/${active.id}/reply`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: reply })
-    });
+  useEffect(() => {
+    loadSessions();
+  }, [loadSessions]);
 
-    setReply("");
+  useAiSocket(selected?.id ?? null, (incomingMessage) => {
+    setMessages((current) => [...current, incomingMessage]);
+  });
+
+  async function handleTakeover() {
+    if (!selected) return;
+    await takeOverSession(selected.id);
+    await loadMessages(selected.id);
+    await loadSessions();
   }
 
-  async function closeSession() {
-    if (!active) {
-      return;
-    }
+  async function handleSend() {
+    if (!selected || !input.trim()) return;
+    await sendStaffMessage(selected.id, input);
+    setInput("");
+    await loadMessages(selected.id);
+  }
 
-    await fetch(`/api/ai/sessions/${active.id}/close`, {
-      method: "POST"
-    });
-
-    setActive(null);
+  async function handleClose() {
+    if (!selected) return;
+    await closeSession(selected.id);
+    setSelected(null);
+    setMessages([]);
+    await loadSessions();
   }
 
   return (
     <div className="flex h-screen">
-      <div className="w-1/3 overflow-auto border-r p-4">
-        <h2 className="mb-4 font-semibold">AI Chat Sessions</h2>
+      <div className="w-64 border-r p-3">
+        <h3 className="mb-2 font-semibold">AI Conversations</h3>
         {sessions.map((session) => (
           <div
             key={session.id}
-            onClick={() => setActive(session)}
-            className="mb-2 cursor-pointer border p-3 hover:bg-gray-50"
+            className="cursor-pointer p-2 hover:bg-gray-100"
+            onClick={() => loadMessages(session.id)}
           >
-            <div>{session.companyName || "Unknown Company"}</div>
-            <div className="text-xs text-gray-500">
-              {session.fullName} — {session.status}
-            </div>
+            {session.source ?? "chat"} — {session.status}
           </div>
         ))}
       </div>
 
-      <div className="flex flex-1 flex-col">
-        {active ? (
-          <>
-            <div className="flex justify-between border-b p-4 font-semibold">
-              <div>
-                <div>{active.companyName || "Unknown Company"}</div>
-                <div className="text-xs font-normal text-gray-500">
-                  {active.fullName || "Unknown User"}
-                  {active.email ? ` • ${active.email}` : ""}
-                  {active.phone ? ` • ${active.phone}` : ""}
-                </div>
+      {selected ? (
+        <div className="flex flex-1 flex-col">
+          <div className="flex-1 overflow-auto p-4">
+            {messages.map((message, index) => (
+              <div key={index} className={message.role === "assistant" ? "text-gray-600" : "text-black"}>
+                <strong>{message.role}</strong>: {message.content}
               </div>
-              <button onClick={closeSession} className="text-sm text-red-600">
-                Close
+            ))}
+          </div>
+
+          <div className="space-y-2 border-t p-3">
+            {selected.status === "ai" && (
+              <button onClick={handleTakeover} className="rounded bg-yellow-500 px-3 py-2 text-white">
+                Take Over Chat
               </button>
-            </div>
+            )}
 
-            <div className="flex-1 space-y-2 overflow-auto p-4">
-              {active.messages.map((message, index) => (
-                <div key={index} className={message.role === "assistant" ? "text-left" : "text-right"}>
-                  {message.content}
-                </div>
-              ))}
-            </div>
-
-            <div className="flex gap-2 border-t p-4">
+            <div className="flex gap-2">
               <input
-                value={reply}
-                onChange={(event) => setReply(event.target.value)}
+                value={input}
+                onChange={(event) => setInput(event.target.value)}
                 className="flex-1 border p-2"
-                placeholder="Reply..."
               />
-              <button onClick={sendReply} className="bg-black px-4 text-white">
+              <button onClick={handleSend} className="rounded bg-blue-600 px-4 text-white">
                 Send
               </button>
             </div>
-          </>
-        ) : (
-          <div className="flex h-full items-center justify-center text-gray-400">Select a session</div>
-        )}
-      </div>
+
+            <button onClick={handleClose} className="rounded bg-red-600 px-3 py-2 text-white">
+              Close Chat
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-1 items-center justify-center text-gray-400">Select a session</div>
+      )}
     </div>
   );
+}
+
+export default function AiCommsPage() {
+  return <AiSessionsPanel />;
 }
