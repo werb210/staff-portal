@@ -21,7 +21,7 @@ export default function ChatSessionsPanel() {
           </div>
 
           <div className="mt-3 max-h-40 space-y-1 overflow-y-auto text-xs">
-            {s.transcript.map((m, i) => (
+            {s.messages.map((m, i) => (
               <div key={`${s.id}-${i}`}>
                 <strong>{m.role}:</strong> {m.content}
               </div>

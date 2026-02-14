@@ -22,6 +22,7 @@ export interface Lead {
   productInterest?: string;
   industryInterest?: string;
   tags?: string[];
+  pendingApplicationId?: string;
   source: LeadSource;
   createdAt: string;
   metadata?: LeadMetadata;

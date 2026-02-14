@@ -484,7 +484,7 @@ export async function fetchLeadById(id: string) {
 }
 
 export async function fetchChatSessions() {
-  const res = await api.get("/api/ai/sessions");
+  const res = await api.get("/chat/sessions");
   return res.data;
 }
 

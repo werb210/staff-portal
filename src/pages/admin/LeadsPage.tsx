@@ -30,6 +30,7 @@ type ApiLead = {
   accountsReceivable?: string | number;
   existingDebt?: string | number;
   score?: string | number;
+  pendingApplicationId?: string;
 };
 
 type LeadFilter = "all" | "website";
@@ -68,7 +69,8 @@ const toLead = (lead: ApiLead, index: number): Lead => {
       accountsReceivable: lead.metadata?.accountsReceivable ?? lead.accountsReceivable ?? lead.ar,
       existingDebt: lead.metadata?.existingDebt ?? lead.existingDebt,
       score: lead.metadata?.score ?? lead.score
-    }
+    },
+    pendingApplicationId: lead.pendingApplicationId
   };
 };
 
@@ -189,6 +191,12 @@ export default function LeadsPage() {
               <div><strong>Email:</strong> {selectedLead.email}</div>
               <div><strong>Phone:</strong> {selectedLead.phone}</div>
 
+              {selectedLead.tags?.includes("startup_interest") && (
+                <div className="bg-yellow-100 text-yellow-800 px-2 py-1 text-xs inline-block">
+                  Startup Interest
+                </div>
+              )}
+
               <h3 className="mt-4 font-semibold">Capital Readiness Data</h3>
               <ul className="space-y-1 text-sm">
                 <li>Years in Business: {selectedLead.metadata?.yearsInBusiness ?? "-"}</li>
@@ -197,6 +205,12 @@ export default function LeadsPage() {
                 <li>Requested Amount: {selectedLead.metadata?.requestedAmount ?? "-"}</li>
                 <li>Credit Score Range: {selectedLead.metadata?.creditScoreRange ?? "-"}</li>
               </ul>
+
+              {selectedLead.pendingApplicationId && (
+                <div className="bg-green-100 text-green-800 p-2 mt-4">
+                  User started Credit Readiness. Application continuation available.
+                </div>
+              )}
 
               {selectedLead.source === "website_contact" && (
                 <div className="text-sm text-green-600">SMS notification sent to intake specialist.</div>

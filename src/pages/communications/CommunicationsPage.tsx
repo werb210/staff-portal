@@ -12,8 +12,9 @@ import RequireRole from "@/components/auth/RequireRole";
 import { emitUiTelemetry } from "@/utils/uiTelemetry";
 import { useAuth } from "@/hooks/useAuth";
 import { ContactSubmissions } from "@/features/support/ContactSubmissions";
-import AiChatPanel from "@/features/comms/AiChatPanel";
 import ChatSessionsPanel from "./ChatSessionsPanel";
+import ChatPanel from "./ChatPanel";
+import { fetchIssueReports } from "@/api/support";
 
 type CommsView = "threads" | "ai-live-chat" | "ai-sessions" | "issue-reports" | "contact-forms";
 
@@ -34,8 +35,8 @@ const WebsiteIssuesPanel = () => {
   }, []);
 
   async function loadIssues() {
-    const response = await fetch("/api/support/issues");
-    const data = await response.json();
+    const response = await fetchIssueReports();
+    const data = response.data;
     setIssues(Array.isArray(data) ? data : []);
   }
 
@@ -55,7 +56,7 @@ const WebsiteIssuesPanel = () => {
           {issue.screenshot && (
             <img
               src={issue.screenshot}
-              className="mt-2 h-24 w-24 rounded border object-cover shadow"
+              className="max-h-40 mt-2 border"
               alt="Issue screenshot thumbnail"
             />
           )}
@@ -153,7 +154,7 @@ const CommunicationsContent = () => {
             )}
           </>
         )}
-        {view === "ai-live-chat" && <AiChatPanel />}
+        {view === "ai-live-chat" && <ChatPanel />}
         {view === "ai-sessions" && isAdmin && <ChatSessionsPanel />}
         {view === "issue-reports" && isAdmin && <WebsiteIssuesPanel />}
         {view === "contact-forms" && <ContactSubmissions isAdmin={isAdmin} />}
