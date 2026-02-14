@@ -142,7 +142,8 @@ describe("ApplicationTab", () => {
     renderWithProviders(<ApplicationTab />);
 
     const legalNameInput = await screen.findByLabelText("Legal name");
-    await userEvent.clear(legalNameInput);
+    await userEvent.click(legalNameInput);
+    await userEvent.keyboard("{Control>}a{/Control}{Backspace}");
     await userEvent.type(legalNameInput, "Atlas Holdings");
 
     expect(legalNameInput).toHaveValue("Atlas Holdings");

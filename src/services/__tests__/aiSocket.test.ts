@@ -1,5 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { connectAiSocket, disconnectAiSocket, reconnectAiSocket } from "@/services/aiSocket";
+import {
+  connectAiSocket,
+  disconnectAiSocket,
+  reconnectAiSocket,
+  subscribeAiSocketConnection
+} from "@/services/aiSocket";
 
 class MockWebSocket {
   static instances: MockWebSocket[] = [];
@@ -23,10 +28,15 @@ class MockWebSocket {
   close() {
     this.readyState = 3;
   }
+
+  emit(type: string, event?: unknown) {
+    (this.listeners[type] ?? []).forEach((listener) => listener(event));
+  }
 }
 
 describe("aiSocket", () => {
   beforeEach(() => {
+    vi.useFakeTimers();
     vi.stubGlobal("WebSocket", MockWebSocket as unknown as typeof WebSocket);
     MockWebSocket.instances = [];
     disconnectAiSocket();
@@ -38,5 +48,20 @@ describe("aiSocket", () => {
 
     reconnectAiSocket();
     expect(MockWebSocket.instances.length).toBe(2);
+  });
+
+  it("emits connection state and retries with exponential backoff", () => {
+    const states: string[] = [];
+    const unsubscribe = subscribeAiSocketConnection((state) => states.push(state));
+
+    connectAiSocket();
+    const socket = MockWebSocket.instances[0];
+    socket.emit("close");
+
+    vi.advanceTimersByTime(1000);
+    expect(MockWebSocket.instances.length).toBeGreaterThan(1);
+    expect(states).toContain("connecting");
+
+    unsubscribe();
   });
 });
