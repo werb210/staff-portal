@@ -13,7 +13,11 @@ interface ContinuationApp {
   arOutstanding?: string;
   existingDebt?: string;
   createdAt: string;
+  status?: "readiness" | "application";
+  linkedLeadId?: string;
 }
+
+const buildLeadId = (app: ContinuationApp) => `lead-${app.email.toLowerCase()}`;
 
 export default function ContinuationApplications() {
   const [apps, setApps] = useState<ContinuationApp[]>([]);
@@ -21,8 +25,29 @@ export default function ContinuationApplications() {
   useEffect(() => {
     fetch("/api/continuation")
       .then((res) => res.json())
-      .then(setApps);
+      .then((data: ContinuationApp[]) => {
+        setApps(
+          (Array.isArray(data) ? data : []).map((app) => ({
+            ...app,
+            status: app.status ?? "readiness",
+            linkedLeadId: app.linkedLeadId ?? buildLeadId(app)
+          }))
+        );
+      });
   }, []);
+
+  function convertToApplication(id: string) {
+    setApps((previous) =>
+      previous.map((app) =>
+        app.id === id
+          ? {
+              ...app,
+              status: "application"
+            }
+          : app
+      )
+    );
+  }
 
   return (
     <div className="p-6">
@@ -36,6 +61,19 @@ export default function ContinuationApplications() {
             <div>{app.email}</div>
             <div>{app.phone}</div>
             <div className="mt-2 text-sm text-gray-500">Industry: {app.industry}</div>
+            <div className="mt-1 text-sm text-gray-500">Status: {app.status}</div>
+            <div className="text-sm text-gray-500">Linked CRM lead: {app.linkedLeadId}</div>
+            <div className="mt-2 text-xs text-slate-500">
+              KYC preserved: {app.yearsInBusiness ?? "n/a"} years · Revenue {app.monthlyRevenue ?? app.annualRevenue ?? "n/a"}
+            </div>
+            <button
+              type="button"
+              onClick={() => convertToApplication(app.id)}
+              className="mt-3 rounded border border-slate-300 px-3 py-1 text-sm"
+              disabled={app.status === "application"}
+            >
+              {app.status === "application" ? "Converted" : "Convert to Application"}
+            </button>
           </div>
         ))}
       </div>

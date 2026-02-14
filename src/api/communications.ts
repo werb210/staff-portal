@@ -1,6 +1,6 @@
 import type { Contact } from "./crm";
 
-export type CommunicationType = "chat" | "human" | "issue" | "sms" | "system";
+export type CommunicationType = "chat" | "human" | "issue" | "sms" | "system" | "credit_readiness" | "contact_form";
 export type CommunicationDirection = "in" | "out";
 
 export type CommunicationMessage = {
@@ -34,6 +34,17 @@ export type CommunicationConversation = {
   messages: CommunicationMessage[];
   highlighted?: boolean;
   acknowledged?: boolean;
+  leadId?: string;
+};
+
+export type CrmLead = {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  tags: string[];
+  conversationIds: string[];
+  transcriptIds: string[];
 };
 
 export type TimelineEntry = {
@@ -161,10 +172,56 @@ const baseConversations: CommunicationConversation[] = [
         silo: "BF"
       }
     ]
+  },
+  {
+    id: "conv-readiness-1",
+    contactName: "Nora Readiness",
+    applicationName: "Readiness Session",
+    type: "credit_readiness",
+    createdAt: now(),
+    updatedAt: now(),
+    silo: "BF",
+    assignedTo: "Alex",
+    unread: 0,
+    metadata: { status: "in_review", kyc: { legalName: "Nora Ventures LLC", taxId: "XX-1234567" } },
+    messages: [
+      {
+        id: "msg-readiness-1",
+        conversationId: "conv-readiness-1",
+        direction: "in",
+        message: "Submitted credit readiness with KYC fields.",
+        createdAt: now(),
+        type: "credit_readiness",
+        silo: "BF"
+      }
+    ]
+  },
+  {
+    id: "conv-contact-form-1",
+    contactName: "Wes Contact",
+    applicationName: "Website Contact",
+    type: "contact_form",
+    createdAt: now(),
+    updatedAt: now(),
+    silo: "BI",
+    assignedTo: "Brooke",
+    unread: 1,
+    messages: [
+      {
+        id: "msg-contact-1",
+        conversationId: "conv-contact-form-1",
+        direction: "in",
+        message: "Contact form submission requesting callback.",
+        createdAt: now(),
+        type: "contact_form",
+        silo: "BI"
+      }
+    ]
   }
 ];
 
 let conversations = baseConversations.map((conv) => ({ ...conv }));
+const leads: CrmLead[] = [];
 
 const clone = <T,>(data: T): T => structuredClone(data);
 
@@ -215,7 +272,54 @@ const updateConversation = (conversation: CommunicationConversation) => {
   return conversation;
 };
 
-export const fetchCommunicationThreads = async () => Promise.resolve(clone(conversations));
+const normalized = (value?: string) => value?.trim().toLowerCase() ?? "";
+
+export const ensureCrmLead = (payload: {
+  name?: string;
+  email?: string;
+  phone?: string;
+  tags?: string[];
+  conversationId?: string;
+}) => {
+  const email = normalized(payload.email);
+  const phone = normalized(payload.phone);
+  const existing = leads.find((lead) => (email && normalized(lead.email) === email) || (phone && normalized(lead.phone) === phone));
+  if (existing) {
+    if (payload.conversationId && !existing.conversationIds.includes(payload.conversationId)) {
+      existing.conversationIds.push(payload.conversationId);
+    }
+    payload.tags?.forEach((tag) => {
+      if (!existing.tags.includes(tag)) existing.tags.push(tag);
+    });
+    return existing;
+  }
+
+  const created: CrmLead = {
+    id: `lead-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+    name: payload.name || "Unknown Lead",
+    email: payload.email,
+    phone: payload.phone,
+    tags: payload.tags ?? [],
+    conversationIds: payload.conversationId ? [payload.conversationId] : [],
+    transcriptIds: []
+  };
+  leads.push(created);
+  return created;
+};
+
+const ensureConversationLead = (conversation: CommunicationConversation) => {
+  if (conversation.leadId) return conversation;
+  const tags = ["startup_interest", "confidence_check"];
+  const lead = ensureCrmLead({ name: conversation.contactName, tags, conversationId: conversation.id });
+  const updated = { ...conversation, leadId: lead.id };
+  updateConversation(updated);
+  return updated;
+};
+
+export const fetchCommunicationThreads = async () => {
+  conversations.forEach((conversation) => ensureConversationLead(conversation));
+  return Promise.resolve(clone(conversations));
+};
 
 export const fetchConversationById = async (conversationId: string) => {
   const conversation = findConversation(conversationId);
@@ -292,8 +396,9 @@ export const createHumanEscalation = async (payload: {
 }) => {
   const assignedTo = staffRotation[rotationIndex % staffRotation.length];
   rotationIndex += 1;
+  const conversationId = `human-${Date.now()}`;
   const conversation: CommunicationConversation = {
-    id: `human-${Date.now()}`,
+    id: conversationId,
     contactId: payload.contactId,
     contactName: payload.contactName,
     applicationId: payload.applicationId,
@@ -308,7 +413,7 @@ export const createHumanEscalation = async (payload: {
     messages: [
       {
         id: `msg-${Date.now()}`,
-        conversationId: `human-${Date.now()}`,
+        conversationId,
         direction: "in",
         message: payload.message,
         createdAt: now(),
@@ -317,9 +422,10 @@ export const createHumanEscalation = async (payload: {
       }
     ]
   };
-  conversations = [conversation, ...conversations];
-  logTimeline(conversation, "Client requested human assistance via AI chat.");
-  return clone(conversation);
+  const linked = ensureConversationLead(conversation);
+  conversations = [linked, ...conversations];
+  logTimeline(linked, "Client requested human assistance via AI chat.");
+  return clone(linked);
 };
 
 export const createIssueReport = async (payload: {
@@ -329,9 +435,11 @@ export const createIssueReport = async (payload: {
   applicationName?: string;
   silo: string;
   message: string;
+  screenshot?: string;
 }) => {
+  const conversationId = `issue-${Date.now()}`;
   const conversation: CommunicationConversation = {
-    id: `issue-${Date.now()}`,
+    id: conversationId,
     contactId: payload.contactId,
     contactName: payload.contactName,
     applicationId: payload.applicationId,
@@ -347,18 +455,20 @@ export const createIssueReport = async (payload: {
     messages: [
       {
         id: `msg-${Date.now()}`,
-        conversationId: `issue-${Date.now()}`,
+        conversationId,
         direction: "in",
         message: payload.message,
         createdAt: now(),
         type: "issue",
         silo: payload.silo
       }
-    ]
+    ],
+    metadata: payload.screenshot ? { screenshot: payload.screenshot } : undefined
   };
-  conversations = [conversation, ...conversations];
-  logTimeline(conversation, "Issue reported via AI workflow.");
-  return clone(conversation);
+  const linked = ensureConversationLead(conversation);
+  conversations = [linked, ...conversations];
+  logTimeline(linked, "Issue reported via AI workflow.");
+  return clone(linked);
 };
 
 export const acknowledgeIssue = async (conversationId: string) => {
@@ -369,6 +479,24 @@ export const acknowledgeIssue = async (conversationId: string) => {
   logTimeline(updated, "Issue acknowledged by staff.");
   return clone(updated);
 };
+
+export const deleteIssue = async (conversationId: string) => {
+  conversations = conversations.filter((conversation) => conversation.id !== conversationId || conversation.type !== "issue");
+  return Promise.resolve({ success: true });
+};
+
+export const attachTranscriptToLead = async (conversationId: string, transcript: string) => {
+  const conversation = findConversation(conversationId);
+  if (!conversation) throw new Error("Conversation not found");
+  const linkedConversation = ensureConversationLead(conversation);
+  const lead = leads.find((item) => item.id === linkedConversation.leadId);
+  if (!lead) throw new Error("Lead not found");
+  lead.transcriptIds.push(`transcript-${Date.now()}`);
+  logTimeline(linkedConversation, `Chat transcript attached to CRM lead: ${transcript.slice(0, 60)}`);
+  return clone(lead);
+};
+
+export const fetchCrmLeads = async () => Promise.resolve(clone(leads));
 
 export const fetchSmsThread = async (contactId: string) => {
   const thread = conversations.find((conv) => conv.contactId === contactId && conv.type === "sms");
@@ -411,4 +539,5 @@ export const resetCommunicationsFixtures = () => {
   crmTimeline.length = 0;
   applicationTimeline.length = 0;
   rotationIndex = 0;
+  leads.length = 0;
 };

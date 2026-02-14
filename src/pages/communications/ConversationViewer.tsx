@@ -33,6 +33,8 @@ const ConversationViewer = ({ conversation, onSend, onAcknowledgeIssue }: Conver
     return <div className="text-sm text-slate-500">Select a conversation to get started.</div>;
   }
 
+  const issueScreenshot = typeof conversation?.metadata?.screenshot === "string" ? conversation.metadata.screenshot : undefined;
+
   return (
     <div className="flex flex-col h-full">
       <div className="flex justify-between items-center mb-3">
@@ -57,6 +59,13 @@ const ConversationViewer = ({ conversation, onSend, onAcknowledgeIssue }: Conver
         )}
       </div>
       <div className="bg-white border rounded p-3 overflow-y-auto flex-1" data-testid="conversation-viewer" ref={scrollRef}>
+      {conversation.type === "issue" && issueScreenshot && (
+        <img
+          src={issueScreenshot}
+          alt="Issue screenshot thumbnail"
+          className="mb-3 max-h-44 rounded border"
+        />
+      )}
         {conversation.messages.map((message) => (
           <MessageBubble key={message.id} message={message} />
         ))}

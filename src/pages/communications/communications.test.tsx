@@ -7,6 +7,9 @@ import ConversationViewer from "./ConversationViewer";
 import MessageComposer from "./MessageComposer";
 import { useCommunicationsStore } from "@/state/communications.store";
 import {
+  deleteIssue,
+  ensureCrmLead,
+  fetchCrmLeads,
   getApplicationTimelineEntries,
   getCrmTimelineEntries,
   resetCommunicationsFixtures
@@ -146,6 +149,33 @@ describe("Communications workflows", () => {
     expect(selector.value).toBe("chat");
   });
 
+
+  it("deduplicates CRM leads by email and phone", async () => {
+    const first = ensureCrmLead({ name: "Lead One", email: "same@example.com", phone: "+1-555-0000", tags: ["startup_interest"] });
+    const second = ensureCrmLead({ name: "Lead Two", email: "same@example.com", phone: "+1-555-0000", tags: ["confidence_check"] });
+
+    expect(first.id).toBe(second.id);
+    const leads = await fetchCrmLeads();
+    expect(leads).toHaveLength(1);
+    expect(leads[0].tags).toEqual(expect.arrayContaining(["startup_interest", "confidence_check"]));
+  });
+
+  it("deletes issue records without affecting CRM leads", async () => {
+    const store = useCommunicationsStore.getState();
+    const issue = await store.reportIssue({
+      contactName: "Issue Contact",
+      silo: "BF",
+      message: "Broken form",
+      screenshot: "https://cdn.example.com/issue.png"
+    });
+
+    await deleteIssue(issue.id);
+    await store.loadConversations();
+
+    const after = await fetchCrmLeads();
+    expect(after.some((lead) => lead.id === issue.leadId)).toBe(true);
+    expect(useCommunicationsStore.getState().conversations.find((conv) => conv.id === issue.id)).toBeUndefined();
+  });
   it("renders communications page with conversation list", async () => {
     render(wrapper(<CommunicationsPage />));
     await waitFor(() => expect(screen.getByTestId("conversation-list")).toBeInTheDocument());

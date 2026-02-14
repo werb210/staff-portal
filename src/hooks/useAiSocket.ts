@@ -2,7 +2,7 @@ import { useEffect } from "react";
 
 export function connectToAiSession(sessionId: string, onMessage: (msg: any) => void) {
   const ws = new WebSocket(
-    `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/api/ai/ws?sessionId=${sessionId}`
+    `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws/chat?sessionId=${sessionId}`
   );
 
   ws.onmessage = (event) => {

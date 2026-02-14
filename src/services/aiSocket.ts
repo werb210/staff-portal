@@ -27,17 +27,17 @@ let manuallyClosed = false;
 const resolveWebSocketUrl = () => {
   const baseUrl = getApiBaseUrl();
   if (!baseUrl || typeof baseUrl !== "string") {
-    return "ws://server-url/ws";
+    return "ws://server-url/ws/chat";
   }
 
   if (baseUrl.startsWith("http://") || baseUrl.startsWith("https://")) {
     const url = new URL(baseUrl);
     url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
-    url.pathname = "/ws";
+    url.pathname = "/ws/chat";
     return url.toString();
   }
 
-  return "ws://server-url/ws";
+  return "ws://server-url/ws/chat";
 };
 
 const notify = (payload: AiSocketEventPayload) => {
