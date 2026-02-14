@@ -1,4 +1,4 @@
-export type LeadSource = "website_contact" | "website_credit_check" | "chat_start" | "startup_interest";
+export type LeadSource = "website_contact" | "website_credit_check" | "chat_start" | "startup_interest" | "credit_readiness";
 
 export type LeadMetadata = {
   yearsInBusiness?: string | number;
