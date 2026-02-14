@@ -12,7 +12,7 @@ import RequireRole from "@/components/auth/RequireRole";
 import { emitUiTelemetry } from "@/utils/uiTelemetry";
 import { useAuth } from "@/hooks/useAuth";
 import { ContactSubmissions } from "@/features/support/ContactSubmissions";
-import { deleteIssue, fetchWebsiteIssues, type WebsiteIssue } from "@/api/issues";
+import api from "@/api/client";
 import AiChatPanel from "@/features/comms/AiChatPanel";
 import ChatSessionsPanel from "./ChatSessionsPanel";
 
@@ -21,34 +21,29 @@ type CommsView = "threads" | "ai-live-chat" | "ai-sessions" | "issue-reports" | 
 
 
 const WebsiteIssuesPanel = () => {
-  const [issues, setIssues] = useState<WebsiteIssue[]>([]);
+  const [issues, setIssues] = useState<any[]>([]);
 
   useEffect(() => {
-    void fetchWebsiteIssues()
-      .then((data) => setIssues(data))
-      .catch(() => setIssues([]));
+    void loadIssues();
   }, []);
 
-  const onResolveIssue = async (id: string) => {
-    await deleteIssue(id);
-    setIssues((prev) => prev.filter((issue) => issue.id !== id));
-  };
+  async function loadIssues() {
+    const res = await api.get("/support/issues");
+    setIssues(Array.isArray(res.data) ? res.data : []);
+  }
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-semibold">Issue Reports</h3>
-
+      <h2 className="mb-4 mt-10 text-xl">Reported Issues</h2>
       {issues.map((issue) => (
-        <div key={issue.id} className="issue-card">
+        <div key={issue.id} className="mb-4 rounded border p-4">
           <div>
             <strong>Message:</strong> {issue.message}
           </div>
-          {issue.screenshotUrl ? <img src={issue.screenshotUrl} alt="Screenshot" /> : null}
-          <button onClick={() => void onResolveIssue(issue.id)}>Delete Handled Report</button>
+          {issue.screenshot && <img src={issue.screenshot} className="mt-2 rounded shadow" alt="Issue screenshot" />}
         </div>
       ))}
-
-          </div>
+    </div>
   );
 };
 

@@ -3,7 +3,7 @@ import {
   closeSession,
   fetchActiveAiSessions,
   fetchAiMessages,
-  sendStaffMessage,
+  sendSessionStaffMessage,
   takeOverSession
 } from "@/api/ai";
 import { useAiSocket } from "@/hooks/useAiSocket";
@@ -53,7 +53,7 @@ function AiSessionsPanel() {
 
   async function handleSend() {
     if (!selected || !input.trim()) return;
-    await sendStaffMessage(selected.id, input);
+    await sendSessionStaffMessage(selected.id, input);
     setInput("");
     await loadMessages(selected.id);
   }

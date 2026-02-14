@@ -1,76 +1,98 @@
-import { useCallback, useEffect, useState } from "react";
-import { closeAiSession, fetchAiMessages, fetchAiSessions } from "@/api/aiSessions";
-import type { AiSession, AiSessionMessage } from "@/features/comms/aiSessions";
-import { connectToAiSession } from "@/hooks/useAiSocket";
+import { useEffect, useState } from "react";
+import { closeChat, fetchActiveChats, sendStaffMessage } from "@/api/ai";
+
+type ChatMessage = {
+  role: string;
+  content: string;
+};
+
+type ActiveChat = {
+  id: string;
+  companyName?: string;
+  messages: ChatMessage[];
+};
 
 export default function AiChatPanel() {
-  const [sessions, setSessions] = useState<AiSession[]>([]);
-  const [active, setActive] = useState<AiSession | null>(null);
-  const [messages, setMessages] = useState<AiSessionMessage[]>([]);
+  const [chats, setChats] = useState<ActiveChat[]>([]);
+  const [active, setActive] = useState<ActiveChat | null>(null);
+  const [input, setInput] = useState("");
 
-  const loadSessions = useCallback(async () => {
-    const res = await fetchAiSessions();
-    setSessions(res.data);
+  useEffect(() => {
+    void load();
   }, []);
 
-  useEffect(() => {
-    void loadSessions();
-  }, [loadSessions]);
-
-  useEffect(() => {
-    if (!active) return;
-    const disconnect = connectToAiSession(active.id, (message) => {
-      setMessages((current) => [...current, message as AiSessionMessage]);
-    });
-
-    return disconnect;
-  }, [active]);
-
-  async function openSession(session: AiSession) {
-    setActive(session);
-    const res = await fetchAiMessages(session.id);
-    setMessages(res.data);
+  async function load() {
+    const data = await fetchActiveChats();
+    const nextChats = Array.isArray(data) ? data : [];
+    setChats(nextChats);
+    if (active) {
+      const refreshed = nextChats.find((chat) => chat.id === active.id) ?? null;
+      setActive(refreshed);
+    }
   }
 
-  async function handleClose() {
+  async function reply() {
+    if (!active || !input.trim()) return;
+    await sendStaffMessage(active.id, input);
+    setInput("");
+    await load();
+  }
+
+  async function close() {
     if (!active) return;
-    await closeAiSession(active.id);
+    await closeChat(active.id);
     setActive(null);
-    setMessages([]);
-    await loadSessions();
+    await load();
   }
 
   return (
-    <div className="flex h-[70vh]">
-      <div className="w-1/3 overflow-auto border-r">
-        {sessions.map((s) => (
-          <div key={s.id} onClick={() => void openSession(s)} className="cursor-pointer border-b p-3 hover:bg-gray-100">
-            <div className="font-semibold">{s.companyName || s.fullName || "Visitor"}</div>
-            <div className="text-xs text-gray-500">{s.status}</div>
-          </div>
-        ))}
-      </div>
+    <div className="p-2">
+      <h1 className="mb-6 text-2xl font-semibold">Live AI Chats</h1>
 
-      <div className="flex flex-1 flex-col">
-        {active ? (
-          <>
-            <div className="flex-1 overflow-auto p-4">
-              {messages.map((m, i) => (
-                <div key={`${m.id ?? i}-${i}`} className="mb-2 text-sm">
-                  <strong>{m.role}:</strong> {m.content}
-                </div>
-              ))}
+      <div className="grid gap-6 md:grid-cols-3">
+        <div className="rounded border p-4">
+          {chats.map((chat) => (
+            <div
+              key={chat.id}
+              className="cursor-pointer border-b p-2"
+              onClick={() => setActive(chat)}
+            >
+              {chat.companyName || "New Visitor"}
             </div>
+          ))}
+        </div>
 
-            <button onClick={() => void handleClose()} className="bg-black py-3 text-white">
-              Close &amp; Push to CRM
-            </button>
-          </>
-        ) : (
-          <div className="flex h-full items-center justify-center text-sm text-slate-500">
-            Select an AI session to view live chat.
-          </div>
-        )}
+        <div className="flex flex-col rounded border p-4 md:col-span-2">
+          {active ? (
+            <>
+              <div className="mb-4 flex-1 space-y-2 overflow-auto">
+                {active.messages?.map((message, index) => (
+                  <div key={`${message.role}-${index}`} className="text-sm">
+                    <strong>{message.role}:</strong> {message.content}
+                  </div>
+                ))}
+              </div>
+
+              <input
+                value={input}
+                onChange={(event) => setInput(event.target.value)}
+                className="mb-2 border p-2"
+              />
+
+              <div className="flex gap-2">
+                <button onClick={() => void reply()} className="rounded bg-blue-600 px-4 py-2 text-white">
+                  Send
+                </button>
+
+                <button onClick={() => void close()} className="rounded bg-gray-600 px-4 py-2 text-white">
+                  Close Chat
+                </button>
+              </div>
+            </>
+          ) : (
+            <div>Select a chat</div>
+          )}
+        </div>
       </div>
     </div>
   );
