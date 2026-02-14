@@ -6,8 +6,9 @@ import TimelineFeed from "./timeline/TimelineFeed";
 import RequireRole from "@/components/auth/RequireRole";
 import { ContactSubmissions } from "@/features/support/ContactSubmissions";
 import { useAuth } from "@/hooks/useAuth";
+import ContinuationLeadsPanel from "./ContinuationLeadsPanel";
 
-type CrmView = "contacts" | "companies" | "timeline" | "website-leads";
+type CrmView = "contacts" | "companies" | "timeline" | "website-leads" | "continuations";
 
 const CRMContent = () => {
   const [view, setView] = useState<CrmView>("contacts");
@@ -24,6 +25,7 @@ const CRMContent = () => {
             <button onClick={() => setView("companies")}>Companies</button>
             <button onClick={() => setView("timeline")}>Global Timeline</button>
             {isAdmin && <button onClick={() => setView("website-leads")}>Website Leads</button>}
+            {isAdmin && <button onClick={() => setView("continuations")}>Continuations</button>}
           </div>
         }
       >
@@ -41,6 +43,11 @@ const CRMContent = () => {
       {view === "website-leads" && (
         <Card title="Website Contact Leads">
           <ContactSubmissions isAdmin={isAdmin} />
+        </Card>
+      )}
+      {view === "continuations" && (
+        <Card title="Website Continuations">
+          <ContinuationLeadsPanel />
         </Card>
       )}
     </div>
