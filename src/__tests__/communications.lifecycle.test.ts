@@ -6,6 +6,7 @@ import {
   closeEscalatedChat,
   createHumanEscalation,
   createIssueReport,
+  deleteIssue,
   fetchCommunicationThreads,
   fetchCrmLeads,
   resetCommunicationsFixtures
@@ -75,5 +76,23 @@ describe("chat session lifecycle", () => {
     const paused = await applyHumanActiveState(escalation.id);
     expect(paused.metadata?.aiPaused).toBe(true);
     expect(paused.status).toBe("human");
+  });
+
+  it("deletes only issue records and leaves CRM lead data intact", async () => {
+    const issue = await createIssueReport({
+      silo: "BF",
+      message: "Client cannot upload file",
+      context: "client"
+    });
+    const leadId = issue.leadId;
+    expect(leadId).toBeTruthy();
+
+    await deleteIssue(issue.id);
+
+    const threads = await fetchCommunicationThreads();
+    expect(threads.some((item) => item.id === issue.id)).toBe(false);
+
+    const crmLeads = await fetchCrmLeads();
+    expect(crmLeads.some((lead) => lead.id === leadId)).toBe(true);
   });
 });
