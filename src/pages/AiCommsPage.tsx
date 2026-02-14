@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   closeSession,
   fetchActiveAiSessions,
@@ -7,6 +7,8 @@ import {
   takeOverSession
 } from "@/api/ai";
 import { useAiSocket } from "@/hooks/useAiSocket";
+import { useAuth } from "@/hooks/useAuth";
+import RequireRole from "@/components/auth/RequireRole";
 
 type AiSession = {
   id: string;
@@ -24,6 +26,10 @@ function AiSessionsPanel() {
   const [selected, setSelected] = useState<AiSession | null>(null);
   const [messages, setMessages] = useState<AiMessage[]>([]);
   const [input, setInput] = useState("");
+  const [socketStatus, setSocketStatus] = useState("disconnected");
+  const [socketError, setSocketError] = useState<string | null>(null);
+  const { user } = useAuth();
+  const canModerateChat = useMemo(() => ["admin", "staff"].includes(String(user?.role ?? "").toLowerCase()), [user?.role]);
 
   const loadSessions = useCallback(async () => {
     const data = await fetchActiveAiSessions();
@@ -40,13 +46,22 @@ function AiSessionsPanel() {
     loadSessions();
   }, [loadSessions]);
 
-  useAiSocket(selected?.id ?? null, (incomingMessage) => {
-    setMessages((current) => [...current, incomingMessage]);
-  });
+  useAiSocket(
+    selected?.id ?? null,
+    (incomingMessage) => {
+      setMessages((current) => [...current, incomingMessage as AiMessage]);
+      setSocketError(null);
+    },
+    {
+      onStatus: setSocketStatus,
+      onError: (message) => setSocketError(message)
+    }
+  );
 
   async function handleTakeover() {
     if (!selected) return;
     await takeOverSession(selected.id);
+    setMessages((current) => [...current, { role: "system", content: "Transferring you to a staff member…" }]);
     await loadMessages(selected.id);
     await loadSessions();
   }
@@ -70,6 +85,8 @@ function AiSessionsPanel() {
     <div className="flex h-screen">
       <div className="w-64 border-r p-3">
         <h3 className="mb-2 font-semibold">AI Conversations</h3>
+        <div className="mb-2 text-xs text-slate-500">Socket: {socketStatus}</div>
+        {socketError ? <div className="mb-2 text-xs text-amber-700">{socketError}</div> : null}
         {sessions.map((session) => (
           <div
             key={session.id}
@@ -93,7 +110,7 @@ function AiSessionsPanel() {
 
           <div className="space-y-2 border-t p-3">
             {selected.status === "ai" && (
-              <button onClick={handleTakeover} className="rounded bg-yellow-500 px-3 py-2 text-white">
+              <button disabled={!canModerateChat} onClick={handleTakeover} className="rounded bg-yellow-500 px-3 py-2 text-white disabled:opacity-50">
                 Take Over Chat
               </button>
             )}
@@ -104,12 +121,12 @@ function AiSessionsPanel() {
                 onChange={(event) => setInput(event.target.value)}
                 className="flex-1 border p-2"
               />
-              <button onClick={handleSend} className="rounded bg-blue-600 px-4 text-white">
+              <button disabled={!canModerateChat} onClick={handleSend} className="rounded bg-blue-600 px-4 text-white disabled:opacity-50">
                 Send
               </button>
             </div>
 
-            <button onClick={handleClose} className="rounded bg-red-600 px-3 py-2 text-white">
+            <button disabled={!canModerateChat} onClick={handleClose} className="rounded bg-red-600 px-3 py-2 text-white disabled:opacity-50">
               Close Chat
             </button>
           </div>
@@ -122,5 +139,9 @@ function AiSessionsPanel() {
 }
 
 export default function AiCommsPage() {
-  return <AiSessionsPanel />;
+  return (
+    <RequireRole roles={["Admin", "Staff"]}>
+      <AiSessionsPanel />
+    </RequireRole>
+  );
 }
