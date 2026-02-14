@@ -1,14 +1,20 @@
+import api from "@/api/client";
+
 export async function getSupportQueue() {
-  const res = await fetch("/api/support/queue");
-  return res.json();
+  const res = await api.get("/api/support/queue");
+  return res.data;
 }
 
 export async function getIssueReports() {
-  const res = await fetch("/api/support/issues");
-  return res.json();
+  const res = await api.get("/api/support/issues");
+  return res.data;
+}
+
+export async function fetchIssueReports() {
+  return api.get("/support/issues");
 }
 
 export async function getAIKnowledge() {
-  const res = await fetch("/api/ai/knowledge");
-  return res.json();
+  const res = await api.get("/api/ai/knowledge");
+  return res.data;
 }
