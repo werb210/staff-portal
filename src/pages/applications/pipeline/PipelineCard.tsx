@@ -75,6 +75,9 @@ const PipelineCard = ({ card, stageId, onClick, isSelected, selectable, onSelect
         />
       </div>
       {card.source === "website" ? <div className="pipeline-card__lead-badge">Website Lead</div> : null}
+      {card.source === "credit_readiness" ? (
+        <span className="rounded bg-blue-100 px-2 py-1 text-xs text-blue-700">Continuation</span>
+      ) : null}
       <div className="pipeline-card__header">
         <div>
           <div className="pipeline-card__title">{card.businessName ?? "Unknown business"}</div>
