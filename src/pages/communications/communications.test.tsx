@@ -7,6 +7,7 @@ import ConversationViewer from "./ConversationViewer";
 import MessageComposer from "./MessageComposer";
 import { useCommunicationsStore } from "@/state/communications.store";
 import {
+  closeEscalatedChat,
   deleteIssue,
   ensureCrmLead,
   fetchCrmLeads,
@@ -169,6 +170,7 @@ describe("Communications workflows", () => {
       screenshot: "https://cdn.example.com/issue.png"
     });
 
+    await closeEscalatedChat(issue.id, "Issue resolved by staff.");
     await deleteIssue(issue.id);
     await store.loadConversations();
 

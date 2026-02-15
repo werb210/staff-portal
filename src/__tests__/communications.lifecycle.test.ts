@@ -100,7 +100,7 @@ describe("chat session lifecycle", () => {
     expect(paused.status).toBe("human");
   });
 
-  it("deletes only issue records and leaves CRM lead data intact", async () => {
+  it("deletes only resolved issue records and leaves CRM lead data intact", async () => {
     const issue = await createIssueReport({
       silo: "BF",
       message: "Client cannot upload file",
@@ -109,6 +109,8 @@ describe("chat session lifecycle", () => {
     const leadId = issue.leadId;
     expect(leadId).toBeTruthy();
 
+    await expect(deleteIssue(issue.id)).rejects.toThrow("Issue must be resolved before deletion");
+    await closeEscalatedChat(issue.id, "Issue resolved by staff.");
     await deleteIssue(issue.id);
 
     const threads = await fetchCommunicationThreads();

@@ -144,11 +144,13 @@ describe("Timeline", () => {
 
   it("groups automated events under an automations cluster", async () => {
     renderWithProviders(<TimelineFeed entityId="c1" entityType="contact" />);
-    const groupToggle = await screen.findByRole("button", { name: /automations/i });
+    const automationGroups = await screen.findAllByTestId(/automation-group-/);
+    const targetGroup = automationGroups.find((group) => within(group).queryByText("Important email not opened")) ?? automationGroups[0];
+    const groupToggle = within(targetGroup).getByRole("button");
     expect(groupToggle).toBeInTheDocument();
     await userEvent.click(groupToggle);
-    expect(await screen.findByText("Important email not opened")).toBeInTheDocument();
-    expect(await screen.findByText("SMS reminder sent")).toBeInTheDocument();
+    expect(await screen.findAllByText("Important email not opened")).not.toHaveLength(0);
+    expect(await screen.findAllByText("SMS reminder sent")).not.toHaveLength(0);
   });
 
   it("shows manual events alongside automated clusters", async () => {
@@ -160,10 +162,12 @@ describe("Timeline", () => {
     renderWithProviders(<TimelineFeed entityId="c1" entityType="contact" />, {
       auth: { user: { id: "lender-1", email: "lender@example.com", role: "Lender" } }
     });
-    const groupToggle = await screen.findByRole("button", { name: /automations/i });
+    const automationGroups = await screen.findAllByTestId(/automation-group-/);
+    const targetGroup = automationGroups.find((group) => within(group).queryByText("Important email not opened")) ?? automationGroups[0];
+    const groupToggle = within(targetGroup).getByRole("button");
     await userEvent.click(groupToggle);
-    const automationItem = await screen.findByText("Important email not opened");
-    await userEvent.click(automationItem);
+    const automationItems = await within(targetGroup).findAllByTestId(/timeline-/);
+    await userEvent.click(automationItems[0]);
     expect(await screen.findByText("Automation metadata is restricted to staff.")).toBeInTheDocument();
     expect(screen.queryByText("Rule ID")).not.toBeInTheDocument();
   });

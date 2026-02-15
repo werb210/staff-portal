@@ -604,7 +604,14 @@ export const acknowledgeIssue = async (conversationId: string) => {
 };
 
 export const deleteIssue = async (conversationId: string) => {
-  conversations = conversations.filter((conversation) => conversation.id !== conversationId || conversation.type !== "issue");
+  const conversation = findConversation(conversationId);
+  if (!conversation || conversation.type !== "issue") {
+    throw new Error("Issue not found");
+  }
+  if (conversation.status !== "closed") {
+    throw new Error("Issue must be resolved before deletion");
+  }
+  conversations = conversations.filter((item) => item.id !== conversationId);
   return Promise.resolve({ success: true });
 };
 
