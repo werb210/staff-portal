@@ -128,7 +128,11 @@ export const logError = (error: AxiosError) => {
   const pendingId = (config as AxiosRequestConfig & { __pendingId?: string }).__pendingId;
   endPendingRequest(pendingId);
 
-  console.error("API error", {
+  const isCanceled = error.code === "ERR_CANCELED";
+  const isTransientBodyRead = error.message.includes("Body is unusable: Body has already been read");
+  const logger = isCanceled || isTransientBodyRead ? console.warn : console.error;
+
+  logger("API error", {
     requestId,
     method: config.method?.toUpperCase(),
     url: buildRequestUrl(config),

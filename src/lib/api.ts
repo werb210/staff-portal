@@ -48,6 +48,23 @@ export class ApiError extends Error {
   }
 }
 
+const resolveErrorData = (error: AxiosError): { code?: string; details?: unknown; message?: string } => {
+  try {
+    const data = error.response?.data as { message?: string; code?: string } | undefined;
+    return {
+      code: data?.code,
+      details: data,
+      message: data?.message
+    };
+  } catch {
+    return {
+      code: undefined,
+      details: undefined,
+      message: undefined
+    };
+  }
+};
+
 const rawBaseUrl = getApiBaseUrl();
 const testBaseUrl = typeof process !== "undefined" && process.env?.NODE_ENV === "test" ? "http://localhost" : "";
 const resolvedBaseUrl = rawBaseUrl || testBaseUrl;
@@ -70,15 +87,16 @@ export async function apiRequest<T>(config: AxiosRequestConfig): Promise<T> {
     return data;
   } catch (error: unknown) {
     const axiosError = error as AxiosError<{ message?: string; code?: string }>;
+    const errorData = resolveErrorData(axiosError);
     const status = axiosError.response?.status ?? 500;
-    const message = axiosError.response?.data?.message ?? axiosError.message;
+    const message = errorData.message ?? axiosError.message;
 
     throw new ApiError({
       status,
       message,
-      code: axiosError.response?.data?.code,
+      code: errorData.code,
       requestId: axiosError.response?.headers?.["x-request-id"],
-      details: axiosError.response?.data
+      details: errorData.details
     });
   }
 }
@@ -113,6 +131,7 @@ api.interceptors.response.use(
   (response: AxiosResponse) => logResponse(response),
   (error: AxiosError) => {
     logError(error);
+    const errorData = resolveErrorData(error);
     const status = error.response?.status ?? 500;
     if (status === 401) {
       handleUnauthorized(error.config?.url);
@@ -127,10 +146,10 @@ api.interceptors.response.use(
     return Promise.reject(
       new ApiError({
         status,
-        message: error.message,
-        code: (error.response?.data as { code?: string })?.code,
+        message: errorData.message ?? error.message,
+        code: errorData.code,
         requestId: error.response?.headers?.["x-request-id"],
-        details: error.response?.data
+        details: errorData.details
       })
     );
   }
