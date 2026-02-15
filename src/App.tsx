@@ -390,8 +390,22 @@ export default function App() {
                   </RoleGuard>
                 }
               />
-              <Route path="/crm" element={<CRMPage />} />
-              <Route path="/communications" element={<CommunicationsPage />} />
+              <Route
+                path="/crm"
+                element={
+                  <RoleGuard roles={["Admin", "Staff"]}>
+                    <CRMPage />
+                  </RoleGuard>
+                }
+              />
+              <Route
+                path="/communications"
+                element={
+                  <RoleGuard roles={["Admin", "Staff"]}>
+                    <CommunicationsPage />
+                  </RoleGuard>
+                }
+              />
               <Route
                 path="/continuations"
                 element={

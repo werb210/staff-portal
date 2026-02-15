@@ -496,6 +496,7 @@ export default function ChatSessionsPanel() {
                 {` ${new Date(issue.createdAt).toLocaleString()}`}
               </div>
               <div className="text-xs text-slate-500">Lead: {issue.contactName ?? "Unknown"}</div>
+              <div className="text-xs text-slate-500">Status: {issue.status === "closed" ? "Resolved" : "Open"}</div>
               {typeof issue.metadata?.screenshot === "string" ? (
                 <div className="mt-1 space-y-1">
                   <img src={issue.metadata.screenshot as string} alt="Issue screenshot" className="max-h-32 border" />
@@ -508,7 +509,11 @@ export default function ChatSessionsPanel() {
                 <button onClick={() => void archiveIssueReport(issue.id)} className="rounded bg-slate-600 px-3 py-1 text-white">
                   Archive
                 </button>
-                <button disabled={!canModerateChat} onClick={() => void removeIssue(issue.id)} className="rounded bg-rose-600 px-3 py-1 text-white disabled:opacity-50">
+                <button
+                  disabled={!canModerateChat || issue.status !== "closed"}
+                  onClick={() => void removeIssue(issue.id)}
+                  className="rounded bg-rose-600 px-3 py-1 text-white disabled:opacity-50"
+                >
                   Delete
                 </button>
               </div>
