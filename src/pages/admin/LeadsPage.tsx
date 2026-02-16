@@ -173,11 +173,11 @@ export default function LeadsPage() {
             <th className="px-3 py-2 text-left">Full Name</th>
             <th className="px-3 py-2 text-left">Email</th>
             <th className="px-3 py-2 text-left">Phone</th>
-            <th className="px-3 py-2 text-left">Years in Business</th>
+            <th className="px-3 py-2 text-left">Years</th>
             <th className="px-3 py-2 text-left">Annual Revenue</th>
             <th className="px-3 py-2 text-left">Monthly Revenue</th>
-            <th className="px-3 py-2 text-left">Requested Amount</th>
-            <th className="px-3 py-2 text-left">Credit Score Range</th>
+            <th className="px-3 py-2 text-left">A/R</th>
+            <th className="px-3 py-2 text-left">Collateral</th>
             <th className="px-3 py-2 text-left">Product</th>
             <th className="px-3 py-2 text-left">Industry</th>
             <th className="px-3 py-2 text-left">Source</th>
@@ -201,8 +201,8 @@ export default function LeadsPage() {
               <td className="px-3 py-2">{lead.metadata?.yearsInBusiness ?? "-"}</td>
               <td className="px-3 py-2">{lead.metadata?.annualRevenue ?? "-"}</td>
               <td className="px-3 py-2">{lead.metadata?.monthlyRevenue ?? "-"}</td>
-              <td className="px-3 py-2">{lead.metadata?.requestedAmount ?? "-"}</td>
-              <td className="px-3 py-2">{lead.metadata?.creditScoreRange ?? "-"}</td>
+              <td className="px-3 py-2">{lead.metadata?.accountsReceivable ?? "-"}</td>
+              <td className="px-3 py-2">{lead.metadata?.availableCollateral ?? "-"}</td>
               <td className="px-3 py-2">{lead.productInterest ?? "-"}</td>
               <td className="px-3 py-2">{lead.industryInterest ?? lead.industry ?? "-"}</td>
               <td className="px-3 py-2">

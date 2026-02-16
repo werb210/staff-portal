@@ -9,13 +9,14 @@ export interface ReadinessLead {
   phone: string;
   email: string;
   industry: string;
-  yearsInBusiness: number | null;
-  monthlyRevenue: number | null;
-  accountsReceivable: number | null;
+  yearsInBusiness: string | null;
+  annualRevenue: string | null;
+  monthlyRevenue: string | null;
+  accountsReceivable: string | null;
   status: ReadinessLeadStatus;
   source?: string;
   tags: string[];
-  debt: number | null;
+  availableCollateral: string | null;
   createdAt: string;
   transcriptHistory: string[];
   activityLog: string[];
@@ -35,12 +36,9 @@ const asRecord = (value: unknown): Record<string, unknown> | null => {
   return value as Record<string, unknown>;
 };
 
-const asNumber = (value: unknown): number | null => {
-  if (typeof value === "number" && Number.isFinite(value)) return value;
-  if (typeof value === "string" && value.trim().length > 0) {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : null;
-  }
+const asDisplayValue = (value: unknown): string | null => {
+  if (typeof value === "string" && value.trim().length > 0) return value;
+  if (typeof value === "number" && Number.isFinite(value)) return String(value);
   return null;
 };
 
@@ -60,13 +58,14 @@ const parseLead = (value: unknown): ReadinessLead | null => {
     phone: typeof record.phone === "string" ? record.phone : "",
     email: typeof record.email === "string" ? record.email : "",
     industry: typeof record.industry === "string" ? record.industry : "",
-    yearsInBusiness: asNumber(record.yearsInBusiness),
-    monthlyRevenue: asNumber(record.monthlyRevenue),
-    accountsReceivable: asNumber(record.accountsReceivable ?? record.ar),
+    yearsInBusiness: asDisplayValue(record.yearsInBusiness),
+    annualRevenue: asDisplayValue(record.annualRevenue),
+    monthlyRevenue: asDisplayValue(record.monthlyRevenue),
+    accountsReceivable: asDisplayValue(record.accountsReceivable ?? record.arBalance ?? record.ar),
     status: typeof record.status === "string" ? record.status : "new",
     source: typeof record.source === "string" ? record.source : "readiness",
     tags: asStringArray(record.tags ?? ["readiness", "startup_interest"]),
-    debt: asNumber(record.debt),
+    availableCollateral: asDisplayValue(record.availableCollateral ?? record.collateral),
     createdAt: typeof record.createdAt === "string" ? record.createdAt : new Date(0).toISOString(),
     transcriptHistory: asStringArray(record.transcriptHistory),
     activityLog: asStringArray(record.activityLog)

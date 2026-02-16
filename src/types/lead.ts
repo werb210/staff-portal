@@ -1,19 +1,17 @@
 export interface Lead {
   id: string;
-  companyName?: string;
-  fullName?: string;
-  email?: string;
-  phone?: string;
+  companyName: string;
+  contactName: string;
+  email: string;
+  phone: string;
 
-  yearsInBusiness?: string;
-  annualRevenue?: string;
-  monthlyRevenue?: string;
-  requestedAmount?: string;
-  creditScoreRange?: string;
+  industry: string;
+  yearsInBusiness: string;
+  annualRevenue: string;
+  monthlyRevenue: string;
+  arBalance: string;
+  collateral: string;
 
-  productInterest?: string;
-  industryInterest?: string;
+  status: string;
   source: string;
-
-  createdAt: string;
 }

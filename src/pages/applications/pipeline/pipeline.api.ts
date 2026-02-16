@@ -56,6 +56,22 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 const parseStringArray = (value: unknown) =>
   Array.isArray(value) ? value.filter((item) => typeof item === "string") : undefined;
 
+const asDisplayString = (value: unknown): string | undefined => {
+  if (typeof value === "string") return value;
+  if (typeof value === "number" && Number.isFinite(value)) return String(value);
+  return undefined;
+};
+
+const resolveStage = (stage: unknown, status: unknown): string => {
+  if (typeof stage === "string" && stage.trim().length > 0) {
+    return stage;
+  }
+  if (status === "Pre-Application") {
+    return "DRAFT";
+  }
+  return "";
+};
+
 const normalizePipelineApplication = (value: unknown): PipelineApplication | null => {
   if (!isRecord(value)) return null;
   const id =
@@ -132,12 +148,7 @@ const normalizePipelineApplication = (value: unknown): PipelineApplication | nul
         : typeof value.lead_source === "string"
           ? value.lead_source
           : undefined,
-    stage:
-      typeof value.stage === "string"
-        ? value.stage
-        : typeof value.current_stage === "string"
-          ? value.current_stage
-          : "",
+    stage: resolveStage(value.stage ?? value.current_stage, value.status),
     status: typeof value.status === "string" ? value.status : undefined,
     matchPercentage:
       typeof value.matchPercentage === "number" || typeof value.matchPercentage === "string"
@@ -206,6 +217,12 @@ const normalizePipelineApplication = (value: unknown): PipelineApplication | nul
         : typeof value.assigned_lender === "string"
           ? value.assigned_lender
           : undefined,
+    industry: asDisplayString(value.industry),
+    yearsInBusiness: asDisplayString(value.yearsInBusiness ?? value.years_in_business),
+    annualRevenue: asDisplayString(value.annualRevenue ?? value.annual_revenue),
+    monthlyRevenue: asDisplayString(value.monthlyRevenue ?? value.monthly_revenue),
+    arBalance: asDisplayString(value.arBalance ?? value.accountsReceivable ?? value.accounts_receivable),
+    collateral: asDisplayString(value.collateral ?? value.availableCollateral ?? value.available_collateral),
     createdAt,
     updatedAt
   };

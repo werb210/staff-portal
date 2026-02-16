@@ -3,10 +3,6 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { convertReadinessLeadToApplication, fetchReadinessLeads } from "@/api/readiness";
 
-const currencyFormatter = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
-
-const formatCurrency = (value: number | null) => (value === null ? "-" : currencyFormatter.format(value));
-
 const formatDate = (value: string) => {
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? "-" : date.toLocaleDateString();
@@ -56,9 +52,10 @@ const ReadinessLeadsPage = () => {
               <th className="px-3 py-2">Tags</th>
               <th className="px-3 py-2">Industry</th>
               <th className="px-3 py-2">Years</th>
+              <th className="px-3 py-2">Annual Revenue</th>
               <th className="px-3 py-2">Monthly Revenue</th>
               <th className="px-3 py-2">A/R</th>
-              <th className="px-3 py-2">Debt</th>
+              <th className="px-3 py-2">Collateral</th>
               <th className="px-3 py-2">Created Date</th>
               <th className="px-3 py-2">Status</th>
             </tr>
@@ -78,9 +75,10 @@ const ReadinessLeadsPage = () => {
                 <td className="px-3 py-2">{lead.tags.join(", ") || "-"}</td>
                 <td className="px-3 py-2">{lead.industry || "-"}</td>
                 <td className="px-3 py-2">{lead.yearsInBusiness ?? "-"}</td>
-                <td className="px-3 py-2">{formatCurrency(lead.monthlyRevenue)}</td>
-                <td className="px-3 py-2">{formatCurrency(lead.accountsReceivable)}</td>
-                <td className="px-3 py-2">{formatCurrency(lead.debt)}</td>
+                <td className="px-3 py-2">{lead.annualRevenue ?? "-"}</td>
+                <td className="px-3 py-2">{lead.monthlyRevenue ?? "-"}</td>
+                <td className="px-3 py-2">{lead.accountsReceivable ?? "-"}</td>
+                <td className="px-3 py-2">{lead.availableCollateral ?? "-"}</td>
                 <td className="px-3 py-2">{formatDate(lead.createdAt)}</td>
                 <td className="px-3 py-2">{lead.status}</td>
               </tr>
@@ -112,10 +110,11 @@ const ReadinessLeadsPage = () => {
               <DetailRow label="Source" value={selectedLead.source || "readiness"} />
               <DetailRow label="Tags" value={selectedLead.tags.join(", ")} />
               <DetailRow label="Industry" value={selectedLead.industry} />
-              <DetailRow label="Years in Business" value={selectedLead.yearsInBusiness?.toString() ?? "-"} />
-              <DetailRow label="Monthly Revenue" value={formatCurrency(selectedLead.monthlyRevenue)} />
-              <DetailRow label="Accounts Receivable" value={formatCurrency(selectedLead.accountsReceivable)} />
-              <DetailRow label="Debt" value={formatCurrency(selectedLead.debt)} />
+              <DetailRow label="Years in Business" value={selectedLead.yearsInBusiness ?? "-"} />
+              <DetailRow label="Annual Revenue" value={selectedLead.annualRevenue ?? "-"} />
+              <DetailRow label="Monthly Revenue" value={selectedLead.monthlyRevenue ?? "-"} />
+              <DetailRow label="Accounts Receivable" value={selectedLead.accountsReceivable ?? "-"} />
+              <DetailRow label="Available Collateral" value={selectedLead.availableCollateral ?? "-"} />
               <DetailRow label="Created Date" value={formatDate(selectedLead.createdAt)} />
               <DetailRow label="Status" value={selectedLead.status} />
             </dl>
@@ -148,4 +147,3 @@ const ReadinessLeadsPage = () => {
 };
 
 export default ReadinessLeadsPage;
-
