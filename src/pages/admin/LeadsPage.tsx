@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { fetchLeads } from "@/api/crm";
-import type { Lead, LeadMetadata, LeadSource } from "@/types/crm";
+import type { Lead, LeadMetadata, LeadSource, LeadStatus } from "@/types/crm";
 
 type ApiLead = {
   id?: string;
@@ -15,9 +15,12 @@ type ApiLead = {
   email?: string;
   phone?: string;
   source?: string;
+  status?: string;
+  linkedApplicationId?: string;
   createdAt?: string;
   tags?: string[];
   productInterest?: string;
+  industry?: string;
   industryInterest?: string;
   metadata?: LeadMetadata;
   yearsInBusiness?: string | number;
@@ -27,20 +30,37 @@ type ApiLead = {
   creditScoreRange?: string | number;
   revenue?: string | number;
   ar?: string | number;
+  arBalance?: string | number;
   accountsReceivable?: string | number;
   availableCollateral?: string | number;
   score?: string | number;
   pendingApplicationId?: string;
 };
 
-type LeadFilter = "all" | "website";
+type LeadFilter = "all" | "website" | "credit_readiness_bridge";
 type LeadTab = "overview" | "comms";
 
 const normalizeSource = (source?: string): LeadSource => {
-  if (source === "website_contact" || source === "website_credit_check" || source === "chat_start" || source === "startup_interest" || source === "credit_readiness") {
+  if (
+    source === "website_contact" ||
+    source === "website_credit_check" ||
+    source === "chat_start" ||
+    source === "startup_interest" ||
+    source === "credit_readiness" ||
+    source === "manual" ||
+    source === "website" ||
+    source === "credit_readiness_bridge"
+  ) {
     return source;
   }
   return "website_contact";
+};
+
+const normalizeStatus = (status?: string): LeadStatus => {
+  if (status === "new" || status === "contacted" || status === "converted") {
+    return status;
+  }
+  return "new";
 };
 
 const toLead = (lead: ApiLead, index: number): Lead => {
@@ -54,10 +74,12 @@ const toLead = (lead: ApiLead, index: number): Lead => {
     fullName: fullName || "-",
     email: lead.email ?? "-",
     phone: lead.phone ?? "-",
+    industry: lead.industry,
     productInterest: lead.productInterest,
     industryInterest: lead.industryInterest,
     tags: lead.tags ?? [],
     source: normalizeSource(lead.source),
+    status: normalizeStatus(lead.status),
     createdAt: lead.createdAt ?? new Date().toISOString(),
     metadata: {
       yearsInBusiness: lead.metadata?.yearsInBusiness ?? lead.yearsInBusiness,
@@ -66,10 +88,11 @@ const toLead = (lead: ApiLead, index: number): Lead => {
       requestedAmount: lead.metadata?.requestedAmount ?? lead.requestedAmount,
       creditScoreRange: lead.metadata?.creditScoreRange ?? lead.creditScoreRange,
       revenue: lead.metadata?.revenue ?? lead.revenue,
-      accountsReceivable: lead.metadata?.accountsReceivable ?? lead.accountsReceivable ?? lead.ar,
+      accountsReceivable: lead.metadata?.accountsReceivable ?? lead.accountsReceivable ?? lead.ar ?? lead.arBalance,
       availableCollateral: lead.metadata?.availableCollateral ?? lead.availableCollateral,
       score: lead.metadata?.score ?? lead.score
     },
+    linkedApplicationId: lead.linkedApplicationId,
     pendingApplicationId: lead.pendingApplicationId
   };
 };
@@ -105,11 +128,21 @@ export default function LeadsPage() {
   }, []);
 
   const websiteLeads = useMemo(
-    () => leads.filter((l) => l.source === "website_contact" || l.source === "website_credit_check"),
+    () => leads.filter((l) => l.source === "website_contact" || l.source === "website_credit_check" || l.source === "website"),
     [leads]
   );
 
-  const visibleLeads = filter === "website" ? websiteLeads : leads;
+  const creditReadinessBridgeLeads = useMemo(() => leads.filter((l) => l.source === "credit_readiness_bridge"), [leads]);
+
+  const visibleLeads = useMemo(() => {
+    if (filter === "website") {
+      return websiteLeads;
+    }
+    if (filter === "credit_readiness_bridge") {
+      return creditReadinessBridgeLeads;
+    }
+    return leads;
+  }, [creditReadinessBridgeLeads, filter, leads, websiteLeads]);
 
   if (user?.role !== "Admin") {
     return <div>Access denied</div>;
@@ -118,9 +151,20 @@ export default function LeadsPage() {
   return (
     <div className="page space-y-4">
       <h1 className="text-xl font-semibold">Website Leads</h1>
-      <div className="flex gap-2">
-        <button onClick={() => setFilter("all")}>All Leads</button>
-        <button onClick={() => setFilter("website")}>Website Leads</button>
+      <div className="flex items-center gap-2">
+        <label htmlFor="lead-filter" className="text-sm text-slate-600">Filter</label>
+        <select
+          id="lead-filter"
+          className="rounded border border-slate-300 bg-white px-2 py-1 text-sm"
+          value={filter}
+          onChange={(event) => setFilter(event.target.value as LeadFilter)}
+        >
+          <option value="all">All Leads</option>
+          <option value="website">Website Leads</option>
+          <option value="credit_readiness_bridge">
+            Credit Readiness Leads
+          </option>
+        </select>
       </div>
       <table className="min-w-full divide-y divide-slate-200 overflow-hidden rounded-lg border border-slate-200 bg-white text-sm">
         <thead className="bg-slate-50">
@@ -142,7 +186,14 @@ export default function LeadsPage() {
         </thead>
         <tbody>
           {visibleLeads.map((lead) => (
-            <tr key={lead.id} className="cursor-pointer border-t border-slate-100" onClick={() => { setSelectedLead(lead); setActiveTab("overview"); }}>
+            <tr
+              key={lead.id}
+              className={`cursor-pointer border-t border-slate-100 ${lead.source === "credit_readiness_bridge" && lead.status === "converted" ? "opacity-50" : ""}`}
+              onClick={() => {
+                setSelectedLead(lead);
+                setActiveTab("overview");
+              }}
+            >
               <td className="px-3 py-2">{lead.companyName}</td>
               <td className="px-3 py-2">{lead.fullName}</td>
               <td className="px-3 py-2">{lead.email}</td>
@@ -153,9 +204,16 @@ export default function LeadsPage() {
               <td className="px-3 py-2">{lead.metadata?.requestedAmount ?? "-"}</td>
               <td className="px-3 py-2">{lead.metadata?.creditScoreRange ?? "-"}</td>
               <td className="px-3 py-2">{lead.productInterest ?? "-"}</td>
-              <td className="px-3 py-2">{lead.industryInterest ?? "-"}</td>
+              <td className="px-3 py-2">{lead.industryInterest ?? lead.industry ?? "-"}</td>
               <td className="px-3 py-2">
-                <span className={`badge badge-${lead.source}`}>{lead.source.replace("_", " ")}</span>
+                {lead.source === "credit_readiness_bridge" && (
+                  <span className="px-2 py-1 text-xs bg-blue-600/20 text-blue-400 rounded">
+                    Credit Readiness
+                  </span>
+                )}
+                {lead.source !== "credit_readiness_bridge" && (
+                  <span className={`badge badge-${lead.source}`}>{lead.source.replace("_", " ")}</span>
+                )}
               </td>
               <td className="px-3 py-2">
                 <div className="flex flex-wrap gap-1">
@@ -205,6 +263,34 @@ export default function LeadsPage() {
                 <li>Requested Amount: {selectedLead.metadata?.requestedAmount ?? "-"}</li>
                 <li>Credit Score Range: {selectedLead.metadata?.creditScoreRange ?? "-"}</li>
               </ul>
+
+              {selectedLead.source === "credit_readiness_bridge" && (
+                <div className="mt-6 border-t border-slate-700 pt-4">
+                  <h3 className="text-sm font-semibold mb-3 text-slate-300">
+                    Credit Readiness Snapshot
+                  </h3>
+
+                  <div className="grid grid-cols-2 gap-3 text-sm text-slate-400">
+                    <div>Industry</div><div>{selectedLead.industry ?? "-"}</div>
+                    <div>Years in Business</div><div>{selectedLead.metadata?.yearsInBusiness ?? "-"}</div>
+                    <div>Annual Revenue</div><div>{selectedLead.metadata?.annualRevenue ?? "-"}</div>
+                    <div>Monthly Revenue</div><div>{selectedLead.metadata?.monthlyRevenue ?? "-"}</div>
+                    <div>Accounts Receivable</div><div>{selectedLead.metadata?.accountsReceivable ?? "-"}</div>
+                    <div>Available Collateral</div><div>{selectedLead.metadata?.availableCollateral ?? "-"}</div>
+                  </div>
+                </div>
+              )}
+
+              {selectedLead.linkedApplicationId && (
+                <div className="mt-4">
+                  <a
+                    href={`/pipeline/${selectedLead.linkedApplicationId}`}
+                    className="text-blue-400 hover:underline text-sm"
+                  >
+                    View Application
+                  </a>
+                </div>
+              )}
 
               {selectedLead.pendingApplicationId && (
                 <div className="bg-green-100 text-green-800 p-2 mt-4">
