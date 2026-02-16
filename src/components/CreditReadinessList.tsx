@@ -80,7 +80,7 @@ export default function CreditReadinessList() {
             <div>Annual: {lead.annualRevenue || "-"}</div>
             <div>Monthly: {lead.monthlyRevenue || "-"}</div>
             <div>AR: {lead.arBalance || "-"}</div>
-            <div>Collateral: {lead.collateralAvailable || "-"}</div>
+            <div>Collateral: {lead.availableCollateral || "-"}</div>
             <div>Phone: {lead.phone || "-"}</div>
             <div>Created: {lead.createdAt}</div>
           </div>

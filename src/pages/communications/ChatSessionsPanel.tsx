@@ -451,7 +451,7 @@ export default function ChatSessionsPanel() {
                 <div>YIB: {selectedLead.yib ?? "-"}</div>
                 <div>Revenue: {selectedLead.revenue ?? "-"}</div>
                 <div>A/R: {selectedLead.ar ?? "-"}</div>
-                <div>Existing Debt: {selectedLead.existingDebt ?? "-"}</div>
+                <div>Available Collateral: {selectedLead.availableCollateral ?? "-"}</div>
                 <div>Status: {selectedLead.status ?? "-"}</div>
                 <div>Tags: {selectedLead.tags.join(", ") || "-"}</div>
                 <div className="mt-2 font-semibold">Readiness</div>

@@ -7,7 +7,7 @@ type CreditReadiness = {
   monthlyRevenue?: string | number;
   annualRevenue?: string | number;
   arOutstanding?: string | number;
-  existingDebt?: string | number;
+  availableCollateral?: string | number;
   score?: string | number;
 };
 
@@ -30,7 +30,7 @@ export default function CreditReadinessPanel({ contactId }: { contactId: string 
       <div><strong>Monthly Revenue:</strong> {data.monthlyRevenue}</div>
       <div><strong>Annual Revenue:</strong> {data.annualRevenue}</div>
       <div><strong>A/R Outstanding:</strong> {data.arOutstanding}</div>
-      <div><strong>Existing Debt:</strong> {data.existingDebt}</div>
+      <div><strong>Available Collateral:</strong> {data.availableCollateral}</div>
       <div><strong>Preliminary Score:</strong> {data.score}</div>
     </div>
   );

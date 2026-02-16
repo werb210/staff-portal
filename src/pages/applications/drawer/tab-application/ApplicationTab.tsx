@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ChangeEvent, ReactNode } from "react";
 import { fetchPortalApplication, updatePortalApplication } from "@/api/applications";
 import type { ApplicationAuditEvent, PortalApplicationRecord } from "@/types/application.types";
+import type { CreditReadinessData } from "@/types/application";
 import Input from "@/components/ui/Input";
 import { useApplicationDrawerStore } from "@/state/applicationDrawer.store";
 import { getErrorMessage } from "@/utils/errors";
@@ -14,6 +15,15 @@ const Section = ({ title, children }: { title: string; children: ReactNode }) =>
     <div className="drawer-section__body">{children}</div>
   </div>
 );
+
+const Field = ({ label, value }: { label: string; value: string }) => (
+  <div className="drawer-kv-list__item">
+    <dt>{label}</dt>
+    <dd>{value || "-"}</dd>
+  </div>
+);
+
+const Divider = () => <hr className="my-3 border-slate-200" />;
 
 type ApplicationFormState = {
   businessLegalName: string;
@@ -146,6 +156,44 @@ const normalizeFormState = (data: PortalApplicationRecord | null | undefined): A
   };
 };
 
+const normalizeCreditReadinessData = (data: PortalApplicationRecord | null | undefined): CreditReadinessData => {
+  if (!data || !isRecord(data)) {
+    return {
+      industry: "",
+      yearsInBusiness: "",
+      annualRevenue: "",
+      monthlyRevenue: "",
+      arBalance: "",
+      availableCollateral: "",
+      companyName: "",
+      fullName: "",
+      email: "",
+      phone: ""
+    };
+  }
+
+  const businessRecord =
+    pickRecord(data, ["business", "businessDetails", "business_details", "businessInfo", "business_info"]) ?? null;
+  const operationsRecord =
+    pickRecord(data, ["operations", "operationsDetails", "operations_details", "operationsInfo", "operations_info"]) ??
+    null;
+  const contactRecord =
+    pickRecord(data, ["primaryContact", "primary_contact", "contactInfo", "contact_info", "applicantInfo"]) ?? null;
+
+  return {
+    industry: readValue([businessRecord, operationsRecord, data], ["industry", "industryType", "industry_type"]),
+    yearsInBusiness: readValue([operationsRecord, data], ["yearsInBusiness", "years_in_business", "businessYears"]),
+    annualRevenue: readValue([operationsRecord, data], ["annualRevenue", "annual_revenue", "yearlyRevenue"]),
+    monthlyRevenue: readValue([operationsRecord, data], ["monthlyRevenue", "monthly_revenue"]),
+    arBalance: readValue([operationsRecord, data], ["arBalance", "accountsReceivable", "accounts_receivable", "ar"]),
+    availableCollateral: readValue([operationsRecord, data], ["availableCollateral", "available_collateral"]),
+    companyName: readValue([businessRecord, data], ["legalName", "businessName", "companyName", "name"]),
+    fullName: readValue([contactRecord, data], ["name", "fullName", "contactName"]),
+    email: readValue([contactRecord, data], ["email", "contactEmail", "contact_email"]),
+    phone: readValue([contactRecord, data], ["phone", "contactPhone", "contact_phone"])
+  };
+};
+
 const normalizeAuditEvents = (data: PortalApplicationRecord | null | undefined): ApplicationAuditEvent[] => {
   if (!data || !isRecord(data)) return [];
   const audit = data.auditTimeline ?? data.audit_events;
@@ -227,6 +275,7 @@ const ApplicationTab = () => {
   });
 
   const auditEvents = useMemo(() => normalizeAuditEvents(application), [application]);
+  const readinessData = useMemo(() => normalizeCreditReadinessData(application), [application]);
 
   useEffect(() => {
     const normalized = normalizeFormState(application);
@@ -281,6 +330,28 @@ const ApplicationTab = () => {
           {feedback.message}
         </div>
       ) : null}
+      <Section title="Structured Data">
+        <dl className="drawer-kv-list">
+          <Field label="Industry" value={readinessData.industry} />
+          <Field label="Years in Business" value={readinessData.yearsInBusiness} />
+          <Field label="Annual Revenue" value={readinessData.annualRevenue} />
+          <Field label="Monthly Revenue" value={readinessData.monthlyRevenue} />
+          <Field label="Accounts Receivable" value={readinessData.arBalance} />
+          <Field
+            label="Available Collateral"
+            value={readinessData.availableCollateral || "Not Provided"}
+          />
+        </dl>
+
+        <Divider />
+
+        <dl className="drawer-kv-list">
+          <Field label="Company Name" value={readinessData.companyName} />
+          <Field label="Full Name" value={readinessData.fullName} />
+          <Field label="Email" value={readinessData.email} />
+          <Field label="Phone" value={readinessData.phone} />
+        </dl>
+      </Section>
       <Section title="Business">
         <Input label="Legal name" value={formState.businessLegalName} onChange={handleFieldChange("businessLegalName")} />
         <Input

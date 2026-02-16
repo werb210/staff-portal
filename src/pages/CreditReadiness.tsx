@@ -14,7 +14,7 @@ export default function CreditReadiness() {
     annualRevenue: "",
     monthlyRevenue: "",
     arBalance: "",
-    collateralAvailable: "",
+    availableCollateral: "",
   });
 
   const update = (field: string, value: string) => {
@@ -134,10 +134,10 @@ export default function CreditReadiness() {
 
         <select
           required
-          value={form.collateralAvailable}
-          onChange={(e) => update("collateralAvailable", e.target.value)}
+          value={form.availableCollateral}
+          onChange={(e) => update("availableCollateral", e.target.value)}
         >
-          <option value="">Is there available collateral for security?</option>
+          <option value="">Available collateral</option>
           <option>No Collateral Available</option>
           <option>$1 to $100,000</option>
           <option>$100,001 to $250,000</option>

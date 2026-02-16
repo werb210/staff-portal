@@ -8,7 +8,7 @@ export type LeadMetadata = {
   creditScoreRange?: string | number;
   revenue?: string | number;
   accountsReceivable?: string | number;
-  existingDebt?: string | number;
+  availableCollateral?: string | number;
   score?: string | number;
 };
 
@@ -42,7 +42,7 @@ export interface CRMLead {
   annualRevenue?: string;
   monthlyRevenue?: string;
   arBalance?: string;
-  collateralAvailable?: string;
+  availableCollateral?: string;
   score?: number;
   tier?: string;
   createdAt: string;

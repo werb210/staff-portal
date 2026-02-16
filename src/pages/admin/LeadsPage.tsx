@@ -28,7 +28,7 @@ type ApiLead = {
   revenue?: string | number;
   ar?: string | number;
   accountsReceivable?: string | number;
-  existingDebt?: string | number;
+  availableCollateral?: string | number;
   score?: string | number;
   pendingApplicationId?: string;
 };
@@ -67,7 +67,7 @@ const toLead = (lead: ApiLead, index: number): Lead => {
       creditScoreRange: lead.metadata?.creditScoreRange ?? lead.creditScoreRange,
       revenue: lead.metadata?.revenue ?? lead.revenue,
       accountsReceivable: lead.metadata?.accountsReceivable ?? lead.accountsReceivable ?? lead.ar,
-      existingDebt: lead.metadata?.existingDebt ?? lead.existingDebt,
+      availableCollateral: lead.metadata?.availableCollateral ?? lead.availableCollateral,
       score: lead.metadata?.score ?? lead.score
     },
     pendingApplicationId: lead.pendingApplicationId
