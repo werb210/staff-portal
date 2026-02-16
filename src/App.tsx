@@ -35,6 +35,7 @@ import AiQueuePage from "./pages/ai/AiQueuePage";
 import AiLiveChatPage from "./pages/ai/AiLiveChatPage";
 import AiConversations from "./pages/comms/AiConversations";
 import Leads from "./pages/Leads";
+import CreditResults from "./pages/CreditResults";
 import ContinuationApplications from "./features/continuation/ContinuationApplications";
 import LiveChatPanel from "./features/chat/LiveChatPanel";
 import IssueInboxPage from "./pages/IssueInboxPage";
@@ -380,6 +381,7 @@ export default function App() {
               }
             />
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/credit-results" element={<CreditResults />} />
             <Route element={<ProtectedApp />}>
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route
