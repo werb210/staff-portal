@@ -331,17 +331,14 @@ const ApplicationTab = () => {
         </div>
       ) : null}
       <Section title="Structured Data">
-        <dl className="drawer-kv-list">
+        <div className="grid grid-cols-2 gap-4">
           <Field label="Industry" value={readinessData.industry} />
           <Field label="Years in Business" value={readinessData.yearsInBusiness} />
           <Field label="Annual Revenue" value={readinessData.annualRevenue} />
           <Field label="Monthly Revenue" value={readinessData.monthlyRevenue} />
           <Field label="Accounts Receivable" value={readinessData.arBalance} />
-          <Field
-            label="Available Collateral"
-            value={readinessData.availableCollateral || "Not Provided"}
-          />
-        </dl>
+          <Field label="Available Collateral" value={readinessData.availableCollateral || "Not Provided"} />
+        </div>
 
         <Divider />
 

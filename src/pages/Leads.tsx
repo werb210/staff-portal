@@ -26,25 +26,35 @@ export default function Leads() {
         <table className="w-full border-collapse">
           <thead>
             <tr className="bg-gray-100 text-left">
-              <th className="p-3">Date</th>
               <th className="p-3">Company</th>
-              <th className="p-3">Name</th>
+              <th className="p-3">Contact</th>
               <th className="p-3">Email</th>
               <th className="p-3">Phone</th>
+              <th className="p-3">Industry</th>
+              <th className="p-3">Years</th>
+              <th className="p-3">Annual Revenue</th>
+              <th className="p-3">Monthly Revenue</th>
+              <th className="p-3">A/R</th>
+              <th className="p-3">Collateral</th>
+              <th className="p-3">Status</th>
               <th className="p-3">Source</th>
-              <th className="p-3">Product</th>
             </tr>
           </thead>
           <tbody>
             {leads.map((lead) => (
               <tr key={lead.id} className="border-b">
-                <td className="p-3">{new Date(lead.createdAt).toLocaleDateString()}</td>
                 <td className="p-3">{lead.companyName}</td>
-                <td className="p-3">{lead.fullName}</td>
+                <td className="p-3">{lead.contactName}</td>
                 <td className="p-3">{lead.email}</td>
                 <td className="p-3">{lead.phone}</td>
+                <td className="p-3">{lead.industry || "-"}</td>
+                <td className="p-3">{lead.yearsInBusiness || "-"}</td>
+                <td className="p-3">{lead.annualRevenue || "-"}</td>
+                <td className="p-3">{lead.monthlyRevenue || "-"}</td>
+                <td className="p-3">{lead.arBalance || "-"}</td>
+                <td className="p-3">{lead.collateral || "-"}</td>
+                <td className="p-3">{lead.status || "-"}</td>
                 <td className="p-3">{lead.source}</td>
-                <td className="p-3">{lead.productInterest || "-"}</td>
               </tr>
             ))}
           </tbody>

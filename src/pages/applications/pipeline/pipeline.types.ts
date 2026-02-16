@@ -75,6 +75,12 @@ export type PipelineApplication = {
   referrerName?: string;
   assignedStaff?: string;
   assignedLender?: string;
+  industry?: string;
+  yearsInBusiness?: string;
+  annualRevenue?: string;
+  monthlyRevenue?: string;
+  arBalance?: string;
+  collateral?: string;
   createdAt: string;
   updatedAt?: string;
 };

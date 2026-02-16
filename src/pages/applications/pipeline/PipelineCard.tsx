@@ -58,6 +58,7 @@ const PipelineCard = ({ card, stageId, onClick, isSelected, selectable, onSelect
     ocrCompletedAt: (card as { ocr_completed_at?: string | null } | null)?.ocr_completed_at,
     bankingCompletedAt: (card as { banking_completed_at?: string | null } | null)?.banking_completed_at
   });
+  const creditSummary = [card.yearsInBusiness, card.monthlyRevenue, card.collateral].filter(Boolean).join(" • ");
 
   return (
     <div
@@ -94,6 +95,7 @@ const PipelineCard = ({ card, stageId, onClick, isSelected, selectable, onSelect
           <span className="pipeline-card__pill pipeline-card__pill--muted">{processingStatus.badge}</span>
         ) : null}
       </div>
+      {creditSummary ? <div className="pipeline-card__footer">Credit: {creditSummary}</div> : null}
       <div className="pipeline-card__footer">{updatedAtLabel}</div>
     </div>
   );
