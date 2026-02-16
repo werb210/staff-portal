@@ -63,7 +63,7 @@ describe("chat session lifecycle", () => {
     expect(readinessLead?.yib).toBe("2");
     expect(readinessLead?.revenue).toBe("$85,000/mo");
     expect(readinessLead?.ar).toBe("$18,000");
-    expect(readinessLead?.existingDebt).toBe("$12,000");
+    expect(readinessLead?.availableCollateral).toBe("$12,000");
     expect(readinessLead?.conversationIds).toContain(readinessConversation.id);
   });
 

@@ -53,7 +53,7 @@ export type CrmLead = {
   yib?: string;
   revenue?: string;
   ar?: string;
-  existingDebt?: string;
+  availableCollateral?: string;
   status?: string;
   email?: string;
   phone?: string;
@@ -225,7 +225,7 @@ const baseConversations: CommunicationConversation[] = [
       yib: "2",
       revenue: "$85,000/mo",
       ar: "$18,000",
-      existingDebt: "$12,000",
+      availableCollateral: "$12,000",
       readinessScore: 84,
       readinessAnswers: { creditHistory: "strong", timeInBusiness: "18 months", cashFlow: "stable" },
       readinessCapturedAt: now(),
@@ -329,7 +329,7 @@ export const ensureCrmLead = (payload: {
   yib?: string;
   revenue?: string;
   ar?: string;
-  existingDebt?: string;
+  availableCollateral?: string;
   status?: string;
   email?: string;
   phone?: string;
@@ -358,7 +358,7 @@ export const ensureCrmLead = (payload: {
     existing.yib = existing.yib ?? payload.yib;
     existing.revenue = existing.revenue ?? payload.revenue;
     existing.ar = existing.ar ?? payload.ar;
-    existing.existingDebt = existing.existingDebt ?? payload.existingDebt;
+    existing.availableCollateral = existing.availableCollateral ?? payload.availableCollateral;
     existing.status = existing.status ?? payload.status;
     existing.readinessScore = existing.readinessScore ?? payload.readinessScore;
     existing.readinessAnswers = existing.readinessAnswers ?? payload.readinessAnswers;
@@ -380,7 +380,7 @@ export const ensureCrmLead = (payload: {
     yib: payload.yib,
     revenue: payload.revenue,
     ar: payload.ar,
-    existingDebt: payload.existingDebt,
+    availableCollateral: payload.availableCollateral,
     status: payload.status,
     email: payload.email,
     phone: payload.phone,
@@ -409,7 +409,7 @@ const ensureConversationLead = (conversation: CommunicationConversation) => {
     yib: typeof conversation.metadata?.yib === "string" ? conversation.metadata.yib : undefined,
     revenue: typeof conversation.metadata?.revenue === "string" ? conversation.metadata.revenue : "Unknown",
     ar: typeof conversation.metadata?.ar === "string" ? conversation.metadata.ar : undefined,
-    existingDebt: typeof conversation.metadata?.existingDebt === "string" ? conversation.metadata.existingDebt : undefined,
+    availableCollateral: typeof conversation.metadata?.availableCollateral === "string" ? conversation.metadata.availableCollateral : undefined,
     status: typeof conversation.metadata?.status === "string" ? conversation.metadata.status : "new",
     email: typeof conversation.metadata?.email === "string" ? conversation.metadata.email : conversation.contactEmail,
     phone: typeof conversation.metadata?.phone === "string" ? conversation.metadata.phone : conversation.contactPhone,

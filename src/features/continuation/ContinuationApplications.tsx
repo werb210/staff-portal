@@ -11,7 +11,7 @@ interface ContinuationApp {
   monthlyRevenue?: string;
   annualRevenue?: string;
   arOutstanding?: string;
-  existingDebt?: string;
+  availableCollateral?: string;
   createdAt: string;
   status?: "readiness" | "application";
   linkedLeadId?: string;
