@@ -1,4 +1,14 @@
-export type LeadSource = "website_contact" | "website_credit_check" | "chat_start" | "startup_interest" | "credit_readiness";
+export type LeadSource =
+  | "website_contact"
+  | "website_credit_check"
+  | "chat_start"
+  | "startup_interest"
+  | "credit_readiness"
+  | "manual"
+  | "website"
+  | "credit_readiness_bridge";
+
+export type LeadStatus = "new" | "contacted" | "converted";
 
 export type LeadMetadata = {
   yearsInBusiness?: string | number;
@@ -23,7 +33,9 @@ export interface Lead {
   industryInterest?: string;
   tags?: string[];
   pendingApplicationId?: string;
+  linkedApplicationId?: string;
   source: LeadSource;
+  status?: LeadStatus;
   createdAt: string;
   metadata?: LeadMetadata;
 }
@@ -45,5 +57,23 @@ export interface CRMLead {
   availableCollateral?: string;
   score?: number;
   tier?: string;
+  createdAt: string;
+}
+
+export interface CrmLead {
+  id: string;
+  companyName: string;
+  fullName: string;
+  email: string;
+  phone: string;
+  industry?: string;
+  yearsInBusiness?: string;
+  annualRevenue?: string;
+  monthlyRevenue?: string;
+  arBalance?: string;
+  availableCollateral?: string;
+  source: "manual" | "website" | "credit_readiness_bridge";
+  status: LeadStatus;
+  linkedApplicationId?: string;
   createdAt: string;
 }
