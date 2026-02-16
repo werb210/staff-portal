@@ -1,5 +1,6 @@
 import api from "@/api/client";
 import { useCrmStore } from "@/state/crm.store";
+import type { CRMLead } from "@/types/crm";
 
 export type Contact = {
   id: string;
@@ -474,13 +475,26 @@ export const createContactApplication = async (payload: {
   return delay(application);
 };
 
-
 export async function fetchLeads() {
   return api.get("/crm/leads");
 }
 
 export async function fetchLeadById(id: string) {
   return api.get(`/crm/leads/${id}`);
+}
+
+export async function fetchCreditReadinessLeads(): Promise<CRMLead[]> {
+  const res = await fetch("/api/crm/credit-readiness");
+  if (!res.ok) throw new Error("Failed to fetch readiness leads");
+  return res.json();
+}
+
+export async function convertReadinessToApplication(id: string) {
+  const res = await fetch(`/api/crm/credit-readiness/${id}/convert`, {
+    method: "POST"
+  });
+  if (!res.ok) throw new Error("Conversion failed");
+  return res.json();
 }
 
 export async function fetchChatSessions() {

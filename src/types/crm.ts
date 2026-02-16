@@ -27,3 +27,23 @@ export interface Lead {
   createdAt: string;
   metadata?: LeadMetadata;
 }
+
+export type LeadType = "application" | "credit_readiness";
+
+export interface CRMLead {
+  id: string;
+  type: LeadType;
+  companyName: string;
+  contactName: string;
+  email: string;
+  phone: string;
+  industry?: string;
+  yearsInBusiness?: string;
+  annualRevenue?: string;
+  monthlyRevenue?: string;
+  arBalance?: string;
+  collateralAvailable?: string;
+  score?: number;
+  tier?: string;
+  createdAt: string;
+}
