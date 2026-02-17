@@ -31,7 +31,8 @@ jobs:
         run: npm test -- --run
 
       - name: Audit gate
-        run: npm audit --omit=dev --audit-level=high
+        run: npm audit --omit=dev --audit-level=moderate
+        continue-on-error: false
 
       - name: Build
         env:
