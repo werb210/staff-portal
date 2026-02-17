@@ -1,9 +1,10 @@
-import type React from "react";
-import { ErrorBoundary } from "react-error-boundary";
+import React from "react";
+import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
 import { getRequestId } from "@/utils/requestId";
 import { useDialerStore } from "@/state/dialer.store";
 
-const DialerFallback = ({ error, resetErrorBoundary }: { error: Error; resetErrorBoundary: () => void }) => {
+const DialerFallback: React.FC<FallbackProps> = ({ error, resetErrorBoundary }) => {
+  const safeError = error instanceof Error ? error : new Error(String(error));
   const closeDialer = useDialerStore((state) => state.closeDialer);
   const resetCall = useDialerStore((state) => state.resetCall);
 
@@ -20,7 +21,7 @@ const DialerFallback = ({ error, resetErrorBoundary }: { error: Error; resetErro
           <p className="text-sm text-slate-600">
             We hit an error while rendering the dialer. You can safely continue working in the portal.
           </p>
-          <p className="text-xs text-slate-500">Error: {error.message}</p>
+          <p className="text-xs text-slate-500">Error: {safeError.message}</p>
         </div>
         <div className="dialer__footer">
           <button
