@@ -16,7 +16,19 @@ type MicrosoftLoginResponse = {
   refreshToken?: string;
 };
 
+export const resolvePostLoginDestination = (role?: string | null) =>
+  role === "Referrer"
+    ? "/referrer"
+    : role === "Lender"
+      ? "/lenders"
+      : role === "Admin"
+        ? "/admin/ai"
+        : role === "Staff"
+          ? "/dashboard"
+          : "/unauthorized";
+
 export default function LoginPage() {
+
   const auth = useAuth();
   const navigate = useNavigate();
 
@@ -72,8 +84,7 @@ export default function LoginPage() {
   // 🚨 CRITICAL: redirect immediately once authenticated
   useEffect(() => {
     if (auth.authStatus === "authenticated" && !hasNavigatedRef.current) {
-      const role = auth.user?.role;
-      const destination = role === "Referrer" ? "/referrer" : role === "Lender" ? "/lenders" : "/dashboard";
+      const destination = resolvePostLoginDestination(auth.user?.role);
       hasNavigatedRef.current = true;
       navigate(destination, { replace: true });
     }
