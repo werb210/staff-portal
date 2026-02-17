@@ -12,7 +12,7 @@
     "test": "vitest run",
     "test:e2e": "playwright test tests/e2e/auth.otp.e2e.spec.ts",
     "typecheck": "tsc --noEmit",
-    "lint": "npm run typecheck",
+    "lint": "eslint .",
     "verify": "npm run typecheck && npm run build",
     "check": "npm run typecheck",
     "audit:enterprise": "node scripts/enterprise-audit.js"
@@ -62,7 +62,7 @@
     "autoprefixer": "^10.4.20",
     "babel-plugin-transform-remove-console": "^6.9.4",
     "depcheck": "^1.4.7",
-    "eslint": "^9.39.2",
+    "eslint": "^8.57.1",
     "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.0.1",

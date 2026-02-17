@@ -1,21 +1,21 @@
-import type React from "react";
-import { ErrorBoundary } from "react-error-boundary";
+import React from "react";
+import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
 import Button from "../ui/Button";
 
-const ErrorFallback = ({ error, resetErrorBoundary }: { error: Error; resetErrorBoundary: () => void }) => (
-  <div className="error-fallback">
-    <h2>Unexpected error</h2>
-    <p>{error.message}</p>
-    <Button onClick={resetErrorBoundary}>Retry</Button>
-  </div>
-);
+const ErrorFallback: React.FC<FallbackProps> = ({ error, resetErrorBoundary }) => {
+  const safeError = error instanceof Error ? error : new Error(String(error));
+
+  return (
+    <div className="error-fallback">
+      <h2>Application Error</h2>
+      <pre>{safeError.message}</pre>
+      <Button onClick={resetErrorBoundary}>Reload</Button>
+    </div>
+  );
+};
 
 const AppErrorBoundary = ({ children }: { children: React.ReactNode }) => {
-  return (
-    <ErrorBoundary FallbackComponent={ErrorFallback}>
-      {children}
-    </ErrorBoundary>
-  );
+  return <ErrorBoundary FallbackComponent={ErrorFallback}>{children}</ErrorBoundary>;
 };
 
 export default AppErrorBoundary;
