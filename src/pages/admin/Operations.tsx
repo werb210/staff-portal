@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
 import { useAuth } from "@/auth/useAuth";
+import api from "@/api/client";
 import { Navigate } from "react-router-dom";
 import CapitalScorePreview from "@/components/CapitalScorePreview";
 
@@ -38,20 +38,20 @@ export default function Operations() {
   const [chats, setChats] = useState<ChatEscalation[]>([]);
   const [issueFilter, setIssueFilter] = useState("ALL");
 
-  if (auth.status !== "authenticated" || auth.user.role !== "ADMIN") {
+  if (auth.status !== "authenticated" || auth.user.role !== "Admin") {
     return <Navigate to="/" replace />;
   }
 
   async function updateIssueStatus(id: string, status: string) {
-    await axios.patch(`/api/admin/issues/${id}`, { status });
-    const refreshed = await axios.get("/api/admin/issues");
+    await api.patch(`/api/admin/issues/${id}`, { status });
+    const refreshed = await api.get<Issue[]>("/api/admin/issues");
     setIssues(refreshed.data);
   }
 
   useEffect(() => {
-    axios.get("/api/admin/contacts").then((res) => setContacts(res.data));
-    axios.get("/api/admin/issues").then((res) => setIssues(res.data));
-    axios.get("/api/admin/chats").then((res) => setChats(res.data));
+    api.get<Contact[]>("/api/admin/contacts").then((res) => setContacts(res.data));
+    api.get<Issue[]>("/api/admin/issues").then((res) => setIssues(res.data));
+    api.get<ChatEscalation[]>("/api/admin/chats").then((res) => setChats(res.data));
   }, []);
 
   return (
@@ -72,7 +72,7 @@ export default function Operations() {
               border: "1px solid #e5e7eb",
               padding: 16,
               borderRadius: 8,
-              marginBottom: 16,
+              marginBottom: 16
             }}
           >
             <strong>{c.company}</strong> — {c.firstName} {c.lastName}
@@ -85,7 +85,10 @@ export default function Operations() {
 
       <section>
         <h2>Issue Reports</h2>
-        <select onChange={(e) => setIssueFilter(e.target.value)}>
+        <label htmlFor="statusFilter" className="sr-only">
+          Filter by status
+        </label>
+        <select id="statusFilter" onChange={(e) => setIssueFilter(e.target.value)}>
           <option value="ALL">All</option>
           <option value="OPEN">Open</option>
           <option value="IN_PROGRESS">In Progress</option>
@@ -95,22 +98,28 @@ export default function Operations() {
           .filter((i) => issueFilter === "ALL" || i.status === issueFilter)
           .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
           .map((i) => (
-          <div
-            key={i.id}
-            style={{
-              border: "1px solid #e5e7eb",
-              padding: 16,
-              borderRadius: 8,
-              marginBottom: 16,
-            }}
-          >
-            <p>{i.message}</p>
-            {i.screenshotBase64 && <img src={`data:image/png;base64,${i.screenshotBase64}`} style={{ maxWidth: 400 }} />}
-            <div>Status: {i.status}</div>
-            <button onClick={() => updateIssueStatus(i.id, "IN_PROGRESS")}>Start</button>
-            <button onClick={() => updateIssueStatus(i.id, "CLOSED")}>Close</button>
-          </div>
-        ))}
+            <div
+              key={i.id}
+              style={{
+                border: "1px solid #e5e7eb",
+                padding: 16,
+                borderRadius: 8,
+                marginBottom: 16
+              }}
+            >
+              <p>{i.message}</p>
+              {i.screenshotBase64 && (
+                <img
+                  src={`data:image/png;base64,${i.screenshotBase64}`}
+                  alt="Operations overview graphic"
+                  style={{ maxWidth: 400 }}
+                />
+              )}
+              <div>Status: {i.status}</div>
+              <button onClick={() => updateIssueStatus(i.id, "IN_PROGRESS")}>Start</button>
+              <button onClick={() => updateIssueStatus(i.id, "CLOSED")}>Close</button>
+            </div>
+          ))}
       </section>
 
       <section>
@@ -122,7 +131,7 @@ export default function Operations() {
               border: "1px solid #e5e7eb",
               padding: 16,
               borderRadius: 8,
-              marginBottom: 16,
+              marginBottom: 16
             }}
           >
             <strong>

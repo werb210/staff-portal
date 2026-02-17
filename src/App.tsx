@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { Suspense, lazy, useEffect, useMemo, useRef } from "react";
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import PrivateRoute from "./router/PrivateRoute";
@@ -10,27 +10,9 @@ import CRMPage from "./pages/crm/CRMPage";
 import CommunicationsPage from "./pages/communications/CommunicationsPage";
 import CalendarPage from "./pages/calendar/CalendarPage";
 import MarketingPage from "./pages/marketing/MarketingPage";
-import LendersPage from "./pages/lenders/LendersPage";
 import SettingsPage from "./pages/settings/SettingsPage";
 import TaskPane from "./pages/tasks/TaskPane";
 import ReferrerPortal from "./pages/referrer/ReferrerPortal";
-import AiControlPage from "./pages/admin/AiControlPage";
-import AiChatDashboard from "./pages/admin/AiChatDashboard";
-import AiIssueReports from "./pages/admin/AiIssueReports";
-import Operations from "./pages/admin/Operations";
-import SupportDashboard from "./pages/admin/SupportDashboard";
-import AnalyticsDashboard from "./pages/admin/AnalyticsDashboard";
-import WebsiteLeadsPage from "./pages/admin/WebsiteLeadsPage";
-import AIKnowledgeBasePage from "./pages/admin/AIKnowledgeBasePage";
-import IssueReportsPage from "./pages/admin/IssueReportsPage";
-import LiveChatQueuePage from "./pages/admin/LiveChatQueuePage";
-import ConversionDashboardPage from "./pages/admin/ConversionDashboardPage";
-import LeadsPage from "./pages/admin/LeadsPage";
-import AnalyticsPage from "./pages/admin/AnalyticsPage";
-import ComparisonEditor from "./pages/admin/ComparisonEditor";
-import AIKnowledge from "./pages/admin/AIKnowledge";
-import AiPolicyEditorPage from "./pages/admin/AiPolicyEditorPage";
-import AiKnowledgeUpload from "./pages/admin/AiKnowledgeUpload";
 import AiQueuePage from "./pages/ai/AiQueuePage";
 import AiLiveChatPage from "./pages/ai/AiLiveChatPage";
 import AiConversations from "./pages/comms/AiConversations";
@@ -67,6 +49,27 @@ import RoleGuard from "@/auth/RoleGuard";
 import Unauthorized from "@/pages/Unauthorized";
 import { logger } from "@/utils/logger";
 import RequireAuth from "@/routes/RequireAuth";
+import Loading from "@/components/Loading";
+
+
+const LendersPage = lazy(() => import("./pages/lenders/LendersPage"));
+const AiControlPage = lazy(() => import("./pages/admin/AiControlPage"));
+const AiChatDashboard = lazy(() => import("./pages/admin/AiChatDashboard"));
+const AiIssueReports = lazy(() => import("./pages/admin/AiIssueReports"));
+const Operations = lazy(() => import("./pages/admin/Operations"));
+const SupportDashboard = lazy(() => import("./pages/admin/SupportDashboard"));
+const AnalyticsDashboard = lazy(() => import("./pages/admin/AnalyticsDashboard"));
+const WebsiteLeadsPage = lazy(() => import("./pages/admin/WebsiteLeadsPage"));
+const AIKnowledgeBasePage = lazy(() => import("./pages/admin/AIKnowledgeBasePage"));
+const IssueReportsPage = lazy(() => import("./pages/admin/IssueReportsPage"));
+const LiveChatQueuePage = lazy(() => import("./pages/admin/LiveChatQueuePage"));
+const ConversionDashboardPage = lazy(() => import("./pages/admin/ConversionDashboardPage"));
+const LeadsPage = lazy(() => import("./pages/admin/LeadsPage"));
+const AnalyticsPage = lazy(() => import("./pages/admin/AnalyticsPage"));
+const ComparisonEditor = lazy(() => import("./pages/admin/ComparisonEditor"));
+const AIKnowledge = lazy(() => import("./pages/admin/AIKnowledge"));
+const AiPolicyEditorPage = lazy(() => import("./pages/admin/AiPolicyEditorPage"));
+const AiKnowledgeUpload = lazy(() => import("./pages/admin/AiKnowledgeUpload"));
 
 const RouteChangeObserver = () => {
   const location = useLocation();
@@ -343,6 +346,7 @@ export default function App() {
         <BrowserRouter>
           <PortalSessionGuard />
           <RouteChangeObserver />
+          <Suspense fallback={<Loading />}>
           <Routes>
             <Route
               path="/login"
@@ -438,6 +442,14 @@ export default function App() {
               <Route path="/marketing" element={<MarketingPage />} />
               <Route
                 path="/lenders"
+                element={
+                  <RoleGuard roles={["Admin", "Staff", "Lender"]}>
+                    <LendersPage />
+                  </RoleGuard>
+                }
+              />
+              <Route
+                path="/lenders/*"
                 element={
                   <RoleGuard roles={["Admin", "Staff", "Lender"]}>
                     <LendersPage />
@@ -626,6 +638,7 @@ export default function App() {
           </Route>
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
+          </Suspense>
       </BrowserRouter>
       </ErrorBoundary>
     </QueryClientProvider>

@@ -73,7 +73,7 @@ export default function LoginPage() {
   useEffect(() => {
     if (auth.authStatus === "authenticated" && !hasNavigatedRef.current) {
       const role = auth.user?.role;
-      const destination = role === "Referrer" ? "/referrer" : role === "Lender" ? "/lender" : "/dashboard";
+      const destination = role === "Referrer" ? "/referrer" : role === "Lender" ? "/lenders" : "/dashboard";
       hasNavigatedRef.current = true;
       navigate(destination, { replace: true });
     }
