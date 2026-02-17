@@ -5,26 +5,27 @@ const ACCESS_TOKEN_KEY = env.VITE_JWT_STORAGE_KEY;
 
 let inMemoryAccessToken: string | null = null;
 
-const canUseLocalStorage = () =>
-  typeof window !== "undefined" && typeof window.localStorage !== "undefined";
+const canUseSessionStorage = () =>
+  typeof window !== "undefined" && typeof window.sessionStorage !== "undefined";
 
 const readStoredToken = (): string | null => {
-  if (!canUseLocalStorage()) return null;
+  if (!canUseSessionStorage()) return null;
   try {
-    return window.localStorage.getItem(ACCESS_TOKEN_KEY);
+    return window.sessionStorage.getItem(ACCESS_TOKEN_KEY);
   } catch {
     return null;
   }
 };
 
 const writeStoredToken = (token: string | null) => {
-  if (!canUseLocalStorage()) return;
+  if (!canUseSessionStorage()) return;
   try {
     if (!token) {
-      window.localStorage.removeItem(ACCESS_TOKEN_KEY);
+      window.sessionStorage.removeItem(ACCESS_TOKEN_KEY);
       return;
     }
-    window.localStorage.setItem(ACCESS_TOKEN_KEY, token);
+    // Security: keep JWTs scoped to browser session to reduce persistence risk after tab/browser close.
+    window.sessionStorage.setItem(ACCESS_TOKEN_KEY, token);
   } catch {
     // ignore storage errors
   }
