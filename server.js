@@ -11,9 +11,18 @@ const INDEX_HTML = path.join(DIST_DIR, "index.html");
 
 const app = express();
 
+app.use(helmet());
+
 app.use(
-  helmet({
-    contentSecurityPolicy: false
+  helmet.contentSecurityPolicy({
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'"],
+      styleSrc: ["'self'"],
+      imgSrc: ["'self'", "data:"],
+      connectSrc: ["'self'"],
+      frameAncestors: ["'none'"]
+    }
   })
 );
 

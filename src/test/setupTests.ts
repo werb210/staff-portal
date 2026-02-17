@@ -6,6 +6,7 @@ import api from "@/lib/api";
 import clientApi from "@/api/client";
 
 vi.stubEnv("VITE_API_BASE_URL", "http://localhost/api");
+vi.stubEnv("VITE_JWT_STORAGE_KEY", "portal_auth_token");
 api.defaults.baseURL = "http://localhost/api";
 clientApi.defaults.baseURL = "http://localhost/api";
 
