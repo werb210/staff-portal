@@ -26,7 +26,12 @@ export default defineConfig(({ mode }) => ({
       },
       output: {
         entryFileNames: (chunkInfo) =>
-          chunkInfo.name === "sw" ? "sw.js" : "assets/[name]-[hash].js"
+          chunkInfo.name === "sw" ? "sw.js" : "assets/[name]-[hash].js",
+        manualChunks: {
+          vendor: ["react", "react-dom"],
+          router: ["react-router-dom"],
+          admin: ["./src/pages/admin/AiControlPage.tsx", "./src/pages/admin/Operations.tsx"]
+        }
       }
     }
   },

@@ -1,0 +1,44 @@
+name: Azure Portal Deploy
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: {}
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck gate
+        run: npm run typecheck
+
+      - name: Test gate
+        run: npm test -- --run
+
+      - name: Audit gate
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Build
+        env:
+          VITE_ENV: ${{ secrets.VITE_ENV }}
+          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
+          VITE_STAFF_API_URL: ${{ secrets.VITE_STAFF_API_URL }}
+          VITE_CLIENT_API_KEY: ${{ secrets.VITE_CLIENT_API_KEY }}
+          VITE_CLIENT_APP_SHARED_TOKEN: ${{ secrets.VITE_CLIENT_APP_SHARED_TOKEN }}
+          VITE_JWT_STORAGE_KEY: ${{ secrets.VITE_JWT_STORAGE_KEY }}
+        run: npm run build
