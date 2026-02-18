@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useDialerStore, type DialerStatus } from "@/state/dialer.store";
 import { safeNormalizeToE164 } from "@/utils/phone";
 import { createTwilioDevice, fetchTwilioToken, type VoiceCall, type VoiceDevice } from "@/services/twilioVoice";
@@ -8,6 +8,7 @@ const isCallInProgressStatus = (status: DialerStatus) =>
   CALL_IN_PROGRESS_STATUSES.includes(status as (typeof CALL_IN_PROGRESS_STATUSES)[number]);
 
 export const useTwilioCall = () => {
+  const [deviceState, setDeviceState] = useState<string>("unregistered");
   const status = useDialerStore((state) => state.status);
   const number = useDialerStore((state) => state.number);
   const muted = useDialerStore((state) => state.muted);
@@ -39,7 +40,11 @@ export const useTwilioCall = () => {
   }, []);
 
   const finalizeCall = useCallback(
-    (outcome?: "completed" | "voicemail" | "no-answer" | "failed" | "canceled", finalStatus?: "ended" | "failed" | "completed" | "voicemail", failureReason?: "network" | "permission-denied" | "busy-no-answer" | "user-canceled" | "unknown") => {
+    (
+      outcome?: "completed" | "voicemail" | "no-answer" | "failed" | "canceled",
+      finalStatus?: "ended" | "failed" | "completed" | "voicemail",
+      failureReason?: "network" | "permission-denied" | "busy-no-answer" | "user-canceled" | "unknown"
+    ) => {
       if (endingRef.current) return;
       endingRef.current = true;
       endCall(outcome, finalStatus, failureReason);
@@ -69,14 +74,41 @@ export const useTwilioCall = () => {
   );
 
   const getDevice = useCallback(async () => {
-    if (deviceRef.current) return deviceRef.current;
+    if (deviceRef.current) {
+      setDeviceState((deviceRef.current.state as string) ?? "registered");
+      return deviceRef.current;
+    }
+
     const token = await fetchTwilioToken();
-    if (!token) return null;
+    if (!token) {
+      setDeviceState("unregistered");
+      return null;
+    }
+
     const device = createTwilioDevice(token);
-    if (!device) return null;
+    if (!device) {
+      setDeviceState("unregistered");
+      return null;
+    }
+
+    device.on?.("registered", () => setDeviceState("registered"));
+    device.on?.("unregistered", () => setDeviceState("unregistered"));
+    device.on?.("incoming", (call: VoiceCall) => {
+      call.accept?.();
+    });
+    device.on?.("error", (error: Error) => {
+      console.error("Twilio Device Error:", error);
+      setDeviceState((device.state as string) ?? "unregistered");
+    });
+
     deviceRef.current = device;
+    setDeviceState((device.state as string) ?? "registering");
     return device;
   }, []);
+
+  useEffect(() => {
+    void getDevice();
+  }, [getDevice]);
 
   const dial = useCallback(async () => {
     if (!number) return;
@@ -107,6 +139,7 @@ export const useTwilioCall = () => {
         setFailureReason("unknown");
         return;
       }
+      console.log(`Calling: ${normalized}`);
       const connection = await device.connect({ params: { To: normalized } });
       callRef.current = connection;
       attachCallHandlers(connection);
@@ -186,6 +219,7 @@ export const useTwilioCall = () => {
     dial,
     hangup,
     toggleMute,
-    toggleHold
+    toggleHold,
+    deviceState
   };
 };

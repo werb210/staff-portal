@@ -112,7 +112,7 @@ const VoiceDialer = () => {
     endCall,
     resetCall
   } = useDialerStore();
-  const { dial, hangup, toggleHold, toggleMute } = useTwilioCall();
+  const { dial, hangup, toggleHold, toggleMute, deviceState } = useTwilioCall();
 
   const displayName = context.contactName ?? context.applicationName ?? "Dialer";
   const statusLabel = formatStatusLabel(status);
@@ -228,6 +228,13 @@ const VoiceDialer = () => {
             <div className="dialer__status">
               <span className={`dialer__status-pill dialer__status-pill--${statusTone}`}>{statusLabel}</span>
               <span className="dialer__timer">{formatDuration(elapsedSeconds)}</span>
+            </div>
+            <div
+              role="status"
+              aria-live="polite"
+              className={clsx("text-sm font-medium", deviceState === "registered" ? "text-green-700" : "text-red-600")}
+            >
+              Device: {deviceState === "registered" ? "Registered" : "Not registered"}
             </div>
             {error && (
               <div role="status" aria-live="polite" className="text-sm text-red-600">

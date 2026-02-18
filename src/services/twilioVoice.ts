@@ -1,10 +1,11 @@
-import apiClient from "@/api/httpClient";
+import { Device } from "@twilio/voice-sdk";
 
 export type VoiceCallEvent = "ringing" | "accept" | "disconnect" | "cancel" | "reject" | "error";
 
 export type VoiceCall = {
   on: (event: VoiceCallEvent, handler: (...args: any[]) => void) => void;
   off?: (event: VoiceCallEvent, handler: (...args: any[]) => void) => void;
+  accept?: () => void;
   disconnect?: () => void;
   mute?: (muted: boolean) => void;
   isMuted?: () => boolean;
@@ -14,8 +15,9 @@ export type VoiceCall = {
 
 export type VoiceDevice = {
   connect: (options: { params: Record<string, string> }) => VoiceCall | Promise<VoiceCall>;
-  register?: () => void;
+  register: () => void;
   destroy?: () => void;
+  state?: string;
   on?: (event: string, handler: (...args: any[]) => void) => void;
   off?: (event: string, handler: (...args: any[]) => void) => void;
 };
@@ -24,27 +26,29 @@ type VoiceTokenResponse = {
   token?: string;
 };
 
-const getTwilioGlobal = () => {
-  if (typeof window === "undefined") return null;
-  return (window as Window & { Twilio?: { Device?: new (token: string, options?: Record<string, unknown>) => VoiceDevice } })
-    .Twilio;
-};
-
 export const fetchTwilioToken = async (): Promise<string | null> => {
-  const response = await apiClient.get<VoiceTokenResponse>("/voice/token");
-  if (!response?.token) return null;
-  return response.token;
+  try {
+    const response = await fetch("/api/twilio/token", {
+      method: "GET",
+      credentials: "include"
+    });
+    if (!response.ok) {
+      throw new Error(`Token request failed with status ${response.status}`);
+    }
+    const payload = (await response.json()) as VoiceTokenResponse;
+    if (!payload?.token) return null;
+    return payload.token;
+  } catch (error) {
+    console.error("Failed to fetch Twilio token:", error);
+    return null;
+  }
 };
 
 export const createTwilioDevice = (token: string): VoiceDevice | null => {
-  const twilio = getTwilioGlobal();
-  if (!twilio?.Device) return null;
-  const device = new twilio.Device(token, {
-    logLevel: "error",
-    closeProtection: true
+  if (!token) return null;
+  const device = new Device(token, {
+    logLevel: 1
   });
-  if (device.register) {
-    device.register();
-  }
+  device.register();
   return device;
 };
