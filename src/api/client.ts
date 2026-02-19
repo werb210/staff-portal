@@ -1,4 +1,5 @@
 import axios from "axios";
+import * as authStorage from "@/lib/authStorage";
 import { showApiToast } from "@/state/apiNotifications";
 
 const baseURL = import.meta.env.VITE_API_BASE_URL;
@@ -20,18 +21,19 @@ const api = axios.create({
 });
 
 api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      navigateTo("/login");
-    } else if (error.response?.status === 403) {
+  (res) => res,
+  (err) => {
+    if (err.response?.status === 401) {
+      authStorage.clearAuth();
+      window.location.href = "/login";
+    } else if (err.response?.status === 403) {
       navigateTo("/unauthorized");
-    } else if (!error.response) {
+    } else if (!err.response) {
       showApiToast("Network error. Please check your connection and try again.");
-    } else if (error.response?.status >= 500) {
+    } else if (err.response?.status >= 500) {
       showApiToast("We hit a server issue. Please retry in a moment.");
     }
-    return Promise.reject(error);
+    return Promise.reject(err);
   }
 );
 

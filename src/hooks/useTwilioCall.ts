@@ -134,7 +134,6 @@ export const useTwilioCall = () => {
     endingRef.current = false;
 
     if (isMock) {
-      console.log("Mock call placed:", normalized);
       finalizeCall("completed", "completed");
       return;
     }
@@ -147,7 +146,6 @@ export const useTwilioCall = () => {
         setFailureReason("unknown");
         return;
       }
-      console.log(`Calling: ${normalized}`);
       const connection = await device.connect({ params: { To: normalized } });
       callRef.current = connection;
       attachCallHandlers(connection);
