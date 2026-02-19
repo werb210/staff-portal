@@ -2,6 +2,7 @@ import { Component, type ErrorInfo, type ReactNode } from "react";
 import Card from "@/components/ui/Card";
 import { getLastApiRequest } from "@/state/apiRequestTrace";
 import { getRequestId } from "@/utils/requestId";
+import { logger } from "@/utils/logger";
 
 type GlobalErrorBoundaryState = {
   errorId?: string;
@@ -23,7 +24,7 @@ class GlobalErrorBoundary extends Component<{ children: ReactNode }, GlobalError
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error("GlobalErrorBoundary caught an error.", { requestId: getRequestId(), error, info });
+    logger.error("GlobalErrorBoundary caught an error.", { requestId: getRequestId(), error, info });
   }
 
   render() {

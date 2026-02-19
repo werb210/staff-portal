@@ -10,6 +10,7 @@ import { microsoftAuthConfig } from "@/config/microsoftAuth";
 import { getErrorMessage } from "@/utils/errors";
 import { normalizeToE164 } from "@/utils/phone";
 import { getRequestId } from "@/utils/requestId";
+import { logger } from "@/utils/logger";
 
 type MicrosoftLoginResponse = {
   accessToken?: string;
@@ -161,7 +162,7 @@ export default function LoginPage() {
       if (err instanceof ApiError) {
         setError(err.message);
         setErrorDetails({ endpoint: "/auth/otp/start", requestId: err.requestId ?? getRequestId() });
-        console.error("OTP start failed.", { requestId: err.requestId ?? getRequestId(), error: err });
+        logger.error("OTP start failed.", { requestId: err.requestId ?? getRequestId(), error: err });
         return;
       }
       if (typeof err === "object" && err && "isAxiosError" in err && (err as { code?: string }).code) {

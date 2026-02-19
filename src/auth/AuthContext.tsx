@@ -36,6 +36,7 @@ import { clearClientStorage, clearServiceWorkerCaches } from "@/utils/sessionCle
 import { performLogoutCleanup } from "@/auth/logout";
 import { triggerSafeReload } from "@/utils/reloadGuard";
 import { reconnectRealtime } from "@/utils/realtime";
+import { logger } from "@/utils/logger";
 export type AuthStatus = "loading" | "authenticated" | "unauthenticated";
 export type AuthState = AuthStatus;
 export type RolesStatus = "loading" | "resolved";
@@ -130,7 +131,7 @@ const logAuthError = (
   user?: AuthenticatedUser | null,
   extra?: Record<string, unknown>
 ) => {
-  console.error(message, { ...buildAuthLogContext(user), ...extra });
+  logger.error(message, { ...buildAuthLogContext(user), ...extra });
 };
 
 const getErrorStatus = (error: unknown): number | undefined => {

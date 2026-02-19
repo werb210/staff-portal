@@ -1,6 +1,6 @@
 import type { JSX } from "react";
 import { Navigate, useLocation } from "react-router-dom";
-import { getAccessToken, getUserRole } from "@/lib/authStorage";
+import { clearAuth, getAccessToken, getUserRole, isTokenExpired } from "@/lib/authStorage";
 
 interface GuardProps {
   children: JSX.Element;
@@ -19,6 +19,11 @@ export function AuthGuard({ children, allowedRoles }: GuardProps) {
   const role = getUserRole();
 
   if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (isTokenExpired(token)) {
+    clearAuth();
     return <Navigate to="/login" replace />;
   }
 

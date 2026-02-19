@@ -1,6 +1,7 @@
 import type React from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { getRequestId } from "@/utils/requestId";
+import { logger } from "@/utils/logger";
 
 const UpdatePromptFallback = () => (
   <div className="update-banner" role="status" aria-live="polite">
@@ -13,7 +14,7 @@ const UpdatePromptBoundary = ({ children }: { children: React.ReactNode }) => {
     <ErrorBoundary
       FallbackComponent={UpdatePromptFallback}
       onError={(error, info) => {
-        console.error("Update prompt failed to render.", {
+        logger.error("Update prompt failed to render.", {
           requestId: getRequestId(),
           error,
           componentStack: info.componentStack

@@ -21,6 +21,7 @@ import MarketingToDoList from "./ToDo/MarketingToDoList";
 import { getErrorMessage } from "@/utils/errors";
 import { getRequestId } from "@/utils/requestId";
 import { emitUiTelemetry } from "@/utils/uiTelemetry";
+import { logger } from "@/utils/logger";
 
 const MarketingDashboard = () => {
   const { dateRange } = useMarketingStore();
@@ -39,19 +40,19 @@ const MarketingDashboard = () => {
 
   useEffect(() => {
     if (attributionError) {
-      console.error("Failed to load attribution", { requestId: getRequestId(), error: attributionError });
+      logger.error("Failed to load attribution", { requestId: getRequestId(), error: attributionError });
     }
   }, [attributionError]);
 
   useEffect(() => {
     if (adsError) {
-      console.error("Failed to load ads", { requestId: getRequestId(), error: adsError });
+      logger.error("Failed to load ads", { requestId: getRequestId(), error: adsError });
     }
   }, [adsError]);
 
   useEffect(() => {
     if (assetsError) {
-      console.error("Failed to load assets", { requestId: getRequestId(), error: assetsError });
+      logger.error("Failed to load assets", { requestId: getRequestId(), error: assetsError });
     }
   }, [assetsError]);
 

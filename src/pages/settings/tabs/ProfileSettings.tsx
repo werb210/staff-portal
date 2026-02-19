@@ -8,6 +8,7 @@ import { microsoftAuthConfig } from "@/config/microsoftAuth";
 import { useSettingsStore } from "@/state/settings.store";
 import { getErrorMessage } from "@/utils/errors";
 import UserDetailsFields from "../components/UserDetailsFields";
+import { logger } from "@/utils/logger";
 
 const MAX_AVATAR_SIZE_BYTES = 2 * 1024 * 1024;
 const MAX_AVATAR_DIMENSION = 256;
@@ -143,7 +144,7 @@ const ProfileSettings = () => {
         setLocalProfile((prev) => ({ ...prev, profileImage: previewUrl }));
         setAvatarError(null);
       } catch (error) {
-        console.error(error);
+        logger.error("Profile settings update failed", { error });
         setAvatarError("Unable to process that image. Please try a different file.");
       }
     }

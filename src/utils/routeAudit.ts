@@ -4,6 +4,7 @@ import { setUiFailure } from "@/utils/uiFailureStore";
 import { getAccessToken } from "@/lib/authToken";
 import { getApiBaseUrl } from "@/config/api";
 import { reportAuthFailure } from "@/auth/authEvents";
+import { logger } from "@/utils/logger";
 
 type RouteDescriptor = {
   path: string;
@@ -99,7 +100,7 @@ export const runRouteAudit = async (): Promise<void> => {
     });
 
     if (!response.ok) {
-      console.warn("Route audit fetch failed", {
+      logger.warn("Route audit fetch failed", {
         requestId,
         status: response.status
       });
@@ -109,7 +110,7 @@ export const runRouteAudit = async (): Promise<void> => {
     const payload = await response.json().catch(() => null);
     const serverRoutes = extractServerRoutes(payload);
     if (serverRoutes.length === 0) {
-      console.warn("Route audit unavailable: no routes payload.", { requestId });
+      logger.warn("Route audit unavailable: no routes payload.", { requestId });
       return;
     }
     const serverSet = new Set(serverRoutes.map((route) => normalizePath(route.path)));
@@ -123,7 +124,7 @@ export const runRouteAudit = async (): Promise<void> => {
 
     if (missingAuthRoutes.length > 0) {
       const missingLabels = missingAuthRoutes.map(routeLabel);
-      console.warn("Route audit bypassed for auth bootstrap route", {
+      logger.warn("Route audit bypassed for auth bootstrap route", {
         requestId,
         missing: missingLabels
       });
@@ -136,7 +137,7 @@ export const runRouteAudit = async (): Promise<void> => {
 
     if (missingNonAuthRoutes.length > 0) {
       const missingLabels = missingNonAuthRoutes.map(routeLabel);
-      console.warn("Route audit mismatch", {
+      logger.warn("Route audit mismatch", {
         requestId,
         missing: missingLabels,
         serverCount: serverRoutes.length
@@ -156,6 +157,6 @@ export const runRouteAudit = async (): Promise<void> => {
       serverCount: serverRoutes.length
     });
   } catch (error) {
-    console.warn("Route audit unavailable.", { requestId, error });
+    logger.warn("Route audit unavailable.", { requestId, error });
   }
 };

@@ -1,5 +1,6 @@
 import { getRequestId } from "@/utils/requestId";
 import { setUiFailure } from "@/utils/uiFailureStore";
+import { logger } from "@/utils/logger";
 
 const REDIRECT_WINDOW_MS = 2000;
 const redirectTimestamps: number[] = [];
@@ -21,7 +22,7 @@ export const recordRedirect = (route: string, reason: string, redirectKey?: stri
   if (redirectTimestamps.length > 1) {
     const requestId = getRequestId();
     const message = "Redirect loop detected within 2 seconds.";
-    console.error(message, {
+    logger.error(message, {
       requestId,
       route,
       reason,

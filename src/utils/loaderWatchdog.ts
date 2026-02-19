@@ -1,6 +1,7 @@
 import { getRequestId } from "@/utils/requestId";
 import { getPendingRequests } from "@/utils/requestTracking";
 import { setUiFailure } from "@/utils/uiFailureStore";
+import { logger } from "@/utils/logger";
 
 const TIMEOUT_MS = 8000;
 
@@ -19,7 +20,7 @@ export const startLoaderWatchdog = (route?: string) => {
   const timer = window.setTimeout(() => {
     const pendingRequests = getPendingRequests();
     const requestId = getRequestId();
-    console.error("Loader watchdog timeout", {
+    logger.error("Loader watchdog timeout", {
       requestId,
       route: resolvedRoute,
       loaderId,
