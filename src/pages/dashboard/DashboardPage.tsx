@@ -5,6 +5,7 @@ import RequireRole from "@/components/auth/RequireRole";
 import AppLoading from "@/components/layout/AppLoading";
 import LenderCountWidget from "@/components/LenderCountWidget";
 import CampaignRevenue from "@/components/CampaignRevenue";
+import CommissionTrendChart from "@/components/CommissionTrendChart";
 import { useAuth } from "@/hooks/useAuth";
 
 interface LenderMetrics {
@@ -16,15 +17,45 @@ interface LenderMetrics {
   totalCommission: number;
 }
 
+interface RevenueSummary {
+  totalFunded: number;
+  totalCommission: number;
+  avgCommissionPerDeal: number;
+  totalApplications: number;
+  fundedDeals: number;
+}
+
 const DashboardPage = () => {
   const { isAuthenticated, isLoading } = useAuth();
   const [lenderMetrics, setLenderMetrics] = useState<LenderMetrics[]>([]);
+  const [revenueSummary, setRevenueSummary] = useState<RevenueSummary | null>(
+    null,
+  );
 
   useEffect(() => {
-    fetch("/api/analytics/lender-performance")
+    const token = localStorage.getItem("auth_token");
+
+    fetch("/api/analytics/revenue-summary", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then((res) => res.json())
+      .then(setRevenueSummary)
+      .catch(console.error);
+  }, []);
+
+  useEffect(() => {
+    const token = localStorage.getItem("auth_token");
+
+    fetch("/api/analytics/lender-performance", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
       .then((res) => res.json())
       .then((data) => setLenderMetrics(data))
-      .catch((err) => console.error(err));
+      .catch(console.error);
   }, []);
 
   if (isLoading) {
@@ -38,6 +69,53 @@ const DashboardPage = () => {
   return (
     <RequireRole roles={["Admin", "Staff"]}>
       <div className="page">
+        {revenueSummary && (
+          <div className="executive-kpi-grid mb-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="kpi-card">
+              <Card title="Total Funded">
+                <p>${revenueSummary.totalFunded.toLocaleString()}</p>
+              </Card>
+            </div>
+
+            <div className="kpi-card">
+              <Card title="Total Commission">
+                <p>${revenueSummary.totalCommission.toLocaleString()}</p>
+              </Card>
+            </div>
+
+            <div className="kpi-card">
+              <Card title="Avg Commission / Deal">
+                <p>${revenueSummary.avgCommissionPerDeal.toLocaleString()}</p>
+              </Card>
+            </div>
+
+            <div className="kpi-card">
+              <Card title="Funded Rate">
+                <p>
+                  {(
+                    (revenueSummary.fundedDeals /
+                      revenueSummary.totalApplications) *
+                    100
+                  ).toFixed(1)}
+                  %
+                </p>
+              </Card>
+            </div>
+          </div>
+        )}
+
+        <div className="campaign-roi-section mb-4">
+          <Card title="Campaign ROI Snapshot">
+            <CampaignRevenue />
+          </Card>
+        </div>
+
+        <div className="commission-trend-section mb-4">
+          <Card title="Commission Trend (30 Days)">
+            <CommissionTrendChart />
+          </Card>
+        </div>
+
         <div className="kpi-grid mb-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {lenderMetrics.map((lender) => {
             const approvalRate = lender.submitted
@@ -66,11 +144,6 @@ const DashboardPage = () => {
             <LenderCountWidget />
           </div>
         </Card>
-        <div className="campaign-revenue-section mt-4">
-          <Card title="Revenue by Campaign">
-            <CampaignRevenue />
-          </Card>
-        </div>
       </div>
     </RequireRole>
   );
