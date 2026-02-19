@@ -107,6 +107,308 @@ const PortalSessionGuard = () => {
   return null;
 };
 
+const AppRoutes = () => (
+  <Routes>
+    <Route
+      path="/login"
+      element={
+        <DataReadyGuard>
+          <LoginPage />
+        </DataReadyGuard>
+      }
+    />
+    <Route
+      path="/referrer"
+      element={
+        <PrivateRoute allowedRoles={["Referrer"]}>
+          <DataReadyGuard>
+    <ReferrerLayout>
+      <ReferrerPortal />
+    </ReferrerLayout>
+          </DataReadyGuard>
+        </PrivateRoute>
+      }
+    />
+    <Route
+      path="/auth/callback"
+      element={
+        <DataReadyGuard>
+          <LoginPage />
+        </DataReadyGuard>
+      }
+    />
+    <Route
+      path="/auth/microsoft/callback"
+      element={
+        <DataReadyGuard>
+          <LoginPage />
+        </DataReadyGuard>
+      }
+    />
+    <Route path="/" element={<Navigate to="/dashboard" replace />} />
+    <Route path="/credit-results" element={<CreditResults />} />
+    <Route path="/system-status" element={<SystemStatus />} />
+    <Route element={<ProtectedApp />}>
+      <Route
+        path="/dashboard"
+        element={
+          <AuthGuard allowedRoles={["Admin", "Staff"]}>
+    <DashboardPage />
+          </AuthGuard>
+        }
+      />
+      <Route
+        path="/applications"
+        element={
+          <RoleGuard roles={["Admin", "Staff"]}>
+    <ApplicationsPage />
+          </RoleGuard>
+        }
+      />
+      <Route
+        path="/crm"
+        element={
+          <RoleGuard roles={["Admin", "Staff"]}>
+    <CRMPage />
+          </RoleGuard>
+        }
+      />
+      <Route
+        path="/communications"
+        element={
+          <RoleGuard roles={["Admin", "Staff"]}>
+    <CommunicationsPage />
+          </RoleGuard>
+        }
+      />
+      <Route
+        path="/continuations"
+        element={
+          <RoleGuard roles={["Admin", "Staff"]}>
+    <ContinuationApplications />
+          </RoleGuard>
+        }
+      />
+      <Route
+        path="/chat"
+        element={
+          <RoleGuard roles={["Admin", "Staff"]}>
+    <LiveChatPanel />
+          </RoleGuard>
+        }
+      />
+      <Route
+        path="/issues"
+        element={
+          <RoleGuard roles={["Admin", "Staff"]}>
+    <IssueInboxPage />
+          </RoleGuard>
+        }
+      />
+      <Route path="/calendar" element={<CalendarPage />} />
+      <Route path="/leads" element={<Leads />} />
+      <Route path="/tasks" element={<TaskPane />} />
+      <Route path="/marketing" element={<MarketingPage />} />
+      <Route
+        path="/lenders"
+        element={
+          <AuthGuard allowedRoles={["Admin"]}>
+    <LendersPage />
+          </AuthGuard>
+        }
+      />
+      <Route
+        path="/lenders/*"
+        element={
+          <AuthGuard allowedRoles={["Admin"]}>
+    <LendersPage />
+          </AuthGuard>
+        }
+      />
+      <Route
+        path="/lenders/new"
+        element={
+          <AuthGuard allowedRoles={["Admin"]}>
+    <LendersPage />
+          </AuthGuard>
+        }
+      />
+      <Route
+        path="/lenders/:lenderId/edit"
+        element={
+          <AuthGuard allowedRoles={["Admin"]}>
+    <LendersPage />
+          </AuthGuard>
+        }
+      />
+      <Route path="/settings" element={<SettingsPage />} />
+      <Route path="/settings/:tab" element={<SettingsPage />} />
+      <Route path="/unauthorized" element={<Unauthorized />} />
+      <Route
+        path="/admin/ai"
+        element={
+          <RoleGuard roles={["Admin"]}>
+    <AiControlPage />
+          </RoleGuard>
+        }
+      />
+      <Route
+        path="/admin/ai/chats"
+        element={
+          <RoleGuard roles={["Admin"]}>
+    <AiChatDashboard />
+          </RoleGuard>
+        }
+      />
+      <Route
+        path="/admin/ai/issues"
+        element={
+          <RoleGuard roles={["Admin"]}>
+    <AiIssueReports />
+          </RoleGuard>
+        }
+      />
+      <Route
+        path="/admin/operations"
+        element={
+          <RoleGuard roles={["Admin"]}>
+    <Operations />
+          </RoleGuard>
+        }
+      />
+      <Route
+        path="/admin/support"
+        element={
+          <RoleGuard roles={["Admin"]}>
+    <SupportDashboard />
+          </RoleGuard>
+        }
+      />
+      <Route
+        path="/admin/analytics"
+        element={
+          <RoleGuard roles={["Admin"]}>
+    <AnalyticsDashboard />
+          </RoleGuard>
+        }
+      />
+      <Route
+        path="/admin/website-leads"
+        element={
+          <RoleGuard roles={["Admin"]}>
+    <WebsiteLeadsPage />
+          </RoleGuard>
+        }
+      />
+      <Route
+        path="/admin/ai-knowledge"
+        element={
+          <RoleGuard roles={["Admin"]}>
+    <AIKnowledgeBasePage />
+          </RoleGuard>
+        }
+      />
+      <Route
+        path="/admin/issue-reports"
+        element={
+          <RoleGuard roles={["Admin"]}>
+    <IssueReportsPage />
+          </RoleGuard>
+        }
+      />
+      <Route
+        path="/admin/live-chat"
+        element={
+          <RoleGuard roles={["Admin"]}>
+    <LiveChatQueuePage />
+          </RoleGuard>
+        }
+      />
+      <Route
+        path="/admin/conversions"
+        element={
+          <RoleGuard roles={["Admin"]}>
+    <ConversionDashboardPage />
+          </RoleGuard>
+        }
+      />
+      <Route
+        path="/admin/leads"
+        element={
+          <RoleGuard roles={["Admin"]}>
+    <LeadsPage />
+          </RoleGuard>
+        }
+      />
+      <Route
+        path="/admin/analytics-events"
+        element={
+          <RoleGuard roles={["Admin"]}>
+    <AnalyticsPage />
+          </RoleGuard>
+        }
+      />
+      <Route
+        path="/admin/comparison"
+        element={
+          <RoleGuard roles={["Admin"]}>
+    <ComparisonEditor />
+          </RoleGuard>
+        }
+      />
+      <Route
+        path="/portal/ai"
+        element={
+          <RoleGuard roles={["Admin", "Staff"]}>
+    <AiQueuePage />
+          </RoleGuard>
+        }
+      />
+      <Route
+        path="/portal/ai/:sessionId"
+        element={
+          <RoleGuard roles={["Admin", "Staff"]}>
+    <AiLiveChatPage />
+          </RoleGuard>
+        }
+      />
+      <Route
+        path="/admin/ai-policy"
+        element={
+          <RoleGuard roles={["Admin"]}>
+    <AiPolicyEditorPage />
+          </RoleGuard>
+        }
+      />
+      <Route
+        path="/admin/ai-knowledge-upload"
+        element={
+          <RoleGuard roles={["Admin"]}>
+    <AIKnowledge />
+          </RoleGuard>
+        }
+      />
+      <Route
+        path="/admin/ai-upload"
+        element={
+          <RoleGuard roles={["Admin"]}>
+    <AiKnowledgeUpload />
+          </RoleGuard>
+        }
+      />
+      <Route
+        path="/ai-comms"
+        element={
+          <RoleGuard roles={["Admin", "Staff"]}>
+    <AiConversations />
+          </RoleGuard>
+        }
+      />
+  </Route>
+    <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        </Routes>
+);
+
 export default function App() {
   useApiHealthCheck();
   const { accessToken, authStatus, logout } = useAuth();
@@ -348,305 +650,9 @@ export default function App() {
           <PortalSessionGuard />
           <RouteChangeObserver />
           <Suspense fallback={<Loading />}>
-          <Routes>
-            <Route
-              path="/login"
-              element={
-                <DataReadyGuard>
-                  <LoginPage />
-                </DataReadyGuard>
-              }
-            />
-            <Route
-              path="/referrer"
-              element={
-                <PrivateRoute allowedRoles={["Referrer"]}>
-                  <DataReadyGuard>
-                    <ReferrerLayout>
-                      <ReferrerPortal />
-                    </ReferrerLayout>
-                  </DataReadyGuard>
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/auth/callback"
-              element={
-                <DataReadyGuard>
-                  <LoginPage />
-                </DataReadyGuard>
-              }
-            />
-            <Route
-              path="/auth/microsoft/callback"
-              element={
-                <DataReadyGuard>
-                  <LoginPage />
-                </DataReadyGuard>
-              }
-            />
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/credit-results" element={<CreditResults />} />
-            <Route path="/system-status" element={<SystemStatus />} />
-            <Route element={<ProtectedApp />}>
-              <Route
-                path="/dashboard"
-                element={
-                  <AuthGuard allowedRoles={["Admin", "Staff"]}>
-                    <DashboardPage />
-                  </AuthGuard>
-                }
-              />
-              <Route
-                path="/applications"
-                element={
-                  <RoleGuard roles={["Admin", "Staff"]}>
-                    <ApplicationsPage />
-                  </RoleGuard>
-                }
-              />
-              <Route
-                path="/crm"
-                element={
-                  <RoleGuard roles={["Admin", "Staff"]}>
-                    <CRMPage />
-                  </RoleGuard>
-                }
-              />
-              <Route
-                path="/communications"
-                element={
-                  <RoleGuard roles={["Admin", "Staff"]}>
-                    <CommunicationsPage />
-                  </RoleGuard>
-                }
-              />
-              <Route
-                path="/continuations"
-                element={
-                  <RoleGuard roles={["Admin", "Staff"]}>
-                    <ContinuationApplications />
-                  </RoleGuard>
-                }
-              />
-              <Route
-                path="/chat"
-                element={
-                  <RoleGuard roles={["Admin", "Staff"]}>
-                    <LiveChatPanel />
-                  </RoleGuard>
-                }
-              />
-              <Route
-                path="/issues"
-                element={
-                  <RoleGuard roles={["Admin", "Staff"]}>
-                    <IssueInboxPage />
-                  </RoleGuard>
-                }
-              />
-              <Route path="/calendar" element={<CalendarPage />} />
-              <Route path="/leads" element={<Leads />} />
-              <Route path="/tasks" element={<TaskPane />} />
-              <Route path="/marketing" element={<MarketingPage />} />
-              <Route
-                path="/lenders"
-                element={
-                  <AuthGuard allowedRoles={["Admin"]}>
-                    <LendersPage />
-                  </AuthGuard>
-                }
-              />
-              <Route
-                path="/lenders/*"
-                element={
-                  <AuthGuard allowedRoles={["Admin"]}>
-                    <LendersPage />
-                  </AuthGuard>
-                }
-              />
-              <Route
-                path="/lenders/new"
-                element={
-                  <AuthGuard allowedRoles={["Admin"]}>
-                    <LendersPage />
-                  </AuthGuard>
-                }
-              />
-              <Route
-                path="/lenders/:lenderId/edit"
-                element={
-                  <AuthGuard allowedRoles={["Admin"]}>
-                    <LendersPage />
-                  </AuthGuard>
-                }
-              />
-              <Route path="/settings" element={<SettingsPage />} />
-              <Route path="/settings/:tab" element={<SettingsPage />} />
-              <Route path="/unauthorized" element={<Unauthorized />} />
-              <Route
-                path="/admin/ai"
-                element={
-                  <RoleGuard roles={["Admin"]}>
-                    <AiControlPage />
-                  </RoleGuard>
-                }
-              />
-              <Route
-                path="/admin/ai/chats"
-                element={
-                  <RoleGuard roles={["Admin"]}>
-                    <AiChatDashboard />
-                  </RoleGuard>
-                }
-              />
-              <Route
-                path="/admin/ai/issues"
-                element={
-                  <RoleGuard roles={["Admin"]}>
-                    <AiIssueReports />
-                  </RoleGuard>
-                }
-              />
-              <Route
-                path="/admin/operations"
-                element={
-                  <RoleGuard roles={["Admin"]}>
-                    <Operations />
-                  </RoleGuard>
-                }
-              />
-              <Route
-                path="/admin/support"
-                element={
-                  <RoleGuard roles={["Admin"]}>
-                    <SupportDashboard />
-                  </RoleGuard>
-                }
-              />
-              <Route
-                path="/admin/analytics"
-                element={
-                  <RoleGuard roles={["Admin"]}>
-                    <AnalyticsDashboard />
-                  </RoleGuard>
-                }
-              />
-              <Route
-                path="/admin/website-leads"
-                element={
-                  <RoleGuard roles={["Admin"]}>
-                    <WebsiteLeadsPage />
-                  </RoleGuard>
-                }
-              />
-              <Route
-                path="/admin/ai-knowledge"
-                element={
-                  <RoleGuard roles={["Admin"]}>
-                    <AIKnowledgeBasePage />
-                  </RoleGuard>
-                }
-              />
-              <Route
-                path="/admin/issue-reports"
-                element={
-                  <RoleGuard roles={["Admin"]}>
-                    <IssueReportsPage />
-                  </RoleGuard>
-                }
-              />
-              <Route
-                path="/admin/live-chat"
-                element={
-                  <RoleGuard roles={["Admin"]}>
-                    <LiveChatQueuePage />
-                  </RoleGuard>
-                }
-              />
-              <Route
-                path="/admin/conversions"
-                element={
-                  <RoleGuard roles={["Admin"]}>
-                    <ConversionDashboardPage />
-                  </RoleGuard>
-                }
-              />
-              <Route
-                path="/admin/leads"
-                element={
-                  <RoleGuard roles={["Admin"]}>
-                    <LeadsPage />
-                  </RoleGuard>
-                }
-              />
-              <Route
-                path="/admin/analytics-events"
-                element={
-                  <RoleGuard roles={["Admin"]}>
-                    <AnalyticsPage />
-                  </RoleGuard>
-                }
-              />
-              <Route
-                path="/admin/comparison"
-                element={
-                  <RoleGuard roles={["Admin"]}>
-                    <ComparisonEditor />
-                  </RoleGuard>
-                }
-              />
-              <Route
-                path="/portal/ai"
-                element={
-                  <RoleGuard roles={["Admin", "Staff"]}>
-                    <AiQueuePage />
-                  </RoleGuard>
-                }
-              />
-              <Route
-                path="/portal/ai/:sessionId"
-                element={
-                  <RoleGuard roles={["Admin", "Staff"]}>
-                    <AiLiveChatPage />
-                  </RoleGuard>
-                }
-              />
-              <Route
-                path="/admin/ai-policy"
-                element={
-                  <RoleGuard roles={["Admin"]}>
-                    <AiPolicyEditorPage />
-                  </RoleGuard>
-                }
-              />
-              <Route
-                path="/admin/ai-knowledge-upload"
-                element={
-                  <RoleGuard roles={["Admin"]}>
-                    <AIKnowledge />
-                  </RoleGuard>
-                }
-              />
-              <Route
-                path="/admin/ai-upload"
-                element={
-                  <RoleGuard roles={["Admin"]}>
-                    <AiKnowledgeUpload />
-                  </RoleGuard>
-                }
-              />
-              <Route
-                path="/ai-comms"
-                element={
-                  <RoleGuard roles={["Admin", "Staff"]}>
-                    <AiConversations />
-                  </RoleGuard>
-                }
-              />
-          </Route>
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
-        </Routes>
+          <AuthGuard>
+            <AppRoutes />
+          </AuthGuard>
           </Suspense>
       </BrowserRouter>
       </ErrorBoundary>

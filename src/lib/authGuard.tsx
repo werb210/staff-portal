@@ -1,5 +1,5 @@
 import type { JSX } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { getAccessToken, getUserRole } from "@/lib/authStorage";
 
 interface GuardProps {
@@ -8,6 +8,13 @@ interface GuardProps {
 }
 
 export function AuthGuard({ children, allowedRoles }: GuardProps) {
+  const location = useLocation();
+  const publicPaths = new Set(["/login", "/auth/callback", "/auth/microsoft/callback"]);
+
+  if (publicPaths.has(location.pathname)) {
+    return children;
+  }
+
   const token = getAccessToken();
   const role = getUserRole();
 

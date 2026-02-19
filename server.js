@@ -1,5 +1,6 @@
 import express from "express";
 import helmet from "helmet";
+import compression from "compression";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -12,6 +13,7 @@ const INDEX_HTML = path.join(DIST_DIR, "index.html");
 const app = express();
 
 app.use(helmet());
+app.use(compression());
 
 app.use(
   helmet.contentSecurityPolicy({
