@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { PipelineApplication, PipelineStage } from "./pipeline.types";
 import { evaluateStageTransition, normalizeStageId, sortPipelineStages } from "./pipeline.types";
@@ -21,7 +21,7 @@ const resolveNextStage = (card: PipelineApplication, stages: PipelineStage[]): s
   const currentIndex = orderedStages.findIndex((stage) => normalizeStageId(stage.id) === normalized);
   const currentStage = orderedStages[currentIndex];
   if (currentStage?.allowedTransitions?.length) {
-    return currentStage.allowedTransitions[0];
+    return currentStage.allowedTransitions[0] ?? null;
   }
   if (currentIndex === -1 || currentIndex >= orderedStages.length - 1) {
     return null;
@@ -33,6 +33,16 @@ const PipelineBulkActions = ({ selectedCards, stages, onClearSelection }: Pipeli
   const queryClient = useQueryClient();
   const selectedCount = selectedCards.length;
   const [confirmAction, setConfirmAction] = useState<"export" | "stage" | null>(null);
+  const stageStartRef = useRef<Record<string, number>>({});
+
+  useEffect(() => {
+    const now = Date.now();
+    selectedCards.forEach((card) => {
+      if (!stageStartRef.current[card.id]) {
+        stageStartRef.current[card.id] = now;
+      }
+    });
+  }, [selectedCards]);
 
   const stageTransitions = useMemo(
     () =>
@@ -78,15 +88,23 @@ const PipelineBulkActions = ({ selectedCards, stages, onClearSelection }: Pipeli
     mutationFn: async () => {
       stageTransitions.forEach((entry) => {
         if (!entry.nextStage) return;
-        trackPortalEvent("pipeline_stage_changed", {
+        const now = Date.now();
+        const stageStartedAt = stageStartRef.current[entry.card.id] ?? now;
+        trackPortalEvent("pipeline_stage_completed", {
+          application_id: entry.card.id,
+          previous_stage_duration_ms: now - stageStartedAt
+        });
+        trackPortalEvent("pipeline_stage_entered", {
           application_id: entry.card.id,
           new_stage: entry.nextStage
         });
+        stageStartRef.current[entry.card.id] = now;
+
         const normalizedNextStage = normalizeStageId(entry.nextStage);
         if (normalizedNextStage === "ACCEPTED" || normalizedNextStage === "REJECTED") {
-          trackPortalEvent("deal_status_updated", {
+          trackPortalEvent("deal_status_changed", {
             application_id: entry.card.id,
-            status: normalizedNextStage === "ACCEPTED" ? "funded" : "declined"
+            new_status: normalizedNextStage === "ACCEPTED" ? "funded" : "declined"
           });
         }
       });

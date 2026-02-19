@@ -1,4 +1,4 @@
-// ---- Portal Tracking Layer ----
+// ---- Portal Operational Analytics ----
 declare global {
   interface Window {
     dataLayer: any[];
@@ -18,4 +18,3 @@ export const trackPortalEvent = (
     });
   }
 };
-
