@@ -8,6 +8,7 @@ import { getErrorMessage } from "@/utils/errors";
 import { useAuth } from "@/hooks/useAuth";
 import { canWrite } from "@/auth/can";
 import { normalizeStageId } from "@/pages/applications/pipeline/pipeline.types";
+import { trackPortalEvent } from "@/lib/portalTracking";
 
 const ALLOWED_UPLOAD_STAGE = "LENDERS_SENT";
 const stageOrder = [
@@ -75,8 +76,17 @@ const OffersTab = () => {
 
   const uploadMutation = useMutation({
     mutationFn: (file: File) => uploadOffer(applicationId ?? "", file),
-    onSuccess: () => {
+    onSuccess: (response) => {
       setUploadError(null);
+      if (applicationId) {
+        trackPortalEvent("offer_uploaded", {
+          application_id: applicationId,
+          lender_id:
+            (response as { lenderId?: string | null; lender_id?: string | null } | null)?.lenderId ??
+            (response as { lenderId?: string | null; lender_id?: string | null } | null)?.lender_id ??
+            "unknown"
+        });
+      }
       queryClient.invalidateQueries({ queryKey: ["offers", applicationId] });
       queryClient.invalidateQueries({ queryKey: ["pipeline"] });
     },

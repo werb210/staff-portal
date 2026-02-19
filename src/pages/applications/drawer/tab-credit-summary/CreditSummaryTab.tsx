@@ -1,15 +1,27 @@
+import { useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchCreditSummary, type CreditSummary } from "@/api/credit";
 import { useApplicationDrawerStore } from "@/state/applicationDrawer.store";
 import { getErrorMessage } from "@/utils/errors";
+import { trackPortalEvent } from "@/lib/portalTracking";
 
 const CreditSummaryTab = () => {
   const applicationId = useApplicationDrawerStore((state) => state.selectedApplicationId);
+  const trackedApplicationIdRef = useRef<string | null>(null);
   const { data: summary, isLoading, error } = useQuery<CreditSummary>({
     queryKey: ["credit", applicationId],
     queryFn: ({ signal }) => fetchCreditSummary(applicationId ?? "", { signal }),
     enabled: Boolean(applicationId)
   });
+
+  useEffect(() => {
+    if (!applicationId || !summary) return;
+    if (trackedApplicationIdRef.current === applicationId) return;
+    trackPortalEvent("credit_summary_generated", {
+      application_id: applicationId
+    });
+    trackedApplicationIdRef.current = applicationId;
+  }, [applicationId, summary]);
 
   if (!applicationId) return <div className="drawer-placeholder">Select an application to view credit summary.</div>;
   if (isLoading) return <div className="drawer-placeholder">Loading credit summary…</div>;

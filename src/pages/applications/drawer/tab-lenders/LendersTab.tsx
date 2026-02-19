@@ -19,6 +19,7 @@ import Modal from "@/components/ui/Modal";
 import { fullStaffRoles, hasRequiredRole, resolveUserRole } from "@/utils/roles";
 import { canWrite } from "@/auth/can";
 import { getSubmissionMethodBadgeTone, getSubmissionMethodLabel } from "@/utils/submissionMethods";
+import { trackPortalEvent } from "@/lib/portalTracking";
 
 type MatchWithMethod = LenderMatch & {
   submissionMethod?: string | null;
@@ -213,6 +214,12 @@ const LendersTab = () => {
   };
 
   const handleSendClick = () => {
+    if (applicationId) {
+      trackPortalEvent("lender_send_clicked", {
+        application_id: applicationId,
+        lenders_selected: eligibleSelection.length
+      });
+    }
     if (hasGoogleSheetSelection) {
       setIsConfirmOpen(true);
       return;
