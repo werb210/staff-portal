@@ -8,6 +8,7 @@ const isCallInProgressStatus = (status: DialerStatus) =>
   CALL_IN_PROGRESS_STATUSES.includes(status as (typeof CALL_IN_PROGRESS_STATUSES)[number]);
 
 export const useTwilioCall = () => {
+  const isMock = import.meta.env.VITE_TWILIO_MODE === "mock";
   const [deviceState, setDeviceState] = useState<string>("unregistered");
   const status = useDialerStore((state) => state.status);
   const number = useDialerStore((state) => state.number);
@@ -131,6 +132,13 @@ export const useTwilioCall = () => {
     setFailureReason(null);
     startCall();
     endingRef.current = false;
+
+    if (isMock) {
+      console.log("Mock call placed:", normalized);
+      finalizeCall("completed", "completed");
+      return;
+    }
+
     try {
       const device = await getDevice();
       if (!device) {
@@ -155,6 +163,7 @@ export const useTwilioCall = () => {
     classifyFailureReason,
     finalizeCall,
     getDevice,
+    isMock,
     number,
     registerDialAttempt,
     setDialedNumber,

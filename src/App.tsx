@@ -50,6 +50,7 @@ import Unauthorized from "@/pages/Unauthorized";
 import { logger } from "@/utils/logger";
 import RequireAuth from "@/routes/RequireAuth";
 import Loading from "@/components/Loading";
+import SystemStatus from "@/pages/SystemStatus";
 
 
 const LendersPage = lazy(() => import("./pages/lenders/LendersPage"));
@@ -386,6 +387,7 @@ export default function App() {
             />
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/credit-results" element={<CreditResults />} />
+            <Route path="/system-status" element={<SystemStatus />} />
             <Route element={<ProtectedApp />}>
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route
