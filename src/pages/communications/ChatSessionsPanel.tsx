@@ -499,7 +499,7 @@ export default function ChatSessionsPanel() {
               <div className="text-xs text-slate-500">Status: {issue.status === "closed" ? "Resolved" : "Open"}</div>
               {typeof issue.metadata?.screenshot === "string" ? (
                 <div className="mt-1 space-y-1">
-                  <img src={issue.metadata.screenshot as string} alt="Issue screenshot" className="max-h-32 border" />
+                  <img src={issue.metadata.screenshot as string} alt="Issue screenshot" className="max-h-32 border"  loading="lazy" decoding="async"/>
                 </div>
               ) : null}
               <div className="mt-2 flex gap-2">

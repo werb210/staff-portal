@@ -27,7 +27,7 @@ export default function IssueReportsPage() {
           <div className="text-sm text-gray-500">
             {report.createdAt ? new Date(report.createdAt).toLocaleString() : "—"}
           </div>
-          {report.screenshotUrl && <img src={report.screenshotUrl} className="max-w-md rounded border" alt="Issue screenshot" />}
+          {report.screenshotUrl && <img src={report.screenshotUrl} className="max-w-md rounded border" alt="Issue screenshot"  loading="lazy" decoding="async"/>}
         </div>
       ))}
     </div>

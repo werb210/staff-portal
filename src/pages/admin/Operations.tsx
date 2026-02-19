@@ -113,7 +113,7 @@ export default function Operations() {
                   src={`data:image/png;base64,${i.screenshotBase64}`}
                   alt="Operations overview graphic"
                   style={{ maxWidth: 400 }}
-                />
+                 loading="lazy" decoding="async"/>
               )}
               <div>Status: {i.status}</div>
               <button onClick={() => updateIssueStatus(i.id, "IN_PROGRESS")}>Start</button>

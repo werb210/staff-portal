@@ -61,7 +61,7 @@ const AiIssueReportsContent = () => {
                             src={protectedUrl}
                             alt="Issue screenshot preview"
                             className="h-10 w-16 rounded border border-slate-200 object-cover"
-                          />
+                           loading="lazy" decoding="async"/>
                         ) : (
                           "Protected"
                         )}

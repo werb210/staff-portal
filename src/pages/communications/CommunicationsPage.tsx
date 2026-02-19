@@ -58,7 +58,7 @@ const WebsiteIssuesPanel = () => {
               src={issue.screenshot}
               className="max-h-40 mt-2 border"
               alt="Issue screenshot thumbnail"
-            />
+             loading="lazy" decoding="async"/>
           )}
           <div className="mt-2 text-xs text-slate-500">{new Date(issue.createdAt).toLocaleString()}</div>
           <button onClick={() => void deleteIssue(issue.id)} className="mt-2 text-sm text-red-600">

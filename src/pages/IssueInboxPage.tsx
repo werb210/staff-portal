@@ -73,7 +73,7 @@ export default function IssueInboxPage() {
               src={issue.screenshotUrl ?? issue.screenshot}
               className="mt-2 max-h-44 max-w-md border"
               alt="Issue screenshot"
-            />
+             loading="lazy" decoding="async"/>
           ) : null}
           <div className="mt-2 text-xs text-slate-500">
             {issue.sessionId ?? issue.id}

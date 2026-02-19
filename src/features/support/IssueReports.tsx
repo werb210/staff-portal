@@ -53,7 +53,7 @@ function IssueReports({ isAdmin = true }: IssueReportsProps) {
               </p>
             ) : null}
             {issue.screenshot ? (
-              <img src={issue.screenshot} alt="Reported issue screenshot" className="mb-3 max-h-64 rounded object-contain" />
+              <img src={issue.screenshot} alt="Reported issue screenshot" className="mb-3 max-h-64 rounded object-contain"  loading="lazy" decoding="async"/>
             ) : null}
             <button onClick={() => resolveIssue(issue.id)} className="rounded bg-emerald-600 px-3 py-1 text-white">
               Mark Resolved

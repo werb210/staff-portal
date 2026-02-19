@@ -40,7 +40,7 @@ export default function SupportDashboard() {
                 src={`data:image/png;base64,${i.screenshotBase64}`}
                 className="mt-2 max-h-48 border"
                 alt="Issue screenshot preview"
-              />
+               loading="lazy" decoding="async"/>
             )}
           </div>
         ))}

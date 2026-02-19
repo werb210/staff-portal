@@ -64,7 +64,7 @@ const ConversationViewer = ({ conversation, onSend, onAcknowledgeIssue }: Conver
           src={issueScreenshot}
           alt="Issue screenshot thumbnail"
           className="mb-3 max-h-44 rounded border"
-        />
+         loading="lazy" decoding="async"/>
       )}
         {conversation.messages.map((message) => (
           <MessageBubble key={message.id} message={message} />

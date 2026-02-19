@@ -288,7 +288,7 @@ const ProfileSettings = () => {
         <div>
           <p className="ui-field__label">Profile image</p>
           {localProfile.profileImage && (
-            <img src={localProfile.profileImage} alt="Profile preview" className="avatar-preview" />
+            <img src={localProfile.profileImage} alt="Profile preview" className="avatar-preview"  loading="lazy" decoding="async"/>
           )}
         </div>
         <div className="avatar-actions">

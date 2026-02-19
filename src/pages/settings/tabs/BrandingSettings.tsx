@@ -94,7 +94,7 @@ const BrandingSettings = () => {
                 alt="Company logo preview"
                 className="logo-preview"
                 style={logoPreviewStyle}
-              />
+               loading="lazy" decoding="async"/>
             ) : (
               <span className="text-sm text-slate-500">No logo uploaded.</span>
             )}
