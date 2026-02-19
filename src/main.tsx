@@ -1,5 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
+export { trackPortalEvent } from "./lib/portalTracking";
 import App from "./App";
 import "./styles/globals.css";
 import "./theme";

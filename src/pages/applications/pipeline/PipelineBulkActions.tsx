@@ -7,6 +7,7 @@ import { pipelineApi } from "./pipeline.api";
 import Modal from "@/components/ui/Modal";
 import { FEATURE_FLAGS } from "@/config/featureFlags";
 import { logActivity } from "@/hooks/useActivityLog";
+import { trackPortalEvent } from "@/lib/portalTracking";
 
 type PipelineBulkActionsProps = {
   selectedCards: PipelineApplication[];
@@ -14,7 +15,7 @@ type PipelineBulkActionsProps = {
   onClearSelection: () => void;
 };
 
-const resolveNextStage = (card: PipelineApplication, stages: PipelineStage[]) => {
+const resolveNextStage = (card: PipelineApplication, stages: PipelineStage[]): string | null => {
   const orderedStages = sortPipelineStages(stages);
   const normalized = normalizeStageId(card.stage);
   const currentIndex = orderedStages.findIndex((stage) => normalizeStageId(stage.id) === normalized);
@@ -75,6 +76,20 @@ const PipelineBulkActions = ({ selectedCards, stages, onClearSelection }: Pipeli
 
   const stageMutation = useMutation({
     mutationFn: async () => {
+      stageTransitions.forEach((entry) => {
+        if (!entry.nextStage) return;
+        trackPortalEvent("pipeline_stage_changed", {
+          application_id: entry.card.id,
+          new_stage: entry.nextStage
+        });
+        const normalizedNextStage = normalizeStageId(entry.nextStage);
+        if (normalizedNextStage === "ACCEPTED" || normalizedNextStage === "REJECTED") {
+          trackPortalEvent("deal_status_updated", {
+            application_id: entry.card.id,
+            status: normalizedNextStage === "ACCEPTED" ? "funded" : "declined"
+          });
+        }
+      });
       await Promise.all(
         stageTransitions.map((entry) =>
           entry.nextStage
