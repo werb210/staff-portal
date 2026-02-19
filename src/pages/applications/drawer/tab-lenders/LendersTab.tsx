@@ -215,7 +215,7 @@ const LendersTab = () => {
 
   const handleSendClick = () => {
     if (applicationId) {
-      trackPortalEvent("lender_send_clicked", {
+      trackPortalEvent("lender_send_initiated", {
         application_id: applicationId,
         lenders_selected: eligibleSelection.length
       });
