@@ -215,9 +215,16 @@ const LendersTab = () => {
 
   const handleSendClick = () => {
     if (applicationId) {
+      const userId = (user as { id?: string | null } | null)?.id ?? "unknown";
+      trackPortalEvent("staff_action", {
+        user_id: userId,
+        action_type: "lender_send",
+        application_id: applicationId
+      });
       trackPortalEvent("lender_send_initiated", {
         application_id: applicationId,
-        lenders_selected: eligibleSelection.length
+        lenders_selected: eligibleSelection.length,
+        user_id: userId
       });
     }
     if (hasGoogleSheetSelection) {

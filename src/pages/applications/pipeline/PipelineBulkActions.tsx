@@ -8,6 +8,7 @@ import Modal from "@/components/ui/Modal";
 import { FEATURE_FLAGS } from "@/config/featureFlags";
 import { logActivity } from "@/hooks/useActivityLog";
 import { trackPortalEvent } from "@/lib/portalTracking";
+import { useAuth } from "@/hooks/useAuth";
 
 type PipelineBulkActionsProps = {
   selectedCards: PipelineApplication[];
@@ -30,6 +31,7 @@ const resolveNextStage = (card: PipelineApplication, stages: PipelineStage[]): s
 };
 
 const PipelineBulkActions = ({ selectedCards, stages, onClearSelection }: PipelineBulkActionsProps) => {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const selectedCount = selectedCards.length;
   const [confirmAction, setConfirmAction] = useState<"export" | "stage" | null>(null);
@@ -86,15 +88,23 @@ const PipelineBulkActions = ({ selectedCards, stages, onClearSelection }: Pipeli
 
   const stageMutation = useMutation({
     mutationFn: async () => {
+      const userId = (user as { id?: string | null } | null)?.id ?? "unknown";
       stageTransitions.forEach((entry) => {
         if (!entry.nextStage) return;
         const now = Date.now();
         const stageStartedAt = stageStartRef.current[entry.card.id] ?? now;
-        trackPortalEvent("pipeline_stage_completed", {
+        trackPortalEvent("staff_action", {
+          user_id: userId,
+          action_type: "stage_move",
+          application_id: entry.card.id,
+          from_stage: entry.card.stage,
+          to_stage: entry.nextStage
+        });
+        trackPortalEvent("stage_completed", {
           application_id: entry.card.id,
           previous_stage_duration_ms: now - stageStartedAt
         });
-        trackPortalEvent("pipeline_stage_entered", {
+        trackPortalEvent("stage_entered", {
           application_id: entry.card.id,
           new_stage: entry.nextStage
         });
@@ -104,7 +114,8 @@ const PipelineBulkActions = ({ selectedCards, stages, onClearSelection }: Pipeli
         if (normalizedNextStage === "ACCEPTED" || normalizedNextStage === "REJECTED") {
           trackPortalEvent("deal_status_changed", {
             application_id: entry.card.id,
-            new_status: normalizedNextStage === "ACCEPTED" ? "funded" : "declined"
+            new_status: normalizedNextStage === "ACCEPTED" ? "funded" : "declined",
+            user_id: userId
           });
         }
       });

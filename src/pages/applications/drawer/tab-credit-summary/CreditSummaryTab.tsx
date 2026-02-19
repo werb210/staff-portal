@@ -4,10 +4,12 @@ import { fetchCreditSummary, type CreditSummary } from "@/api/credit";
 import { useApplicationDrawerStore } from "@/state/applicationDrawer.store";
 import { getErrorMessage } from "@/utils/errors";
 import { trackPortalEvent } from "@/lib/portalTracking";
+import { useAuth } from "@/hooks/useAuth";
 
 const CreditSummaryTab = () => {
   const applicationId = useApplicationDrawerStore((state) => state.selectedApplicationId);
   const trackedApplicationIdRef = useRef<string | null>(null);
+  const { user } = useAuth();
   const { data: summary, isLoading, error } = useQuery<CreditSummary>({
     queryKey: ["credit", applicationId],
     queryFn: ({ signal }) => fetchCreditSummary(applicationId ?? "", { signal }),
@@ -17,11 +19,18 @@ const CreditSummaryTab = () => {
   useEffect(() => {
     if (!applicationId || !summary) return;
     if (trackedApplicationIdRef.current === applicationId) return;
-    trackPortalEvent("credit_summary_generated", {
+    const userId = (user as { id?: string | null } | null)?.id ?? "unknown";
+    trackPortalEvent("staff_action", {
+      user_id: userId,
+      action_type: "credit_summary_generate",
       application_id: applicationId
     });
+    trackPortalEvent("credit_summary_generated", {
+      application_id: applicationId,
+      user_id: userId
+    });
     trackedApplicationIdRef.current = applicationId;
-  }, [applicationId, summary]);
+  }, [applicationId, summary, user]);
 
   if (!applicationId) return <div className="drawer-placeholder">Select an application to view credit summary.</div>;
   if (isLoading) return <div className="drawer-placeholder">Loading credit summary…</div>;

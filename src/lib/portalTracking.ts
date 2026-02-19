@@ -1,4 +1,4 @@
-// ---- Portal Operational Analytics ----
+// ---- Portal Performance Intelligence ----
 declare global {
   interface Window {
     dataLayer: any[];
