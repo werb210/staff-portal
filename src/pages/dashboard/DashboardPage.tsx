@@ -25,12 +25,23 @@ interface RevenueSummary {
   fundedDeals: number;
 }
 
+interface LeadIntelligence {
+  id: string;
+  companyName: string;
+  requestedAmount: number;
+  revenueTier: "high" | "medium" | "low";
+  underwritingReadiness: "ready" | "partial" | "low";
+  sessionId: string;
+  createdAt: string;
+}
+
 const DashboardPage = () => {
   const { isAuthenticated, isLoading } = useAuth();
   const [lenderMetrics, setLenderMetrics] = useState<LenderMetrics[]>([]);
   const [revenueSummary, setRevenueSummary] = useState<RevenueSummary | null>(
     null,
   );
+  const [priorityLeads, setPriorityLeads] = useState<LeadIntelligence[]>([]);
 
   useEffect(() => {
     const token = localStorage.getItem("auth_token");
@@ -55,6 +66,32 @@ const DashboardPage = () => {
     })
       .then((res) => res.json())
       .then((data) => setLenderMetrics(data))
+      .catch(console.error);
+  }, []);
+
+  useEffect(() => {
+    const token = localStorage.getItem("auth_token");
+
+    fetch("/api/analytics/priority-leads", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        const revenueScore = { high: 3, medium: 2, low: 1 };
+        const readinessScore = { ready: 3, partial: 2, low: 1 };
+
+        const sorted = data.sort((a: LeadIntelligence, b: LeadIntelligence) => {
+          return (
+            revenueScore[b.revenueTier] - revenueScore[a.revenueTier] ||
+            readinessScore[b.underwritingReadiness] -
+              readinessScore[a.underwritingReadiness]
+          );
+        });
+
+        setPriorityLeads(sorted);
+      })
       .catch(console.error);
   }, []);
 
@@ -103,6 +140,37 @@ const DashboardPage = () => {
             </div>
           </div>
         )}
+
+        <div className="priority-queue-section mb-4">
+          <Card title="Priority Lead Queue">
+            {priorityLeads.some((lead) => lead.revenueTier === "high") && (
+              <div style={{ color: "#00ff88", marginBottom: "10px" }}>
+                High-Value Leads Waiting for Action
+              </div>
+            )}
+
+            {priorityLeads.map((lead) => (
+              <div
+                key={lead.id}
+                className={`priority-card ${lead.revenueTier}`}
+                style={{
+                  border:
+                    lead.revenueTier === "high"
+                      ? "2px solid #00ff88"
+                      : "1px solid #ccc",
+                  padding: "12px",
+                  marginBottom: "8px",
+                }}
+              >
+                <h4>{lead.companyName}</h4>
+                <p>Requested: ${lead.requestedAmount.toLocaleString()}</p>
+                <p>Revenue Tier: {lead.revenueTier}</p>
+                <p>Readiness: {lead.underwritingReadiness}</p>
+                <p>Session ID: {lead.sessionId}</p>
+              </div>
+            ))}
+          </Card>
+        </div>
 
         <div className="campaign-roi-section mb-4">
           <Card title="Campaign ROI Snapshot">
