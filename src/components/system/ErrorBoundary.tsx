@@ -1,4 +1,5 @@
 import React from "react";
+import { logger } from "@/utils/logger";
 
 interface State {
   hasError: boolean;
@@ -15,7 +16,7 @@ export default class ErrorBoundary extends React.Component<React.PropsWithChildr
   }
 
   componentDidCatch(error: unknown, errorInfo: unknown) {
-    console.error("Portal Error:", error, errorInfo);
+    logger.error("Portal Error:", { error, errorInfo });
   }
 
   render() {

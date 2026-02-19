@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
+import { logger } from "@/utils/logger";
 
 type KnowledgeFile = {
   id: string;
@@ -19,7 +20,7 @@ export default function AIKnowledgeBasePage() {
         setFiles(Array.isArray(res.data) ? res.data : []);
       })
       .catch((error) => {
-        console.error("Failed to load AI documents", error);
+        logger.error("Failed to load AI documents", { error });
         setFiles([]);
       });
   }, []);
@@ -32,7 +33,7 @@ export default function AIKnowledgeBasePage() {
       await api.post("/admin/ai-documents", formData);
       window.location.reload();
     } catch (error) {
-      console.error("Failed to upload AI document", error);
+      logger.error("Failed to upload AI document", { error });
     }
   }
 
@@ -41,7 +42,7 @@ export default function AIKnowledgeBasePage() {
       await api.delete(`/admin/ai-documents/${id}`);
       window.location.reload();
     } catch (error) {
-      console.error("Failed to delete AI document", error);
+      logger.error("Failed to delete AI document", { error });
     }
   }
 

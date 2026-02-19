@@ -15,6 +15,7 @@ import { ContactSubmissions } from "@/features/support/ContactSubmissions";
 import ChatSessionsPanel from "./ChatSessionsPanel";
 import ChatPanel from "./ChatPanel";
 import { fetchIssueReports } from "@/api/support";
+import { logger } from "@/utils/logger";
 
 type CommsView = "threads" | "ai-live-chat" | "ai-sessions" | "issue-reports" | "contact-forms";
 
@@ -100,7 +101,7 @@ const CommunicationsContent = () => {
 
   useEffect(() => {
     if (error) {
-      console.error("Failed to load communications", { requestId: getRequestId(), error });
+      logger.error("Failed to load communications", { requestId: getRequestId(), error });
     }
   }, [error]);
 

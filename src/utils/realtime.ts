@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 type RealtimeConnector = {
   reconnect?: () => void;
 };
@@ -9,6 +10,6 @@ export const reconnectRealtime = () => {
   try {
     connector.reconnect();
   } catch (error) {
-    console.warn("Realtime reconnect failed.", { error });
+    logger.warn("Realtime reconnect failed.", { error });
   }
 };

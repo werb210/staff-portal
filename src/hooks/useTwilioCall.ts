@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useDialerStore, type DialerStatus } from "@/state/dialer.store";
 import { safeNormalizeToE164 } from "@/utils/phone";
 import { createTwilioDevice, fetchTwilioToken, type VoiceCall, type VoiceDevice } from "@/services/twilioVoice";
+import { logger } from "@/utils/logger";
 
 const CALL_IN_PROGRESS_STATUSES = ["dialing", "ringing", "connected"] as const;
 const isCallInProgressStatus = (status: DialerStatus) =>
@@ -98,7 +99,7 @@ export const useTwilioCall = () => {
       call.accept?.();
     });
     device.on?.("error", (error: Error) => {
-      console.error("Twilio Device Error:", error);
+      logger.error("Twilio Device Error:", { error });
       setDeviceState((device.state as string) ?? "unregistered");
     });
 

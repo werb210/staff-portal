@@ -2,6 +2,7 @@ import React from "react";
 import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
 import { getRequestId } from "@/utils/requestId";
 import { useDialerStore } from "@/state/dialer.store";
+import { logger } from "@/utils/logger";
 
 const DialerFallback: React.FC<FallbackProps> = ({ error, resetErrorBoundary }) => {
   const safeError = error instanceof Error ? error : new Error(String(error));
@@ -46,7 +47,7 @@ const DialerErrorBoundary = ({ children }: { children: React.ReactNode }) => {
     <ErrorBoundary
       FallbackComponent={DialerFallback}
       onError={(error, info) => {
-        console.error("Dialer render failure", {
+        logger.error("Dialer render failure", {
           requestId: getRequestId(),
           error,
           componentStack: info.componentStack

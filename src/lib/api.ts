@@ -122,11 +122,12 @@ api.interceptors.request.use((config: AuthRequestInternalConfig) => {
   return attachRequestIdAndLog(config);
 });
 
-const handleUnauthorized = (url?: string | null) => {
-  if (shouldBypassAuthRedirect(url)) return;
+const handleUnauthorized = () => {
   clearAuth();
   reportAuthFailure("unauthorized");
-  redirectTo("/login");
+  if (typeof window !== "undefined") {
+    window.location.href = "/login";
+  }
 };
 
 api.interceptors.response.use(
@@ -136,7 +137,7 @@ api.interceptors.response.use(
     const errorData = resolveErrorData(error);
     const status = error.response?.status ?? 500;
     if (status === 401) {
-      handleUnauthorized(error.config?.url);
+      handleUnauthorized();
     } else if (status === 403) {
       reportAuthFailure("forbidden");
       redirectTo("/unauthorized");

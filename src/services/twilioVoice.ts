@@ -1,4 +1,5 @@
 import { Device } from "@twilio/voice-sdk";
+import { logger } from "@/utils/logger";
 
 export type VoiceCallEvent = "ringing" | "accept" | "disconnect" | "cancel" | "reject" | "error";
 
@@ -39,7 +40,7 @@ export const fetchTwilioToken = async (): Promise<string | null> => {
     if (!payload?.token) return null;
     return payload.token;
   } catch (error) {
-    console.error("Failed to fetch Twilio token:", error);
+    logger.error("Failed to fetch Twilio token:", { error });
     return null;
   }
 };

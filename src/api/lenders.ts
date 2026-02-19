@@ -8,6 +8,7 @@ import type {
   LenderProductRequirement
 } from "@/types/lenderManagement.models";
 import { LENDER_PRODUCT_CATEGORIES, isLenderProductCategory, type RateType } from "@/types/lenderManagement.types";
+import { logger } from "@/utils/logger";
 
 type LenderStatus = "ACTIVE" | "INACTIVE";
 
@@ -81,7 +82,7 @@ const ensureEntityHasId = <T extends { id?: string }>(
   const safeEntity = (entity ?? {}) as T;
   const rawId = typeof safeEntity.id === "string" ? safeEntity.id.trim() : "";
   if (!rawId) {
-    console.warn(`Expected ${context} response to include an id.`);
+    logger.warn(`Expected ${context} response to include an id.`);
     return { ...safeEntity, id: fallbackId ?? "" } as T & { id: string };
   }
   return { ...safeEntity, id: rawId } as T & { id: string };

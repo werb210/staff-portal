@@ -3,6 +3,7 @@ import type { AxiosError, AxiosRequestConfig, AxiosResponse, InternalAxiosReques
 import { getRequestId } from "@/utils/requestId";
 import { setLastApiRequest } from "@/state/apiRequestTrace";
 import { endPendingRequest, startPendingRequest } from "@/utils/requestTracking";
+import { logger as appLogger } from "@/utils/logger";
 
 type Redactable = Record<string, unknown> | unknown[] | string | number | boolean | null | undefined;
 
@@ -130,9 +131,9 @@ export const logError = (error: AxiosError) => {
 
   const isCanceled = error.code === "ERR_CANCELED";
   const isTransientBodyRead = error.message.includes("Body is unusable: Body has already been read");
-  const logger = isCanceled || isTransientBodyRead ? console.warn : console.error;
+  const logMethod = isCanceled || isTransientBodyRead ? appLogger.warn : appLogger.error;
 
-  logger("API error", {
+  logMethod("API error", {
     requestId,
     method: config.method?.toUpperCase(),
     url: buildRequestUrl(config),

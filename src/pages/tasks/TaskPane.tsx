@@ -12,6 +12,7 @@ import TaskEditor from "./TaskEditor";
 import { getErrorMessage } from "@/utils/errors";
 import { emitUiTelemetry } from "@/utils/uiTelemetry";
 import { getRequestId } from "@/utils/requestId";
+import { logger } from "@/utils/logger";
 
 const filterTasks = (tasks: TaskItem[], filters: TaskFilters, currentUserId?: string) => {
   return tasks.filter((task) => {
@@ -43,7 +44,7 @@ const TaskPane = () => {
 
   useEffect(() => {
     if (error) {
-      console.error("Failed to load tasks", { requestId: getRequestId(), error });
+      logger.error("Failed to load tasks", { requestId: getRequestId(), error });
     }
   }, [error]);
 

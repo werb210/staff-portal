@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 const RELOAD_GUARD_KEY = "portal:reload-guard";
 const RELOAD_GUARD_TTL_MS = 30000;
 
@@ -22,7 +23,7 @@ export const triggerSafeReload = (reason: string, ttlMs: number = RELOAD_GUARD_T
   if (typeof window === "undefined") return;
   const timestamp = readGuardTimestamp();
   if (timestamp !== null && Date.now() - timestamp < ttlMs) {
-    console.warn("Reload suppressed to prevent loops.", { reason });
+    logger.warn("Reload suppressed to prevent loops.", { reason });
     return;
   }
   window.sessionStorage.setItem(RELOAD_GUARD_KEY, `${Date.now()}`);
