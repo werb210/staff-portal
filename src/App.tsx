@@ -48,9 +48,9 @@ import { disconnectAiSocket, initializeAiSocketClient } from "@/services/aiSocke
 import RoleGuard from "@/auth/RoleGuard";
 import Unauthorized from "@/pages/Unauthorized";
 import { logger } from "@/utils/logger";
-import RequireAuth from "@/routes/RequireAuth";
 import Loading from "@/components/Loading";
 import SystemStatus from "@/pages/SystemStatus";
+import { AuthGuard } from "@/lib/authGuard";
 
 
 const LendersPage = lazy(() => import("./pages/lenders/LendersPage"));
@@ -93,13 +93,13 @@ const RouteChangeObserver = () => {
 };
 
 const ProtectedApp = () => (
-  <RequireAuth roles={["Admin", "Staff", "Lender", "Referrer"]}>
+  <AuthGuard allowedRoles={["Admin", "Staff", "Lender", "Referrer"]}>
     <PrivateRoute allowedRoles={["Admin", "Staff", "Lender", "Referrer"]}>
       <DataReadyGuard>
         <AppLayout />
       </DataReadyGuard>
     </PrivateRoute>
-  </RequireAuth>
+  </AuthGuard>
 );
 
 const PortalSessionGuard = () => {
@@ -389,7 +389,14 @@ export default function App() {
             <Route path="/credit-results" element={<CreditResults />} />
             <Route path="/system-status" element={<SystemStatus />} />
             <Route element={<ProtectedApp />}>
-              <Route path="/dashboard" element={<DashboardPage />} />
+              <Route
+                path="/dashboard"
+                element={
+                  <AuthGuard allowedRoles={["Admin", "Staff"]}>
+                    <DashboardPage />
+                  </AuthGuard>
+                }
+              />
               <Route
                 path="/applications"
                 element={
@@ -445,33 +452,33 @@ export default function App() {
               <Route
                 path="/lenders"
                 element={
-                  <RoleGuard roles={["Admin", "Staff", "Lender"]}>
+                  <AuthGuard allowedRoles={["Admin"]}>
                     <LendersPage />
-                  </RoleGuard>
+                  </AuthGuard>
                 }
               />
               <Route
                 path="/lenders/*"
                 element={
-                  <RoleGuard roles={["Admin", "Staff", "Lender"]}>
+                  <AuthGuard allowedRoles={["Admin"]}>
                     <LendersPage />
-                  </RoleGuard>
+                  </AuthGuard>
                 }
               />
               <Route
                 path="/lenders/new"
                 element={
-                  <RoleGuard roles={["Admin", "Staff", "Lender"]}>
+                  <AuthGuard allowedRoles={["Admin"]}>
                     <LendersPage />
-                  </RoleGuard>
+                  </AuthGuard>
                 }
               />
               <Route
                 path="/lenders/:lenderId/edit"
                 element={
-                  <RoleGuard roles={["Admin", "Staff", "Lender"]}>
+                  <AuthGuard allowedRoles={["Admin"]}>
                     <LendersPage />
-                  </RoleGuard>
+                  </AuthGuard>
                 }
               />
               <Route path="/settings" element={<SettingsPage />} />

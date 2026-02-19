@@ -8,13 +8,23 @@ import { AuthProvider } from "./auth/AuthContext";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ToastProvider } from "./context/ToastContext";
 import { validateEnv } from "./config/env";
+import { validateEnv as validateRuntimeEnv } from "./lib/envCheck";
 import { enforceRequestIdOnConsoleError } from "./utils/consoleGuard";
 import { logger } from "./utils/logger";
 import { startUiHeartbeat } from "./utils/uiHeartbeat";
+import { clearAuth, getAccessToken, isTokenExpired } from "./lib/authStorage";
 
 const rootElement = document.getElementById("root") as HTMLElement;
 enforceRequestIdOnConsoleError();
 startUiHeartbeat(rootElement);
+validateRuntimeEnv();
+
+const token = getAccessToken();
+if (token && isTokenExpired(token)) {
+  clearAuth();
+  window.location.href = "/login";
+}
+
 if (import.meta.env.PROD) {
   validateEnv();
 }

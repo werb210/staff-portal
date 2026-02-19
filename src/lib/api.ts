@@ -6,7 +6,7 @@ import axios, {
   type InternalAxiosRequestConfig
 } from "axios";
 import { attachRequestIdAndLog, logError, logResponse } from "@/utils/apiLogging";
-import { getAccessToken } from "@/lib/authToken";
+import { clearAuth, getAccessToken } from "@/lib/authStorage";
 import { getApiBaseUrl } from "@/config/api";
 import { reportAuthFailure } from "@/auth/authEvents";
 import { showApiToast } from "@/state/apiNotifications";
@@ -124,7 +124,9 @@ api.interceptors.request.use((config: AuthRequestInternalConfig) => {
 
 const handleUnauthorized = (url?: string | null) => {
   if (shouldBypassAuthRedirect(url)) return;
+  clearAuth();
   reportAuthFailure("unauthorized");
+  redirectTo("/login");
 };
 
 api.interceptors.response.use(

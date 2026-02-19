@@ -1,8 +1,9 @@
-export function checkEnv() {
-  const required = ["VITE_API_BASE_URL"];
-  const missing = required.filter((key) => !import.meta.env[key]);
+export function validateEnv() {
+  const required = [import.meta.env.VITE_API_URL ?? import.meta.env.VITE_API_BASE_URL];
 
-  if (missing.length) {
-    console.error("Missing ENV:", missing);
-  }
+  required.forEach((value) => {
+    if (!value) {
+      console.error("Missing required environment variable.");
+    }
+  });
 }
