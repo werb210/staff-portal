@@ -79,12 +79,21 @@ const OffersTab = () => {
     onSuccess: (response) => {
       setUploadError(null);
       if (applicationId) {
+        const userId = (user as { id?: string | null } | null)?.id ?? "unknown";
+        const lenderId =
+          (response as { lenderId?: string | null; lender_id?: string | null } | null)?.lenderId ??
+          (response as { lenderId?: string | null; lender_id?: string | null } | null)?.lender_id ??
+          "unknown";
+        trackPortalEvent("staff_action", {
+          user_id: userId,
+          action_type: "offer_upload",
+          application_id: applicationId,
+          lender_id: lenderId
+        });
         trackPortalEvent("offer_uploaded", {
           application_id: applicationId,
-          lender_id:
-            (response as { lenderId?: string | null; lender_id?: string | null } | null)?.lenderId ??
-            (response as { lenderId?: string | null; lender_id?: string | null } | null)?.lender_id ??
-            "unknown"
+          lender_id: lenderId,
+          user_id: userId
         });
       }
       queryClient.invalidateQueries({ queryKey: ["offers", applicationId] });
