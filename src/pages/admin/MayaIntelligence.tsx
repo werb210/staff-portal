@@ -1,172 +1,145 @@
 import { useEffect, useState } from "react";
 import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-  PieChart,
-  Pie,
-  Cell,
-  ResponsiveContainer
+  LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid,
+  PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar
 } from "recharts";
-import { io } from "socket.io-client";
 
 interface OverviewData {
   autonomy: any;
   recentActions: any[];
   clusterDistribution: any[];
-  lenderAccuracy?: any[];
   confidenceTrend?: any[];
+  lenderAccuracy?: any[];
+  fundingHeatmap?: any[];
+  staffPerformance?: any[];
+  modelVersions?: any[];
 }
 
-const COLORS = ["#4f46e5", "#16a34a", "#dc2626"];
+const COLORS = ["#4f46e5", "#16a34a", "#dc2626", "#f59e0b"];
 
 export default function MayaIntelligence() {
   const [data, setData] = useState<OverviewData | null>(null);
-  const [liveEvents, setLiveEvents] = useState<any[]>([]);
+  const [roiInput, setRoiInput] = useState(10000);
+  const [roiProjection, setRoiProjection] = useState<number | null>(null);
 
   useEffect(() => {
     fetch("/api/maya/overview")
       .then(res => res.json())
       .then(setData);
-
-    const socket = io();
-    socket.on("maya_event", (event) => {
-      setLiveEvents(prev => [event, ...prev.slice(0, 9)]);
-    });
-
-    return () => { socket.disconnect(); };
   }, []);
 
-  async function updateAutonomy(level: number) {
-    await fetch("/api/maya/set-autonomy", {
+  async function simulateROI() {
+    const res = await fetch("/api/maya/roi-simulate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ level })
+      body: JSON.stringify({ budget: roiInput })
     });
-    window.location.reload();
+    const json = await res.json();
+    setRoiProjection(json.projectedRevenue);
   }
 
-  async function emergencyShutdown() {
-    await fetch("/api/maya/shutdown", { method: "POST" });
-    window.location.reload();
+  async function rollbackModel(version: string) {
+    await fetch("/api/maya/model-rollback", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ version })
+    });
+    alert("Model rolled back.");
   }
 
   if (!data) return <div>Loading Maya Intelligence...</div>;
 
   return (
-    <div className="p-6 space-y-10">
-      <h1 className="text-2xl font-bold">Maya Intelligence Dashboard</h1>
+    <div className="p-6 space-y-14">
+      <h1 className="text-2xl font-bold">Maya Executive Intelligence</h1>
 
-      {/* Autonomy Controls */}
+      {/* Funding Heatmap */}
+      {data.fundingHeatmap && (
+        <div>
+          <h2 className="font-semibold mb-2">Funding Probability Heatmap</h2>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={data.fundingHeatmap}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="riskBand" />
+              <YAxis />
+              <Tooltip />
+              <Bar dataKey="probability" fill="#4f46e5" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+
+      {/* ROI Simulator */}
       <div>
-        <h2 className="font-semibold">Autonomy Level</h2>
+        <h2 className="font-semibold mb-2">ROI Forecast Simulator</h2>
         <input
-          type="range"
-          min="0"
-          max="5"
-          value={data.autonomy.autonomy_level}
-          onChange={(e) => updateAutonomy(Number(e.target.value))}
+          type="number"
+          value={roiInput}
+          onChange={(e) => setRoiInput(Number(e.target.value))}
+          className="border p-2"
         />
-        <p>Current Level: {data.autonomy.autonomy_level}</p>
         <button
-          className="mt-3 bg-red-600 text-white px-4 py-2 rounded"
-          onClick={emergencyShutdown}
+          className="ml-3 bg-blue-600 text-white px-4 py-2 rounded"
+          onClick={simulateROI}
         >
-          Disable Maya Autonomy
+          Simulate
         </button>
+        {roiProjection && (
+          <p className="mt-2">
+            Projected Revenue: ${roiProjection.toLocaleString()}
+          </p>
+        )}
       </div>
 
-      {/* Cluster Pie Chart */}
-      <div>
-        <h2 className="font-semibold mb-2">Deal Cluster Distribution</h2>
-        <ResponsiveContainer width="100%" height={300}>
-          <PieChart>
-            <Pie
-              data={data.clusterDistribution}
-              dataKey="count"
-              nameKey="cluster"
-              outerRadius={100}
-            >
-              {data.clusterDistribution.map((entry, index) => (
-                <Cell key={index} fill={COLORS[index % COLORS.length]} />
-              ))}
-            </Pie>
-            <Tooltip />
-          </PieChart>
-        </ResponsiveContainer>
-      </div>
-
-      {/* Confidence Trend */}
-      {data.confidenceTrend && (
+      {/* Staff Performance Correlation */}
+      {data.staffPerformance && (
         <div>
-          <h2 className="font-semibold mb-2">Confidence Score Trend</h2>
+          <h2 className="font-semibold mb-2">Staff Performance Correlation</h2>
           <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={data.confidenceTrend}>
+            <BarChart data={data.staffPerformance}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" />
+              <XAxis dataKey="staff" />
               <YAxis />
               <Tooltip />
-              <Line type="monotone" dataKey="confidence" stroke="#4f46e5" />
-            </LineChart>
+              <Bar dataKey="closeRate" fill="#16a34a" />
+            </BarChart>
           </ResponsiveContainer>
         </div>
       )}
 
-      {/* Lender Accuracy */}
-      {data.lenderAccuracy && (
+      {/* ML Model Version Tracking */}
+      {data.modelVersions && (
         <div>
-          <h2 className="font-semibold mb-2">Lender Match Accuracy</h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={data.lenderAccuracy}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="lender" />
-              <YAxis />
-              <Tooltip />
-              <Line type="monotone" dataKey="accuracy" stroke="#16a34a" />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      )}
-
-      {/* Marketing Log */}
-      <div>
-        <h2 className="font-semibold mb-2">Recent Marketing Adjustments</h2>
-        <table className="w-full border">
-          <thead>
-            <tr>
-              <th>Source</th>
-              <th>Old Budget</th>
-              <th>New Budget</th>
-              <th>Date</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.recentActions.map((a, i) => (
-              <tr key={i}>
-                <td>{a.source}</td>
-                <td>{a.previous_budget}</td>
-                <td>{a.new_budget}</td>
-                <td>{new Date(a.created_at).toLocaleString()}</td>
+          <h2 className="font-semibold mb-2">ML Model Versions</h2>
+          <table className="w-full border">
+            <thead>
+              <tr>
+                <th>Version</th>
+                <th>Accuracy</th>
+                <th>Date</th>
+                <th>Action</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Live Event Feed */}
-      <div>
-        <h2 className="font-semibold mb-2">Live Maya Activity</h2>
-        <ul className="space-y-1">
-          {liveEvents.map((e, i) => (
-            <li key={i} className="bg-gray-100 p-2 rounded">
-              {e.message}
-            </li>
-          ))}
-        </ul>
-      </div>
+            </thead>
+            <tbody>
+              {data.modelVersions.map((v, i) => (
+                <tr key={i}>
+                  <td>{v.version}</td>
+                  <td>{v.accuracy}%</td>
+                  <td>{new Date(v.created_at).toLocaleDateString()}</td>
+                  <td>
+                    <button
+                      className="bg-red-500 text-white px-2 py-1 rounded"
+                      onClick={() => rollbackModel(v.version)}
+                    >
+                      Rollback
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
