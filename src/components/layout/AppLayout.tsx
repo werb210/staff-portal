@@ -8,12 +8,18 @@ import NotificationToast from "@/components/notifications/NotificationToast";
 import { useNotificationPermissionPrompt } from "@/hooks/useNotificationPermissionPrompt";
 import VoiceDialer from "@/components/dialer/VoiceDialer";
 import DialerErrorBoundary from "@/components/dialer/DialerErrorBoundary";
+import MayaPanel from "@/components/maya/MayaPanel";
+import { usePresence } from "@/hooks/usePresence";
+import { useAuth } from "@/hooks/useAuth";
 import "@/styles/globals.css";
 
 const AppLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [mayaOpen, setMayaOpen] = useState(false);
   const location = useLocation();
+  const { user } = useAuth();
   useNotificationPermissionPrompt();
+  usePresence(user?.id ?? "");
 
   useEffect(() => {
     setSidebarOpen(false);
@@ -26,7 +32,10 @@ const AppLayout = () => {
         <SystemBanner />
         <ApiErrorToast />
         <NotificationToast />
-        <Topbar onToggleSidebar={() => setSidebarOpen((prev) => !prev)} />
+        <Topbar
+          onToggleSidebar={() => setSidebarOpen((prev) => !prev)}
+          onOpenMaya={() => setMayaOpen(true)}
+        />
         <main className="app-shell__main">
           <Outlet />
         </main>
@@ -34,6 +43,7 @@ const AppLayout = () => {
       <DialerErrorBoundary>
         <VoiceDialer />
       </DialerErrorBoundary>
+      <MayaPanel isOpen={mayaOpen} onClose={() => setMayaOpen(false)} />
       {sidebarOpen && (
         <button
           type="button"
