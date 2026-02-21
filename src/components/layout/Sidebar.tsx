@@ -59,7 +59,8 @@ const navigationSections: NavigationSection[] = [
       { label: "AI Policy", path: "/admin/ai-policy", roles: ["Admin"] },
       { label: "Issues", path: "/admin/ai/issues", roles: ["Admin", "Staff"] },
       { label: "Operations", path: "/admin/operations", roles: ["Admin"] },
-      { label: "Maya Intelligence", path: "/admin/maya", roles: ["Admin"] }
+      { label: "Maya Intelligence", path: "/admin/maya", roles: ["Admin"] },
+      { label: "Maya Outbound Upload", path: "/admin/maya-outbound", roles: ["Admin"] }
     ]
   }
 ];

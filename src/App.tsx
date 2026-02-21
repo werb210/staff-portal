@@ -72,6 +72,7 @@ const AIKnowledge = lazy(() => import("./pages/admin/AIKnowledge"));
 const AiPolicyEditorPage = lazy(() => import("./pages/admin/AiPolicyEditorPage"));
 const AiKnowledgeUpload = lazy(() => import("./pages/admin/AiKnowledgeUpload"));
 const MayaIntelligence = lazy(() => import("./pages/admin/MayaIntelligence"));
+const MayaOutboundUpload = lazy(() => import("./pages/admin/MayaOutboundUpload"));
 
 const RouteChangeObserver = () => {
   const location = useLocation();
@@ -402,6 +403,14 @@ const AppRoutes = () => (
         element={
           <RoleGuard roles={["Admin"]}>
     <MayaIntelligence />
+          </RoleGuard>
+        }
+      />
+      <Route
+        path="/admin/maya-outbound"
+        element={
+          <RoleGuard roles={["Admin"]}>
+    <MayaOutboundUpload />
           </RoleGuard>
         }
       />
