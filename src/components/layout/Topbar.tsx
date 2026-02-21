@@ -12,9 +12,10 @@ import { logger } from "@/utils/logger";
 
 type TopbarProps = {
   onToggleSidebar: () => void;
+  onOpenMaya?: () => void;
 };
 
-const Topbar = ({ onToggleSidebar }: TopbarProps) => {
+const Topbar = ({ onToggleSidebar, onOpenMaya }: TopbarProps) => {
   const { user, logout } = useAuth();
   const { silo } = useSilo();
   const unreadCount = useNotificationsStore(
@@ -80,6 +81,13 @@ const Topbar = ({ onToggleSidebar }: TopbarProps) => {
       </div>
       <div className="topbar__right">
         <SiloSelector />
+        <button
+          type="button"
+          className="relative rounded border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 shadow-sm hover:border-slate-300"
+          onClick={onOpenMaya}
+        >
+          Maya
+        </button>
         {liveCount > 0 && (
           <span className="rounded-full bg-red-600 px-2 py-0.5 text-[10px] font-semibold text-white" aria-label="Live chat queue count">
             Live {liveCount}
