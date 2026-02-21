@@ -71,6 +71,7 @@ const ComparisonEditor = lazy(() => import("./pages/admin/ComparisonEditor"));
 const AIKnowledge = lazy(() => import("./pages/admin/AIKnowledge"));
 const AiPolicyEditorPage = lazy(() => import("./pages/admin/AiPolicyEditorPage"));
 const AiKnowledgeUpload = lazy(() => import("./pages/admin/AiKnowledgeUpload"));
+const MayaIntelligence = lazy(() => import("./pages/admin/MayaIntelligence"));
 
 const RouteChangeObserver = () => {
   const location = useLocation();
@@ -393,6 +394,14 @@ const AppRoutes = () => (
         element={
           <RoleGuard roles={["Admin"]}>
     <AiKnowledgeUpload />
+          </RoleGuard>
+        }
+      />
+      <Route
+        path="/admin/maya"
+        element={
+          <RoleGuard roles={["Admin"]}>
+    <MayaIntelligence />
           </RoleGuard>
         }
       />
