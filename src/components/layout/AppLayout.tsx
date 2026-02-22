@@ -9,6 +9,7 @@ import { useNotificationPermissionPrompt } from "@/hooks/useNotificationPermissi
 import VoiceDialer from "@/components/dialer/VoiceDialer";
 import DialerErrorBoundary from "@/components/dialer/DialerErrorBoundary";
 import MayaPanel from "@/components/maya/MayaPanel";
+import ErrorBoundary from "@/core/ErrorBoundary";
 import { usePresence } from "@/hooks/usePresence";
 import { useAuth } from "@/hooks/useAuth";
 import "@/styles/globals.css";
@@ -43,7 +44,9 @@ const AppLayout = () => {
       <DialerErrorBoundary>
         <VoiceDialer />
       </DialerErrorBoundary>
-      <MayaPanel isOpen={mayaOpen} onClose={() => setMayaOpen(false)} />
+      <ErrorBoundary>
+        <MayaPanel open={mayaOpen} onClose={() => setMayaOpen(false)} />
+      </ErrorBoundary>
       {sidebarOpen && (
         <button
           type="button"

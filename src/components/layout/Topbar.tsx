@@ -9,6 +9,7 @@ import SiloSelector from "./SiloSelector";
 import PushNotificationCta from "@/components/PushNotificationCta";
 import NotificationCenter from "@/components/notifications/NotificationCenter";
 import { logger } from "@/utils/logger";
+import MayaStatus from "@/components/MayaStatus";
 
 type TopbarProps = {
   onToggleSidebar: () => void;
@@ -99,6 +100,7 @@ const Topbar = ({ onToggleSidebar, onOpenMaya }: TopbarProps) => {
         >
           Prod: {productionStatus}
         </span>
+        <MayaStatus />
         {leadCount > 0 && (
           <span className="rounded-full bg-indigo-600 px-2 py-0.5 text-[10px] font-semibold text-white" aria-label="Website lead count">
             Leads {leadCount}

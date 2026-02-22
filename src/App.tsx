@@ -49,6 +49,7 @@ import RoleGuard from "@/auth/RoleGuard";
 import Unauthorized from "@/pages/Unauthorized";
 import { logger } from "@/utils/logger";
 import Loading from "@/components/Loading";
+import { CapabilityGuard } from "@/components/CapabilityGuard";
 import SystemStatus from "@/pages/SystemStatus";
 import { AuthGuard } from "@/lib/authGuard";
 
@@ -71,8 +72,8 @@ const ComparisonEditor = lazy(() => import("./pages/admin/ComparisonEditor"));
 const AIKnowledge = lazy(() => import("./pages/admin/AIKnowledge"));
 const AiPolicyEditorPage = lazy(() => import("./pages/admin/AiPolicyEditorPage"));
 const AiKnowledgeUpload = lazy(() => import("./pages/admin/AiKnowledgeUpload"));
-const MayaIntelligence = lazy(() => import("./pages/admin/MayaIntelligence"));
 const MayaOutboundUpload = lazy(() => import("./pages/admin/MayaOutboundUpload"));
+const AdminMaya = lazy(() => import("./pages/admin/AdminMaya"));
 
 const RouteChangeObserver = () => {
   const location = useLocation();
@@ -402,7 +403,9 @@ const AppRoutes = () => (
         path="/admin/maya"
         element={
           <RoleGuard roles={["Admin"]}>
-    <MayaIntelligence />
+            <CapabilityGuard capability="override_limits">
+              <AdminMaya />
+            </CapabilityGuard>
           </RoleGuard>
         }
       />
