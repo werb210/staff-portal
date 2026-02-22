@@ -47,7 +47,7 @@ describe("NotesTab", () => {
     await userEvent.type(textarea, "New update");
     await userEvent.click(screen.getByRole("button", { name: "Submit" }));
 
-    expect(sendNoteMessage).toHaveBeenCalledWith("app-1", "New update");
+    expect(sendNoteMessage).toHaveBeenCalledWith("app-1", "New update", "BF");
 
     const note = screen.getByText("Initial review complete").closest(".note-message");
     expect(note).not.toBeNull();
@@ -58,7 +58,7 @@ describe("NotesTab", () => {
     await userEvent.type(editArea, "Updated note");
     await userEvent.click(within(note as HTMLElement).getByRole("button", { name: "Save" }));
 
-    expect(updateNoteMessage).toHaveBeenCalledWith("app-1", "note-1", "Updated note");
+    expect(updateNoteMessage).toHaveBeenCalledWith("app-1", "note-1", "Updated note", "BF");
   });
 
   it("enforces read-only access for viewer roles", async () => {

@@ -5,7 +5,7 @@ import { useNotificationsStore } from "@/state/notifications.store";
 import { getRoleLabel, resolveUserRole } from "@/utils/roles";
 import { useDialerStore } from "@/state/dialer.store";
 import Button from "../ui/Button";
-import SiloSelector from "./SiloSelector";
+import BusinessUnitSelector from "@/components/BusinessUnitSelector";
 import PushNotificationCta from "@/components/PushNotificationCta";
 import NotificationCenter from "@/components/notifications/NotificationCenter";
 import { logger } from "@/utils/logger";
@@ -77,11 +77,11 @@ const Topbar = ({ onToggleSidebar, onOpenMaya }: TopbarProps) => {
         />
         <div className="topbar__title-stack">
           <h1 className="topbar__title">Boreal Financial</h1>
-          <span className="topbar__subtitle">Silo: {silo}</span>
+          <span className="topbar__subtitle">Business Unit: {silo}</span>
         </div>
       </div>
       <div className="topbar__right">
-        <SiloSelector />
+        <BusinessUnitSelector />
         <button
           type="button"
           className="relative rounded border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 shadow-sm hover:border-slate-300"

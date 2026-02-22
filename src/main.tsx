@@ -4,7 +4,7 @@ export { trackPortalEvent } from "./lib/portalTracking";
 import App from "./App";
 import "./styles/globals.css";
 import "./theme";
-import { SiloProvider } from "./context/SiloContext";
+import { BusinessUnitProvider } from "./context/BusinessUnitContext";
 import { AuthProvider } from "./auth/AuthContext";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ToastProvider } from "./context/ToastContext";
@@ -63,13 +63,13 @@ if (import.meta.env.PROD && "serviceWorker" in navigator) {
 ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
     <AuthProvider>
-      <SiloProvider>
+      <BusinessUnitProvider>
         <ErrorBoundary>
           <ToastProvider>
             <App />
           </ToastProvider>
         </ErrorBoundary>
-      </SiloProvider>
+      </BusinessUnitProvider>
     </AuthProvider>
   </React.StrictMode>
 );

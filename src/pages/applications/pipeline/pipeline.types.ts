@@ -48,6 +48,7 @@ export type PipelineFilters = {
   dateFrom?: string;
   dateTo?: string;
   sort?: "updated_desc" | "updated_asc" | "amount_desc" | "amount_asc" | "stage";
+  businessUnit?: "BF" | "BI" | "SLF";
 };
 
 export type PipelineApplication = {

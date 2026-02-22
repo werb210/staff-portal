@@ -4,10 +4,14 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/api/httpClient";
+import { useBusinessUnit } from "@/hooks/useBusinessUnit";
+import { withBusinessUnitQuery } from "@/lib/businessUnit";
 
 export function useContacts() {
+  const { activeBusinessUnit } = useBusinessUnit();
+
   return useQuery({
-    queryKey: ["contacts"],
-    queryFn: ({ signal }) => apiClient.get("/crm/contacts", { signal }),
+    queryKey: ["contacts", activeBusinessUnit],
+    queryFn: ({ signal }) => apiClient.get(withBusinessUnitQuery("/crm/contacts", activeBusinessUnit), { signal })
   });
 }

@@ -1,10 +1,16 @@
 import { useContext } from "react";
 import SiloContext from "@/context/SiloContext";
+import { useBusinessUnit } from "@/hooks/useBusinessUnit";
 
 export const useSilo = () => {
-  const context = useContext(SiloContext);
-  if (!context) {
-    throw new Error("useSilo must be used within a SiloProvider");
+  const legacyContext = useContext(SiloContext);
+  if (legacyContext) {
+    return legacyContext;
   }
-  return context;
+
+  const { activeBusinessUnit, setActiveBusinessUnit } = useBusinessUnit();
+  return {
+    silo: activeBusinessUnit,
+    setSilo: setActiveBusinessUnit
+  };
 };
