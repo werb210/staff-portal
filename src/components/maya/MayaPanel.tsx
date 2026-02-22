@@ -1,77 +1,22 @@
-import { useState } from "react";
-
-type Message = {
-  role: "user" | "assistant";
-  content: string;
-};
+import ChatInterface from "@/components/maya/ChatInterface";
 
 type MayaPanelProps = {
-  isOpen: boolean;
+  open: boolean;
   onClose: () => void;
 };
 
-export default function MayaPanel({ isOpen, onClose }: MayaPanelProps) {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState("");
-  const [isEscalated, setIsEscalated] = useState(false);
-
-  async function sendMessage() {
-    if (!input.trim()) return;
-
-    const userMsg: Message = { role: "user", content: input };
-    setMessages((prev) => [...prev, userMsg]);
-
-    const response = await fetch(`${import.meta.env.VITE_AGENT_URL}/maya`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        mode: "staff",
-        sessionId: "staff-session",
-        message: input
-      })
-    });
-
-    const data = (await response.json()) as { reply?: string; escalated?: boolean };
-
-    setMessages((prev) => [...prev, { role: "assistant", content: data.reply ?? "" }]);
-    setIsEscalated(Boolean(data.escalated));
-    setInput("");
-  }
+export default function MayaPanel({ open, onClose }: MayaPanelProps) {
+  if (!open) return null;
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        top: 0,
-        left: isOpen ? 0 : "-400px",
-        width: "400px",
-        height: "100vh",
-        background: "#111",
-        color: "#fff",
-        transition: "left 0.3s ease",
-        padding: "1rem",
-        zIndex: 1000
-      }}
-    >
-      <button onClick={onClose}>Close</button>
-
-      <div style={{ height: "80%", overflowY: "auto" }}>
-        {messages.map((message, index) => (
-          <div key={`${message.role}-${index}`}>
-            <strong>{message.role === "user" ? "You" : "Maya"}:</strong>
-            <div>{message.content}</div>
-          </div>
-        ))}
+    <div className="fixed left-0 top-0 z-50 h-full w-96 bg-white shadow-xl">
+      <div className="flex items-center justify-between border-b border-slate-200 p-4">
+        <h2 className="font-bold">Maya Assistant</h2>
+        <button onClick={onClose} className="text-sm text-slate-600">
+          Close
+        </button>
       </div>
-
-      {isEscalated && <div style={{ color: "red" }}>Escalation triggered</div>}
-
-      <div>
-        <input value={input} onChange={(e) => setInput(e.target.value)} style={{ width: "80%" }} />
-        <button onClick={sendMessage}>Send</button>
-      </div>
+      <ChatInterface />
     </div>
   );
 }
