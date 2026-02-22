@@ -1,5 +1,7 @@
 import { apiClient, type ListResponse, type RequestOptions } from "./httpClient";
 import type { ApplicationDetails, ApplicationAuditEvent, PortalApplicationRecord } from "@/types/application.types";
+import { withBusinessUnitQuery } from "@/lib/businessUnit";
+import type { BusinessUnit } from "@/types/businessUnit";
 
 export type ApplicationSummary = {
   id: string;
@@ -18,8 +20,8 @@ export type ApplicationDocumentsResponse = {
   version?: number;
 }[];
 
-export const fetchApplications = async () => {
-  const res = await apiClient.getList<ApplicationSummary>("/applications");
+export const fetchApplications = async (businessUnit: BusinessUnit) => {
+  const res = await apiClient.getList<ApplicationSummary>(withBusinessUnitQuery("/applications", businessUnit));
   return res.items;
 };
 

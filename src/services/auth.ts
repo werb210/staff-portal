@@ -3,7 +3,13 @@ import clientApi from "@/api/client";
 import { apiRequest, ApiError } from "@/lib/api";
 import type { AuthRequestConfig } from "@/lib/api";
 
-export type AuthenticatedUser = Record<string, any>;
+import type { BusinessUnit } from "@/types/businessUnit";
+
+export type AuthenticatedUser = Record<string, any> & {
+  businessUnits?: BusinessUnit[];
+  activeBusinessUnit?: BusinessUnit;
+  silo?: BusinessUnit;
+};
 
 export type OtpStartResponse =
   | {

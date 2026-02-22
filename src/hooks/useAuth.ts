@@ -3,11 +3,14 @@ import { useAuth as useAuthContext, type AuthStatus } from "@/auth/AuthContext";
 import type { AuthenticatedUser } from "@/services/auth";
 import api from "@/lib/api";
 import { getAccessToken } from "@/lib/authToken";
+import type { BusinessUnit } from "@/types/businessUnit";
 
 export type StaffUser = AuthenticatedUser & {
   role?: string;
   name?: string;
   requiresOtp?: boolean;
+  businessUnits?: BusinessUnit[];
+  activeBusinessUnit?: BusinessUnit;
 };
 
 export type AuthValue = {

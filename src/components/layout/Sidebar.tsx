@@ -2,6 +2,7 @@ import { NavLink } from "react-router-dom";
 import { useSilo } from "@/hooks/useSilo";
 import { useAuth } from "@/hooks/useAuth";
 import { hasRequiredRole, resolveUserRole, type UserRole } from "@/utils/roles";
+import { BUSINESS_UNIT_CONFIG } from "@/config/businessUnitConfig";
 
 type SidebarProps = {
   isOpen: boolean;
@@ -67,6 +68,7 @@ const navigationSections: NavigationSection[] = [
 
 const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
   const { silo } = useSilo();
+  const businessUnitConfig = BUSINESS_UNIT_CONFIG[silo as keyof typeof BUSINESS_UNIT_CONFIG] ?? BUSINESS_UNIT_CONFIG.BF;
   const { user } = useAuth();
   const role = resolveUserRole((user as { role?: string | null } | null)?.role ?? null);
   const canViewStaffNav = role === "Admin" || role === "Staff";
@@ -74,7 +76,12 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
     ? navigationSections
         .map((section) => ({
           ...section,
-          items: section.items.filter((item) => !item.roles || hasRequiredRole(role, item.roles))
+          items: section.items.filter((item) => {
+            if (!businessUnitConfig.allowClientComms && ["/communications", "/chat", "/ai-comms", "/ai-chat"].includes(item.path)) {
+              return false;
+            }
+            return !item.roles || hasRequiredRole(role, item.roles);
+          })
         }))
         .filter((section) => section.items.length > 0)
     : [];

@@ -431,9 +431,10 @@ const ensureConversationLead = (conversation: CommunicationConversation) => {
   return updated;
 };
 
-export const fetchCommunicationThreads = async () => {
+export const fetchCommunicationThreads = async (businessUnit?: string) => {
   conversations.forEach((conversation) => ensureConversationLead(conversation));
-  return Promise.resolve(clone(conversations));
+  const scoped = businessUnit ? conversations.filter((conversation) => conversation.silo === businessUnit) : conversations;
+  return Promise.resolve(clone(scoped));
 };
 
 export const fetchConversationById = async (conversationId: string) => {

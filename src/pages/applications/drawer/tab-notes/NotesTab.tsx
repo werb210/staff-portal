@@ -7,32 +7,34 @@ import NotesList from "./NotesList";
 import { getErrorMessage } from "@/utils/errors";
 import { useAuth } from "@/hooks/useAuth";
 import { canWrite } from "@/auth/can";
+import { useBusinessUnit } from "@/hooks/useBusinessUnit";
 
 const NotesTab = () => {
   const applicationId = useApplicationDrawerStore((state) => state.selectedApplicationId);
   const queryClient = useQueryClient();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const { user } = useAuth();
+  const { activeBusinessUnit } = useBusinessUnit();
   const canEdit = canWrite((user as { role?: string | null } | null)?.role ?? null);
   const { data: messages = [], isLoading, error } = useQuery<NoteMessage[]>({
-    queryKey: ["notes", applicationId],
-    queryFn: ({ signal }) => fetchNotesThread(applicationId ?? "", { signal }),
+    queryKey: ["notes", activeBusinessUnit, applicationId],
+    queryFn: ({ signal }) => fetchNotesThread(applicationId ?? "", activeBusinessUnit, { signal }),
     enabled: Boolean(applicationId)
   });
 
   const mutation = useMutation({
-    mutationFn: (text: string) => sendNoteMessage(applicationId ?? "", text),
+    mutationFn: (text: string) => sendNoteMessage(applicationId ?? "", text, activeBusinessUnit),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notes", applicationId] });
+      queryClient.invalidateQueries({ queryKey: ["notes", activeBusinessUnit, applicationId] });
       queryClient.invalidateQueries({ queryKey: ["pipeline"] });
     }
   });
 
   const editMutation = useMutation({
     mutationFn: ({ noteId, body }: { noteId: string; body: string }) =>
-      updateNoteMessage(applicationId ?? "", noteId, body),
+      updateNoteMessage(applicationId ?? "", noteId, body, activeBusinessUnit),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notes", applicationId] });
+      queryClient.invalidateQueries({ queryKey: ["notes", activeBusinessUnit, applicationId] });
       queryClient.invalidateQueries({ queryKey: ["pipeline"] });
     }
   });

@@ -16,6 +16,8 @@ import ChatSessionsPanel from "./ChatSessionsPanel";
 import ChatPanel from "./ChatPanel";
 import { fetchIssueReports } from "@/api/support";
 import { logger } from "@/utils/logger";
+import { useBusinessUnit } from "@/hooks/useBusinessUnit";
+import { BUSINESS_UNIT_CONFIG } from "@/config/businessUnitConfig";
 
 type CommsView = "threads" | "ai-live-chat" | "ai-sessions" | "issue-reports" | "contact-forms";
 
@@ -84,13 +86,15 @@ const CommunicationsContent = () => {
     acknowledgeIssue
   } = useCommunicationsStore();
   const { user } = useAuth();
+  const { activeBusinessUnit } = useBusinessUnit();
+  const businessUnitConfig = BUSINESS_UNIT_CONFIG[activeBusinessUnit];
   const isAdmin = user?.role?.toLowerCase() === "admin";
   const [view, setView] = useState<CommsView>("threads");
   const selectedConversation = conversations.find((conv) => conv.id === selectedConversationId);
 
   const { data, isLoading, error } = useQuery<CommunicationConversation[], Error>({
-    queryKey: ["communications", "threads"],
-    queryFn: fetchCommunicationThreads
+    queryKey: ["communications", activeBusinessUnit, "threads"],
+    queryFn: () => fetchCommunicationThreads(activeBusinessUnit)
   });
 
   useEffect(() => {
@@ -125,7 +129,10 @@ const CommunicationsContent = () => {
           </div>
         }
       >
-        {view === "threads" && (
+        {!businessUnitConfig.allowClientComms && (
+          <p className="text-slate-600">Client communications are disabled for this business unit.</p>
+        )}
+        {view === "threads" && businessUnitConfig.allowClientComms && (
           <>
             {isLoading && <AppLoading />}
             {error && <p className="text-red-700">{getErrorMessage(error, "Unable to load conversations.")}</p>}
@@ -155,10 +162,10 @@ const CommunicationsContent = () => {
             )}
           </>
         )}
-        {view === "ai-live-chat" && <ChatPanel />}
-        {view === "ai-sessions" && isAdmin && <ChatSessionsPanel />}
+        {view === "ai-live-chat" && businessUnitConfig.allowClientComms && <ChatPanel />}
+        {view === "ai-sessions" && isAdmin && businessUnitConfig.allowClientComms && <ChatSessionsPanel />}
         {view === "issue-reports" && isAdmin && <WebsiteIssuesPanel />}
-        {view === "contact-forms" && <ContactSubmissions isAdmin={isAdmin} />}
+        {view === "contact-forms" && businessUnitConfig.allowClientComms && <ContactSubmissions isAdmin={isAdmin} />}
       </Card>
     </div>
   );

@@ -1,6 +1,7 @@
 import { apiClient } from "@/api/httpClient";
 import api from "@/lib/api";
 import type { PipelineApplication, PipelineFilters, PipelineStage, PipelineStageId } from "./pipeline.types";
+import type { BusinessUnit } from "@/types/businessUnit";
 import { PIPELINE_STAGE_LABELS, PIPELINE_STAGE_ORDER, normalizeStageId } from "./pipeline.types";
 
 const toTitleCase = (value: string) =>
@@ -293,6 +294,8 @@ const buildPipelineQuery = (filters?: PipelineFilters) => {
   if (filters.dateFrom) params.set("dateFrom", filters.dateFrom);
   if (filters.dateTo) params.set("dateTo", filters.dateTo);
   if (filters.sort) params.set("sort", filters.sort);
+  const businessUnit = (filters as PipelineFilters & { businessUnit?: BusinessUnit }).businessUnit;
+  if (businessUnit) params.set("business_unit", businessUnit);
   const query = params.toString();
   return query ? `?${query}` : "";
 };

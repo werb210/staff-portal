@@ -37,6 +37,8 @@ import { performLogoutCleanup } from "@/auth/logout";
 import { triggerSafeReload } from "@/utils/reloadGuard";
 import { reconnectRealtime } from "@/utils/realtime";
 import { logger } from "@/utils/logger";
+
+import { DEFAULT_BUSINESS_UNIT, type BusinessUnit } from "@/types/businessUnit";
 export type AuthStatus = "loading" | "authenticated" | "unauthenticated";
 export type AuthState = AuthStatus;
 export type RolesStatus = "loading" | "resolved";
@@ -134,6 +136,31 @@ const logAuthError = (
   logger.error(message, { ...buildAuthLogContext(user), ...extra });
 };
 
+const normalizeBusinessUnit = (value: unknown): BusinessUnit | null =>
+  value === "BF" || value === "BI" || value === "SLF" ? value : null;
+
+const normalizeAuthenticatedUser = (nextUser: AuthenticatedUser | null): AuthenticatedUser | null => {
+  if (!nextUser) return null;
+  const rawUnits = (nextUser as { businessUnits?: unknown[] }).businessUnits ?? [];
+  const units = Array.isArray(rawUnits)
+    ? rawUnits
+        .map((unit) => normalizeBusinessUnit(unit))
+        .filter((unit): unit is BusinessUnit => Boolean(unit))
+    : [];
+  const businessUnits = units.length ? units : [DEFAULT_BUSINESS_UNIT];
+  const activeBusinessUnit =
+    normalizeBusinessUnit((nextUser as { activeBusinessUnit?: unknown }).activeBusinessUnit) ??
+    normalizeBusinessUnit((nextUser as { silo?: unknown }).silo) ??
+    businessUnits[0] ??
+    DEFAULT_BUSINESS_UNIT;
+
+  return {
+    ...nextUser,
+    businessUnits,
+    activeBusinessUnit
+  };
+};
+
 const getErrorStatus = (error: unknown): number | undefined => {
   if (error && typeof error === "object" && "status" in error) {
     const status = (error as { status?: unknown }).status;
@@ -184,8 +211,9 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
   const hasHydratedSessionRef = useRef(false);
 
   const setUser = useCallback((nextUser: AuthenticatedUser | null) => {
-    setUserState(nextUser ?? null);
-    setStoredUser(nextUser ?? null);
+    const normalizedUser = normalizeAuthenticatedUser(nextUser);
+    setUserState(normalizedUser);
+    setStoredUser(normalizedUser);
   }, []);
 
   const clearAuthState = useCallback(() => {

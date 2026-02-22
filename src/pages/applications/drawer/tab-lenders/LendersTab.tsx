@@ -20,6 +20,8 @@ import { fullStaffRoles, hasRequiredRole, resolveUserRole } from "@/utils/roles"
 import { canWrite } from "@/auth/can";
 import { getSubmissionMethodBadgeTone, getSubmissionMethodLabel } from "@/utils/submissionMethods";
 import { trackPortalEvent } from "@/lib/portalTracking";
+import { useBusinessUnit } from "@/hooks/useBusinessUnit";
+import { BUSINESS_UNIT_CONFIG } from "@/config/businessUnitConfig";
 
 type MatchWithMethod = LenderMatch & {
   submissionMethod?: string | null;
@@ -35,6 +37,8 @@ type ToastState = {
 const LendersTab = () => {
   const applicationId = useApplicationDrawerStore((state) => state.selectedApplicationId);
   const { user } = useAuth();
+  const { activeBusinessUnit } = useBusinessUnit();
+  const canSendToLender = BUSINESS_UNIT_CONFIG[activeBusinessUnit].allowLenderSend;
   const queryClient = useQueryClient();
   const { data: matches = [], isLoading, error } = useQuery<LenderMatch[]>({
     queryKey: ["lenders", applicationId, "matches"],
@@ -282,7 +286,7 @@ const LendersTab = () => {
                     type="checkbox"
                     checked={selected.includes(match.id)}
                     onChange={() => toggleSelection(match.id)}
-                    disabled={Boolean(submissionByProductId[match.id]) || !canManageSubmissions}
+                    disabled={Boolean(submissionByProductId[match.id]) || !canManageSubmissions || !canSendToLender}
                   />
                   <span className="lender-row__name">{match.lenderName}</span>
                 </label>
@@ -394,12 +398,15 @@ const LendersTab = () => {
           </div>
         ) : null}
       </div>
+      {!canSendToLender ? (
+        <div className="drawer-placeholder">Lender submissions are disabled for this business unit.</div>
+      ) : null}
       <div className="drawer-footer-actions">
         <button
           className="btn btn--primary"
           type="button"
           onClick={handleSendClick}
-          disabled={!eligibleSelection.length || mutation.isPending || !canManageSubmissions}
+          disabled={!eligibleSelection.length || mutation.isPending || !canManageSubmissions || !canSendToLender}
         >
           Send to Lender
         </button>

@@ -1,4 +1,6 @@
 import { apiClient, type RequestOptions } from "./httpClient";
+import { withBusinessUnitQuery } from "@/lib/businessUnit";
+import type { BusinessUnit } from "@/types/businessUnit";
 
 export type NoteMessage = {
   id: string;
@@ -8,11 +10,17 @@ export type NoteMessage = {
   updatedAt?: string;
 };
 
-export const fetchNotesThread = (applicationId: string, options?: RequestOptions) =>
-  apiClient.get<NoteMessage[]>(`/api/portal/applications/${applicationId}/notes`, options);
+export const fetchNotesThread = (applicationId: string, businessUnit: BusinessUnit, options?: RequestOptions) =>
+  apiClient.get<NoteMessage[]>(
+    withBusinessUnitQuery(`/api/portal/applications/${applicationId}/notes`, businessUnit),
+    options
+  );
 
-export const sendNoteMessage = (applicationId: string, body: string) =>
-  apiClient.post(`/api/portal/applications/${applicationId}/notes`, { body });
+export const sendNoteMessage = (applicationId: string, body: string, businessUnit: BusinessUnit) =>
+  apiClient.post(withBusinessUnitQuery(`/api/portal/applications/${applicationId}/notes`, businessUnit), { body });
 
-export const updateNoteMessage = (applicationId: string, noteId: string, body: string) =>
-  apiClient.patch(`/api/portal/applications/${applicationId}/notes/${noteId}`, { body });
+export const updateNoteMessage = (applicationId: string, noteId: string, body: string, businessUnit: BusinessUnit) =>
+  apiClient.patch(
+    withBusinessUnitQuery(`/api/portal/applications/${applicationId}/notes/${noteId}`, businessUnit),
+    { body }
+  );
