@@ -5,7 +5,7 @@ import App from "./App";
 import "./styles/globals.css";
 import "./theme";
 import { SiloProvider } from "./context/SiloContext";
-import { AuthProvider } from "./auth/AuthContext";
+import { AuthProvider } from "./context/AuthContext";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ToastProvider } from "./context/ToastContext";
 import { validateEnv } from "./config/env";
