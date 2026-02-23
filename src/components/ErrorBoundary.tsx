@@ -1,4 +1,5 @@
 import React from "react";
+import { reportError } from "@/utils/reportError";
 
 export default class ErrorBoundary extends React.Component<
   React.PropsWithChildren,
@@ -11,6 +12,10 @@ export default class ErrorBoundary extends React.Component<
 
   static getDerivedStateFromError() {
     return { hasError: true };
+  }
+
+  componentDidCatch(error: Error) {
+    reportError(error);
   }
 
   render() {
