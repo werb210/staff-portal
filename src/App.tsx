@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import { Route, Routes } from "react-router-dom";
+import BiCommission from "./pages/BiCommission";
 
 const API = "https://api.boreal.financial";
 
@@ -152,7 +154,7 @@ function App() {
 
   /* ================= MAIN UI ================= */
 
-  return (
+  const mainPortalView = (
     <div style={styles.container}>
       <header style={styles.header}>
         <h1>Portal</h1>
@@ -238,6 +240,13 @@ function App() {
         </div>
       )}
     </div>
+  );
+
+  return (
+    <Routes>
+      <Route path="/bi/commission" element={<BiCommission />} />
+      <Route path="*" element={mainPortalView} />
+    </Routes>
   );
 }
 
