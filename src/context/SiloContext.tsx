@@ -1,5 +1,6 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import type { ReactNode } from "react";
+import { useAuth } from "./AuthContext";
 
 export type Silo = "bf" | "bi" | "slf";
 
@@ -12,6 +13,15 @@ const SiloContext = createContext<SiloContextType | undefined>(undefined);
 
 export function SiloProvider({ children }: { children: ReactNode }) {
   const [silo, setSilo] = useState<Silo>("bf");
+  const { allowedSilos, canAccessSilo } = useAuth();
+
+  useEffect(() => {
+    if (!allowedSilos.length) return;
+    if (!canAccessSilo(silo)) {
+      const nextSilo = allowedSilos[0];
+      if (nextSilo) setSilo(nextSilo);
+    }
+  }, [allowedSilos, canAccessSilo, silo]);
 
   return <SiloContext.Provider value={{ silo, setSilo }}>{children}</SiloContext.Provider>;
 }

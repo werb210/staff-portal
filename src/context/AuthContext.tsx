@@ -1,6 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
-import { jwtDecode } from "jwt-decode";
 
 export type Role = "admin" | "staff";
 export type AppSilo = "bf" | "bi" | "slf";
@@ -8,14 +7,15 @@ export type AppSilo = "bf" | "bi" | "slf";
 type DecodedToken = {
   role?: Role;
   exp?: number;
+  allowedSilos?: AppSilo[];
 };
 
-function isExpired(token: string) {
+function decodePortalToken(token: string): DecodedToken | null {
   try {
-    const decoded = jwtDecode<DecodedToken>(token);
-    return !decoded.exp || decoded.exp * 1000 < Date.now();
+    const [, payload] = token.split(".");
+    return JSON.parse(atob(payload || "")) as DecodedToken;
   } catch {
-    return true;
+    return null;
   }
 }
 
@@ -45,6 +45,7 @@ const AuthContext = createContext<AuthContextType>({
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(() => localStorage.getItem("portal_token"));
   const [role, setRole] = useState<Role | null>(null);
+  const [tokenAllowedSilos, setTokenAllowedSilos] = useState<AppSilo[]>([]);
 
   useEffect(() => {
     if (!token) {
@@ -52,18 +53,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    if (isExpired(token)) {
+    const decoded = decodePortalToken(token);
+    if (!decoded) {
       logout();
       return;
     }
 
-    try {
-      const [, payload] = token.split(".");
-      const decoded = JSON.parse(atob(payload || "")) as DecodedToken;
-      setRole(decoded.role ?? null);
-    } catch {
-      setRole(null);
+    if (!decoded.exp || decoded.exp * 1000 < Date.now()) {
+      logout();
+      return;
     }
+
+    if (!decoded.role) {
+      logout();
+      return;
+    }
+
+    setRole(decoded.role);
+    setTokenAllowedSilos(decoded.allowedSilos?.length ? decoded.allowedSilos : allowedSilos[decoded.role]);
   }, [token]);
 
   function login(t: string) {
@@ -75,14 +82,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem("portal_token");
     setToken(null);
     setRole(null);
+    setTokenAllowedSilos([]);
   }
 
   const canAccessSilo = (silo: AppSilo) => {
-    if (!role) return false;
-    return allowedSilos[role].includes(silo);
+    return tokenAllowedSilos.includes(silo);
   };
 
-  const roleAllowedSilos = useMemo(() => (role ? allowedSilos[role] : []), [role]);
+  const roleAllowedSilos = useMemo(() => tokenAllowedSilos, [tokenAllowedSilos]);
 
   return (
     <AuthContext.Provider value={{ role, token, login, logout, canAccessSilo, allowedSilos: roleAllowedSilos }}>

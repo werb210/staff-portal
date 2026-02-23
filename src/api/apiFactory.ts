@@ -19,9 +19,16 @@ export function createApi(silo: ApiSilo, token: string) {
   });
 
   instance.interceptors.request.use((config) => {
+    config.headers = config.headers ?? {};
     if (token) config.headers.Authorization = `Bearer ${token}`;
+    config.headers["x-silo"] = silo;
     return config;
   });
+
+  const logout = () => {
+    localStorage.removeItem("portal_token");
+    window.location.href = "/login";
+  };
 
   instance.interceptors.response.use(
     (res) => res,
@@ -31,7 +38,8 @@ export function createApi(silo: ApiSilo, token: string) {
 
       if (status === 401 && !config._retry) {
         config._retry = true;
-        // future refresh endpoint here
+        // future: call /refresh endpoint
+        logout();
       }
 
       if (status === 403) {
@@ -39,8 +47,7 @@ export function createApi(silo: ApiSilo, token: string) {
       }
 
       if (status === 401) {
-        localStorage.removeItem("portal_token");
-        window.location.href = "/login";
+        logout();
       }
 
       return Promise.reject(err);
