@@ -1,15 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSilo } from "../../context/SiloContext";
-import { createApi } from "../../api/client";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-  ResponsiveContainer
-} from "recharts";
+import { createApi } from "../../api/apiFactory";
+import { useAuth } from "../../context/AuthContext";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer } from "recharts";
 
 interface CommissionDatum {
   name: string;
@@ -23,15 +16,16 @@ interface CommissionResponse {
 
 export default function BICommissionDashboard() {
   const { silo } = useSilo();
-  const api = createApi(silo);
+  const { token } = useAuth();
+  const api = useMemo(() => createApi(silo, token ?? ""), [silo, token]);
 
   const [data, setData] = useState<CommissionDatum[]>([]);
 
   useEffect(() => {
     async function load() {
-      const res = await api.get<CommissionResponse[]>("/admin/commissions");
+      const { data } = await api.get<CommissionResponse[]>("/admin/commissions");
 
-      const grouped = res.data.map((c) => ({
+      const grouped = data.map((c) => ({
         name: c.application_id.slice(0, 6),
         commission: Number(c.commission_amount || 0)
       }));

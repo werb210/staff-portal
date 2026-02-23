@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSilo } from "../../context/SiloContext";
 import { useAuth } from "../../context/AuthContext";
-import { createApi } from "../../api/client";
+import { createApi } from "../../api/apiFactory";
 
 type UnderwritingApplication = {
   id: string;
@@ -12,7 +12,7 @@ export default function BIUnderwriting() {
   const { silo } = useSilo();
   const { token } = useAuth();
 
-  const api = useMemo(() => createApi(silo, token || undefined), [silo, token]);
+  const api = useMemo(() => createApi(silo, token ?? ""), [silo, token]);
   const [apps, setApps] = useState<UnderwritingApplication[]>([]);
 
   useEffect(() => {

@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSilo } from "../../context/SiloContext";
-import { createApi } from "../../api/client";
+import { createApi } from "../../api/apiFactory";
+import { useAuth } from "../../context/AuthContext";
 
 export default function BIDashboard() {
   const { silo } = useSilo();
-  const api = useMemo(() => createApi(silo), [silo]);
+  const { token } = useAuth();
+  const api = useMemo(() => createApi(silo, token ?? ""), [silo, token]);
 
   const [applications, setApplications] = useState([]);
   const [commissions, setCommissions] = useState([]);
@@ -12,10 +14,10 @@ export default function BIDashboard() {
   useEffect(() => {
     async function load() {
       const apps = await api.get("/admin/applications");
-      const comm = await api.get("/admin/commissions");
+      const { data } = await api.get("/admin/commissions");
 
       setApplications(apps.data);
-      setCommissions(comm.data);
+      setCommissions(data);
     }
     void load();
   }, [api]);

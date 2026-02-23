@@ -1,24 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSilo } from "../../context/SiloContext";
 import { useAuth } from "../../context/AuthContext";
-import { createApi } from "../../api/client";
-
-interface Deal {
-  id: string;
-  status: "received" | "processing" | "completed" | string;
-  external_id: string;
-  product_family: string;
-}
+import { createApi } from "../../api/apiFactory";
+import type { SLFDeal } from "../../types/slf";
 
 export default function SLFPipeline() {
   const { silo } = useSilo();
   const { token } = useAuth();
-  const api = useMemo(() => createApi(silo, token || undefined), [silo, token]);
+  const api = useMemo(() => createApi(silo, token ?? ""), [silo, token]);
 
-  const [deals, setDeals] = useState<Deal[]>([]);
+  const [deals, setDeals] = useState<SLFDeal[]>([]);
 
   async function loadDeals() {
-    const res = await api.get<Deal[]>("/deals");
+    const res = await api.get<SLFDeal[]>("/deals");
     setDeals(res.data);
   }
 
@@ -26,12 +20,12 @@ export default function SLFPipeline() {
     void loadDeals();
   }, [api]);
 
-  async function updateStatus(id: string, status: string) {
+  async function updateStatus(id: string, status: SLFDeal["status"]) {
     await api.patch(`/slf/deals/${id}/status`, { status });
     await loadDeals();
   }
 
-  const columns = ["received", "processing", "completed"] as const;
+  const columns: SLFDeal["status"][] = ["received", "processing", "completed"];
 
   return (
     <div style={{ display: "flex", gap: 20 }}>

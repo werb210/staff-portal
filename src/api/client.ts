@@ -2,26 +2,7 @@ import axios from "axios";
 import * as authStorage from "@/lib/authStorage";
 import { showApiToast } from "@/state/apiNotifications";
 
-export function getApiBase(silo: string) {
-  if (silo === "BI") return "https://api.boreal.financial/bi";
-  if (silo === "SLF") return "https://api.boreal.financial/slf";
-  return "https://api.boreal.financial/bf";
-}
-
-export function createApi(silo: string, token?: string) {
-  const instance = axios.create({
-    baseURL: getApiBase(silo)
-  });
-
-  instance.interceptors.request.use((config) => {
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  });
-
-  return instance;
-}
+export { createApi } from "./apiFactory";
 
 const baseURL = import.meta.env.VITE_API_BASE_URL;
 

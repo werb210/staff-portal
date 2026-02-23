@@ -1,5 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
+import { BrowserRouter } from "react-router-dom";
 export { trackPortalEvent } from "./lib/portalTracking";
 import App from "./App";
 import "./styles/globals.css";
@@ -62,14 +63,16 @@ if (import.meta.env.PROD && "serviceWorker" in navigator) {
 
 ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
-    <AuthProvider>
-      <SiloProvider>
+    <BrowserRouter>
+      <AuthProvider>
+        <SiloProvider>
         <ErrorBoundary>
           <ToastProvider>
             <App />
           </ToastProvider>
         </ErrorBoundary>
       </SiloProvider>
-    </AuthProvider>
+      </AuthProvider>
+    </BrowserRouter>
   </React.StrictMode>
 );
