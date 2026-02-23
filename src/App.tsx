@@ -3,14 +3,13 @@ import {
   Routes,
   Route,
   Link,
-  Navigate
+  Navigate,
+  useNavigate
 } from "react-router-dom";
 import { useEffect, useState } from "react";
 
 const BI_API = "https://api.boreal.financial/bi";
 const SLF_API = "https://api.boreal.financial/slf";
-
-/* ================= AUTH ================= */
 
 const getToken = () => localStorage.getItem("portal_token");
 const getRole = () => localStorage.getItem("portal_role");
@@ -24,6 +23,7 @@ function Protected({ children }: any) {
 
 function Nav() {
   const role = getRole();
+  const navigate = useNavigate();
 
   return (
     <div className="nav">
@@ -32,12 +32,21 @@ function Nav() {
         <Link to="/">Dashboard</Link>
 
         {(role === "admin" || role === "staff") && (
-          <Link to="/bi">BI Silo</Link>
+          <Link to="/bi">BI</Link>
         )}
 
         {role === "admin" && (
-          <Link to="/slf">SLF Silo</Link>
+          <Link to="/slf">SLF</Link>
         )}
+
+        <button
+          onClick={() => {
+            localStorage.clear();
+            navigate("/login");
+          }}
+        >
+          Logout
+        </button>
       </div>
     </div>
   );
@@ -46,12 +55,18 @@ function Nav() {
 /* ================= LOGIN ================= */
 
 function Login() {
+  const navigate = useNavigate();
+  const [email, setEmail] = useState("");
   const [role, setRole] = useState("staff");
 
-  const login = () => {
-    localStorage.setItem("portal_token", "demo");
+  const login = async () => {
+    // This should call your real auth server
+    const token = "portal-demo-token";
+
+    localStorage.setItem("portal_token", token);
     localStorage.setItem("portal_role", role);
-    window.location.href = "/";
+
+    navigate("/");
   };
 
   return (
@@ -63,6 +78,11 @@ function Login() {
         <option value="admin">Admin</option>
       </select>
 
+      <input
+        placeholder="Email"
+        onChange={(e) => setEmail(e.target.value)}
+      />
+
       <button onClick={login}>Login</button>
     </div>
   );
@@ -71,10 +91,12 @@ function Login() {
 /* ================= DASHBOARD ================= */
 
 function Dashboard() {
+  const role = getRole();
+
   return (
     <div className="container">
       <h1>Portal Dashboard</h1>
-      <p>Select a silo.</p>
+      <p>Logged in as: {role}</p>
     </div>
   );
 }
@@ -82,39 +104,25 @@ function Dashboard() {
 /* ================= BI SILO ================= */
 
 function BISilo() {
-  const [policies, setPolicies] = useState<any[]>([]);
-  const [totals, setTotals] = useState({
-    premium: 0,
-    commission: 0
-  });
+  const [summary, setSummary] = useState<any>({});
+  const [referrers, setReferrers] = useState<any[]>([]);
 
   useEffect(() => {
-    fetch(`${BI_API}/policies`, {
+    fetch(`${BI_API}/reports/summary`, {
       headers: {
         Authorization: `Bearer ${getToken()}`
       }
     })
       .then((r) => r.json())
-      .then((data) => {
-        setPolicies(data);
+      .then(setSummary);
 
-        const totalPremium = data.reduce(
-          (sum: number, p: any) =>
-            sum + parseFloat(p.annual_premium || 0),
-          0
-        );
-
-        const totalCommission = data.reduce(
-          (sum: number, p: any) =>
-            sum + parseFloat(p.commission || 0),
-          0
-        );
-
-        setTotals({
-          premium: totalPremium,
-          commission: totalCommission
-        });
-      });
+    fetch(`${BI_API}/reports/referrers`, {
+      headers: {
+        Authorization: `Bearer ${getToken()}`
+      }
+    })
+      .then((r) => r.json())
+      .then(setReferrers);
   }, []);
 
   return (
@@ -123,32 +131,35 @@ function BISilo() {
 
       <div className="stats">
         <div>
-          <strong>Total Written Premium</strong>
-          <p>${totals.premium.toLocaleString()}</p>
+          <strong>Total Premium</strong>
+          <p>
+            ${parseFloat(summary.total_premium || 0).toLocaleString()}
+          </p>
         </div>
-
         <div>
-          <strong>Total Commission (10%)</strong>
-          <p>${totals.commission.toLocaleString()}</p>
+          <strong>Total Commission</strong>
+          <p>
+            ${parseFloat(summary.total_commission || 0).toLocaleString()}
+          </p>
         </div>
       </div>
+
+      <h3>Referrers</h3>
 
       <table>
         <thead>
           <tr>
-            <th>Policy</th>
-            <th>Premium</th>
-            <th>Commission</th>
-            <th>Start</th>
+            <th>Email</th>
+            <th>Total</th>
+            <th>Unpaid</th>
           </tr>
         </thead>
         <tbody>
-          {policies.map((p) => (
-            <tr key={p.id}>
-              <td>{p.policy_number}</td>
-              <td>${p.annual_premium}</td>
-              <td>${p.commission}</td>
-              <td>{p.start_date}</td>
+          {referrers.map((r) => (
+            <tr key={r.referrer_email}>
+              <td>{r.referrer_email}</td>
+              <td>${r.total_commission}</td>
+              <td>${r.unpaid}</td>
             </tr>
           ))}
         </tbody>
@@ -174,12 +185,12 @@ function SLFSilo() {
 
   return (
     <div className="container">
-      <h1>SLF Silo</h1>
+      <h1>SLF Pipeline</h1>
 
       <table>
         <thead>
           <tr>
-            <th>Deal ID</th>
+            <th>ID</th>
             <th>Company</th>
             <th>Status</th>
             <th>Amount</th>
@@ -227,9 +238,13 @@ export default function App() {
         <Route
           path="/slf"
           element={
-            <Protected>
-              <SLFSilo />
-            </Protected>
+            getRole() === "admin" ? (
+              <Protected>
+                <SLFSilo />
+              </Protected>
+            ) : (
+              <Navigate to="/" />
+            )
           }
         />
       </Routes>
