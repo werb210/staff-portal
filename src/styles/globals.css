@@ -2937,3 +2937,19 @@ a,
   padding: 10px;
   color: #334155;
 }
+
+.summary-box {
+  display: flex;
+  gap: 40px;
+  margin-bottom: 30px;
+  padding: 20px;
+  background: #0c1b2e;
+  border-radius: 6px;
+}
+
+.detail-panel {
+  margin-top: 40px;
+  padding: 20px;
+  background: #0c1b2e;
+  border-radius: 6px;
+}
