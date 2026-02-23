@@ -1,11 +1,16 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
-import { jwtDecode } from "jwt-decode";
 
 export type Role = "admin" | "staff";
+export type AppSilo = "bf" | "bi" | "slf";
 
 type DecodedToken = {
   role?: Role;
+};
+
+const allowedSilos: Record<Role, AppSilo[]> = {
+  admin: ["bf", "bi", "slf"],
+  staff: ["bf", "bi"]
 };
 
 interface AuthContextType {
@@ -13,13 +18,17 @@ interface AuthContextType {
   token: string | null;
   login: (t: string) => void;
   logout: () => void;
+  canAccessSilo: (silo: AppSilo) => boolean;
+  allowedSilos: AppSilo[];
 }
 
 const AuthContext = createContext<AuthContextType>({
   role: null,
   token: null,
   login: () => {},
-  logout: () => {}
+  logout: () => {},
+  canAccessSilo: () => false,
+  allowedSilos: []
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -33,7 +42,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const decoded = jwtDecode<DecodedToken>(token);
+      const [, payload] = token.split(".");
+      const decoded = JSON.parse(atob(payload || "")) as DecodedToken;
       setRole(decoded.role ?? null);
     } catch {
       setRole(null);
@@ -51,7 +61,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setRole(null);
   }
 
-  return <AuthContext.Provider value={{ role, token, login, logout }}>{children}</AuthContext.Provider>;
+  const canAccessSilo = (silo: AppSilo) => {
+    if (!role) return false;
+    return allowedSilos[role].includes(silo);
+  };
+
+  const roleAllowedSilos = useMemo(() => (role ? allowedSilos[role] : []), [role]);
+
+  return (
+    <AuthContext.Provider value={{ role, token, login, logout, canAccessSilo, allowedSilos: roleAllowedSilos }}>
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
 export function useAuth() {

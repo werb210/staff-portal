@@ -1,7 +1,7 @@
 import { createContext, useContext, useState } from "react";
 import type { ReactNode } from "react";
 
-type Silo = "BF" | "BI" | "SLF";
+export type Silo = "bf" | "bi" | "slf";
 
 interface SiloContextType {
   silo: Silo;
@@ -11,7 +11,7 @@ interface SiloContextType {
 const SiloContext = createContext<SiloContextType | undefined>(undefined);
 
 export function SiloProvider({ children }: { children: ReactNode }) {
-  const [silo, setSilo] = useState<Silo>("BF");
+  const [silo, setSilo] = useState<Silo>("bf");
 
   return <SiloContext.Provider value={{ silo, setSilo }}>{children}</SiloContext.Provider>;
 }
@@ -23,4 +23,4 @@ export function useSilo() {
 }
 
 export default SiloContext;
-export type { Silo, SiloContextType };
+export type { SiloContextType };

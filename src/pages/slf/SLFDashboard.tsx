@@ -1,16 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSilo } from "../../context/SiloContext";
-import { createApi } from "../../api/client";
+import { createApi } from "../../api/apiFactory";
+import { useAuth } from "../../context/AuthContext";
+import type { SLFDeal } from "../../types/slf";
 
 export default function SLFDashboard() {
   const { silo } = useSilo();
-  const api = useMemo(() => createApi(silo), [silo]);
+  const { token } = useAuth();
+  const api = useMemo(() => createApi(silo, token ?? ""), [silo, token]);
 
-  const [deals, setDeals] = useState([]);
+  const [deals, setDeals] = useState<SLFDeal[]>([]);
 
   useEffect(() => {
     async function load() {
-      const res = await api.get("/deals");
+      const res = await api.get<SLFDeal[]>("/deals");
       setDeals(res.data);
     }
     void load();
