@@ -1,37 +1,31 @@
 import { createContext, useContext, useState, type PropsWithChildren } from "react";
+import Toast from "../components/Toast";
+
+type ToastVariant = "success" | "error";
 
 type ToastContextValue = {
-  showToast: (message: string) => void;
+  showToast: (message: string, variant?: ToastVariant) => void;
+  showSuccess: (message: string) => void;
+  showError: (message: string) => void;
 };
 
 const ToastContext = createContext<ToastContextValue | null>(null);
 
 export function ToastProvider({ children }: PropsWithChildren) {
-  const [message, setMessage] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; variant: ToastVariant } | null>(null);
 
-  const showToast = (msg: string) => {
-    setMessage(msg);
-    setTimeout(() => setMessage(null), 4000);
+  const showToast = (message: string, variant: ToastVariant = "success") => {
+    setToast({ message, variant });
+    setTimeout(() => setToast(null), 4000);
   };
 
+  const showSuccess = (message: string) => showToast(message, "success");
+  const showError = (message: string) => showToast(message, "error");
+
   return (
-    <ToastContext.Provider value={{ showToast }}>
+    <ToastContext.Provider value={{ showToast, showSuccess, showError }}>
       {children}
-      {message && (
-        <div
-          style={{
-            position: "fixed",
-            bottom: 20,
-            right: 20,
-            background: "#111",
-            color: "#fff",
-            padding: "10px 15px",
-            borderRadius: 8
-          }}
-        >
-          {message}
-        </div>
-      )}
+      {toast ? <Toast message={toast.message} variant={toast.variant} /> : null}
     </ToastContext.Provider>
   );
 }
