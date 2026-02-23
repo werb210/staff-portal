@@ -11,6 +11,8 @@ import CommissionDetail from "./pages/CommissionDetail";
 import AdminActivity from "./pages/AdminActivity";
 import { useSilo } from "./context/SiloContext";
 import type { Silo } from "./context/SiloContext";
+import { useAuth } from "./context/AuthContext";
+import AccessRestricted from "./components/auth/AccessRestricted";
 
 const siloPaths: Record<Silo, string> = {
   bf: "/bf",
@@ -21,19 +23,28 @@ const siloPaths: Record<Silo, string> = {
 function SiloSync() {
   const location = useLocation();
   const { setSilo } = useSilo();
+  const { canAccessSilo } = useAuth();
 
   useEffect(() => {
     const firstSegment = location.pathname.split("/")[1];
-    if (firstSegment === "bf" || firstSegment === "bi" || firstSegment === "slf") {
+    if ((firstSegment === "bf" || firstSegment === "bi" || firstSegment === "slf") && canAccessSilo(firstSegment)) {
       setSilo(firstSegment);
     }
-  }, [location.pathname, setSilo]);
+  }, [location.pathname, setSilo, canAccessSilo]);
 
   return null;
 }
 
 export default function App() {
   const { silo } = useSilo();
+  const location = useLocation();
+  const { canAccessSilo } = useAuth();
+  const requestedSilo = location.pathname.split("/")[1];
+  const isSiloPath = requestedSilo === "bf" || requestedSilo === "bi" || requestedSilo === "slf";
+
+  if (isSiloPath && !canAccessSilo(requestedSilo)) {
+    return <AccessRestricted message="You cannot access this silo." />;
+  }
 
   return (
     <>
