@@ -1,5 +1,7 @@
 import axios from "axios";
+import { reportError } from "@/utils/reportError";
 import { showToast } from "../utils/toastEvents";
+import { generateRequestId } from "./requestId";
 
 export type ApiSilo = "bf" | "bi" | "slf";
 
@@ -19,7 +21,11 @@ export function createApi(silo: ApiSilo, token: string) {
   });
 
   instance.interceptors.request.use((config) => {
+    const requestId = generateRequestId();
+
     config.headers = config.headers ?? {};
+    config.headers["x-request-id"] = requestId;
+
     if (token) config.headers.Authorization = `Bearer ${token}`;
     config.headers["x-silo"] = silo;
     return config;
@@ -33,6 +39,7 @@ export function createApi(silo: ApiSilo, token: string) {
   instance.interceptors.response.use(
     (res) => res,
     (err) => {
+      reportError(err);
       const status = err.response?.status;
       const config = (err.config ?? {}) as RetryableRequestConfig;
 
