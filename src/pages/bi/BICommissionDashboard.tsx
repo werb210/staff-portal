@@ -1,12 +1,16 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { useSilo } from "../../context/SiloContext";
 import { createApi } from "../../api/apiFactory";
 import { useAuth } from "../../context/AuthContext";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer } from "recharts";
+import { usePolling } from "../../hooks/usePolling";
+import Skeleton from "../../components/Skeleton";
 
 interface CommissionDatum {
   name: string;
   commission: number;
+  policyId: string;
 }
 
 interface CommissionResponse {
@@ -20,21 +24,37 @@ export default function BICommissionDashboard() {
   const api = useMemo(() => createApi(silo, token ?? ""), [silo, token]);
 
   const [data, setData] = useState<CommissionDatum[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    const response = await api.get<CommissionResponse[]>("/admin/commissions");
+
+    const grouped = response.data.map((c) => ({
+      name: c.application_id.slice(0, 6),
+      commission: Number(c.commission_amount || 0),
+      policyId: c.application_id
+    }));
+
+    setData(grouped);
+    setIsLoading(false);
+  }, [api]);
 
   useEffect(() => {
-    async function load() {
-      const { data } = await api.get<CommissionResponse[]>("/admin/commissions");
-
-      const grouped = data.map((c) => ({
-        name: c.application_id.slice(0, 6),
-        commission: Number(c.commission_amount || 0)
-      }));
-
-      setData(grouped);
-    }
-
     void load();
-  }, [api]);
+  }, [load]);
+
+  usePolling(() => {
+    void load();
+  });
+
+  if (isLoading) {
+    return (
+      <div style={{ width: "100%", height: 400 }}>
+        <h2>Recurring Commission Overview</h2>
+        <Skeleton height={320} />
+      </div>
+    );
+  }
 
   return (
     <div style={{ width: "100%", height: 400 }}>
@@ -48,6 +68,16 @@ export default function BICommissionDashboard() {
           <Bar dataKey="commission" fill="#00bcd4" />
         </BarChart>
       </ResponsiveContainer>
+      <div style={{ marginTop: 12 }}>
+        <h3>Policies</h3>
+        <ul>
+          {data.map((item) => (
+            <li key={item.policyId}>
+              <Link to={`/bi/commissions/${item.policyId}`}>{item.policyId}</Link>
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }

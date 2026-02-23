@@ -7,6 +7,8 @@ import SLFPipeline from "./pages/slf/SLFPipeline";
 import BFDashboard from "./pages/bf/BFDashboard";
 import GlobalAdmin from "./pages/GlobalAdmin";
 import AuditLogs from "./pages/AuditLogs";
+import CommissionDetail from "./pages/CommissionDetail";
+import AdminActivity from "./pages/AdminActivity";
 import { useSilo } from "./context/SiloContext";
 import type { Silo } from "./context/SiloContext";
 
@@ -66,10 +68,26 @@ export default function App() {
           }
         />
         <Route
+          path="/bi/commissions/:policyId"
+          element={
+            <ProtectedRoute>
+              <CommissionDetail />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/admin/global"
           element={
             <ProtectedRoute requiredRole="admin">
               <GlobalAdmin />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/activity"
+          element={
+            <ProtectedRoute requiredRole="admin">
+              <AdminActivity />
             </ProtectedRoute>
           }
         />

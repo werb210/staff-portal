@@ -1,4 +1,5 @@
 import axios from "axios";
+import { showToast } from "../utils/toastEvents";
 
 export type ApiSilo = "bf" | "bi" | "slf";
 
@@ -30,7 +31,11 @@ export function createApi(silo: ApiSilo, token: string) {
 
       if (status === 401 && !config._retry) {
         config._retry = true;
-        // future refresh logic hook
+        // future refresh endpoint here
+      }
+
+      if (status === 403) {
+        showToast("Access denied", "error");
       }
 
       if (status === 401) {
