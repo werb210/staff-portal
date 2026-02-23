@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSilo } from "../../context/SiloContext";
+import { useAuth } from "../../context/AuthContext";
 import { createApi } from "../../api/client";
 
 interface Deal {
@@ -11,18 +12,24 @@ interface Deal {
 
 export default function SLFPipeline() {
   const { silo } = useSilo();
-  const api = createApi(silo);
+  const { token } = useAuth();
+  const api = useMemo(() => createApi(silo, token || undefined), [silo, token]);
 
   const [deals, setDeals] = useState<Deal[]>([]);
 
-  useEffect(() => {
-    async function load() {
-      const res = await api.get<Deal[]>("/deals");
-      setDeals(res.data);
-    }
+  async function loadDeals() {
+    const res = await api.get<Deal[]>("/deals");
+    setDeals(res.data);
+  }
 
-    void load();
+  useEffect(() => {
+    void loadDeals();
   }, [api]);
+
+  async function updateStatus(id: string, status: string) {
+    await api.patch(`/slf/deals/${id}/status`, { status });
+    await loadDeals();
+  }
 
   const columns = ["received", "processing", "completed"] as const;
 
@@ -45,6 +52,8 @@ export default function SLFPipeline() {
               >
                 <strong>{deal.external_id}</strong>
                 <div>{deal.product_family}</div>
+                <button onClick={() => updateStatus(deal.id, "processing")}>Move to Processing</button>
+                <button onClick={() => updateStatus(deal.id, "completed")}>Complete</button>
               </div>
             ))}
         </div>

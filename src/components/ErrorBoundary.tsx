@@ -1,37 +1,23 @@
-import { Component, type ErrorInfo, type ReactNode } from "react";
-import { getRequestId } from "@/utils/requestId";
-import { logger } from "@/utils/logger";
+import React from "react";
 
-type ErrorBoundaryState = {
-  hasError: boolean;
-};
-
-export class ErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryState> {
-  state: ErrorBoundaryState = { hasError: false };
+export default class ErrorBoundary extends React.Component<
+  React.PropsWithChildren,
+  { hasError: boolean }
+> {
+  constructor(props: React.PropsWithChildren) {
+    super(props);
+    this.state = { hasError: false };
+  }
 
   static getDerivedStateFromError() {
     return { hasError: true };
   }
 
-  componentDidCatch(error: Error, info: ErrorInfo) {
-    logger.error("UI render failure", {
-      requestId: getRequestId(),
-      error,
-      componentStack: info.componentStack
-    });
-  }
-
   render() {
     if (this.state.hasError) {
-      return (
-        <div className="error-panel" role="alert">
-          <p>Unexpected error. Please refresh.</p>
-        </div>
-      );
+      return <h2>Something went wrong.</h2>;
     }
 
     return this.props.children;
   }
 }
-
-export default ErrorBoundary;

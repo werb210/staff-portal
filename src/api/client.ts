@@ -8,10 +8,19 @@ export function getApiBase(silo: string) {
   return "https://api.boreal.financial/bf";
 }
 
-export function createApi(silo: string) {
-  return axios.create({
+export function createApi(silo: string, token?: string) {
+  const instance = axios.create({
     baseURL: getApiBase(silo)
   });
+
+  instance.interceptors.request.use((config) => {
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  });
+
+  return instance;
 }
 
 const baseURL = import.meta.env.VITE_API_BASE_URL;
