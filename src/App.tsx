@@ -1,253 +1,186 @@
-import {
-  BrowserRouter,
-  Routes,
-  Route,
-  Link,
-  Navigate,
-  useNavigate
-} from "react-router-dom";
-import { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
-const BI_API = "https://api.boreal.financial/bi";
-const SLF_API = "https://api.boreal.financial/slf";
+type Role = "admin" | "staff";
+type Silo = "BF" | "BI" | "SLF";
 
-const getToken = () => localStorage.getItem("portal_token");
-const getRole = () => localStorage.getItem("portal_role");
+type User = {
+  role: Role;
+  token: string;
+};
 
-function Protected({ children }: any) {
-  if (!getToken()) return <Navigate to="/login" />;
-  return children;
-}
+type BISummary = {
+  total_premium?: number;
+  total_commission?: number;
+};
 
-/* ================= NAV ================= */
+type SLFDeal = {
+  id: string | number;
+  company_name: string;
+  amount: number;
+  status: string;
+};
 
-function Nav() {
-  const role = getRole();
-  const navigate = useNavigate();
+function App() {
+  const [user, setUser] = useState<User | null>(null);
+  const [silo, setSilo] = useState<Silo>("BF");
+  const [data, setData] = useState<BISummary | SLFDeal[] | null>(null);
+
+  /* ================= LOGIN ================= */
+
+  async function login(email: string, password: string) {
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password })
+    });
+
+    const json = await res.json();
+    const nextUser: User = { role: json.role, token: json.token };
+    localStorage.setItem("portal_jwt", nextUser.token);
+    localStorage.setItem("portal_role", nextUser.role);
+    setUser(nextUser);
+  }
+
+  function logout() {
+    localStorage.removeItem("portal_jwt");
+    localStorage.removeItem("portal_role");
+    setData(null);
+    setSilo("BF");
+    setUser(null);
+  }
+
+  useEffect(() => {
+    const token = localStorage.getItem("portal_jwt");
+    const role = localStorage.getItem("portal_role") as Role | null;
+
+    if (token && (role === "admin" || role === "staff")) {
+      setUser({ role, token });
+    }
+  }, []);
+
+  /* ================= SILO ACCESS ================= */
+
+  const allowedSilos: Silo[] = useMemo(
+    () => (user?.role === "admin" ? ["BF", "BI", "SLF"] : ["BF", "BI"]),
+    [user?.role]
+  );
+
+  useEffect(() => {
+    if (!user) return;
+
+    if (!allowedSilos.includes(silo)) {
+      setSilo("BF");
+      return;
+    }
+
+    if (silo === "BF") {
+      setData(null);
+      return;
+    }
+
+    if (silo === "BI") {
+      fetch("/api/bi/reports/summary", {
+        headers: { Authorization: `Bearer ${user.token}` }
+      })
+        .then((res) => res.json())
+        .then((json) => setData(json));
+    }
+
+    if (silo === "SLF") {
+      fetch("/api/slf/deals", {
+        headers: { Authorization: `Bearer ${user.token}` }
+      })
+        .then((res) => res.json())
+        .then((json) => setData(json));
+    }
+  }, [allowedSilos, silo, user]);
+
+  /* ================= LOGIN SCREEN ================= */
+
+  if (!user) {
+    return (
+      <div style={{ padding: 40 }}>
+        <h2>Portal Login</h2>
+        <button onClick={() => login("admin@test.com", "password")}>Login (Demo)</button>
+      </div>
+    );
+  }
+
+  /* ================= UI ================= */
 
   return (
-    <div className="nav">
-      <h2>Boreal Portal</h2>
-      <div>
-        <Link to="/">Dashboard</Link>
+    <div style={{ padding: 40 }}>
+      <h1>Portal</h1>
 
-        {(role === "admin" || role === "staff") && (
-          <Link to="/bi">BI</Link>
-        )}
+      <div style={{ marginBottom: 20, display: "flex", alignItems: "center" }}>
+        {allowedSilos.map((s) => (
+          <button
+            key={s}
+            onClick={() => setSilo(s)}
+            style={{
+              marginRight: 10,
+              background: silo === s ? "#000" : "#ccc",
+              color: silo === s ? "#fff" : "#000"
+            }}
+          >
+            {s}
+          </button>
+        ))}
 
-        {role === "admin" && (
-          <Link to="/slf">SLF</Link>
-        )}
-
-        <button
-          onClick={() => {
-            localStorage.clear();
-            navigate("/login");
-          }}
-        >
+        <button onClick={logout} style={{ marginLeft: 10 }}>
           Logout
         </button>
       </div>
-    </div>
-  );
-}
 
-/* ================= LOGIN ================= */
-
-function Login() {
-  const navigate = useNavigate();
-  const [email, setEmail] = useState("");
-  const [role, setRole] = useState("staff");
-
-  const login = async () => {
-    // This should call your real auth server
-    const token = "portal-demo-token";
-
-    localStorage.setItem("portal_token", token);
-    localStorage.setItem("portal_role", role);
-
-    navigate("/");
-  };
-
-  return (
-    <div className="container">
-      <h1>Portal Login</h1>
-
-      <select onChange={(e) => setRole(e.target.value)}>
-        <option value="staff">Staff</option>
-        <option value="admin">Admin</option>
-      </select>
-
-      <input
-        placeholder="Email"
-        onChange={(e) => setEmail(e.target.value)}
-      />
-
-      <button onClick={login}>Login</button>
-    </div>
-  );
-}
-
-/* ================= DASHBOARD ================= */
-
-function Dashboard() {
-  const role = getRole();
-
-  return (
-    <div className="container">
-      <h1>Portal Dashboard</h1>
-      <p>Logged in as: {role}</p>
-    </div>
-  );
-}
-
-/* ================= BI SILO ================= */
-
-function BISilo() {
-  const [summary, setSummary] = useState<any>({});
-  const [referrers, setReferrers] = useState<any[]>([]);
-
-  useEffect(() => {
-    fetch(`${BI_API}/reports/summary`, {
-      headers: {
-        Authorization: `Bearer ${getToken()}`
-      }
-    })
-      .then((r) => r.json())
-      .then(setSummary);
-
-    fetch(`${BI_API}/reports/referrers`, {
-      headers: {
-        Authorization: `Bearer ${getToken()}`
-      }
-    })
-      .then((r) => r.json())
-      .then(setReferrers);
-  }, []);
-
-  return (
-    <div className="container">
-      <h1>BI Silo</h1>
-
-      <div className="stats">
+      {silo === "BF" && (
         <div>
-          <strong>Total Premium</strong>
-          <p>
-            ${parseFloat(summary.total_premium || 0).toLocaleString()}
-          </p>
+          <h2>Boreal Financial</h2>
+          <p>Existing BF dashboard remains here.</p>
         </div>
+      )}
+
+      {silo === "BI" && data && !Array.isArray(data) && (
         <div>
-          <strong>Total Commission</strong>
-          <p>
-            ${parseFloat(summary.total_commission || 0).toLocaleString()}
-          </p>
+          <h2>Boreal Insurance</h2>
+
+          <div style={{ marginTop: 20 }}>
+            <h3>Total Premium</h3>
+            <p>${Number(data.total_premium || 0).toLocaleString()}</p>
+
+            <h3>Total Commission (10%)</h3>
+            <p>${Number(data.total_commission || 0).toLocaleString()}</p>
+          </div>
         </div>
-      </div>
+      )}
 
-      <h3>Referrers</h3>
+      {silo === "SLF" && data && Array.isArray(data) && (
+        <div>
+          <h2>SLF Pipeline</h2>
 
-      <table>
-        <thead>
-          <tr>
-            <th>Email</th>
-            <th>Total</th>
-            <th>Unpaid</th>
-          </tr>
-        </thead>
-        <tbody>
-          {referrers.map((r) => (
-            <tr key={r.referrer_email}>
-              <td>{r.referrer_email}</td>
-              <td>${r.total_commission}</td>
-              <td>${r.unpaid}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+          <table border={1} cellPadding={10}>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Company</th>
+                <th>Amount</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.map((deal) => (
+                <tr key={deal.id}>
+                  <td>{deal.id}</td>
+                  <td>{deal.company_name}</td>
+                  <td>${Number(deal.amount).toLocaleString()}</td>
+                  <td>{deal.status}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
 
-/* ================= SLF SILO ================= */
-
-function SLFSilo() {
-  const [deals, setDeals] = useState<any[]>([]);
-
-  useEffect(() => {
-    fetch(`${SLF_API}/deals`, {
-      headers: {
-        Authorization: `Bearer ${getToken()}`
-      }
-    })
-      .then((r) => r.json())
-      .then(setDeals);
-  }, []);
-
-  return (
-    <div className="container">
-      <h1>SLF Pipeline</h1>
-
-      <table>
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Company</th>
-            <th>Status</th>
-            <th>Amount</th>
-          </tr>
-        </thead>
-        <tbody>
-          {deals.map((d) => (
-            <tr key={d.id}>
-              <td>{d.id}</td>
-              <td>{d.company_name}</td>
-              <td>{d.status}</td>
-              <td>${d.amount}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-/* ================= APP ================= */
-
-export default function App() {
-  return (
-    <BrowserRouter>
-      <Nav />
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route
-          path="/"
-          element={
-            <Protected>
-              <Dashboard />
-            </Protected>
-          }
-        />
-        <Route
-          path="/bi"
-          element={
-            <Protected>
-              <BISilo />
-            </Protected>
-          }
-        />
-        <Route
-          path="/slf"
-          element={
-            getRole() === "admin" ? (
-              <Protected>
-                <SLFSilo />
-              </Protected>
-            ) : (
-              <Navigate to="/" />
-            )
-          }
-        />
-      </Routes>
-    </BrowserRouter>
-  );
-}
+export default App;
