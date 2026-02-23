@@ -1,12 +1,23 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
+import { jwtDecode } from "jwt-decode";
 
 export type Role = "admin" | "staff";
 export type AppSilo = "bf" | "bi" | "slf";
 
 type DecodedToken = {
   role?: Role;
+  exp?: number;
 };
+
+function isExpired(token: string) {
+  try {
+    const decoded = jwtDecode<DecodedToken>(token);
+    return !decoded.exp || decoded.exp * 1000 < Date.now();
+  } catch {
+    return true;
+  }
+}
 
 const allowedSilos: Record<Role, AppSilo[]> = {
   admin: ["bf", "bi", "slf"],
@@ -38,6 +49,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!token) {
       setRole(null);
+      return;
+    }
+
+    if (isExpired(token)) {
+      logout();
       return;
     }
 

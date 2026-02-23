@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createApi } from "../api/apiFactory";
 import { useAuth } from "../context/AuthContext";
+import Skeleton from "../components/Skeleton";
 
 type AuditLogEvent = {
   id?: string;
@@ -16,6 +17,7 @@ export default function AuditLogs() {
   const biApi = useMemo(() => createApi("bi", token ?? ""), [token]);
   const slfApi = useMemo(() => createApi("slf", token ?? ""), [token]);
   const [events, setEvents] = useState<AuditLogEvent[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(1);
 
   useEffect(() => {
@@ -28,6 +30,7 @@ export default function AuditLogs() {
         ...biEvents.data.map((event) => ({ ...event, source: "BI" as const })),
         ...slfLogs.data.map((event) => ({ ...event, source: "SLF" as const }))
       ]);
+      setIsLoading(false);
     }
 
     void loadLogs();
@@ -40,6 +43,7 @@ export default function AuditLogs() {
   return (
     <div>
       <h2>Audit Logs</h2>
+      {isLoading ? <Skeleton count={8} height={24} /> : null}
       <table>
         <thead>
           <tr>
