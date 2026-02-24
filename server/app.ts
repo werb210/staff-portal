@@ -1,4 +1,5 @@
 import express from "express";
+import { validateSiloResponse } from "./middleware/validateSiloResponse";
 
 const app = express();
 
@@ -36,6 +37,8 @@ app.use((req, _res, next) => {
   next();
 });
 
+app.use(validateSiloResponse);
+
 app.get("/api/bi/revenue", (req, res) => {
   const user = (req as express.Request & { user?: { silo: Silo } }).user;
 
@@ -54,6 +57,20 @@ app.get("/api/bf/dashboard", (req, res) => {
   }
 
   return res.json({ dashboard: "ok", silo: "BF" });
+});
+
+
+app.get("/api/test/cross-silo-anomaly", (req, res) => {
+  const user = (req as express.Request & { user?: { silo: Silo } }).user;
+
+  if (!user?.silo) {
+    return res.status(403).json({ error: "Missing silo context" });
+  }
+
+  return res.json([
+    { id: "app-bf-1", silo: "BF", applicant: "BF Alice" },
+    { id: "app-bi-1", silo: "BI", applicant: "BI Carol" }
+  ]);
 });
 
 app.get("/api/applications", (req, res) => {

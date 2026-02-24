@@ -27,6 +27,15 @@ describe("Silo Isolation", () => {
     expect(res.status).toBe(403);
   });
 
+  test("Runtime validator blocks cross-silo anomaly response", async () => {
+    const res = await request(app)
+      .get("/api/test/cross-silo-anomaly")
+      .set("Authorization", `Bearer ${bfToken}`);
+
+    expect(res.status).toBe(500);
+    expect(res.body).toEqual({ error: "Security violation detected" });
+  });
+
   test("Cross-silo SELECT returns zero rows", async () => {
     const res = await request(app)
       .get("/api/applications")
