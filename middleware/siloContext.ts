@@ -7,6 +7,12 @@ const validSilos: Silo[] = ["BF", "BI", "SLF"];
 const isValidSilo = (value: unknown): value is Silo =>
   typeof value === "string" && validSilos.includes(value as Silo);
 
+export function assertAuthenticatedSilo(user: { silo?: unknown }) {
+  if (!isValidSilo(user.silo)) {
+    throw new Error("Invalid silo assignment");
+  }
+}
+
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
@@ -22,8 +28,14 @@ declare global {
 }
 
 export function injectSiloContext(req: Request, res: Response, next: NextFunction) {
-  if (!req.user || !isValidSilo(req.user.silo)) {
+  if (!req.user) {
     return res.status(403).json({ error: "Missing silo context" });
+  }
+
+  try {
+    assertAuthenticatedSilo(req.user);
+  } catch {
+    return res.status(403).json({ error: "Invalid silo assignment" });
   }
 
   req.silo = req.user.silo;

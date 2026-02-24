@@ -1,10 +1,12 @@
 import { db } from "../db";
 
+const VALID_SILOS = new Set(["BF", "BI", "SLF"]);
+
 export async function siloQuery(silo: string, query: string, params: unknown[] = []) {
-  if (!query.toLowerCase().includes("where")) {
-    throw new Error("All silo queries must include WHERE clause");
+  if (!VALID_SILOS.has(silo)) {
+    throw new Error("Invalid silo assignment");
   }
 
-  const safeQuery = query.replace(/where/i, `WHERE silo = '${silo}' AND`);
-  return db.query(safeQuery, params);
+  await db.query("SET app.current_silo = $1", [silo]);
+  return db.query(query, params);
 }
