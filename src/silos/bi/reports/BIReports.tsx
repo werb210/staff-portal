@@ -24,13 +24,13 @@ export default function BIReports() {
     setMetrics(data as ReportSummary);
   }
 
-  if (!metrics) return <div>Loading...</div>;
+  if (!metrics) return <div className="max-w-7xl mx-auto px-6">Loading...</div>;
 
   return (
-    <div className="report-wrapper">
-      <h2>Boreal Insurance Reports</h2>
+    <div className="max-w-7xl mx-auto px-6">
+      <h2 className="text-3xl font-semibold mb-8">Boreal Insurance Reports</h2>
 
-      <div className="kpi-grid">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <KPI title="Applications (Total)" value={metrics.totalApplications} />
         <KPI title="Policies Issued" value={metrics.policiesIssued} />
         <KPI title="Conversion Rate" value={`${metrics.conversionRate}%`} />
@@ -53,7 +53,7 @@ export default function BIReports() {
       </div>
 
       <button
-        style={{ marginTop: "30px" }}
+        className="mt-8 bg-brand-accent hover:bg-brand-accentHover text-white rounded-full h-10 px-5 font-medium"
         onClick={() => {
           window.location.href = "/bi/reports/commission";
         }}
@@ -64,11 +64,11 @@ export default function BIReports() {
   );
 }
 
-function KPI({ title, value }: { title: string; value: string | number }) {
+function KPI({ title, value }:{title:string,value:any}){
   return (
-    <div className="kpi-card">
-      <h4>{title}</h4>
-      <p>{value}</p>
+    <div className="bg-brand-surface border border-card rounded-xl p-6 shadow-soft text-center">
+      <h4 className="text-sm text-white/70">{title}</h4>
+      <p className="text-2xl font-semibold mt-2">{value}</p>
     </div>
   );
 }

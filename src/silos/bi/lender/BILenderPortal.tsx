@@ -46,15 +46,15 @@ export default function BILenderPortal() {
   }
 
   return (
-    <div>
-      <h2>Lender Applications</h2>
+    <div className="max-w-7xl mx-auto px-6">
+      <h2 className="text-3xl font-semibold mb-6">Lender Applications</h2>
 
-      <div style={{ display: "flex", gap: "40px" }}>
-        <div style={{ width: "40%" }}>
+      <div className="grid gap-6 lg:grid-cols-5">
+        <div className="lg:col-span-2 space-y-3">
           {apps.map((app) => (
             <div
               key={app.id}
-              className="crm-card"
+              className="bg-brand-surface border border-card rounded-xl p-4"
               onClick={() => setSelected(app)}
               style={{ cursor: "pointer" }}
             >
@@ -65,18 +65,20 @@ export default function BILenderPortal() {
           ))}
         </div>
 
-        <div style={{ width: "60%" }}>
+        <div className="lg:col-span-3 bg-brand-bgAlt border border-card rounded-xl p-6">
           {selected && (
             <>
-              <h3>Application Detail</h3>
+              <h3 className="text-xl font-semibold">Application Detail</h3>
 
               <p>Stage: {selected.stage || "-"}</p>
               <p>Premium: ${selected.premium_calc?.annualPremium?.toLocaleString() || "-"}</p>
 
-              <h4>Upload Additional Documents</h4>
+              <h4 className="mt-4 mb-2">Upload Additional Documents</h4>
               <input type="file" multiple onChange={(e) => void uploadDocs(selected.id, e.target.files)} />
 
-              <ActivityTimeline applicationId={selected.id} />
+              <div className="mt-6">
+                <ActivityTimeline applicationId={selected.id} />
+              </div>
             </>
           )}
         </div>
