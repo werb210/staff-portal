@@ -14,3 +14,20 @@ export async function biFetch(path: string, options?: RequestInit) {
 
   return res.json();
 }
+
+
+export async function biGetContacts() {
+  return biFetch("/crm/contacts");
+}
+
+export async function biGetReferrers() {
+  return biFetch("/crm/referrers");
+}
+
+export async function biGetLenders() {
+  return biFetch("/crm/lenders");
+}
+
+export async function biGetCommissions() {
+  return biFetch("/commissions");
+}
