@@ -2953,3 +2953,33 @@ a,
   background: #0c1b2e;
   border-radius: 6px;
 }
+
+.pipeline-container {
+  display: flex;
+  gap: 20px;
+  overflow-x: auto;
+  padding: 20px;
+}
+
+.pipeline-column {
+  min-width: 250px;
+  background: #081a2b;
+  padding: 15px;
+  border-radius: 8px;
+}
+
+.card {
+  background: #0d2b45;
+  padding: 10px;
+  margin-bottom: 10px;
+  border-radius: 6px;
+}
+
+.card.red-flag {
+  border: 2px solid #ff4444;
+}
+
+.flag {
+  color: #ff4444;
+  font-weight: bold;
+}
