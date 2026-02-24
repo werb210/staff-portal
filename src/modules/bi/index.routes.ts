@@ -1,10 +1,10 @@
-import type { Application, Router } from "express";
+import type { Application } from "express";
 import { injectSiloContext } from "../../../middleware/siloContext";
 import { setCurrentSilo } from "../../../middleware/setCurrentSilo";
-import { enforceBISilo } from "../../../middleware/enforceBISilo";
+import biDashboard from "../../../routes/biDashboard";
 
-export function registerBIRoutes(app: Application, biRoutes: Router) {
+export function registerBIRoutes(app: Application) {
   app.use(injectSiloContext);
   app.use(setCurrentSilo);
-  app.use("/api/bi", enforceBISilo, biRoutes);
+  app.use(biDashboard);
 }
