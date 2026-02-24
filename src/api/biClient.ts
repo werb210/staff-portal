@@ -31,3 +31,8 @@ export async function biGetLenders() {
 export async function biGetCommissions() {
   return biFetch("/commissions");
 }
+
+
+export async function biGetReportSummary() {
+  return biFetch("/reports/summary");
+}
