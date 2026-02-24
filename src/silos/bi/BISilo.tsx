@@ -3,6 +3,7 @@ import BIPipeline from "./pipeline/BIPipeline";
 import BIReports from "./reports/BIReports";
 import BICRM from "./crm/BICRM";
 import BILenderPortal from "./lender/BILenderPortal";
+import BIApplicationDetail from "./pipeline/BIApplicationDetail";
 
 export default function BISilo() {
   return (
@@ -16,6 +17,7 @@ export default function BISilo() {
 
       <Routes>
         <Route path="pipeline" element={<BIPipeline />} />
+        <Route path="pipeline/:id" element={<BIApplicationDetail />} />
         <Route path="crm" element={<BICRM />} />
         <Route path="reports" element={<BIReports />} />
         <Route path="lender" element={<BILenderPortal />} />

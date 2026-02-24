@@ -8,3 +8,18 @@
 .crm-card:hover {
   background: #12395c;
 }
+
+.tab-bar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.tab-bar button {
+  background: #0d2b45;
+  color: white;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
