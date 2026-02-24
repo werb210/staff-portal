@@ -59,22 +59,22 @@ export default function BIApplicationDetail() {
   }
 
   if (!id) {
-    return <div>Invalid application</div>;
+    return <div className="max-w-7xl mx-auto px-6">Invalid application</div>;
   }
 
   if (!app) {
-    return <div>Loading...</div>;
+    return <div className="max-w-7xl mx-auto px-6">Loading...</div>;
   }
 
   return (
-    <div className="application-wrapper">
-      <h1>Application Detail</h1>
+    <div className="max-w-7xl mx-auto px-6 bg-brand-surface border border-card rounded-xl p-8 shadow-soft">
+      <h1 className="text-2xl font-semibold mb-6">Application Detail</h1>
 
-      <div className="tab-bar">
-        <button type="button" onClick={() => setTab("application")}>Application</button>
-        <button type="button" onClick={() => setTab("documents")}>Documents</button>
-        <button type="button" onClick={() => setTab("timeline")}>Timeline</button>
-        <button type="button" onClick={() => setTab("commission")}>Commission</button>
+      <div className="flex flex-wrap gap-3 mb-6">
+        <button className="bg-brand-accent hover:bg-brand-accentHover text-white rounded-full h-10 px-5 font-medium" type="button" onClick={() => setTab("application")}>Application</button>
+        <button className="bg-brand-accent hover:bg-brand-accentHover text-white rounded-full h-10 px-5 font-medium" type="button" onClick={() => setTab("documents")}>Documents</button>
+        <button className="bg-brand-accent hover:bg-brand-accentHover text-white rounded-full h-10 px-5 font-medium" type="button" onClick={() => setTab("timeline")}>Timeline</button>
+        <button className="bg-brand-accent hover:bg-brand-accentHover text-white rounded-full h-10 px-5 font-medium" type="button" onClick={() => setTab("commission")}>Commission</button>
       </div>
 
       {tab === "application" && (
@@ -83,8 +83,8 @@ export default function BIApplicationDetail() {
           <p>Bankruptcy Flag: {app.bankruptcy_flag ? "Yes" : "No"}</p>
           <p>Premium: ${app.premium_calc?.annualPremium?.toLocaleString() || "-"}</p>
 
-          <h3>Change Stage</h3>
-          <select defaultValue="" onChange={(e) => void changeStage(e.target.value)}>
+          <h3 className="mt-6 mb-2 text-lg font-semibold">Change Stage</h3>
+          <select className="bg-brand-bgAlt border border-card rounded-lg px-3 h-10" defaultValue="" onChange={(e) => void changeStage(e.target.value)}>
             <option value="">Select</option>
             <option value="under_review">Under Review</option>
             <option value="approved">Approved</option>
@@ -117,9 +117,9 @@ function DocumentList({ applicationId }: { applicationId: string }) {
 
   return (
     <div>
-      <h3>Documents</h3>
+      <h3 className="text-lg font-semibold mb-3">Documents</h3>
       {docs.map((d) => (
-        <div key={d.id} className="crm-card">
+        <div key={d.id} className="bg-brand-surface border border-card rounded-xl p-4 mb-3">
           <p>{d.original_filename}</p>
           <p>{new Date(d.created_at).toLocaleString()}</p>
         </div>
@@ -145,7 +145,7 @@ function CommissionTab({ applicationId }: { applicationId: string }) {
   }
 
   return (
-    <div>
+    <div className="bg-brand-bgAlt border border-card rounded-xl p-4">
       <p>Premium: ${row.annual_premium_amount}</p>
       <p>Commission (10%): ${row.commission_amount}</p>
       <p>Status: {row.status}</p>

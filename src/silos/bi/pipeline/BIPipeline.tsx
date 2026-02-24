@@ -35,16 +35,16 @@ export default function BIPipeline() {
   }
 
   return (
-    <div className="pipeline-container">
+    <div className="max-w-7xl mx-auto px-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
       {stages.map((stage) => (
-        <div key={stage} className="pipeline-column">
-          <h3>{stage.replace("_", " ").toUpperCase()}</h3>
+        <div key={stage} className="bg-brand-bgAlt border border-card rounded-xl p-4">
+          <h3 className="text-xs text-white/70 mb-3">{stage.replace("_", " ").toUpperCase()}</h3>
           {apps
             .filter((a) => a.stage === stage)
             .map((app) => (
               <div
                 key={app.id}
-                className={`card ${app.bankruptcy_flag ? "red-flag" : ""}`}
+                className="bg-brand-surface border border-card rounded-xl p-3 mb-3"
                 onClick={() => navigate(`/bi/pipeline/${app.id}`)}
                 style={{ cursor: "pointer" }}
               >
@@ -53,7 +53,7 @@ export default function BIPipeline() {
                 </p>
                 <p>${app.premium_calc?.annualPremium || "-"}</p>
                 {app.bankruptcy_flag && (
-                  <span className="flag">⚠ Bankruptcy</span>
+                  <span className="text-xs text-brand-accent">⚠ Bankruptcy</span>
                 )}
               </div>
             ))}

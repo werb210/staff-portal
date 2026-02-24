@@ -26,9 +26,9 @@ export default function ActivityTimeline({
 
   return (
     <div>
-      <h3>Activity Timeline</h3>
+      <h3 className="text-lg font-semibold mb-3">Activity Timeline</h3>
       {events.map((e) => (
-        <div key={e.id} style={{ marginBottom: "10px" }}>
+        <div key={e.id} className="bg-brand-surface border border-card rounded-xl p-4 mb-3">
           <strong>{e.event_type}</strong>
           <p>{e.summary}</p>
           <small>{new Date(e.created_at).toLocaleString()}</small>
