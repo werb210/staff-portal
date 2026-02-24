@@ -1,7 +1,9 @@
 import { Request, Response, NextFunction } from "express";
 
-type RequestWithUser = Request & {
+type AuthenticatedRequest = Request & {
   user?: {
+    id?: string;
+    role?: string;
     silo?: string;
   };
 };
@@ -11,7 +13,7 @@ export function enforceBISilo(
   res: Response,
   next: NextFunction
 ) {
-  const user = (req as RequestWithUser).user;
+  const user = (req as AuthenticatedRequest).user;
 
   if (!user) {
     return res.status(401).json({ error: "Unauthorized" });
