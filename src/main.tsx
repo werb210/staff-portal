@@ -4,6 +4,7 @@ import { BrowserRouter } from "react-router-dom";
 export { trackPortalEvent } from "./lib/portalTracking";
 import App from "./App";
 import "./styles/globals.css";
+import "./index.css";
 import "./theme";
 import { SiloProvider } from "./context/SiloContext";
 import { AuthProvider } from "./context/AuthContext";
