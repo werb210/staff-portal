@@ -5,11 +5,18 @@ import type { AuthRequestConfig } from "@/lib/api";
 
 import type { BusinessUnit } from "@/types/businessUnit";
 
-export type AuthenticatedUser = Record<string, any> & {
-  businessUnits?: BusinessUnit[];
-  activeBusinessUnit?: BusinessUnit;
-  silo?: BusinessUnit;
-};
+export interface AuthUser {
+  id: string;
+  role: string;
+  silo: "BF" | "BI" | "SLF";
+}
+
+export type AuthenticatedUser = Record<string, any> &
+  Partial<AuthUser> & {
+    businessUnits?: BusinessUnit[];
+    activeBusinessUnit?: BusinessUnit;
+    silo?: BusinessUnit;
+  };
 
 export type OtpStartResponse =
   | {
