@@ -2,15 +2,17 @@ import React, { useState, useEffect } from "react";
 import { Route, Routes } from "react-router-dom";
 import BiCommission from "./pages/BiCommission";
 import BISilo from "./silos/bi/BISilo";
+import BIDashboard from "./pages/bi/Dashboard";
 
 const API = "https://api.boreal.financial";
+
+type Silo = "BF" | "BI" | "SLF";
 
 type User = {
   role: "admin" | "staff";
   token: string;
+  silo: Silo;
 };
-
-type Silo = "BF" | "BI" | "SLF";
 
 function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -30,15 +32,17 @@ function App() {
       | "admin"
       | "staff"
       | null;
+    const storedSilo = (localStorage.getItem("portal_silo") as Silo | null) ?? "BF";
 
     if (stored && role) {
-      setUser({ token: stored, role });
+      setUser({ token: stored, role, silo: storedSilo });
     }
   }, []);
 
   function logout() {
     localStorage.removeItem("portal_token");
     localStorage.removeItem("portal_role");
+    localStorage.removeItem("portal_silo");
     setUser(null);
   }
 
@@ -61,8 +65,9 @@ function App() {
 
       localStorage.setItem("portal_token", json.token);
       localStorage.setItem("portal_role", json.role);
+      localStorage.setItem("portal_silo", json.silo ?? "BF");
 
-      setUser({ token: json.token, role: json.role });
+      setUser({ token: json.token, role: json.role, silo: json.silo ?? "BF" });
     } catch {
       setError("Invalid credentials");
     }
@@ -247,6 +252,10 @@ function App() {
     <Routes>
       <Route path="/bi/*" element={<BISilo />} />
       <Route path="/bi/commission" element={<BiCommission />} />
+      <Route
+        path="/bi/dashboard"
+        element={user?.silo === "BI" ? <BIDashboard /> : <div>Forbidden</div>}
+      />
       <Route path="*" element={mainPortalView} />
     </Routes>
   );
