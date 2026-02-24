@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Route, Routes } from "react-router-dom";
 import BiCommission from "./pages/BiCommission";
+import BISilo from "./silos/bi/BISilo";
 
 const API = "https://api.boreal.financial";
 
@@ -244,6 +245,7 @@ function App() {
 
   return (
     <Routes>
+      <Route path="/bi/*" element={<BISilo />} />
       <Route path="/bi/commission" element={<BiCommission />} />
       <Route path="*" element={mainPortalView} />
     </Routes>
