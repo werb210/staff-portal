@@ -9,13 +9,16 @@ router.get("/api/bi/dashboard", async (req, res) => {
       return res.status(403).json({ error: "Forbidden" });
     }
 
-    const [totalApps, pendingDocs, approved, rejected, totalReferrers, totalLenders] = await Promise.all([
-      db.query("SELECT COUNT(*) FROM applications"),
-      db.query("SELECT COUNT(*) FROM applications WHERE status = 'Documents Pending'"),
-      db.query("SELECT COUNT(*) FROM applications WHERE status = 'Approved by Purbeck'"),
-      db.query("SELECT COUNT(*) FROM applications WHERE status = 'Rejected'"),
-      db.query("SELECT COUNT(*) FROM referrers"),
-      db.query("SELECT COUNT(*) FROM lenders")
+    const silo = "BI";
+
+    const [totalApps, pendingDocs, approved, rejected, highRisk, totalReferrers, totalLenders] = await Promise.all([
+      db.query("SELECT COUNT(*) FROM applications WHERE silo = $1", [silo]),
+      db.query("SELECT COUNT(*) FROM applications WHERE silo = $1 AND status = 'Documents Pending'", [silo]),
+      db.query("SELECT COUNT(*) FROM applications WHERE silo = $1 AND status = 'Approved by Purbeck'", [silo]),
+      db.query("SELECT COUNT(*) FROM applications WHERE silo = $1 AND status = 'Rejected'", [silo]),
+      db.query("SELECT COUNT(*) FROM applications WHERE silo = $1 AND underwriting_risk_level = 'High'", [silo]),
+      db.query("SELECT COUNT(*) FROM referrers WHERE silo = $1", [silo]),
+      db.query("SELECT COUNT(*) FROM lenders WHERE silo = $1", [silo])
     ]);
 
     return res.json({
@@ -23,6 +26,7 @@ router.get("/api/bi/dashboard", async (req, res) => {
       documentsPending: Number((pendingDocs.rows[0] as { count?: string }).count ?? 0),
       approved: Number((approved.rows[0] as { count?: string }).count ?? 0),
       rejected: Number((rejected.rows[0] as { count?: string }).count ?? 0),
+      highRiskCount: Number((highRisk.rows[0] as { count?: string }).count ?? 0),
       referrers: Number((totalReferrers.rows[0] as { count?: string }).count ?? 0),
       lenders: Number((totalLenders.rows[0] as { count?: string }).count ?? 0)
     });
