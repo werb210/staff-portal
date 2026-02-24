@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { biFetch } from "../../../api/biClient";
 
 type BIApplication = {
@@ -22,6 +23,7 @@ const stages = [
 
 export default function BIPipeline() {
   const [apps, setApps] = useState<BIApplication[]>([]);
+  const navigate = useNavigate();
 
   useEffect(() => {
     void load();
@@ -43,6 +45,8 @@ export default function BIPipeline() {
               <div
                 key={app.id}
                 className={`card ${app.bankruptcy_flag ? "red-flag" : ""}`}
+                onClick={() => navigate(`/bi/pipeline/${app.id}`)}
+                style={{ cursor: "pointer" }}
               >
                 <p>
                   <strong>{app.primary_contact_name || "Applicant"}</strong>
