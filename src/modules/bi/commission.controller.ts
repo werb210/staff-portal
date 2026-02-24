@@ -1,43 +1,34 @@
 import type { Request, Response } from "express";
-import type { QueryableDb } from "../../../db";
+import { siloQuery } from "../../../db/siloQuery";
 import { logBIAudit } from "../../../utils/biAuditLogger";
 
-type CommissionAuthRequest = Request & {
-  user?: {
-    id?: string;
-    role?: string;
-    silo?: string;
-  };
-};
-
-export async function getBICommissionById(db: QueryableDb, req: Request, res: Response) {
-  const authReq = req as CommissionAuthRequest;
-
-  if (!authReq.user) {
+export async function getBICommissionById(_db: unknown, req: Request, res: Response) {
+  if (!req.user) {
     return res.status(401).json({ error: "Unauthorized" });
   }
 
-  if (
-    authReq.user.silo !== "BI" ||
-    (authReq.user.role !== "Admin" && authReq.user.role !== "BI_Manager")
-  ) {
+  if (req.user.role !== "Admin" && req.user.role !== "BI_Manager") {
     return res.status(403).json({ error: "Commission access restricted" });
+  }
+
+  if (!req.silo) {
+    return res.status(403).json({ error: "Missing silo context" });
   }
 
   const commissionId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
 
-  const result = await db.query(
+  const result = await siloQuery(
+    req.silo,
     `
     SELECT *
     FROM commissions
-    WHERE silo = 'BI'
-    AND id = $1
+    WHERE id = $1
     `,
     [commissionId]
   );
 
-  if (authReq.user.id) {
-    await logBIAudit(authReq.user.id, "commission.view", commissionId, {
+  if (req.user.id) {
+    await logBIAudit(req.user.id, req.silo, "commission.view", commissionId, {
       source: "bi_commission_controller"
     });
   }

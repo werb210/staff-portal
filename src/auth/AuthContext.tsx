@@ -148,14 +148,18 @@ const normalizeAuthenticatedUser = (nextUser: AuthenticatedUser | null): Authent
         .filter((unit): unit is BusinessUnit => Boolean(unit))
     : [];
   const businessUnits = units.length ? units : [DEFAULT_BUSINESS_UNIT];
+  const silo = normalizeBusinessUnit((nextUser as { silo?: unknown }).silo);
+  if (!silo) {
+    return null;
+  }
+
   const activeBusinessUnit =
     normalizeBusinessUnit((nextUser as { activeBusinessUnit?: unknown }).activeBusinessUnit) ??
-    normalizeBusinessUnit((nextUser as { silo?: unknown }).silo) ??
-    businessUnits[0] ??
-    DEFAULT_BUSINESS_UNIT;
+    silo;
 
   return {
     ...nextUser,
+    silo,
     businessUnits,
     activeBusinessUnit
   };
