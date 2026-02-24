@@ -4,6 +4,7 @@ import BIReports from "./reports/BIReports";
 import BICRM from "./crm/BICRM";
 import BILenderPortal from "./lender/BILenderPortal";
 import BIApplicationDetail from "./pipeline/BIApplicationDetail";
+import CommissionReport from "./reports/CommissionReport";
 
 export default function BISilo() {
   return (
@@ -20,6 +21,7 @@ export default function BISilo() {
         <Route path="pipeline/:id" element={<BIApplicationDetail />} />
         <Route path="crm" element={<BICRM />} />
         <Route path="reports" element={<BIReports />} />
+        <Route path="reports/commission" element={<CommissionReport />} />
         <Route path="lender" element={<BILenderPortal />} />
       </Routes>
     </div>
