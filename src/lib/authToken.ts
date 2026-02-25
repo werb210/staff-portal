@@ -1,7 +1,7 @@
-import { env } from "@/config/env";
+import { ENV } from "@/config/env";
 import { decodeJwt } from "@/auth/jwt";
 
-const ACCESS_TOKEN_KEY = env.VITE_JWT_STORAGE_KEY;
+const ACCESS_TOKEN_KEY = ENV.JWT_STORAGE_KEY;
 
 let inMemoryAccessToken: string | null = null;
 

@@ -75,6 +75,12 @@ function App() {
     setLoading(false);
   }
 
+
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    void login();
+  }
+
   /* ================= LOAD DATA ================= */
 
   useEffect(() => {
@@ -120,7 +126,7 @@ function App() {
 
   if (!user) {
     return (
-      <div style={styles.center}>
+      <form style={styles.center} onSubmit={handleSubmit}>
         <h2>Portal Login</h2>
 
         <input
@@ -140,10 +146,10 @@ function App() {
 
         {error && <p style={{ color: "red" }}>{error}</p>}
 
-        <button disabled={loading} onClick={login}>
+        <button type="submit" disabled={loading}>
           {loading ? "Logging in..." : "Login"}
         </button>
-      </div>
+      </form>
     );
   }
 

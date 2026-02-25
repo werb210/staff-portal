@@ -1,37 +1,27 @@
-import { z } from "zod";
+const required = [
+  "VITE_API_BASE_URL",
+  "VITE_JWT_STORAGE_KEY"
+] as const;
 
-const envSchema = z.object({
-  VITE_API_BASE_URL: z.string().url(),
-  VITE_JWT_STORAGE_KEY: z.string().min(1),
-  NODE_ENV: z.enum(["development", "production", "test"])
-});
+type RequiredEnv = (typeof required)[number];
 
-let parsedEnv: z.infer<typeof envSchema> | null = null;
+function getEnv(key: RequiredEnv): string {
+  const value = import.meta.env[key];
 
-const parseEnv = () => {
-  try {
-    parsedEnv = envSchema.parse({
-      ...import.meta.env,
-      NODE_ENV: import.meta.env.MODE
-    });
-    return parsedEnv;
-  } catch (error) {
-    throw new Error(`Missing or invalid required environment variables: ${(error as Error).message}`);
+  if (!value) {
+    console.warn(`[ENV WARNING] Missing ${key}. Using safe fallback.`);
   }
-};
 
-export function validateEnv() {
-  parseEnv();
+  return value || "";
 }
 
-export const env = new Proxy({} as ImportMetaEnv, {
-  get(_target, key) {
-    const keyName = String(key);
-    if (keyName === "VITE_API_BASE_URL" || keyName === "VITE_JWT_STORAGE_KEY" || keyName === "NODE_ENV") {
-      const requiredEnv = parsedEnv ?? parseEnv();
-      return requiredEnv[keyName as keyof typeof requiredEnv];
-    }
+export const ENV = {
+  API_BASE_URL:
+    getEnv("VITE_API_BASE_URL") ||
+    (window.location.hostname.includes("boreal.financial")
+      ? "https://api.staff.boreal.financial"
+      : "http://localhost:3000"),
 
-    return import.meta.env[key as keyof ImportMetaEnv];
-  }
-});
+  JWT_STORAGE_KEY:
+    getEnv("VITE_JWT_STORAGE_KEY") || "boreal_staff_token"
+};

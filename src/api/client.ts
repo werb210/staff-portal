@@ -1,46 +1,24 @@
 import axios from "axios";
-import * as authStorage from "@/lib/authStorage";
-import { showApiToast } from "@/state/apiNotifications";
+import { ENV } from "@/config/env";
 
-export { createApi } from "./apiFactory";
-
-const baseURL = import.meta.env.VITE_API_BASE_URL;
-
-const navigateTo = (path: string) => {
-  if (typeof window === "undefined") return;
-  if (window.location.pathname === path) return;
-  const isTestEnv = typeof process !== "undefined" && process.env?.NODE_ENV === "test";
-  if (isTestEnv) {
-    window.history.pushState({}, "", path);
-    window.dispatchEvent(new PopStateEvent("popstate"));
-    return;
-  }
-  window.location.assign(path);
-};
-
-const api = axios.create({
-  baseURL
+export const api = axios.create({
+  baseURL: ENV.API_BASE_URL,
+  withCredentials: true
 });
 
 api.interceptors.response.use(
-  (res) => res,
-  (err) => {
-    if (err.response?.status === 401) {
-      authStorage.clearAuth();
-      window.location.href = "/login";
-    } else if (err.response?.status === 403) {
-      navigateTo("/unauthorized");
-    } else if (!err.response) {
-      showApiToast("Network error. Please check your connection and try again.");
-    } else if (err.response?.status >= 500) {
-      showApiToast("We hit a server issue. Please retry in a moment.");
+  response => response,
+  error => {
+    if (!error.response) {
+      console.error("Network error:", error);
+    } else {
+      console.error("API error:", error.response.status);
     }
-    return Promise.reject(err);
+    return Promise.reject(error);
   }
 );
 
 export const clientApi = api;
-
 export const otpStart = (payload: { phone: string }) => api.post("/auth/otp/start", payload);
 export const otpVerify = (payload: { phone: string; code: string }) => api.post("/auth/otp/verify", payload);
 
