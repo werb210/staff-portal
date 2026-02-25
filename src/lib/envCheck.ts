@@ -1,10 +1,7 @@
-import { logger } from "@/utils/logger";
 export function validateEnv() {
-  const required = [import.meta.env.VITE_API_URL ?? import.meta.env.VITE_API_BASE_URL];
+  if (import.meta.env.MODE !== "production") return;
 
-  required.forEach((value) => {
-    if (!value) {
-      logger.error("Missing required environment variable.");
-    }
-  });
+  if (!import.meta.env.VITE_API_BASE_URL) {
+    throw new Error("Missing VITE_API_BASE_URL");
+  }
 }
