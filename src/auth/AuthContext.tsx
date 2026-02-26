@@ -18,13 +18,24 @@ export interface AuthContextType {
   accessToken: string | null
 
   status: AuthState
+  authStatus: AuthState
+  rolesStatus: "loading" | "ready"
+
   isAuthenticated: boolean
+  authenticated: boolean
   isLoading: boolean
   authReady: boolean
+
+  error?: unknown
+  pendingPhoneNumber?: string
 
   login: (email: string, password: string) => Promise<boolean>
   logout: () => void
   clearAuth: () => void
+
+  startOtp: (phone: string) => Promise<void>
+  verifyOtp: (code: string) => Promise<void>
+  loginWithOtp: (phone: string, code: string) => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -98,18 +109,37 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     logout()
   }
 
+  // ---- Legacy placeholders to keep repo compiling ----
+
+  const startOtp = async (_phone: string) => {}
+  const verifyOtp = async (_code: string) => {}
+  const loginWithOtp = async (_phone: string, _code: string) => {}
+
   return (
     <AuthContext.Provider
       value={{
         user,
         accessToken,
+
         status,
+        authStatus: status,
+        rolesStatus: "ready",
+
         isAuthenticated,
+        authenticated: isAuthenticated,
         isLoading,
         authReady,
+
+        error: undefined,
+        pendingPhoneNumber: undefined,
+
         login,
         logout,
         clearAuth,
+
+        startOtp,
+        verifyOtp,
+        loginWithOtp,
       }}
     >
       {children}
