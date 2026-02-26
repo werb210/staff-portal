@@ -148,10 +148,7 @@ const normalizeAuthenticatedUser = (nextUser: AuthenticatedUser | null): Authent
         .filter((unit): unit is BusinessUnit => Boolean(unit))
     : [];
   const businessUnits = units.length ? units : [DEFAULT_BUSINESS_UNIT];
-  const silo = normalizeBusinessUnit((nextUser as { silo?: unknown }).silo);
-  if (!silo) {
-    return null;
-  }
+  const silo = normalizeBusinessUnit((nextUser as { silo?: unknown }).silo) ?? DEFAULT_BUSINESS_UNIT;
 
   const activeBusinessUnit =
     normalizeBusinessUnit((nextUser as { activeBusinessUnit?: unknown }).activeBusinessUnit) ??
@@ -163,6 +160,18 @@ const normalizeAuthenticatedUser = (nextUser: AuthenticatedUser | null): Authent
     businessUnits,
     activeBusinessUnit
   };
+};
+
+const parseAuthUser = (payload: unknown): AuthenticatedUser | null => {
+  if (!payload) return null;
+  if (typeof payload === "string") {
+    try {
+      return JSON.parse(payload) as AuthenticatedUser;
+    } catch {
+      return null;
+    }
+  }
+  return payload as AuthenticatedUser;
 };
 
 const getErrorStatus = (error: unknown): number | undefined => {
@@ -280,9 +289,9 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
           setRolesStatus("loading");
         }
         try {
-          const response = await api.get<AuthenticatedUser>("/auth/me");
-          const data = response.data;
-          setUser(data ?? null);
+          const response = await api.get<AuthenticatedUser | string>("/auth/me");
+          const data = parseAuthUser(response.data);
+          setUser(data);
           setAuthStatus("authenticated");
           setRolesStatus("resolved");
           refreshRetryRef.current = 0;
@@ -294,9 +303,9 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
             if (refreshRetryRef.current < 1) {
               refreshRetryRef.current += 1;
               try {
-                const retryResponse = await api.get<AuthenticatedUser>("/auth/me");
-                const retryData = retryResponse.data;
-                setUser(retryData ?? null);
+                const retryResponse = await api.get<AuthenticatedUser | string>("/auth/me");
+                const retryData = parseAuthUser(retryResponse.data);
+                setUser(retryData);
                 setAuthStatus("authenticated");
                 setRolesStatus("resolved");
                 refreshRetryRef.current = 0;
@@ -383,10 +392,10 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
         setUserState(null);
       }
       try {
-        const response = await api.get<AuthenticatedUser>("/auth/me");
+        const response = await api.get<AuthenticatedUser | string>("/auth/me");
         if (!isMounted) return;
-        const data = response.data;
-        setUser(data ?? null);
+        const data = parseAuthUser(response.data);
+        setUser(data);
         setAuthStatus("authenticated");
         setRolesStatus("resolved");
       } catch (fetchError) {
@@ -397,10 +406,10 @@ export function AuthProvider({ children }: PropsWithChildren<{}>) {
           if (refreshRetryRef.current < 1) {
             refreshRetryRef.current += 1;
             try {
-              const retryResponse = await api.get<AuthenticatedUser>("/auth/me");
+              const retryResponse = await api.get<AuthenticatedUser | string>("/auth/me");
               if (!isMounted) return;
-              const retryData = retryResponse.data;
-              setUser(retryData ?? null);
+              const retryData = parseAuthUser(retryResponse.data);
+              setUser(retryData);
               setAuthStatus("authenticated");
               setRolesStatus("resolved");
               refreshRetryRef.current = 0;
