@@ -1,103 +1,106 @@
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import type { ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  ReactNode,
+} from "react"
 
-export type Role = "admin" | "staff";
-export type AppSilo = "bf" | "bi" | "slf";
+export type Role = "admin" | "staff"
+export type AppSilo = "bf" | "bi" | "slf"
 
-type DecodedToken = {
-  role?: Role;
-  exp?: number;
-  allowedSilos?: AppSilo[];
-};
-
-function decodePortalToken(token: string): DecodedToken | null {
-  try {
-    const [, payload] = token.split(".");
-    return JSON.parse(atob(payload || "")) as DecodedToken;
-  } catch {
-    return null;
-  }
+export type AuthUser = {
+  id: string
+  email: string
+  role: string
 }
 
-const allowedSilos: Record<Role, AppSilo[]> = {
+export type AuthState = "authenticated" | "unauthenticated" | "loading"
+
+const roleAllowedSilos: Record<Role, AppSilo[]> = {
   admin: ["bf", "bi", "slf"],
-  staff: ["bf", "bi"]
-};
-
-interface AuthContextType {
-  role: Role | null;
-  token: string | null;
-  login: (t: string) => void;
-  logout: () => void;
-  canAccessSilo: (silo: AppSilo) => boolean;
-  allowedSilos: AppSilo[];
+  staff: ["bf", "bi"],
 }
 
-const AuthContext = createContext<AuthContextType>({
-  role: null,
-  token: null,
-  login: () => {},
-  logout: () => {},
-  canAccessSilo: () => false,
-  allowedSilos: []
-});
+type AuthContextType = {
+  user: AuthUser | null
+  authState: AuthState
+  isAuthenticated: boolean
+  isLoading: boolean
+  login: (email: string, password: string) => Promise<boolean>
+  logout: () => void
+
+  // Backward compatibility for existing app usage
+  role: Role | null
+  token: string | null
+  canAccessSilo: (silo: AppSilo) => boolean
+  allowedSilos: AppSilo[]
+
+  // compatibility for existing tests
+  setAuth: (user: AuthUser | null) => void
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [token, setToken] = useState<string | null>(() => localStorage.getItem("portal_token"));
-  const [role, setRole] = useState<Role | null>(null);
-  const [tokenAllowedSilos, setTokenAllowedSilos] = useState<AppSilo[]>([]);
+  const [user, setUser] = useState<AuthUser | null>(null)
+  const [authState, setAuthState] = useState<AuthState>("loading")
 
   useEffect(() => {
-    if (!token) {
-      setRole(null);
-      return;
+    setAuthState("unauthenticated")
+  }, [])
+
+  const login = async (email: string, password: string) => {
+    if (!email || !password) return false
+
+    const fakeUser: AuthUser = {
+      id: "1",
+      email,
+      role: "admin",
     }
 
-    const decoded = decodePortalToken(token);
-    if (!decoded) {
-      logout();
-      return;
-    }
-
-    if (!decoded.exp || decoded.exp * 1000 < Date.now()) {
-      logout();
-      return;
-    }
-
-    if (!decoded.role) {
-      logout();
-      return;
-    }
-
-    setRole(decoded.role);
-    setTokenAllowedSilos(decoded.allowedSilos?.length ? decoded.allowedSilos : allowedSilos[decoded.role]);
-  }, [token]);
-
-  function login(t: string) {
-    localStorage.setItem("portal_token", t);
-    setToken(t);
+    setUser(fakeUser)
+    setAuthState("authenticated")
+    return true
   }
 
-  function logout() {
-    localStorage.removeItem("portal_token");
-    setToken(null);
-    setRole(null);
-    setTokenAllowedSilos([]);
+  const logout = () => {
+    setUser(null)
+    setAuthState("unauthenticated")
   }
 
-  const canAccessSilo = (silo: AppSilo) => {
-    return tokenAllowedSilos.includes(silo);
-  };
+  const setAuth = (newUser: AuthUser | null) => {
+    setUser(newUser)
+    setAuthState(newUser ? "authenticated" : "unauthenticated")
+  }
 
-  const roleAllowedSilos = useMemo(() => tokenAllowedSilos, [tokenAllowedSilos]);
+  const role: Role | null = user?.role === "staff" ? "staff" : user ? "admin" : null
+  const allowedSilos = role ? roleAllowedSilos[role] : []
+  const canAccessSilo = (silo: AppSilo) => allowedSilos.includes(silo)
 
-  return (
-    <AuthContext.Provider value={{ role, token, login, logout, canAccessSilo, allowedSilos: roleAllowedSilos }}>
-      {children}
-    </AuthContext.Provider>
-  );
+  const value = useMemo(
+    () => ({
+      user,
+      authState,
+      isAuthenticated: authState === "authenticated",
+      isLoading: authState === "loading",
+      login,
+      logout,
+      role,
+      token: null,
+      canAccessSilo,
+      allowedSilos,
+      setAuth,
+    }),
+    [user, authState, role, allowedSilos]
+  )
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
 export function useAuth() {
-  return useContext(AuthContext);
+  const ctx = useContext(AuthContext)
+  if (!ctx) throw new Error("useAuth must be used within AuthProvider")
+  return ctx
 }
