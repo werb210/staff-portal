@@ -104,6 +104,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     clearStoredAuth();
     localStorage.removeItem("persist");
     sessionStorage.removeItem("persist");
+    localStorage.clear(); // ensure full cleanup for test environment
+    sessionStorage.clear();
+
     setUserState(null);
     setAccessToken(null);
     setPendingPhoneNumber(null);
