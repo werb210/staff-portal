@@ -172,8 +172,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   )
 }
 
-export const useAuthContext = () => {
+/**
+ * IMPORTANT:
+ * Many files import `useAuth` directly from AuthContext.
+ * Re-export it here to satisfy all existing imports.
+ */
+export const useAuth = () => {
   const ctx = useContext(AuthContext)
-  if (!ctx) throw new Error("useAuth must be used within AuthProvider")
+  if (!ctx) {
+    throw new Error("useAuth must be used within AuthProvider")
+  }
   return ctx
 }
