@@ -1,9 +1,9 @@
 import React, { createContext, useContext, useEffect, useState } from "react"
 
-export type AuthStatus = "idle" | "pending" | "authenticated" | "unauthenticated"
+export type AuthStatus = "idle" | "loading" | "authenticated" | "unauthenticated"
 export type RolesStatus = "idle" | "loading" | "loaded"
 
-interface User {
+export interface User {
   id: string
   email: string
   role: string
@@ -11,43 +11,47 @@ interface User {
 
 export interface AuthContextType {
   user: User | null
-  authenticated: boolean
+  accessToken: string | null
+
+  isAuthenticated: boolean
+  isLoading: boolean
+
   authStatus: AuthStatus
   rolesStatus: RolesStatus
   authReady: boolean
-  accessToken: string | null
+
   error: string | null
   pendingPhoneNumber: string | null
 
-  startOtp: (phone: string) => Promise<void>
-  verifyOtp: (code: string) => Promise<void>
-  login: (email: string, password: string) => Promise<void>
-
-  setAuth: (user: User | null) => void
-  setAuthenticated: (val: boolean) => void
-  setUser: (user: User | null) => void
-  setAuthState: (state: Partial<AuthContextType>) => void
+  startOtp: (payload: { phone: string }) => Promise<boolean>
+  verifyOtp: (payload: { phone: string; code: string }) => Promise<boolean>
+  loginWithOtp: (payload: { phone: string; code: string }) => Promise<boolean>
+  login: (email: string, password: string) => Promise<boolean>
+  logout: () => void
   clearAuth: () => void
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null)
+  const [accessToken, setAccessToken] = useState<string | null>(null)
+
   const [authStatus, setAuthStatus] = useState<AuthStatus>("idle")
   const [rolesStatus, setRolesStatus] = useState<RolesStatus>("idle")
-  const [accessToken, setAccessToken] = useState<string | null>(null)
+
   const [error, setError] = useState<string | null>(null)
   const [pendingPhoneNumber, setPendingPhoneNumber] = useState<string | null>(null)
 
-  const authenticated = !!user
-  const authReady = authStatus !== "idle" && authStatus !== "pending"
+  const isAuthenticated = !!user
+  const isLoading = authStatus === "loading"
+  const authReady = authStatus !== "idle"
 
   useEffect(() => {
     let mounted = true
 
     async function hydrate() {
-      setAuthStatus("pending")
+      setAuthStatus("loading")
       try {
         const res = await fetch("/api/auth/me")
         if (!mounted) return
@@ -72,7 +76,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
-  async function startOtp(phone: string) {
+  const startOtp = async ({ phone }: { phone: string }) => {
     setError(null)
     const res = await fetch("/api/auth/request-otp", {
       method: "POST",
@@ -82,24 +86,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     if (!res.ok) {
       setError("otp_request_failed")
-      throw new Error("otp_request_failed")
+      return false
     }
 
     setPendingPhoneNumber(phone)
+    return true
   }
 
-  async function verifyOtp(code: string) {
-    if (!pendingPhoneNumber) throw new Error("no_pending_phone")
-
+  const verifyOtp = async ({ phone, code }: { phone: string; code: string }) => {
     const res = await fetch("/api/auth/verify-otp", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone: pendingPhoneNumber, code }),
+      body: JSON.stringify({ phone, code }),
     })
 
     if (!res.ok) {
       setError("invalid_otp")
-      throw new Error("invalid_otp")
+      return false
     }
 
     const data = await res.json()
@@ -108,9 +111,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setAuthStatus("authenticated")
     setRolesStatus("loaded")
     setPendingPhoneNumber(null)
+    return true
   }
 
-  async function login(email: string, password: string) {
+  const loginWithOtp = async ({ phone, code }: { phone: string; code: string }) => {
+    return verifyOtp({ phone, code })
+  }
+
+  const login = async (email: string, password: string) => {
     const res = await fetch("/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -119,7 +127,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     if (!res.ok) {
       setError("login_failed")
-      throw new Error("login_failed")
+      return false
     }
 
     const data = await res.json()
@@ -127,47 +135,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setAccessToken(data.accessToken ?? null)
     setAuthStatus("authenticated")
     setRolesStatus("loaded")
+    return true
   }
 
-  function setAuth(user: User | null) {
-    setUser(user)
-    setAuthStatus(user ? "authenticated" : "unauthenticated")
-  }
-
-  function setAuthenticated(val: boolean) {
-    setAuthStatus(val ? "authenticated" : "unauthenticated")
-  }
-
-  function setAuthState(state: Partial<AuthContextType>) {
-    if (state.user !== undefined) setUser(state.user)
-    if (state.accessToken !== undefined) setAccessToken(state.accessToken)
-  }
-
-  function clearAuth() {
+  const logout = () => {
     setUser(null)
     setAccessToken(null)
     setAuthStatus("unauthenticated")
     setRolesStatus("idle")
   }
 
+  const clearAuth = () => {
+    logout()
+  }
+
   return (
     <AuthContext.Provider
       value={{
         user,
-        authenticated,
+        accessToken,
+        isAuthenticated,
+        isLoading,
         authStatus,
         rolesStatus,
         authReady,
-        accessToken,
         error,
         pendingPhoneNumber,
         startOtp,
         verifyOtp,
+        loginWithOtp,
         login,
-        setAuth,
-        setAuthenticated,
-        setUser,
-        setAuthState,
+        logout,
         clearAuth,
       }}
     >
@@ -176,7 +174,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   )
 }
 
-export function useAuth() {
+export const useAuth = () => {
   const ctx = useContext(AuthContext)
   if (!ctx) throw new Error("useAuth must be used within AuthProvider")
   return ctx
