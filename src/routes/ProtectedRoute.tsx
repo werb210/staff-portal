@@ -1,19 +1,18 @@
-import React from "react"
 import { Navigate } from "react-router-dom"
-import { useAuth } from "../auth/AuthContext"
+import { useAuth } from "@/auth/AuthContext"
 
 export default function ProtectedRoute({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const { authenticated, status } = useAuth()
+  const { status, isAuthenticated } = useAuth()
 
-  if (status === "pending") {
-    return <div>Loading secure content</div>
+  if (status === "loading") {
+    return <div>Loading...</div>
   }
 
-  if (!authenticated) {
+  if (!isAuthenticated) {
     return <Navigate to="/login" replace />
   }
 

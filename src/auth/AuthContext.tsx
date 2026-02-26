@@ -1,6 +1,10 @@
 import React, { createContext, useContext, useEffect, useState } from "react"
 
-export type AuthState = "idle" | "loading" | "authenticated" | "unauthenticated"
+export type AuthState =
+  | "idle"
+  | "loading"
+  | "authenticated"
+  | "unauthenticated"
 
 export interface User {
   id: string
@@ -41,6 +45,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setStatus("loading")
       try {
         const res = await fetch("/api/auth/me")
+
         if (!mounted) return
 
         if (res.ok) {
