@@ -3,8 +3,17 @@ import { BrowserRouter, Routes, Route } from "react-router-dom"
 import { AuthProvider } from "./auth/AuthContext"
 import ProtectedRoute from "./routes/ProtectedRoute"
 import LoginPage from "./pages/LoginPage"
-import Dashboard from "./pages/Dashboard"
-import LenderPage from "./pages/LenderPage"
+
+// REMOVE broken Dashboard import
+// REMOVE broken LenderPage import
+
+function Dashboard() {
+  return <div>Dashboard</div>
+}
+
+function Lenders() {
+  return <div>Protected</div>
+}
 
 export default function App() {
   return (
@@ -12,6 +21,7 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+
           <Route
             path="/dashboard"
             element={
@@ -20,11 +30,12 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+
           <Route
             path="/lenders/*"
             element={
               <ProtectedRoute>
-                <LenderPage />
+                <Lenders />
               </ProtectedRoute>
             }
           />
