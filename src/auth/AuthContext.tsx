@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react"
 
-type Status = "pending" | "resolved"
+export type AuthStatus = "idle" | "pending" | "authenticated" | "unauthenticated"
+export type RolesStatus = "idle" | "loading" | "loaded"
 
 interface User {
   id: string
@@ -8,38 +9,60 @@ interface User {
   role: string
 }
 
-interface AuthContextType {
+export interface AuthContextType {
   user: User | null
   authenticated: boolean
-  status: Status
-  loginWithOtp: (phone: string, code: string) => Promise<void>
-  logout: () => Promise<void>
+  authStatus: AuthStatus
+  rolesStatus: RolesStatus
+  authReady: boolean
+  accessToken: string | null
+  error: string | null
+  pendingPhoneNumber: string | null
+
+  startOtp: (phone: string) => Promise<void>
+  verifyOtp: (code: string) => Promise<void>
+  login: (email: string, password: string) => Promise<void>
+
+  setAuth: (user: User | null) => void
+  setAuthenticated: (val: boolean) => void
+  setUser: (user: User | null) => void
+  setAuthState: (state: Partial<AuthContextType>) => void
+  clearAuth: () => void
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
-  const [status, setStatus] = useState<Status>("pending")
+  const [authStatus, setAuthStatus] = useState<AuthStatus>("idle")
+  const [rolesStatus, setRolesStatus] = useState<RolesStatus>("idle")
+  const [accessToken, setAccessToken] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [pendingPhoneNumber, setPendingPhoneNumber] = useState<string | null>(null)
+
+  const authenticated = !!user
+  const authReady = authStatus !== "idle" && authStatus !== "pending"
 
   useEffect(() => {
     let mounted = true
 
     async function hydrate() {
+      setAuthStatus("pending")
       try {
         const res = await fetch("/api/auth/me")
         if (!mounted) return
 
         if (res.ok) {
           const data = await res.json()
-          setUser(data.user ?? null)
+          setUser(data.user)
+          setAccessToken(data.accessToken ?? null)
+          setAuthStatus("authenticated")
+          setRolesStatus("loaded")
         } else {
-          setUser(null)
+          setAuthStatus("unauthenticated")
         }
       } catch {
-        setUser(null)
-      } finally {
-        if (mounted) setStatus("resolved")
+        setAuthStatus("unauthenticated")
       }
     }
 
@@ -49,36 +72,103 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
-  async function loginWithOtp(phone: string, code: string) {
-    const res = await fetch("/api/auth/verify-otp", {
+  async function startOtp(phone: string) {
+    setError(null)
+    const res = await fetch("/api/auth/request-otp", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone, code }),
+      body: JSON.stringify({ phone }),
     })
 
     if (!res.ok) {
+      setError("otp_request_failed")
+      throw new Error("otp_request_failed")
+    }
+
+    setPendingPhoneNumber(phone)
+  }
+
+  async function verifyOtp(code: string) {
+    if (!pendingPhoneNumber) throw new Error("no_pending_phone")
+
+    const res = await fetch("/api/auth/verify-otp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone: pendingPhoneNumber, code }),
+    })
+
+    if (!res.ok) {
+      setError("invalid_otp")
       throw new Error("invalid_otp")
     }
 
     const data = await res.json()
     setUser(data.user)
-    setStatus("resolved")
+    setAccessToken(data.accessToken ?? null)
+    setAuthStatus("authenticated")
+    setRolesStatus("loaded")
+    setPendingPhoneNumber(null)
   }
 
-  async function logout() {
-    await fetch("/api/auth/logout", { method: "POST" })
+  async function login(email: string, password: string) {
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    })
+
+    if (!res.ok) {
+      setError("login_failed")
+      throw new Error("login_failed")
+    }
+
+    const data = await res.json()
+    setUser(data.user)
+    setAccessToken(data.accessToken ?? null)
+    setAuthStatus("authenticated")
+    setRolesStatus("loaded")
+  }
+
+  function setAuth(user: User | null) {
+    setUser(user)
+    setAuthStatus(user ? "authenticated" : "unauthenticated")
+  }
+
+  function setAuthenticated(val: boolean) {
+    setAuthStatus(val ? "authenticated" : "unauthenticated")
+  }
+
+  function setAuthState(state: Partial<AuthContextType>) {
+    if (state.user !== undefined) setUser(state.user)
+    if (state.accessToken !== undefined) setAccessToken(state.accessToken)
+  }
+
+  function clearAuth() {
     setUser(null)
-    setStatus("resolved")
+    setAccessToken(null)
+    setAuthStatus("unauthenticated")
+    setRolesStatus("idle")
   }
 
   return (
     <AuthContext.Provider
       value={{
         user,
-        authenticated: !!user,
-        status,
-        loginWithOtp,
-        logout,
+        authenticated,
+        authStatus,
+        rolesStatus,
+        authReady,
+        accessToken,
+        error,
+        pendingPhoneNumber,
+        startOtp,
+        verifyOtp,
+        login,
+        setAuth,
+        setAuthenticated,
+        setUser,
+        setAuthState,
+        clearAuth,
       }}
     >
       {children}
