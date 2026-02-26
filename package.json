@@ -10,7 +10,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:e2e": "playwright test tests/e2e/auth.otp.e2e.spec.ts",
+    "test:e2e": "playwright test",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint .",
     "verify": "npm run typecheck && npm run build",
@@ -18,7 +18,9 @@
     "audit:enterprise": "node scripts/enterprise-audit.js",
     "optimize:images": "node scripts/optimize-images.js",
     "prestart": "node ./scripts/verify-node-version.js",
-    "smoke": "node ./scripts/smoke-test.js"
+    "smoke": "node ./scripts/smoke-test.js",
+    "test:unit": "vitest run",
+    "test:ci": "npm run typecheck && npm run test:unit"
   },
   "dependencies": {
     "@azure/msal-browser": "^3.30.0",
