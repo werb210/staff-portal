@@ -1,46 +1,21 @@
-import { Navigate, useLocation } from "react-router-dom";
-import { useAuth } from "@/auth/AuthContext";
-import AppLoading from "@/components/layout/AppLoading";
-import { getRequestId } from "@/utils/requestId";
-import { recordRedirect } from "@/utils/redirectGuard";
+import React from "react"
+import { Navigate } from "react-router-dom"
+import { useAuth } from "../auth/AuthContext"
 
-const LoadingScreen = () => <AppLoading />;
+export default function ProtectedRoute({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  const { authenticated, status } = useAuth()
 
-export function ProtectedRoute({ children }: { children: JSX.Element }) {
-  const auth = useAuth();
-  const location = useLocation();
-  const requestId = getRequestId();
-
-  if (auth.authStatus === "loading" || auth.rolesStatus === "loading") {
-    return <LoadingScreen />;
+  if (status === "pending") {
+    return <div>Loading secure content</div>
   }
 
-  if (auth.authStatus === "authenticated" && !auth.user) {
-    return <LoadingScreen />;
+  if (!authenticated) {
+    return <Navigate to="/login" replace />
   }
 
-  if (auth.authStatus === "unauthenticated") {
-    if (import.meta.env.DEV) {
-      console.info("Route guard decision", {
-        requestId,
-        route: location.pathname,
-        authState: auth.authStatus,
-        reason: "unauthenticated_redirect"
-      });
-    }
-
-    recordRedirect(location.pathname, "unauthenticated", location.key);
-    return <Navigate to="/login" replace />;
-  }
-
-  if (import.meta.env.DEV) {
-    console.info("Route guard decision", {
-      requestId,
-      route: location.pathname,
-      authState: auth.authStatus,
-      reason: auth.rolesStatus === "resolved" ? "authenticated" : "roles_loading"
-    });
-  }
-
-  return children;
+  return <>{children}</>
 }
