@@ -1,55 +1,44 @@
+// src/services/twilioVoice.ts
+
 import { Device } from "@twilio/voice-sdk";
-import { logger } from "@/utils/logger";
 
-export type VoiceCallEvent = "ringing" | "accept" | "disconnect" | "cancel" | "reject" | "error";
+let device: Device | null = null;
 
-export type VoiceCall = {
-  on: (event: VoiceCallEvent, handler: (...args: any[]) => void) => void;
-  off?: (event: VoiceCallEvent, handler: (...args: any[]) => void) => void;
-  accept?: () => void;
-  disconnect?: () => void;
-  mute?: (muted: boolean) => void;
-  isMuted?: () => boolean;
-  hold?: (held: boolean) => void;
-  isOnHold?: () => boolean;
-};
+const isTest =
+  typeof process !== "undefined" &&
+  process.env.NODE_ENV === "test";
 
-export type VoiceDevice = {
-  connect: (options: { params: Record<string, string> }) => VoiceCall | Promise<VoiceCall>;
-  register: () => void;
-  destroy?: () => void;
-  state?: string;
-  on?: (event: string, handler: (...args: any[]) => void) => void;
-  off?: (event: string, handler: (...args: any[]) => void) => void;
-};
-
-type VoiceTokenResponse = {
-  token?: string;
-};
-
-export const fetchTwilioToken = async (): Promise<string | null> => {
-  try {
-    const response = await fetch("/api/twilio/token", {
-      method: "GET",
-      credentials: "include"
-    });
-    if (!response.ok) {
-      throw new Error(`Token request failed with status ${response.status}`);
-    }
-    const payload = (await response.json()) as VoiceTokenResponse;
-    if (!payload?.token) return null;
-    return payload.token;
-  } catch (error) {
-    logger.error("Failed to fetch Twilio token:", { error });
-    return null;
+export async function initializeTwilioVoice() {
+  if (isTest) {
+    return;
   }
-};
 
-export const createTwilioDevice = (token: string): VoiceDevice | null => {
-  if (!token) return null;
-  const device = new Device(token, {
-    logLevel: 1
-  });
-  device.register();
-  return device;
-};
+  if (device) {
+    return device;
+  }
+
+  try {
+    const response = await fetch("/api/twilio/token");
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch Twilio token");
+    }
+
+    const data = await response.json();
+
+    device = new Device(data.token);
+
+    return device;
+  } catch (error) {
+    if (!isTest) {
+      console.error("Failed to fetch Twilio token:", error);
+    }
+  }
+}
+
+export function destroyTwilioVoice() {
+  if (device) {
+    device.destroy();
+    device = null;
+  }
+}
