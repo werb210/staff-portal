@@ -102,8 +102,8 @@ describe("application visibility requirements", () => {
       expect(screen.getAllByText("Bank Statement")[0]).toBeInTheDocument();
     });
 
-    await userEvent.click(screen.getByRole("button", { name: "Accept" }));
-    const modal = screen.getByRole("dialog");
+    await userEvent.click(await screen.findByRole("button", { name: "Accept" }));
+    const modal = await screen.findByRole("dialog");
     await userEvent.click(within(modal).getByRole("button", { name: "Accept" }));
 
     await waitFor(() => {
@@ -123,11 +123,11 @@ describe("application visibility requirements", () => {
       expect(screen.getAllByText("Bank Statement")[0]).toBeInTheDocument();
     });
 
-    await userEvent.click(screen.getByRole("button", { name: "Reject" }));
-    const modal = screen.getByRole("dialog");
+    await userEvent.click(await screen.findByRole("button", { name: "Reject" }));
+    const modal = await screen.findByRole("dialog");
     await userEvent.click(within(modal).getByRole("button", { name: "Reject" }));
 
-    expect(screen.getByText("Rejection reason is required.")).toBeInTheDocument();
+    expect(await screen.findByText("Rejection reason is required.")).toBeInTheDocument();
     expect(rejectDocumentMock).not.toHaveBeenCalled();
   });
 
@@ -144,8 +144,8 @@ describe("application visibility requirements", () => {
       expect(screen.getAllByText("Bank Statement")[0]).toBeInTheDocument();
     });
 
-    await userEvent.click(screen.getByRole("button", { name: "Reject" }));
-    const modal = screen.getByRole("dialog");
+    await userEvent.click(await screen.findByRole("button", { name: "Reject" }));
+    const modal = await screen.findByRole("dialog");
     await userEvent.type(within(modal).getByLabelText("Rejection reason"), "Missing pages");
     await userEvent.click(within(modal).getByRole("button", { name: "Reject" }));
 
