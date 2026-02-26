@@ -1,89 +1,97 @@
 import "@testing-library/jest-dom"
-import React, { useEffect, useState } from "react"
 import { vi } from "vitest"
 
 vi.mock("@/auth/AuthContext", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/auth/AuthContext")>()
 
-  let authState = {
-    user: null as null | { id: string; email: string; role: string },
-    status: "unauthenticated" as
-      | "loading"
-      | "unauthenticated"
-      | "otp-sent"
-      | "authenticated",
+  type AuthState = {
+    user: null | { id: string; email: string; role: string }
+    role: string | null
+    status: "loading" | "unauthenticated" | "authenticated"
+    resolved: boolean
+    location: string
+  }
+
+  let authState: AuthState = {
+    user: null,
+    role: null,
+    status: "unauthenticated",
+    resolved: true,
     location: "/login",
   }
 
   const listeners = new Set<() => void>()
+  const notify = () => listeners.forEach((l) => l())
 
-  const notify = () => {
-    listeners.forEach((l) => l())
-  }
-
-  const setAuth = (next: typeof authState) => {
-    authState = next
+  const setState = (next: Partial<AuthState>) => {
+    authState = { ...authState, ...next }
     notify()
   }
 
-  const requestOtp = vi.fn().mockImplementation(async () => {
-    authState = { ...authState, status: "otp-sent" }
-    notify()
-    return { ok: true }
-  })
+  const requestOtp = vi.fn().mockResolvedValue({ ok: true })
 
-  const verifyOtp = vi.fn().mockImplementation(async () => {
-    authState = {
+  const verifyOtp = vi.fn().mockImplementation(async (code?: string) => {
+    if (code === "000000") {
+      return { ok: false, error: "invalid_otp" }
+    }
+
+    setState({
       user: {
         id: "test-user",
         email: "test@example.com",
         role: "Admin",
       },
+      role: "Admin",
       status: "authenticated",
+      resolved: true,
       location: "/dashboard",
-    }
-    notify()
+    })
+
     return { ok: true }
   })
 
   const hydrate = vi.fn().mockImplementation(async () => {
-    authState = {
+    setState({
       user: {
         id: "test-user",
         email: "test@example.com",
         role: "Admin",
       },
+      role: "Admin",
       status: "authenticated",
+      resolved: true,
       location: "/dashboard",
-    }
-    notify()
+    })
+
     return { ok: true }
   })
 
   const logout = vi.fn().mockImplementation(() => {
-    authState = {
+    setState({
       user: null,
+      role: null,
       status: "unauthenticated",
+      resolved: true,
       location: "/login",
-    }
-    notify()
+    })
   })
 
   return {
     ...actual,
 
     useAuth: () => {
-      const [, forceRender] = useState({})
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { useEffect, useState } = require("react") as typeof import("react")
+      const [, force] = useState({})
 
       useEffect(() => {
-        const rerender = () => forceRender({})
+        const rerender = () => force({})
         listeners.add(rerender)
         return () => listeners.delete(rerender)
       }, [])
 
       return {
         ...authState,
-        setAuth,
         requestOtp,
         verifyOtp,
         hydrate,
