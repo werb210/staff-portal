@@ -39,7 +39,9 @@ const SMSComposer = ({ visible, contact, onClose }: SMSComposerProps) => {
 
   const handleSend = async () => {
     if (!body) return;
-    await sendSms(contact, body, siloNumbers[silo]);
+    const phone = siloNumbers[silo];
+    if (!phone) return;
+    await sendSms(contact, body, phone);
     setBody("");
     queryClient.invalidateQueries({ queryKey: ["sms", contact.id] });
   };
@@ -54,7 +56,7 @@ const SMSComposer = ({ visible, contact, onClose }: SMSComposerProps) => {
           </Button>
         }
       >
-        <p>Messages sent from {siloNumbers[silo]}</p>
+        <p>Messages sent from {siloNumbers[silo] ?? "Unknown number"}</p>
         <SMSThread messages={messages} />
         <div className="flex gap-2 items-center mt-2">
           <Select value={silo} onChange={() => undefined}>

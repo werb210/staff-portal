@@ -17,6 +17,7 @@ import ChatPanel from "./ChatPanel";
 import { fetchIssueReports } from "@/api/support";
 import { logger } from "@/utils/logger";
 import { useBusinessUnit } from "@/hooks/useBusinessUnit";
+import { normalizeBusinessUnit } from "@/types/businessUnit";
 import { BUSINESS_UNIT_CONFIG } from "@/config/businessUnitConfig";
 
 type CommsView = "threads" | "ai-live-chat" | "ai-sessions" | "issue-reports" | "contact-forms";
@@ -87,14 +88,15 @@ const CommunicationsContent = () => {
   } = useCommunicationsStore();
   const { user } = useAuth();
   const { activeBusinessUnit } = useBusinessUnit();
-  const businessUnitConfig = BUSINESS_UNIT_CONFIG[activeBusinessUnit];
+  const businessUnit = normalizeBusinessUnit(activeBusinessUnit);
+  const businessUnitConfig = BUSINESS_UNIT_CONFIG[businessUnit];
   const isAdmin = user?.role?.toLowerCase() === "admin";
   const [view, setView] = useState<CommsView>("threads");
   const selectedConversation = conversations.find((conv) => conv.id === selectedConversationId);
 
   const { data, isLoading, error } = useQuery<CommunicationConversation[], Error>({
-    queryKey: ["communications", activeBusinessUnit, "threads"],
-    queryFn: () => fetchCommunicationThreads(activeBusinessUnit)
+    queryKey: ["communications", businessUnit, "threads"],
+    queryFn: () => fetchCommunicationThreads(businessUnit)
   });
 
   useEffect(() => {

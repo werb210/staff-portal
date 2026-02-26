@@ -61,7 +61,9 @@ const isFieldApplicable = (field: OcrFieldDefinition, documentType: string) =>
 const extractFieldFromPages = (field: OcrFieldDefinition, pages: string[]) => {
   const pattern = buildLabelPattern(field.display_label, field.type);
   for (let index = 0; index < pages.length; index += 1) {
-    const match = pages[index].match(pattern);
+    const page = pages[index];
+    if (!page) continue;
+    const match = page.match(pattern);
     if (match?.[1]) {
       return { value: match[1].trim(), page: index + 1 };
     }

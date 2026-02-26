@@ -76,7 +76,8 @@ const resolveStageLabel = (stage: string) => {
 
 const ApplicationShellPage = () => {
   const { id } = useParams<{ id: string }>();
-  const [selectedTab, setSelectedTab] = useState(APPLICATION_TABS[0].id);
+  const firstTabId = APPLICATION_TABS[0]?.id ?? "application";
+  const [selectedTab, setSelectedTab] = useState(firstTabId);
 
   const applicationQuery = useQuery({
     queryKey: ["portal-application", id],

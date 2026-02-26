@@ -106,7 +106,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
             const nextProfile = { ...state.profile, ...data };
             if (nameValue && (!nextProfile.firstName || !nextProfile.lastName)) {
               const [firstName, ...rest] = nameValue.split(" ");
-              nextProfile.firstName = nextProfile.firstName || firstName;
+              nextProfile.firstName = nextProfile.firstName || firstName || "";
               nextProfile.lastName = nextProfile.lastName || rest.join(" ");
             }
             return nextProfile;

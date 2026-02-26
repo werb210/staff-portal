@@ -21,6 +21,7 @@ import { canWrite } from "@/auth/can";
 import { getSubmissionMethodBadgeTone, getSubmissionMethodLabel } from "@/utils/submissionMethods";
 import { trackPortalEvent } from "@/lib/portalTracking";
 import { useBusinessUnit } from "@/hooks/useBusinessUnit";
+import { normalizeBusinessUnit } from "@/types/businessUnit";
 import { BUSINESS_UNIT_CONFIG } from "@/config/businessUnitConfig";
 
 type MatchWithMethod = LenderMatch & {
@@ -38,7 +39,8 @@ const LendersTab = () => {
   const applicationId = useApplicationDrawerStore((state) => state.selectedApplicationId);
   const { user } = useAuth();
   const { activeBusinessUnit } = useBusinessUnit();
-  const canSendToLender = BUSINESS_UNIT_CONFIG[activeBusinessUnit].allowLenderSend;
+  const businessUnit = normalizeBusinessUnit(activeBusinessUnit);
+  const canSendToLender = BUSINESS_UNIT_CONFIG[businessUnit].allowLenderSend;
   const queryClient = useQueryClient();
   const { data: matches = [], isLoading, error } = useQuery<LenderMatch[]>({
     queryKey: ["lenders", applicationId, "matches"],

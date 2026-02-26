@@ -14,6 +14,9 @@ const ABTestingSuite = () => {
         <Table headers={["Ad", "Platform", "Metric", "Variant A", "Variant B", "Winner"]}>
           {(data || []).map((test) => {
             const [variantA, variantB] = test.variants;
+            if (!variantA || !variantB) {
+              return null;
+            }
             const winner =
               (test.metric === "clicks" ? variantA.clicks : variantA.conversions) >=
               (test.metric === "clicks" ? variantB.clicks : variantB.conversions)

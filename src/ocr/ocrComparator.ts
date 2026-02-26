@@ -26,9 +26,10 @@ const normalizeDate = (value: string) => {
   if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
   const match = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
   if (!match) return null;
-  const month = match[1].padStart(2, "0");
-  const day = match[2].padStart(2, "0");
-  const year = match[3].length === 2 ? `20${match[3]}` : match[3];
+  const [, rawMonth = "", rawDay = "", rawYear = ""] = match;
+  const month = rawMonth.padStart(2, "0");
+  const day = rawDay.padStart(2, "0");
+  const year = rawYear.length === 2 ? `20${rawYear}` : rawYear;
   return `${year}-${month}-${day}`;
 };
 
@@ -57,7 +58,9 @@ export const compareOcrResults = (results: OcrResultRecord[]): OcrComparisonResu
   const filteredResults = results.filter((result) => OCR_FIELD_REGISTRY_MAP.has(result.field_key));
   const resultsByField = filteredResults.reduce<Record<string, OcrResultRecord[]>>((acc, result) => {
     if (!acc[result.field_key]) acc[result.field_key] = [];
-    acc[result.field_key].push(result);
+    const bucket = acc[result.field_key];
+    if (!bucket) return acc;
+    bucket.push(result);
     return acc;
   }, {});
 

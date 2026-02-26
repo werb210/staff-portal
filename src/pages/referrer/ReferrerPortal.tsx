@@ -5,6 +5,7 @@ import { submitReferral } from "@/api/referrals";
 import { useAuth } from "@/hooks/useAuth";
 import { useSilo } from "@/hooks/useSilo";
 import { getErrorMessage } from "@/utils/errors";
+import { normalizeBusinessUnit } from "@/types/businessUnit";
 
 const ReferrerPortal = () => {
   const { user } = useAuth();
@@ -34,7 +35,7 @@ const ReferrerPortal = () => {
         phone: phone.trim(),
         referrerId: user.id,
         referrerName: user.name,
-        silo
+        silo: normalizeBusinessUnit(silo)
       });
       setStatus(`Referral submitted. CRM contact ${response.contact.name} created.`);
       setBusinessName("");

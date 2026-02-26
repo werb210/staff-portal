@@ -1,7 +1,7 @@
 import Select from "@/components/ui/Select";
 import { useSilo } from "@/hooks/useSilo";
 import { useAuth } from "@/hooks/useAuth";
-import { DEFAULT_BUSINESS_UNIT, type BusinessUnit } from "@/types/businessUnit";
+import { DEFAULT_BUSINESS_UNIT, normalizeBusinessUnit, type BusinessUnit } from "@/types/businessUnit";
 
 const unitLabels = {
   BF: "Boreal Financial",
@@ -25,7 +25,11 @@ const BusinessUnitSelector = () => {
     <Select
       label="Business Unit"
       value={silo}
-      onChange={(event) => setSilo(event.target.value as typeof silo)}
+      onChange={(event) =>
+        (setSilo as (value: BusinessUnit) => void)(
+          normalizeBusinessUnit(event.target.value as "bf" | "bi" | "slf" | BusinessUnit)
+        )
+      }
       options={(businessUnits.length ? businessUnits : [DEFAULT_BUSINESS_UNIT]).map((businessUnit) => ({
         value: businessUnit,
         label: unitLabels[businessUnit]

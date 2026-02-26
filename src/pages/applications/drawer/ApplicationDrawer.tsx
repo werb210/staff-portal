@@ -48,7 +48,8 @@ const ApplicationDrawer = () => {
     [isStaff, canEdit]
   );
   const tabOrder = visibleTabs.map((tab) => tab.id);
-  const activeTab = tabOrder.includes(selectedTab) ? selectedTab : tabOrder[0];
+  const defaultTab = tabOrder[0] ?? null;
+  const activeTab = tabOrder.includes(selectedTab) ? selectedTab : defaultTab;
   const selectedIndex = activeTab ? tabOrder.indexOf(activeTab) : -1;
   const previousTab = selectedIndex > 0 ? tabOrder[selectedIndex - 1] : null;
 
@@ -62,7 +63,9 @@ const ApplicationDrawer = () => {
   useEffect(() => {
     if (visibleTabs.length === 0) return;
     if (!visibleTabs.some((tab) => tab.id === selectedTab)) {
-      setTab(visibleTabs[0].id);
+      const firstVisibleTab = visibleTabs[0];
+      if (!firstVisibleTab) return;
+      setTab(firstVisibleTab.id);
     }
   }, [selectedTab, setTab, visibleTabs]);
 

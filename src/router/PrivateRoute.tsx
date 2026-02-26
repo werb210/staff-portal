@@ -48,7 +48,14 @@ export default function PrivateRoute({
   if (
     auth.authStatus === "authenticated" &&
     !canAccess({
-      role: auth.user?.role ?? null,
+      role: (auth.user?.role ?? null) as
+        | "Admin"
+        | "Staff"
+        | "Marketing"
+        | "Viewer"
+        | "Lender"
+        | "Referrer"
+        | null,
       allowedRoles,
       requiredCapabilities,
       userCapabilities: (auth.user as { capabilities?: Capability[] } | null)?.capabilities ?? null
