@@ -30,17 +30,25 @@ const logout = vi.fn(() => {
   authState.location = '/login'
 })
 
-vi.mock('@/auth/AuthContext', () => ({
-  useAuth: () => ({
-    ...authState,
-    loading: authState.status === 'loading',
-    login: vi.fn(),
-    logout,
-    setAuth,
-    verifyOtp,
-    verifyOtp2,
-  }),
-}))
+vi.mock("@/auth/AuthContext", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/auth/AuthContext")>()
+
+  return {
+    ...actual,
+    useAuth: () => ({
+      user: {
+        id: "test-user",
+        email: "test@example.com",
+        role: "Admin",
+      },
+      status: "authenticated",
+      location: "/",
+      login: vi.fn(),
+      logout: vi.fn(),
+      refresh: vi.fn(),
+    }),
+  }
+})
 
 global.fetch = vi.fn(async (url: string) => {
   if (url.includes('/api/auth/me')) {
