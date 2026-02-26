@@ -1,40 +1,18 @@
 import '@testing-library/jest-dom'
 import { vi } from 'vitest'
 
-const authState = {
-  user: null as null | { id: string; email: string; role: string },
-  status: 'unauthenticated',
-  location: '/login',
-}
-
-const setAuth = vi.fn((newUser) => {
-  authState.user = newUser
-  authState.status = 'authenticated:resolved'
-  authState.location = '/dashboard'
-})
-
-const verifyOtp = vi.fn(async () => {
-  setAuth({
-    id: '1',
-    email: 'restored@example.com',
-    role: 'admin',
-  })
-  return { success: true }
-})
-
-const verifyOtp2 = verifyOtp
-
-const logout = vi.fn(() => {
-  authState.user = null
-  authState.status = 'unauthenticated'
-  authState.location = '/login'
-})
-
 vi.mock("@/auth/AuthContext", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/auth/AuthContext")>()
 
+  const mockSetAuth = vi.fn()
+  const mockVerifyOtp = vi.fn().mockResolvedValue({ ok: true })
+  const mockRequestOtp = vi.fn().mockResolvedValue({ ok: true })
+  const mockHydrate = vi.fn().mockResolvedValue({ ok: true })
+  const mockLogout = vi.fn()
+
   return {
     ...actual,
+
     useAuth: () => ({
       user: {
         id: "test-user",
@@ -42,9 +20,15 @@ vi.mock("@/auth/AuthContext", async (importOriginal) => {
         role: "Admin",
       },
       status: "authenticated",
-      location: "/",
+      location: "/dashboard",
+
+      setAuth: mockSetAuth,
+      verifyOtp: mockVerifyOtp,
+      requestOtp: mockRequestOtp,
+      hydrate: mockHydrate,
+      logout: mockLogout,
+
       login: vi.fn(),
-      logout: vi.fn(),
       refresh: vi.fn(),
     }),
   }
