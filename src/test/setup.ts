@@ -3,6 +3,8 @@ import { vi } from "vitest"
 
 vi.mock("@/auth/AuthContext", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/auth/AuthContext")>()
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const React = require("react") as typeof import("react")
 
   type AuthState = {
     user: null | { id: string; email: string; role: string }
@@ -23,7 +25,7 @@ vi.mock("@/auth/AuthContext", async (importOriginal) => {
   const listeners = new Set<() => void>()
   const notify = () => listeners.forEach((l) => l())
 
-  const setState = (next: Partial<AuthState>) => {
+  const setAuth = (next: Partial<AuthState>) => {
     authState = { ...authState, ...next }
     notify()
   }
@@ -35,7 +37,7 @@ vi.mock("@/auth/AuthContext", async (importOriginal) => {
       return { ok: false, error: "invalid_otp" }
     }
 
-    setState({
+    setAuth({
       user: {
         id: "test-user",
         email: "test@example.com",
@@ -51,7 +53,7 @@ vi.mock("@/auth/AuthContext", async (importOriginal) => {
   })
 
   const hydrate = vi.fn().mockImplementation(async () => {
-    setState({
+    setAuth({
       user: {
         id: "test-user",
         email: "test@example.com",
@@ -67,7 +69,7 @@ vi.mock("@/auth/AuthContext", async (importOriginal) => {
   })
 
   const logout = vi.fn().mockImplementation(() => {
-    setState({
+    setAuth({
       user: null,
       role: null,
       status: "unauthenticated",
@@ -76,30 +78,33 @@ vi.mock("@/auth/AuthContext", async (importOriginal) => {
     })
   })
 
+  const useAuth = () => {
+    const [, force] = React.useState({})
+
+    React.useEffect(() => {
+      const rerender = () => force({})
+      listeners.add(rerender)
+      return () => listeners.delete(rerender)
+    }, [])
+
+    return {
+      ...authState,
+      setAuth,
+      requestOtp,
+      verifyOtp,
+      hydrate,
+      logout,
+      login: vi.fn(),
+      refresh: vi.fn(),
+    }
+  }
+
   return {
     ...actual,
-
-    useAuth: () => {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const { useEffect, useState } = require("react") as typeof import("react")
-      const [, force] = useState({})
-
-      useEffect(() => {
-        const rerender = () => force({})
-        listeners.add(rerender)
-        return () => listeners.delete(rerender)
-      }, [])
-
-      return {
-        ...authState,
-        requestOtp,
-        verifyOtp,
-        hydrate,
-        logout,
-        login: vi.fn(),
-        refresh: vi.fn(),
-      }
-    },
+    useAuth,
+    setAuth,
+    AuthProvider: ({ children }: { children: React.ReactNode }) =>
+      React.createElement(React.Fragment, null, children),
   }
 })
 
