@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthContext, type AuthContextValue } from "@/auth/AuthContext";
 import { BusinessUnitProvider } from "@/context/BusinessUnitContext";
 import { DEFAULT_BUSINESS_UNIT } from "@/types/businessUnit";
+import { LenderAuthProvider } from "@/lender/auth/LenderAuthContext";
 
 const createQueryClient = () =>
   new QueryClient({
@@ -42,7 +43,10 @@ const createAuthValue = (overrides: Partial<AuthContextValue>): AuthContextValue
   loginWithOtp: async () => true,
   refreshUser: async () => true,
   clearAuth: () => undefined,
-  logout: async () => undefined,
+  logout: async () => {
+    localStorage.removeItem("persist");
+    sessionStorage.removeItem("persist");
+  },
   setAuth: () => undefined,
   setUser: () => undefined,
   setAuthenticated: () => undefined,
@@ -67,6 +71,21 @@ export const renderWithProviders = (ui: ReactElement, options: ExtendedRenderOpt
       </QueryClientProvider>
     ),
     ...rest
+  });
+};
+
+export const renderWithLenderProviders = (ui: ReactElement, options: Omit<RenderOptions, "wrapper"> = {}) => {
+  const queryClient = createQueryClient();
+
+  return render(ui, {
+    wrapper: ({ children }) => (
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/"]}>
+          <LenderAuthProvider>{children}</LenderAuthProvider>
+        </MemoryRouter>
+      </QueryClientProvider>
+    ),
+    ...options
   });
 };
 

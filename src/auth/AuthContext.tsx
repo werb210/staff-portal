@@ -103,6 +103,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const clearAuth = useCallback(() => {
     clearStoredAuth();
     localStorage.removeItem("persist");
+    sessionStorage.removeItem("persist");
     setUserState(null);
     setAccessToken(null);
     setPendingPhoneNumber(null);
