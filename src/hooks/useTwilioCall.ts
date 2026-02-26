@@ -1,8 +1,28 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useDialerStore, type DialerStatus } from "@/state/dialer.store";
 import { safeNormalizeToE164 } from "@/utils/phone";
-import { createTwilioDevice, fetchTwilioToken, type VoiceCall, type VoiceDevice } from "@/services/twilioVoice";
+import { initializeTwilioVoice } from "@/services/twilioVoice";
 import { logger } from "@/utils/logger";
+
+type VoiceCallEvent = "ringing" | "accept" | "disconnect" | "cancel" | "reject" | "error";
+
+type VoiceCall = {
+  on: (event: VoiceCallEvent, handler: (...args: any[]) => void) => void;
+  off?: (event: VoiceCallEvent, handler: (...args: any[]) => void) => void;
+  accept?: () => void;
+  disconnect?: () => void;
+  mute?: (muted: boolean) => void;
+  hold?: (held: boolean) => void;
+};
+
+type VoiceDevice = {
+  connect: (options: { params: Record<string, string> }) => VoiceCall | Promise<VoiceCall>;
+  register?: () => void;
+  destroy?: () => void;
+  state?: string;
+  on?: (event: string, handler: (...args: any[]) => void) => void;
+  off?: (event: string, handler: (...args: any[]) => void) => void;
+};
 
 const CALL_IN_PROGRESS_STATUSES = ["dialing", "ringing", "connected"] as const;
 const isCallInProgressStatus = (status: DialerStatus) =>
@@ -10,6 +30,9 @@ const isCallInProgressStatus = (status: DialerStatus) =>
 
 export const useTwilioCall = () => {
   const isMock = import.meta.env.VITE_TWILIO_MODE === "mock";
+  const isTest =
+    typeof process !== "undefined" &&
+    process.env.NODE_ENV === "test";
   const [deviceState, setDeviceState] = useState<string>("unregistered");
   const status = useDialerStore((state) => state.status);
   const number = useDialerStore((state) => state.number);
@@ -76,22 +99,23 @@ export const useTwilioCall = () => {
   );
 
   const getDevice = useCallback(async () => {
+    if (isTest) {
+      setDeviceState("unregistered");
+      return null;
+    }
+
     if (deviceRef.current) {
       setDeviceState((deviceRef.current.state as string) ?? "registered");
       return deviceRef.current;
     }
 
-    const token = await fetchTwilioToken();
-    if (!token) {
-      setDeviceState("unregistered");
-      return null;
-    }
-
-    const device = createTwilioDevice(token);
+    const device = (await initializeTwilioVoice()) as VoiceDevice | null;
     if (!device) {
       setDeviceState("unregistered");
       return null;
     }
+
+    device.register?.();
 
     device.on?.("registered", () => setDeviceState("registered"));
     device.on?.("unregistered", () => setDeviceState("unregistered"));
@@ -106,11 +130,13 @@ export const useTwilioCall = () => {
     deviceRef.current = device;
     setDeviceState((device.state as string) ?? "registering");
     return device;
-  }, []);
+  }, [isTest]);
 
   useEffect(() => {
+    if (isTest) return;
+
     void getDevice();
-  }, [getDevice]);
+  }, [getDevice, isTest]);
 
   const dial = useCallback(async () => {
     if (!number) return;
