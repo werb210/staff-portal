@@ -1,4 +1,5 @@
 import '@testing-library/jest-dom'
+import React, { useEffect, useState } from "react"
 import { vi } from 'vitest'
 
 vi.mock("@/auth/AuthContext", async (importOriginal) => {
@@ -72,8 +73,6 @@ vi.mock("@/auth/AuthContext", async (importOriginal) => {
     ...actual,
 
     useAuth: () => {
-      const { useEffect, useState } = require("react") as typeof import("react")
-
       const [, forceRender] = useState({})
 
       useEffect(() => {
