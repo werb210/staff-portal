@@ -1,9 +1,7 @@
-import { handlers } from "./msw/handlers"
 import { server } from "./msw/server"
 
 beforeAll(() => {
   server.listen()
-  server.use(...handlers)
 })
 
 afterEach(() => {
