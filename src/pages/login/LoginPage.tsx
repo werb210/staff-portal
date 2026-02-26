@@ -1,80 +1,157 @@
-import { useState } from "react"
-import { useNavigate } from "react-router-dom"
-import { useAuth } from "@/hooks/useAuth"
+import { useState } from "react";
+import { Navigate } from "react-router-dom";
+import { ApiError } from "@/api/http";
+import { useAuth } from "@/hooks/useAuth";
+
+const normalizePhone = (value: string) => {
+  const digits = value.replace(/\D/g, "");
+  if (!digits) return "";
+  if (digits.startsWith("1") && digits.length === 11) return `+${digits}`;
+  if (value.trim().startsWith("+")) return `+${digits}`;
+  if (digits.length === 10) return `+1${digits}`;
+  return `+${digits}`;
+};
 
 export default function LoginPage() {
-  const navigate = useNavigate()
-  const { login, isAuthenticated, isLoading } = useAuth()
+  const { authenticated, authStatus, startOtp, verifyOtp } = useAuth();
+  const [phone, setPhone] = useState("");
+  const [normalizedPhone, setNormalizedPhone] = useState("");
+  const [code, setCode] = useState("");
+  const [codeSent, setCodeSent] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [requestId, setRequestId] = useState<string | null>(null);
+  const [endpoint, setEndpoint] = useState<string | null>(null);
 
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [error, setError] = useState<string | null>(null)
+  if (authenticated && authStatus === "authenticated") {
+    return <Navigate to="/dashboard" replace />;
+  }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
-
-    const success = await login(email, password)
-
-    if (!success) {
-      setError("Invalid email or password")
-      return
+  const readApiError = (err: unknown, fallback: string) => {
+    if (err instanceof ApiError) {
+      setError(err.message || fallback);
+      setRequestId(err.requestId ?? "n/a");
+      return;
     }
 
-    navigate("/")
-  }
+    const axiosLike = err as { message?: string; code?: string };
+    if (axiosLike?.code === "ERR_NETWORK") {
+      setError("Network error. Please check your connection and retry.");
+      setRequestId("n/a");
+      return;
+    }
 
-  if (isAuthenticated) {
-    navigate("/")
-    return null
-  }
+    setError(axiosLike?.message ?? fallback);
+    setRequestId("n/a");
+  };
+
+  const handleSendCode = async () => {
+    const parsedPhone = normalizePhone(phone);
+    if (!parsedPhone) return;
+
+    setError(null);
+    setRequestId(null);
+    setEndpoint("/auth/otp/start");
+    setStatusMessage(null);
+    setSending(true);
+
+    try {
+      await startOtp({ phone: parsedPhone });
+      setNormalizedPhone(parsedPhone);
+      setCodeSent(true);
+      setStatusMessage("Code sent. Check your phone for the verification code.");
+    } catch (err) {
+      console.error("OTP start failed.", err);
+      readApiError(err, "Unable to send verification code.");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const attemptVerify = async (nextCode: string) => {
+    if (nextCode.length !== 6 || !normalizedPhone) {
+      return;
+    }
+
+    setVerifying(true);
+    setError(null);
+    setRequestId(null);
+    setEndpoint("/auth/otp/verify");
+
+    try {
+      await verifyOtp({ phone: normalizedPhone, code: nextCode });
+    } catch (err) {
+      readApiError(err, "Invalid verification code");
+    } finally {
+      setVerifying(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <form
-        onSubmit={handleSubmit}
+        onSubmit={(event) => {
+          event.preventDefault();
+          void handleSendCode();
+        }}
         className="bg-white p-8 rounded shadow-md w-96"
       >
-        <h1 className="text-xl font-semibold mb-6 text-center">
-          Staff Login
-        </h1>
+        <h1 className="text-xl font-semibold mb-6 text-center">Staff Login</h1>
 
-        {error && (
-          <div className="mb-4 text-sm text-red-600">
-            {error}
+        {statusMessage ? <div role="status" className="mb-4 text-sm text-green-700">{statusMessage}</div> : null}
+
+        {error ? (
+          <div role="alert" className="mb-4 text-sm text-red-600">
+            <div>{error}</div>
+            <div>Request ID: {requestId ?? "n/a"}</div>
+            <div>Endpoint: {endpoint ?? "n/a"}</div>
           </div>
-        )}
+        ) : null}
 
         <div className="mb-4">
-          <label className="block text-sm mb-1">Email</label>
+          <label htmlFor="phone" className="block text-sm mb-1">Phone number</label>
           <input
-            type="email"
+            id="phone"
+            type="tel"
             className="w-full border px-3 py-2 rounded"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            value={phone}
+            onChange={(event) => setPhone(event.target.value)}
             required
-          />
-        </div>
-
-        <div className="mb-6">
-          <label className="block text-sm mb-1">Password</label>
-          <input
-            type="password"
-            className="w-full border px-3 py-2 rounded"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
+            disabled={sending || codeSent}
           />
         </div>
 
         <button
           type="submit"
-          disabled={isLoading}
+          disabled={sending || !phone.trim() || codeSent}
           className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:opacity-50"
         >
-          {isLoading ? "Signing in..." : "Sign In"}
+          {sending ? "Sending..." : "Send code"}
         </button>
+
+        {codeSent ? (
+          <div className="mt-6">
+            <label htmlFor="otp-digit-1" className="block text-sm mb-1">OTP digit 1</label>
+            <input
+              id="otp-digit-1"
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              className="w-full border px-3 py-2 rounded"
+              value={code}
+              onChange={(event) => {
+                const next = event.target.value.replace(/\D/g, "").slice(0, 6);
+                setCode(next);
+                void attemptVerify(next);
+              }}
+              aria-label="OTP digit 1"
+              disabled={verifying}
+            />
+          </div>
+        ) : null}
       </form>
     </div>
-  )
+  );
 }
