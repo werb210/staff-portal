@@ -1,5 +1,16 @@
-import "@testing-library/jest-dom/vitest";
-import { vi } from "vitest";
+import '@testing-library/jest-dom'
+import { vi } from 'vitest'
 
-vi.stubEnv("VITE_API_BASE_URL", "http://localhost/api");
-vi.stubEnv("VITE_JWT_STORAGE_KEY", "portal_auth_token");
+// Global auth mock for protected routes
+vi.mock('@/auth/AuthContext', async () => {
+  const actual = await vi.importActual<any>('@/auth/AuthContext')
+  return {
+    ...actual,
+    useAuth: () => ({
+      user: { id: '1', role: 'admin', email: 'admin@test.com' },
+      loading: false,
+      login: vi.fn(),
+      logout: vi.fn(),
+    }),
+  }
+})
