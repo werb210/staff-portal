@@ -99,7 +99,7 @@ describe("application visibility requirements", () => {
     renderWithProviders(<DocumentsTab />);
 
     await waitFor(() => {
-      expect(screen.getByText("Bank Statement")).toBeInTheDocument();
+      expect(screen.getAllByText("Bank Statement")[0]).toBeInTheDocument();
     });
 
     await userEvent.click(screen.getByRole("button", { name: "Accept" }));
@@ -120,7 +120,7 @@ describe("application visibility requirements", () => {
     renderWithProviders(<DocumentsTab />);
 
     await waitFor(() => {
-      expect(screen.getByText("Bank Statement")).toBeInTheDocument();
+      expect(screen.getAllByText("Bank Statement")[0]).toBeInTheDocument();
     });
 
     await userEvent.click(screen.getByRole("button", { name: "Reject" }));
@@ -141,7 +141,7 @@ describe("application visibility requirements", () => {
     const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
 
     await waitFor(() => {
-      expect(screen.getByText("Bank Statement")).toBeInTheDocument();
+      expect(screen.getAllByText("Bank Statement")[0]).toBeInTheDocument();
     });
 
     await userEvent.click(screen.getByRole("button", { name: "Reject" }));
@@ -164,7 +164,7 @@ describe("application visibility requirements", () => {
     renderWithProviders(<DocumentsTab />);
 
     await waitFor(() => {
-      expect(screen.getByText("Bank Statement")).toBeInTheDocument();
+      expect(screen.getAllByText("Bank Statement")[0]).toBeInTheDocument();
     });
 
     expect(screen.queryByText("Download")).not.toBeInTheDocument();

@@ -39,7 +39,11 @@ export default function RequireAuth({ children, roles = DEFAULT_ALLOWED_ROLES }:
   }
 
   const userRole = resolveUserRole((auth.user as { role?: string | null } | null)?.role ?? null);
-  if (!userRole || !roles.includes(userRole)) {
+  if (!userRole) {
+    return null;
+  }
+
+  if (!roles.includes(userRole)) {
     if (import.meta.env.DEV) {
       console.info("RequireAuth redirect", {
         requestId,

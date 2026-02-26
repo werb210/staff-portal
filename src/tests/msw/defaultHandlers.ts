@@ -5,6 +5,7 @@ export const defaultHandlers = [
   http.get("*/api/_int/production-readiness", () => HttpResponse.json({ ready: true, status: "ok" })),
   http.get("*/api/support/live/count", () => HttpResponse.json({ count: 0 })),
   http.get("*/api/public/lender-count", () => HttpResponse.json({ count: 0 })),
+  http.get("*/api/lenders", () => HttpResponse.json([])),
   http.get("ws://localhost/ws", () => new HttpResponse("OK", { status: 200 })),
   http.get("ws://localhost/ws/chat", () => new HttpResponse("OK", { status: 200 }))
 ];

@@ -45,17 +45,21 @@ export default function PrivateRoute({
     return <Navigate to="/login" replace />;
   }
 
+  const role = (auth.user?.role ?? null) as
+    | "Admin"
+    | "Staff"
+    | "Marketing"
+    | "Viewer"
+    | "Lender"
+    | "Referrer"
+    | null;
+
+  if (!role) return null;
+
   if (
     auth.authStatus === "authenticated" &&
     !canAccess({
-      role: (auth.user?.role ?? null) as
-        | "Admin"
-        | "Staff"
-        | "Marketing"
-        | "Viewer"
-        | "Lender"
-        | "Referrer"
-        | null,
+      role,
       allowedRoles,
       requiredCapabilities,
       userCapabilities: (auth.user as { capabilities?: Capability[] } | null)?.capabilities ?? null
