@@ -72,10 +72,11 @@ vi.mock("@/auth/AuthContext", async (importOriginal) => {
     ...actual,
 
     useAuth: () => {
-      const React = require("react")
-      const [, forceRender] = React.useState({})
+      const { useEffect, useState } = require("react") as typeof import("react")
 
-      React.useEffect(() => {
+      const [, forceRender] = useState({})
+
+      useEffect(() => {
         const rerender = () => forceRender({})
         listeners.add(rerender)
         return () => listeners.delete(rerender)
