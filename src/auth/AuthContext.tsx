@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react"
 
 export type AuthStatus = "idle" | "loading" | "authenticated" | "unauthenticated"
+export type RolesStatus = "idle" | "loading" | "loaded"
 
 export interface User {
   id: string
@@ -18,6 +19,7 @@ export interface AuthContextType {
 
   status: AuthStatus
   authStatus: AuthStatus
+  rolesStatus: RolesStatus
   authReady: boolean
   isLoading: boolean
 
@@ -38,6 +40,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null)
   const [accessToken, setAccessToken] = useState<string | null>(null)
   const [status, setStatus] = useState<AuthStatus>("idle")
+  const [rolesStatus, setRolesStatus] = useState<RolesStatus>("idle")
   const [error, setError] = useState<string | null>(null)
   const [pendingPhoneNumber, setPendingPhoneNumber] = useState<string | null>(null)
 
@@ -51,6 +54,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     async function hydrate() {
       setStatus("loading")
+      setRolesStatus("loading")
+
       try {
         const res = await fetch("/api/auth/me")
         if (!mounted) return
@@ -60,11 +65,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           setUser(data.user)
           setAccessToken(data.accessToken ?? null)
           setStatus("authenticated")
+          setRolesStatus("loaded")
         } else {
           setStatus("unauthenticated")
+          setRolesStatus("idle")
         }
       } catch {
         setStatus("unauthenticated")
+        setRolesStatus("idle")
       }
     }
 
@@ -108,6 +116,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setUser(data.user)
     setAccessToken(data.accessToken ?? null)
     setStatus("authenticated")
+    setRolesStatus("loaded")
     setPendingPhoneNumber(null)
     return true
   }
@@ -132,6 +141,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setUser(data.user)
     setAccessToken(data.accessToken ?? null)
     setStatus("authenticated")
+    setRolesStatus("loaded")
     return true
   }
 
@@ -139,6 +149,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setUser(null)
     setAccessToken(null)
     setStatus("unauthenticated")
+    setRolesStatus("idle")
   }
 
   const clearAuth = () => {
@@ -154,6 +165,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         isAuthenticated,
         status,
         authStatus: status,
+        rolesStatus,
         authReady,
         isLoading,
         error,
