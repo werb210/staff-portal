@@ -1,7 +1,7 @@
 import '@testing-library/jest-dom'
 import { vi } from 'vitest'
 
-let authState = {
+const authState = {
   user: null as null | { id: string; email: string; role: string },
   status: 'unauthenticated',
   location: '/login',
