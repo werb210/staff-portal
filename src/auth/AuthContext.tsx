@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react"
 
 export type AuthStatus = "idle" | "loading" | "authenticated" | "unauthenticated"
-export type RolesStatus = "idle" | "loading" | "loaded"
 
 export interface User {
   id: string
@@ -15,8 +14,10 @@ export interface AuthContextType {
   accessToken: string | null
 
   authenticated: boolean
+  isAuthenticated: boolean
+
   status: AuthStatus
-  rolesStatus: RolesStatus
+  authStatus: AuthStatus
   authReady: boolean
   isLoading: boolean
 
@@ -37,11 +38,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null)
   const [accessToken, setAccessToken] = useState<string | null>(null)
   const [status, setStatus] = useState<AuthStatus>("idle")
-  const [rolesStatus, setRolesStatus] = useState<RolesStatus>("idle")
   const [error, setError] = useState<string | null>(null)
   const [pendingPhoneNumber, setPendingPhoneNumber] = useState<string | null>(null)
 
   const authenticated = !!user
+  const isAuthenticated = authenticated
   const isLoading = status === "loading"
   const authReady = status !== "idle"
 
@@ -59,7 +60,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           setUser(data.user)
           setAccessToken(data.accessToken ?? null)
           setStatus("authenticated")
-          setRolesStatus("loaded")
         } else {
           setStatus("unauthenticated")
         }
@@ -76,6 +76,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const startOtp = async (phone: string) => {
     setError(null)
+
     const res = await fetch("/api/auth/request-otp", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -107,7 +108,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setUser(data.user)
     setAccessToken(data.accessToken ?? null)
     setStatus("authenticated")
-    setRolesStatus("loaded")
     setPendingPhoneNumber(null)
     return true
   }
@@ -132,7 +132,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setUser(data.user)
     setAccessToken(data.accessToken ?? null)
     setStatus("authenticated")
-    setRolesStatus("loaded")
     return true
   }
 
@@ -140,7 +139,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setUser(null)
     setAccessToken(null)
     setStatus("unauthenticated")
-    setRolesStatus("idle")
   }
 
   const clearAuth = () => {
@@ -153,8 +151,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         user,
         accessToken,
         authenticated,
+        isAuthenticated,
         status,
-        rolesStatus,
+        authStatus: status,
         authReady,
         isLoading,
         error,
@@ -172,11 +171,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   )
 }
 
-/**
- * IMPORTANT:
- * Many files import `useAuth` directly from AuthContext.
- * Re-export it here to satisfy all existing imports.
- */
 export const useAuth = () => {
   const ctx = useContext(AuthContext)
   if (!ctx) {
