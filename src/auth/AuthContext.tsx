@@ -1,28 +1,26 @@
 import React, { createContext, useContext, useEffect, useState } from "react"
 
-type AuthStatus = "pending" | "resolved"
+type Status = "pending" | "resolved"
 
-interface AuthUser {
+interface User {
   id: string
   email: string
   role: string
 }
 
 interface AuthContextType {
-  user: AuthUser | null
+  user: User | null
   authenticated: boolean
-  status: AuthStatus
+  status: Status
   loginWithOtp: (phone: string, code: string) => Promise<void>
   logout: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
-  const [user, setUser] = useState<AuthUser | null>(null)
-  const [status, setStatus] = useState<AuthStatus>("pending")
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<User | null>(null)
+  const [status, setStatus] = useState<Status>("pending")
 
   useEffect(() => {
     let mounted = true
