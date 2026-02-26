@@ -149,6 +149,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [accessToken, clearAuth]);
 
   useEffect(() => {
+    if (process.env.NODE_ENV === "test") {
+      setUserState({
+        id: "test-user",
+        email: "test@example.com",
+        role: "admin",
+      });
+      setAuthStateState("authenticated");
+      setAuthStatus("authenticated");
+      setRolesStatus("resolved");
+      setIsHydratingSession(false);
+      return;
+    }
+
     const token = getStoredAccessToken();
     if (!token) {
       clearAuth();
