@@ -8,7 +8,12 @@ const toTitleCase = (value: string) =>
   value
     .toLowerCase()
     .split(/[_\s]+/)
-    .map((segment) => (segment ? segment[0].toUpperCase() + segment.slice(1) : segment))
+    .map((segment) => {
+      if (!segment) return segment;
+      const firstCharacter = segment[0];
+      if (!firstCharacter) return segment;
+      return firstCharacter.toUpperCase() + segment.slice(1);
+    })
     .join(" ");
 
 const STAGE_LABEL_OVERRIDES: Record<string, string> = {

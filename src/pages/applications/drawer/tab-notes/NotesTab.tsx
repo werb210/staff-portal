@@ -8,6 +8,7 @@ import { getErrorMessage } from "@/utils/errors";
 import { useAuth } from "@/hooks/useAuth";
 import { canWrite } from "@/auth/can";
 import { useBusinessUnit } from "@/hooks/useBusinessUnit";
+import { normalizeBusinessUnit } from "@/types/businessUnit";
 
 const NotesTab = () => {
   const applicationId = useApplicationDrawerStore((state) => state.selectedApplicationId);
@@ -15,26 +16,27 @@ const NotesTab = () => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const { user } = useAuth();
   const { activeBusinessUnit } = useBusinessUnit();
+  const businessUnit = normalizeBusinessUnit(activeBusinessUnit);
   const canEdit = canWrite((user as { role?: string | null } | null)?.role ?? null);
   const { data: messages = [], isLoading, error } = useQuery<NoteMessage[]>({
-    queryKey: ["notes", activeBusinessUnit, applicationId],
-    queryFn: ({ signal }) => fetchNotesThread(applicationId ?? "", activeBusinessUnit, { signal }),
+    queryKey: ["notes", businessUnit, applicationId],
+    queryFn: ({ signal }) => fetchNotesThread(applicationId ?? "", businessUnit, { signal }),
     enabled: Boolean(applicationId)
   });
 
   const mutation = useMutation({
-    mutationFn: (text: string) => sendNoteMessage(applicationId ?? "", text, activeBusinessUnit),
+    mutationFn: (text: string) => sendNoteMessage(applicationId ?? "", text, businessUnit),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notes", activeBusinessUnit, applicationId] });
+      queryClient.invalidateQueries({ queryKey: ["notes", businessUnit, applicationId] });
       queryClient.invalidateQueries({ queryKey: ["pipeline"] });
     }
   });
 
   const editMutation = useMutation({
     mutationFn: ({ noteId, body }: { noteId: string; body: string }) =>
-      updateNoteMessage(applicationId ?? "", noteId, body, activeBusinessUnit),
+      updateNoteMessage(applicationId ?? "", noteId, body, businessUnit),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notes", activeBusinessUnit, applicationId] });
+      queryClient.invalidateQueries({ queryKey: ["notes", businessUnit, applicationId] });
       queryClient.invalidateQueries({ queryKey: ["pipeline"] });
     }
   });

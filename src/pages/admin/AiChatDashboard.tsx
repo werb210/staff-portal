@@ -30,7 +30,9 @@ const AiChatDashboardContent = () => {
 
   useEffect(() => {
     if (!selectedChatId && chats.length > 0) {
-      setSelectedChatId(chats[0].id);
+      const firstChat = chats[0];
+      if (!firstChat) return;
+      setSelectedChatId(firstChat.id);
     }
   }, [chats, selectedChatId]);
 

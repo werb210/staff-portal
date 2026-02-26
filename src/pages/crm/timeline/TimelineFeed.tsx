@@ -110,9 +110,10 @@ const TimelineFeed = ({ entityType, entityId, initialEvents = [] }: TimelineFeed
         const collapsed = collapseSimilarEvents(buffer);
         const first = buffer[0];
         const last = buffer[buffer.length - 1];
+        if (!first || !last) return;
         const title =
           buffer.length > 1 ? `${first.summary} → ${last.summary}` : first.summary;
-        const ruleKey = buffer[0].automation?.ruleId ?? "automation";
+        const ruleKey = first.automation?.ruleId ?? "automation";
         const id = `${date}-${ruleKey}-${displayItems.length}`;
         displayItems.push({ kind: "automation", id, title, events: collapsed });
         buffer = [];

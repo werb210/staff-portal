@@ -48,7 +48,7 @@ const UserManagement = () => {
     const normalized = name?.trim() ?? "";
     if (!normalized) return { firstName: "", lastName: "" };
     const [firstName, ...rest] = normalized.split(" ");
-    return { firstName, lastName: rest.join(" ") };
+    return { firstName: firstName ?? "", lastName: rest.join(" ") };
   };
 
   useEffect(() => {

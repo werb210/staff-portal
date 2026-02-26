@@ -323,7 +323,7 @@ const mapLenderToFormValues = (lender: Lender): LenderFormValues => {
     ...createEmptyLenderForm(),
     name: lender.name ?? "",
     active: isLenderActive(lender),
-    country: normalizeLenderCountryValue(lender.address?.country ?? "") || COUNTRIES[0].value,
+    country: normalizeLenderCountryValue(lender.address?.country ?? "") || COUNTRIES[0]?.value || "",
     primaryContactName: primaryContact.name ?? "",
     primaryContactEmail: primaryContact.email ?? "",
     primaryContactPhone: primaryContact.phone ?? "",
@@ -447,7 +447,8 @@ const LendersContent = () => {
   useEffect(() => {
     if (!safeLenders.length) return;
     if (!selectedLenderId || !safeLenders.some((lender) => lender.id === selectedLenderId)) {
-      setSelectedLenderId(safeLenders[0].id ?? null);
+      const firstLender = safeLenders[0];
+      setSelectedLenderId(firstLender?.id ?? null);
     }
   }, [safeLenders, selectedLenderId]);
 

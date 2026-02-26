@@ -15,7 +15,11 @@ export const recordRedirect = (route: string, reason: string, redirectKey?: stri
     lastRedirectKey = redirectKey;
   }
   redirectTimestamps.push(now);
-  while (redirectTimestamps.length > 0 && now - redirectTimestamps[0] > REDIRECT_WINDOW_MS) {
+  while (redirectTimestamps.length > 0) {
+    const firstTimestamp = redirectTimestamps[0];
+    if (!firstTimestamp || now - firstTimestamp <= REDIRECT_WINDOW_MS) {
+      break;
+    }
     redirectTimestamps.shift();
   }
 

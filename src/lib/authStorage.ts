@@ -4,7 +4,11 @@ import { decodeJwt } from "@/auth/jwt";
 const readRoleFromToken = (token: string | null): string | null => {
   const payload = decodeJwt(token);
   if (!payload || typeof payload !== "object") return null;
-  const role = payload.role ?? payload["https://schemas.microsoft.com/ws/2008/06/identity/claims/role"];
+  const role =
+  payload.role ??
+  (payload as Record<string, unknown>)[
+    "https://schemas.microsoft.com/ws/2008/06/identity/claims/role"
+  ];
   return typeof role === "string" ? role : null;
 };
 
