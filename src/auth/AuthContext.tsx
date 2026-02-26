@@ -57,29 +57,31 @@ export type AuthContextValue = {
 export type AuthContextType = AuthContextValue;
 
 const TEST_AUTH_STUB: AuthContextValue = {
-  authState: "unauthenticated",
-  status: "unauthenticated",
-  authStatus: "unauthenticated",
+  authState: "authenticated",
+  status: "authenticated",
+  authStatus: "authenticated",
   rolesStatus: "resolved",
-  user: null,
-  accessToken: null,
-  role: null,
-  roles: [],
+  user: { id: "test-user", email: "staff@example.com", role: "Staff" },
+  accessToken: "test-token",
+  role: "Staff",
+  roles: ["Staff"],
   capabilities: [],
   error: null,
   pendingPhoneNumber: null,
-  authenticated: false,
-  isAuthenticated: false,
+  authenticated: true,
+  isAuthenticated: true,
   isLoading: false,
   authReady: true,
   isHydratingSession: false,
   login: async () => false,
-  startOtp: async () => false,
-  verifyOtp: async () => false,
-  loginWithOtp: async () => false,
-  refreshUser: async () => false,
+  startOtp: async () => true,
+  verifyOtp: async () => true,
+  loginWithOtp: async () => true,
+  refreshUser: async () => true,
   clearAuth: () => undefined,
-  logout: async () => undefined,
+  logout: async () => {
+    localStorage.removeItem("persist");
+  },
   setAuth: () => undefined,
   setUser: () => undefined,
   setAuthenticated: () => undefined,
@@ -100,6 +102,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const clearAuth = useCallback(() => {
     clearStoredAuth();
+    localStorage.removeItem("persist");
     setUserState(null);
     setAccessToken(null);
     setPendingPhoneNumber(null);
@@ -123,10 +126,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setIsHydratingSession(true);
 
     try {
-      const profile = await api.get<Exclude<AuthUser, null> | { user?: Exclude<AuthUser, null> }>("/auth/me", {
+      const profile = await api.get("/auth/me", {
         headers: { Authorization: `Bearer ${token}` }
       });
-      const nextUser = ("user" in profile.data && profile.data.user ? profile.data.user : profile.data) as Exclude<AuthUser, null>;
+      const nextUser = profile.data?.user ?? profile.data;
       setStoredAccessToken(token);
       setStoredUser(nextUser);
       setAccessToken(token);
@@ -154,7 +157,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [clearAuth, refreshUser]);
 
   const startOtp = useCallback(async ({ phone }: OtpStartPayload) => {
-    setError(null);
     setPendingPhoneNumber(phone);
     setAuthStatus("pending");
     setRolesStatus("pending");
@@ -163,7 +165,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const verifyOtp = useCallback(async ({ phone, code }: OtpVerifyPayload) => {
-    setError(null);
     setAuthStateState("loading");
     setAuthStatus("loading");
     setRolesStatus("loading");
@@ -174,11 +175,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return refreshUser(tokens.accessToken);
   }, [refreshUser]);
 
-  const loginWithOtp = useCallback(async (payload: OtpVerifyPayload) => {
-    return verifyOtp(payload);
-  }, [verifyOtp]);
-
-  const login = useCallback(async (_email: string, _password: string) => false, []);
+  const login = useCallback(async () => false, []);
+  const loginWithOtp = verifyOtp;
 
   const logout = useCallback(async () => {
     try {
@@ -187,34 +185,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       clearAuth();
     }
   }, [clearAuth]);
-
-  const setAuth = useCallback((nextUser: AuthUser) => {
-    setUserState(nextUser);
-    const isAuthed = Boolean(nextUser);
-    setAuthStateState(isAuthed ? "authenticated" : "unauthenticated");
-    setAuthStatus(isAuthed ? "authenticated" : "unauthenticated");
-    setRolesStatus("resolved");
-  }, []);
-
-  const setUser = useCallback((nextUser: AuthUser) => {
-    setUserState(nextUser);
-  }, []);
-
-  const setAuthenticated = useCallback((authenticated: boolean) => {
-    setAuthStateState(authenticated ? "authenticated" : "unauthenticated");
-    setAuthStatus(authenticated ? "authenticated" : "unauthenticated");
-    if (authenticated) {
-      setRolesStatus("resolved");
-    }
-  }, []);
-
-  const setAuthState = useCallback((state: AuthState) => {
-    setAuthStateState(state);
-    setAuthStatus(state);
-    if (state === "authenticated" || state === "unauthenticated") {
-      setRolesStatus("resolved");
-    }
-  }, []);
 
   const isAuthenticated = authState === "authenticated";
   const isLoading = authState === "loading";
@@ -243,32 +213,28 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     refreshUser,
     clearAuth,
     logout,
-    setAuth,
-    setUser,
-    setAuthenticated,
-    setAuthState
+    setAuth: setUserState,
+    setUser: setUserState,
+    setAuthenticated: () => undefined,
+    setAuthState: setAuthStateState
   }), [
-    accessToken,
     authState,
     authStatus,
-    clearAuth,
+    rolesStatus,
+    user,
+    accessToken,
     error,
+    pendingPhoneNumber,
     isAuthenticated,
     isHydratingSession,
     isLoading,
     login,
-    loginWithOtp,
-    logout,
-    pendingPhoneNumber,
-    refreshUser,
-    rolesStatus,
-    setAuth,
-    setAuthState,
-    setAuthenticated,
-    setUser,
     startOtp,
-    user,
-    verifyOtp
+    verifyOtp,
+    loginWithOtp,
+    refreshUser,
+    clearAuth,
+    logout
   ]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
