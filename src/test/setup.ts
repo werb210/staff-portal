@@ -1,6 +1,6 @@
-import '@testing-library/jest-dom'
+import "@testing-library/jest-dom"
 import React, { useEffect, useState } from "react"
-import { vi } from 'vitest'
+import { vi } from "vitest"
 
 vi.mock("@/auth/AuthContext", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/auth/AuthContext")>()
