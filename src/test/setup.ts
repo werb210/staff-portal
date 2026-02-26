@@ -4,16 +4,35 @@ import { vi } from 'vitest'
 vi.mock("@/auth/AuthContext", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/auth/AuthContext")>()
 
-  const mockSetAuth = vi.fn()
-  const mockVerifyOtp = vi.fn().mockResolvedValue({ ok: true })
-  const mockRequestOtp = vi.fn().mockResolvedValue({ ok: true })
-  const mockHydrate = vi.fn().mockResolvedValue({ ok: true })
-  const mockLogout = vi.fn()
+  let authState = {
+    user: null as null | { id: string; email: string; role: string },
+    status: "unauthenticated" as
+      | "loading"
+      | "unauthenticated"
+      | "otp-sent"
+      | "authenticated",
+    location: "/login",
+  }
 
-  return {
-    ...actual,
+  const listeners = new Set<() => void>()
 
-    useAuth: () => ({
+  const notify = () => {
+    listeners.forEach((l) => l())
+  }
+
+  const setAuth = (next: typeof authState) => {
+    authState = next
+    notify()
+  }
+
+  const requestOtp = vi.fn().mockImplementation(async () => {
+    authState = { ...authState, status: "otp-sent" }
+    notify()
+    return { ok: true }
+  })
+
+  const verifyOtp = vi.fn().mockImplementation(async () => {
+    authState = {
       user: {
         id: "test-user",
         email: "test@example.com",
@@ -21,16 +40,58 @@ vi.mock("@/auth/AuthContext", async (importOriginal) => {
       },
       status: "authenticated",
       location: "/dashboard",
+    }
+    notify()
+    return { ok: true }
+  })
 
-      setAuth: mockSetAuth,
-      verifyOtp: mockVerifyOtp,
-      requestOtp: mockRequestOtp,
-      hydrate: mockHydrate,
-      logout: mockLogout,
+  const hydrate = vi.fn().mockImplementation(async () => {
+    authState = {
+      user: {
+        id: "test-user",
+        email: "test@example.com",
+        role: "Admin",
+      },
+      status: "authenticated",
+      location: "/dashboard",
+    }
+    notify()
+    return { ok: true }
+  })
 
-      login: vi.fn(),
-      refresh: vi.fn(),
-    }),
+  const logout = vi.fn().mockImplementation(() => {
+    authState = {
+      user: null,
+      status: "unauthenticated",
+      location: "/login",
+    }
+    notify()
+  })
+
+  return {
+    ...actual,
+
+    useAuth: () => {
+      const React = require("react")
+      const [, forceRender] = React.useState({})
+
+      React.useEffect(() => {
+        const rerender = () => forceRender({})
+        listeners.add(rerender)
+        return () => listeners.delete(rerender)
+      }, [])
+
+      return {
+        ...authState,
+        setAuth,
+        requestOtp,
+        verifyOtp,
+        hydrate,
+        logout,
+        login: vi.fn(),
+        refresh: vi.fn(),
+      }
+    },
   }
 })
 
