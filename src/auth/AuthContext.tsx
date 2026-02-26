@@ -171,6 +171,9 @@ const parseAuthUser = (payload: unknown): AuthenticatedUser | null => {
       return null;
     }
   }
+  if (typeof payload === "object" && payload !== null && "user" in payload) {
+    return (payload as { user?: AuthenticatedUser | null }).user ?? null;
+  }
   return payload as AuthenticatedUser;
 };
 
