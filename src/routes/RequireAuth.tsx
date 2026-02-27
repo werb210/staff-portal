@@ -4,9 +4,16 @@ import AccessRestricted from "@/components/auth/AccessRestricted"
 import { roleIn, type Role } from "@/auth/roles"
 
 export default function RequireAuth({ children, allowedRoles }: { children?: React.ReactNode; allowedRoles?: Role[] } = {}) {
-  const { status, isAuthenticated, role } = useAuth()
+  const { status, authState, authStatus, rolesStatus, authReady, isAuthenticated, role } = useAuth()
 
-  if (status === "loading") {
+  const isLoading =
+    status === "loading" ||
+    authState === "loading" ||
+    authStatus === "loading" ||
+    rolesStatus === "loading" ||
+    !authReady
+
+  if (isLoading) {
     return <div>Loading...</div>
   }
 

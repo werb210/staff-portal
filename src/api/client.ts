@@ -1,5 +1,6 @@
 import axios from "axios";
 import { ENV } from "@/config/env";
+import { getStoredAccessToken } from "@/services/token";
 
 export const api = axios.create({
   baseURL: ENV.API_BASE_URL,
@@ -8,7 +9,15 @@ export const api = axios.create({
 
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token");
+  if (process.env.NODE_ENV === "test") {
+    config.baseURL = "http://localhost";
+  }
+
+  if (typeof config.url === "string" && config.url.startsWith("/") && !config.url.startsWith("/api/")) {
+    config.url = `/api${config.url}`;
+  }
+
+  const token = getStoredAccessToken();
 
   if (token) {
     config.headers = {
@@ -25,10 +34,18 @@ api.interceptors.response.use(
   error => {
     if (!error.response) {
       console.error("Network error:", error);
-    } else {
-      console.error("API error:", error.response.status);
+      return Promise.reject({
+        status: 0,
+        message: error?.message ?? "Network error"
+      });
     }
-    return Promise.reject(error);
+
+    console.error("API error:", error.response.status);
+    return Promise.reject({
+      status: error.response.status,
+      message: (error.response.data as { message?: string } | undefined)?.message ?? error.message ?? "Request failed",
+      data: error.response.data
+    });
   }
 );
 

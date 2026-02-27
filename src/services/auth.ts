@@ -84,6 +84,7 @@ export async function verifyOtp({
       method: "GET",
       url: "/auth/me",
       headers: { Authorization: `Bearer ${response.data.accessToken}` },
+      withCredentials: false,
       skipAuth: true,
       skipRequestId: true
     });

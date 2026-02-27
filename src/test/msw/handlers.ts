@@ -3,9 +3,9 @@ import { http, HttpResponse } from "msw";
 export const handlers = [
   http.get("*/api/auth/me", () => {
     return HttpResponse.json({
-      id: "test-user",
-      email: "test@example.com",
-      role: "admin",
+      id: "u1",
+      email: "staff@example.com",
+      role: "Staff",
     });
   }),
 

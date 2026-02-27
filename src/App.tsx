@@ -1,46 +1,53 @@
-import React from "react"
-import { BrowserRouter, Routes, Route } from "react-router-dom"
-import { AuthProvider } from "./auth/AuthContext"
-import ProtectedRoute from "./routes/ProtectedRoute"
-import LoginPage from "./pages/LoginPage"
+import React, { useContext } from "react";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { AuthContext, AuthProvider } from "@/auth/AuthContext";
+import { usePortalSessionGuard } from "@/auth/portalSessionGuard";
+import ProtectedRoute from "@/routes/ProtectedRoute";
+import LoginPage from "@/pages/LoginPage";
+import DashboardPage from "@/pages/dashboard/DashboardPage";
+import LendersPage from "@/pages/Lenders";
 
-// REMOVE broken Dashboard import
-// REMOVE broken LenderPage import
-
-function Dashboard() {
-  return <div>Dashboard</div>
+function SessionGuard() {
+  usePortalSessionGuard();
+  return null;
 }
 
-function Lenders() {
-  return <div>Protected</div>
-}
+const AppRoutes = () => (
+  <BrowserRouter>
+    <SessionGuard />
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <DashboardPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/lenders/*"
+        element={
+          <ProtectedRoute>
+            <LendersPage />
+          </ProtectedRoute>
+        }
+      />
+    </Routes>
+  </BrowserRouter>
+);
 
 export default function App() {
+  const existingAuthContext = useContext(AuthContext);
+
+  if (existingAuthContext) {
+    return <AppRoutes />;
+  }
+
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
-
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/lenders/*"
-            element={
-              <ProtectedRoute>
-                <Lenders />
-              </ProtectedRoute>
-            }
-          />
-        </Routes>
-      </BrowserRouter>
+      <AppRoutes />
     </AuthProvider>
-  )
+  );
 }

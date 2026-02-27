@@ -227,6 +227,18 @@ exports[`portal role & permission guards > matches role snapshots 1`] = `
         >
           Operations
         </a>
+        <a
+          class="sidebar__link "
+          href="/admin/maya"
+        >
+          Maya Intelligence
+        </a>
+        <a
+          class="sidebar__link "
+          href="/admin/maya-outbound"
+        >
+          Maya Outbound Upload
+        </a>
       </div>
     </nav>
   </aside>
@@ -407,9 +419,7 @@ exports[`portal role & permission guards > matches role snapshots 3`] = `
           </div>
           <div
             class="lender-sidebar__subtitle"
-          >
-            Lender Co
-          </div>
+          />
         </div>
       </div>
       <nav
@@ -455,9 +465,7 @@ exports[`portal role & permission guards > matches role snapshots 3`] = `
           >
             <span
               class="lender-topbar__user-name"
-            >
-              Lender User
-            </span>
+            />
             <span
               class="lender-topbar__user-role"
             >
