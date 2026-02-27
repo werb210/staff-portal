@@ -41,6 +41,8 @@ export const handlers = [
   http.post("*/api/auth/otp/verify", () => HttpResponse.json({ accessToken: "access-token", refreshToken: "refresh-token" }, { status: 200 })),
 
   http.post("*/api/audit/activity", () => new HttpResponse(null, { status: 204 })),
+  http.options("*/api/secure", () => new HttpResponse(null, { status: 204 })),
+  http.get("*/api/secure", () => HttpResponse.json({ message: "Unauthorized" }, { status: 401 })),
 
   http.get("*/api/crm/leads/count", () => HttpResponse.json({ count: 0 }, { status: 200 })),
   http.get("*/api/support/live/count", () => HttpResponse.json({ count: 0 }, { status: 200 })),
@@ -87,5 +89,29 @@ export const handlers = [
 
   http.get("*/api/client/lenders", () => HttpResponse.json({ lenders: [] }, { status: 200 })),
   http.get("*/api/client/lender-products", () => HttpResponse.json({ products: [] }, { status: 200 })),
-  http.get("*/api/client/lender-products/:id/requirements", () => HttpResponse.json({ requirements: [] }, { status: 200 }))
+  http.get("*/api/client/lender-products/:id/requirements", () => HttpResponse.json({ requirements: [] }, { status: 200 })),
+
+  http.options("*/api/lender/company", () => new HttpResponse(null, { status: 204 })),
+  http.options("*/api/lender/products", () => new HttpResponse(null, { status: 204 })),
+  http.get("*/api/lender/company", () =>
+    HttpResponse.json(
+      {
+        id: "company-1",
+        name: "Test Lender Co",
+        status: "active"
+      },
+      { status: 200 }
+    )),
+  http.get("*/api/lender/products", () =>
+    HttpResponse.json(
+      [
+        {
+          id: "product-1",
+          name: "Term Loan",
+          category: "term",
+          active: true
+        }
+      ],
+      { status: 200 }
+    ))
 ];
