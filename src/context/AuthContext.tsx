@@ -1,13 +1,15 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import type { Silo } from "../types/silo";
+import { normalizeRole, roleIn, type Role } from "@/auth/roles";
 
 export interface AuthContextValue {
   status: "loading" | "authenticated:resolved" | "unauthenticated";
   user: any | null;
-  role: string | null;
+  role: Role | null;
   token: string | null;
   allowedSilos: Silo[];
   canAccessSilo: (s: Silo) => boolean;
+  canAccessRole: (roles: Role[]) => boolean;
   logout: () => void;
   refresh: () => Promise<void>;
 }
@@ -19,7 +21,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     useState<AuthContextValue["status"]>("loading");
 
   const [user, setUser] = useState<any | null>(null);
-  const [role, setRole] = useState<string | null>(null);
+  const [role, setRole] = useState<Role | null>(null);
   const [allowedSilos, setAllowedSilos] = useState<Silo[]>([]);
   const [token, setToken] = useState<string | null>(
     localStorage.getItem("token")
@@ -36,7 +38,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const data = await res.json();
 
       setUser(data);
-      setRole(data.role ?? null);
+      setRole(normalizeRole(data.role ?? null));
       setAllowedSilos(data.allowedSilos ?? []);
       setStatus("authenticated:resolved");
     } catch {
@@ -58,6 +60,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("persist");
+    sessionStorage.removeItem("persist");
     setToken(null);
     setUser(null);
     setRole(null);
@@ -66,6 +70,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const canAccessSilo = (s: Silo) => allowedSilos.includes(s);
+
+  const canAccessRole = (allowedRoles: Role[]) => roleIn(role, allowedRoles);
 
   return (
     <AuthContext.Provider
@@ -76,6 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         token,
         allowedSilos,
         canAccessSilo,
+        canAccessRole,
         logout,
         refresh,
       }}

@@ -1,44 +1,33 @@
-// src/services/twilioVoice.ts
-
 import { Device } from "@twilio/voice-sdk";
 
-let device: Device | null = null;
+type VoiceDevice = InstanceType<typeof Device>;
 
-const isTest =
-  typeof process !== "undefined" &&
-  process.env.NODE_ENV === "test";
+let device: VoiceDevice | null = null;
+
+export async function fetchTwilioToken(): Promise<string> {
+  const response = await fetch("/api/twilio/token", { credentials: "include" });
+  if (!response.ok) {
+    throw new Error("Failed to fetch Twilio token");
+  }
+  const data = (await response.json()) as { token?: string };
+  if (!data.token) {
+    throw new Error("Missing Twilio token");
+  }
+  return data.token;
+}
+
+export function createTwilioDevice(token: string): VoiceDevice {
+  return new Device(token);
+}
 
 export async function initializeTwilioVoice() {
-  if (isTest) {
-    return;
-  }
-
-  if (device) {
-    return device;
-  }
-
-  try {
-    const response = await fetch("/api/twilio/token");
-
-    if (!response.ok) {
-      throw new Error("Failed to fetch Twilio token");
-    }
-
-    const data = await response.json();
-
-    device = new Device(data.token);
-
-    return device;
-  } catch (error) {
-    if (!isTest) {
-      console.error("Failed to fetch Twilio token:", error);
-    }
-  }
+  if (device) return device;
+  const token = await fetchTwilioToken();
+  device = createTwilioDevice(token);
+  return device;
 }
 
 export function destroyTwilioVoice() {
-  if (device) {
-    device.destroy();
-    device = null;
-  }
+  device?.destroy();
+  device = null;
 }

@@ -1,8 +1,10 @@
 import { Navigate, Outlet } from "react-router-dom"
 import { useAuth } from "@/auth/AuthContext"
+import AccessRestricted from "@/components/auth/AccessRestricted"
+import { roleIn, type Role } from "@/auth/roles"
 
-export default function RequireAuth({ children }: { children?: React.ReactNode } = {}) {
-  const { status, isAuthenticated } = useAuth()
+export default function RequireAuth({ children, allowedRoles }: { children?: React.ReactNode; allowedRoles?: Role[] } = {}) {
+  const { status, isAuthenticated, role } = useAuth()
 
   if (status === "loading") {
     return <div>Loading...</div>
@@ -10,6 +12,10 @@ export default function RequireAuth({ children }: { children?: React.ReactNode }
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />
+  }
+
+  if (allowedRoles && !roleIn(role, allowedRoles)) {
+    return <AccessRestricted requiredRoles={allowedRoles} />
   }
 
   return children ? <>{children}</> : <Outlet />
