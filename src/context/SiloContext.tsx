@@ -1,8 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { useAuth } from "./AuthContext";
-
-export type Silo = "bf" | "bi" | "slf";
+import type { Silo } from "../types/silo";
 
 interface SiloContextType {
   silo: Silo;
