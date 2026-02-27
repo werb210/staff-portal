@@ -17,7 +17,7 @@ api.interceptors.request.use((config) => {
     config.url = `/api${config.url}`;
   }
 
-  const token = getStoredAccessToken();
+  const token = localStorage.getItem("token") || localStorage.getItem("accessToken") || getStoredAccessToken();
 
   if (token) {
     config.headers = {
