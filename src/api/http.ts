@@ -1,4 +1,5 @@
 import axios, { AxiosError, AxiosInstance, type AxiosRequestConfig } from "axios";
+import { getStoredAccessToken } from "@/services/token";
 
 function resolveBaseURL(): string {
   if (process.env.NODE_ENV === "test") {
@@ -14,7 +15,7 @@ function resolveBaseURL(): string {
 
 function readToken(): string | null {
   // Backward compatible with both keys used across the repo.
-  return localStorage.getItem("token") || localStorage.getItem("accessToken") || null;
+  return getStoredAccessToken() || localStorage.getItem("token") || localStorage.getItem("accessToken") || null;
 }
 
 export type ApiErrorOptions = {
