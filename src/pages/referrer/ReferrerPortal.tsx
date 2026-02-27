@@ -35,7 +35,7 @@ const ReferrerPortal = () => {
         phone: phone.trim(),
         referrerId: user.id,
         referrerName: user.name,
-        silo: normalizeBusinessUnit(silo)
+        silo: normalizeBusinessUnit(silo === "admin" ? "bf" : silo)
       });
       setStatus(`Referral submitted. CRM contact ${response.contact.name} created.`);
       setBusinessName("");

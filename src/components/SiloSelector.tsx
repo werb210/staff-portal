@@ -1,29 +1,33 @@
 import { useNavigate } from "react-router-dom";
 import { useSilo } from "../context/SiloContext";
-import type { Silo } from "../context/SiloContext";
 import { useAuth } from "../context/AuthContext";
+import { SILOS } from "../types/silo";
+import type { Silo } from "../types/silo";
 
 const siloLabels: Record<Silo, string> = {
   bf: "BF",
   bi: "BI",
-  slf: "SLF"
+  slf: "SLF",
+  admin: "Admin",
 };
 
 export default function SiloSelector() {
   const { silo, setSilo } = useSilo();
-  const { canAccessSilo, allowedSilos } = useAuth();
+  const { canAccessSilo } = useAuth();
   const navigate = useNavigate();
-
-  const handleSwitch = (nextSilo: Silo) => {
-    if (!canAccessSilo(nextSilo)) return;
-    setSilo(nextSilo);
-    navigate(`/${nextSilo}`);
-  };
 
   return (
     <div style={{ display: "flex", gap: 12 }}>
-      {allowedSilos.map((s) => (
-        <button key={s} onClick={() => handleSwitch(s)} disabled={silo === s}>
+      {SILOS.map((s) => (
+        <button
+          key={s}
+          onClick={() => {
+            if (!canAccessSilo(s)) return;
+            setSilo(s);
+            navigate(`/${s}`);
+          }}
+          disabled={silo === s}
+        >
           {siloLabels[s]}
         </button>
       ))}

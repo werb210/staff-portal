@@ -1,12 +1,13 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
+import type { Silo } from "../types/silo";
 
 export interface AuthContextValue {
   status: "loading" | "authenticated:resolved" | "unauthenticated";
   user: any | null;
   role: string | null;
   token: string | null;
-  canAccessSilo: (silo: string) => boolean;
-  allowedSilos: string[];
+  canAccessSilo: (silo: Silo) => boolean;
+  allowedSilos: Silo[];
   logout: () => void;
   refresh: () => Promise<void>;
 }
@@ -19,7 +20,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const [user, setUser] = useState<any | null>(null);
   const [role, setRole] = useState<string | null>(null);
-  const [allowedSilos, setAllowedSilos] = useState<string[]>([]);
+  const [allowedSilos, setAllowedSilos] = useState<Silo[]>([]);
   const [token, setToken] = useState<string | null>(
     localStorage.getItem("token")
   );
@@ -36,7 +37,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       setUser(data);
       setRole(data.role ?? null);
-      setAllowedSilos(data.allowedSilos ?? []);
+      setAllowedSilos(
+        Array.isArray(data.allowedSilos)
+          ? data.allowedSilos.filter(
+              (s: unknown): s is Silo =>
+                typeof s === "string" && ["bf", "bi", "slf", "admin"].includes(s)
+            )
+          : []
+      );
       setStatus("authenticated:resolved");
     } catch {
       setUser(null);
@@ -64,7 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setStatus("unauthenticated");
   };
 
-  const canAccessSilo = (silo: string) => {
+  const canAccessSilo = (silo: Silo) => {
     return allowedSilos.includes(silo);
   };
 
