@@ -1,22 +1,28 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 
-type AuthStatus = "loading" | "authenticated" | "unauthenticated";
-
-interface AuthState {
-  status: AuthStatus;
+export interface AuthContextValue {
+  status: "loading" | "authenticated:resolved" | "unauthenticated";
   user: any | null;
-}
-
-interface AuthContextValue extends AuthState {
-  refresh: () => Promise<void>;
+  role: string | null;
+  token: string | null;
+  canAccessSilo: (silo: string) => boolean;
+  allowedSilos: string[];
   logout: () => void;
+  refresh: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [status, setStatus] = useState<AuthStatus>("loading");
+  const [status, setStatus] =
+    useState<AuthContextValue["status"]>("loading");
+
   const [user, setUser] = useState<any | null>(null);
+  const [role, setRole] = useState<string | null>(null);
+  const [allowedSilos, setAllowedSilos] = useState<string[]>([]);
+  const [token, setToken] = useState<string | null>(
+    localStorage.getItem("token")
+  );
 
   const hydrate = async () => {
     try {
@@ -24,16 +30,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         credentials: "include",
       });
 
-      if (!res.ok) {
-        throw new Error("Not authenticated");
-      }
+      if (!res.ok) throw new Error();
 
       const data = await res.json();
 
       setUser(data);
-      setStatus("authenticated");
+      setRole(data.role ?? null);
+      setAllowedSilos(data.allowedSilos ?? []);
+      setStatus("authenticated:resolved");
     } catch {
       setUser(null);
+      setRole(null);
+      setAllowedSilos([]);
       setStatus("unauthenticated");
     }
   };
@@ -49,8 +57,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = () => {
     localStorage.removeItem("token");
+    setToken(null);
     setUser(null);
+    setRole(null);
+    setAllowedSilos([]);
     setStatus("unauthenticated");
+  };
+
+  const canAccessSilo = (silo: string) => {
+    return allowedSilos.includes(silo);
   };
 
   return (
@@ -58,8 +73,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       value={{
         status,
         user,
-        refresh,
+        role,
+        token,
+        canAccessSilo,
+        allowedSilos,
         logout,
+        refresh,
       }}
     >
       {children}
@@ -67,10 +86,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function useAuth() {
+export function useAuth(): AuthContextValue {
   const ctx = useContext(AuthContext);
-  if (!ctx) {
-    throw new Error("useAuth must be used within AuthProvider");
-  }
+  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
   return ctx;
 }
