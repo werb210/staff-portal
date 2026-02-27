@@ -49,7 +49,7 @@ export const api: AxiosInstance = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-  const token = getStoredAccessToken();
+  const token = getStoredAccessToken() ?? localStorage.getItem("token");
   if (token && !config.headers?.Authorization) {
     config.headers = {
       ...(config.headers as Record<string, string> | undefined),

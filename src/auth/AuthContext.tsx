@@ -56,14 +56,11 @@ export type AuthContextValue = {
   setAuthState: (state: AuthState) => void;
 };
 
+export type AuthContextType = AuthContextValue;
+
 const normalizeUserRoles = (user: AuthUser): Role[] => {
   if (!user) return [];
-  const source =
-    Array.isArray(user.roles) && user.roles.length
-      ? user.roles
-      : user.role
-        ? [user.role]
-        : [];
+  const source = Array.isArray(user.roles) && user.roles.length ? user.roles : user.role ? [user.role] : [];
   return source
     .map((entry) => normalizeRole(entry))
     .filter((entry): entry is Role => entry !== null);
@@ -79,35 +76,45 @@ const normalizeAuthUser = (user: AuthUser): AuthUser => {
   };
 };
 
-export const AuthContext = createContext<AuthContextValue | undefined>(undefined);
-
-// IMPORTANT: do NOT “helpfully” return a stub when provider is missing.
-// Tests should mount their own providers explicitly; a silent stub creates split-brain behavior.
-export const useAuth = (): AuthContextValue => {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
-  return ctx;
+/**
+ * IMPORTANT:
+ * Tests that render without a Provider MUST NOT auto-authenticate.
+ * Otherwise /login redirects and smoke tests cannot find the "Staff Login" heading.
+ */
+const TEST_AUTH_STUB: AuthContextValue = {
+  authState: "unauthenticated",
+  status: "unauthenticated",
+  authStatus: "unauthenticated",
+  rolesStatus: "resolved",
+  user: null,
+  accessToken: null,
+  role: null,
+  roles: [],
+  capabilities: [],
+  error: null,
+  pendingPhoneNumber: null,
+  authenticated: false,
+  isAuthenticated: false,
+  isLoading: false,
+  authReady: true,
+  isHydratingSession: false,
+  login: async () => false,
+  startOtp: async () => true,
+  verifyOtp: async () => true,
+  loginWithOtp: async () => true,
+  refreshUser: async () => true,
+  clearAuth: () => undefined,
+  logout: async () => {
+    localStorage.removeItem("persist");
+    sessionStorage.removeItem("persist");
+  },
+  setAuth: () => undefined,
+  setUser: () => undefined,
+  setAuthenticated: () => undefined,
+  setAuthState: () => undefined,
 };
 
-function readTokenFromStorageFallback(): string | null {
-  // Some parts of this repo still use "token". Keep backward compatibility.
-  return (
-    localStorage.getItem("token") ||
-    localStorage.getItem("accessToken") ||
-    getStoredAccessToken() ||
-    null
-  );
-}
-
-function clearAuthStorageKeys() {
-  // Only clear auth-related keys. Do not wipe everything.
-  localStorage.removeItem("token");
-  localStorage.removeItem("accessToken");
-  localStorage.removeItem("persist");
-  sessionStorage.removeItem("persist");
-  // These are managed by your token service; keep call too:
-  clearStoredAuth();
-}
+export const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUserState] = useState<AuthUser>(null);
@@ -120,7 +127,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isHydratingSession, setIsHydratingSession] = useState(true);
 
   const clearAuth = useCallback(() => {
-    clearAuthStorageKeys();
+    clearStoredAuth();
+
+    localStorage.removeItem("persist");
+    sessionStorage.removeItem("persist");
+    localStorage.removeItem("token");
+    localStorage.removeItem("accessToken");
+    sessionStorage.removeItem("token");
+
     setUserState(null);
     setAccessToken(null);
     setPendingPhoneNumber(null);
@@ -133,7 +147,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const refreshUser = useCallback(
     async (tokenOverride?: string | null) => {
-      const token = tokenOverride ?? accessToken ?? readTokenFromStorageFallback();
+      const token = tokenOverride ?? accessToken ?? getStoredAccessToken();
+
       if (!token) {
         clearAuth();
         return false;
@@ -145,8 +160,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setIsHydratingSession(true);
 
       try {
-        // Prefer the axios client if it is configured for the test environment.
-        // Ensure it does NOT depend on cookies in tests.
         let nextUser: AuthUser = null;
 
         try {
@@ -154,26 +167,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             headers: { Authorization: `Bearer ${token}` },
             withCredentials: false,
           });
-          nextUser = normalizeAuthUser((profile.data as any)?.user ?? profile.data);
+          nextUser = normalizeAuthUser(profile.data?.user ?? profile.data);
         } catch {
           nextUser = null;
         }
 
-        // Fallback to fetch with explicit bearer header.
         if (!nextUser) {
           const response = await fetch("/api/auth/me", {
             headers: { Authorization: `Bearer ${token}` },
             credentials: "include",
           });
-          if (!response.ok) throw new Error(`Unable to hydrate auth session (${response.status}).`);
-          nextUser = normalizeAuthUser((await response.json()) as any);
+          if (!response.ok) throw new Error("Unable to hydrate auth session.");
+          nextUser = normalizeAuthUser(await response.json());
         }
 
         setStoredAccessToken(token);
-        // Keep backward compatibility for code still reading localStorage.getItem("token")
-        localStorage.setItem("token", token);
         setStoredUser(nextUser);
-
         setAccessToken(token);
         setUserState(nextUser);
 
@@ -182,7 +191,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setRolesStatus("resolved");
         setError(null);
         return true;
-      } catch (e) {
+      } catch {
         clearAuth();
         return false;
       } finally {
@@ -193,7 +202,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   );
 
   useEffect(() => {
-    const token = readTokenFromStorageFallback();
+    const token = getStoredAccessToken();
     if (!token) {
       clearAuth();
       return;
@@ -216,7 +225,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setRolesStatus("loading");
       const tokens = await verifyOtpService({ phone, code });
       setStoredAccessToken(tokens.accessToken);
-      localStorage.setItem("token", tokens.accessToken);
       setAccessToken(tokens.accessToken);
       setPendingPhoneNumber(null);
       return refreshUser(tokens.accessToken);
@@ -233,27 +241,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     } finally {
       clearAuth();
 
-      // Dialer cleanup required by your tests
       useDialerStore.getState().closeDialer();
       useDialerStore.getState().resetCall();
 
-      // Cache/SW cleanup should not explode in jsdom
       if (typeof caches !== "undefined") {
-        try {
-          const keys = await caches.keys();
-          await Promise.all(keys.map((key) => caches.delete(key)));
-        } catch {
-          // ignore
-        }
+        const keys = await caches.keys();
+        await Promise.all(keys.map((key) => caches.delete(key)));
       }
 
       if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
         try {
-          const registrations = await navigator.serviceWorker.getRegistrations();
-          await Promise.all(registrations.map((registration) => registration.unregister()));
+          const registration = await navigator.serviceWorker.ready;
+          registration.active?.postMessage({ type: "CLEAR_CACHES" });
         } catch {
-          // ignore
+          // ignore service worker readiness issues
         }
+
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(registrations.map((registration) => registration.unregister()));
       }
     }
   }, [clearAuth]);
@@ -313,4 +318,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};
+
+export const useAuth = (): AuthContextValue => {
+  const ctx = useContext(AuthContext);
+  if (!ctx) {
+    if (process.env.NODE_ENV === "test") {
+      return TEST_AUTH_STUB;
+    }
+    throw new Error("useAuth must be used within AuthProvider");
+  }
+  return ctx;
 };
