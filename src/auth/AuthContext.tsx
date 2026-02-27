@@ -8,6 +8,8 @@ import {
   setStoredUser,
 } from "@/services/token";
 import type { AuthenticatedUser } from "@/services/auth";
+import { normalizeRole, type Role } from "@/auth/roles";
+import { useDialerStore } from "@/state/dialer.store";
 
 export type AuthStatus = "idle" | "pending" | "loading" | "authenticated" | "unauthenticated";
 export type RolesStatus = "pending" | "loading" | "resolved" | "ready";
@@ -31,8 +33,8 @@ export type AuthContextValue = {
   rolesStatus: RolesStatus;
   user: AuthUser;
   accessToken: string | null;
-  role: string | null;
-  roles: string[];
+  role: Role | null;
+  roles: Role[];
   capabilities: string[];
   error: string | null;
   pendingPhoneNumber: string | null;
@@ -55,6 +57,24 @@ export type AuthContextValue = {
 };
 
 export type AuthContextType = AuthContextValue;
+
+const normalizeUserRoles = (user: AuthUser): Role[] => {
+  if (!user) return [];
+  const source = Array.isArray(user.roles) && user.roles.length ? user.roles : user.role ? [user.role] : [];
+  return source
+    .map((entry) => normalizeRole(entry))
+    .filter((entry): entry is Role => entry !== null);
+};
+
+const normalizeAuthUser = (user: AuthUser): AuthUser => {
+  if (!user) return null;
+  const role = normalizeRole(user.role ?? null);
+  return {
+    ...user,
+    role: role ?? undefined,
+    roles: normalizeUserRoles(user)
+  };
+};
 
 const TEST_AUTH_STUB: AuthContextValue = {
   authState: "authenticated",
@@ -102,6 +122,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const clearAuth = useCallback(() => {
     clearStoredAuth();
+    localStorage.clear();
+    sessionStorage.clear();
     localStorage.removeItem("persist");
     sessionStorage.removeItem("persist");
     setUserState(null);
@@ -127,11 +149,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setIsHydratingSession(true);
 
     try {
-      const profile = await api.get("/auth/me", {
-        headers: { Authorization: `Bearer ${token}` },
-        withCredentials: false
-      });
-      const nextUser = profile.data?.user ?? profile.data;
+      let nextUser: AuthUser = null;
+      try {
+        const profile = await api.get("/auth/me", {
+          headers: { Authorization: `Bearer ${token}` },
+          withCredentials: false
+        });
+        nextUser = normalizeAuthUser(profile.data?.user ?? profile.data);
+      } catch {
+        nextUser = null;
+      }
+
+      if (!nextUser) {
+        const response = await fetch("/api/auth/me", {
+          headers: { Authorization: `Bearer ${token}` },
+          credentials: "include"
+        });
+        if (!response.ok) throw new Error("Unable to hydrate auth session.");
+        nextUser = normalizeAuthUser(await response.json());
+      }
       setStoredAccessToken(token);
       setStoredUser(nextUser);
       setAccessToken(token);
@@ -185,6 +221,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       await logoutService();
     } finally {
       clearAuth();
+      useDialerStore.getState().closeDialer();
+      useDialerStore.getState().resetCall();
+      if (typeof caches !== "undefined") {
+        const keys = await caches.keys();
+        await Promise.all(keys.map((key) => caches.delete(key)));
+      }
+      if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
+        try {
+          const registration = await navigator.serviceWorker.ready;
+          registration.active?.postMessage({ type: "CLEAR_CACHES" });
+        } catch {
+          // ignore service worker readiness issues
+        }
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(registrations.map((registration) => registration.unregister()));
+      }
     }
   }, [clearAuth]);
 
@@ -198,8 +250,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     rolesStatus,
     user,
     accessToken,
-    role: user?.role ?? null,
-    roles: user?.roles ?? (user?.role ? [user.role] : []),
+    role: normalizeRole(user?.role ?? null),
+    roles: normalizeUserRoles(user),
     capabilities: user?.capabilities ?? [],
     error,
     pendingPhoneNumber,

@@ -2,10 +2,11 @@ import type { ReactNode } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useSilo } from "../context/SiloContext";
 import AccessRestricted from "./auth/AccessRestricted";
+import { roleIn, type Role } from "@/auth/roles";
 
 type ProtectedRouteProps = {
   children: ReactNode;
-  requiredRole?: "admin" | "staff";
+  requiredRole?: Role;
 };
 
 export default function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
@@ -18,7 +19,7 @@ export default function ProtectedRoute({ children, requiredRole }: ProtectedRout
     return <AccessRestricted message="You cannot access this silo." />;
   }
 
-  if (requiredRole && role !== requiredRole) {
+  if (requiredRole && !roleIn(role, [requiredRole])) {
     return <AccessRestricted message="Role requirements were not met." />;
   }
 
