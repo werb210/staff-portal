@@ -38,10 +38,16 @@ interface LeadIntelligence {
 const DashboardPage = () => {
   const { isAuthenticated, isLoading } = useAuth();
   const [lenderMetrics, setLenderMetrics] = useState<LenderMetrics[]>([]);
-  const [revenueSummary, setRevenueSummary] = useState<RevenueSummary | null>(
-    null,
-  );
+  const [revenueSummary, setRevenueSummary] = useState<RevenueSummary | null>(null);
   const [priorityLeads, setPriorityLeads] = useState<LeadIntelligence[]>([]);
+
+  const safeRevenueSummary: RevenueSummary = {
+    totalFunded: revenueSummary?.totalFunded ?? 0,
+    totalCommission: revenueSummary?.totalCommission ?? 0,
+    avgCommissionPerDeal: revenueSummary?.avgCommissionPerDeal ?? 0,
+    totalApplications: revenueSummary?.totalApplications ?? 0,
+    fundedDeals: revenueSummary?.fundedDeals ?? 0,
+  };
 
   useEffect(() => {
     const token = localStorage.getItem("auth_token");
@@ -106,40 +112,38 @@ const DashboardPage = () => {
   return (
     <RequireRole roles={["Admin", "Staff"]}>
       <div className="page">
-        {revenueSummary && (
-          <div className="executive-kpi-grid mb-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="kpi-card">
-              <Card title="Total Funded">
-                <p>${revenueSummary.totalFunded.toLocaleString()}</p>
-              </Card>
-            </div>
-
-            <div className="kpi-card">
-              <Card title="Total Commission">
-                <p>${revenueSummary.totalCommission.toLocaleString()}</p>
-              </Card>
-            </div>
-
-            <div className="kpi-card">
-              <Card title="Avg Commission / Deal">
-                <p>${revenueSummary.avgCommissionPerDeal.toLocaleString()}</p>
-              </Card>
-            </div>
-
-            <div className="kpi-card">
-              <Card title="Funded Rate">
-                <p>
-                  {(
-                    (revenueSummary.fundedDeals /
-                      revenueSummary.totalApplications) *
-                    100
-                  ).toFixed(1)}
-                  %
-                </p>
-              </Card>
-            </div>
+        <div className="executive-kpi-grid mb-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="kpi-card">
+            <Card title="Total Funded">
+              <p>${safeRevenueSummary.totalFunded.toLocaleString()}</p>
+            </Card>
           </div>
-        )}
+
+          <div className="kpi-card">
+            <Card title="Total Commission">
+              <p>${safeRevenueSummary.totalCommission.toLocaleString()}</p>
+            </Card>
+          </div>
+
+          <div className="kpi-card">
+            <Card title="Avg Commission / Deal">
+              <p>${safeRevenueSummary.avgCommissionPerDeal.toLocaleString()}</p>
+            </Card>
+          </div>
+
+          <div className="kpi-card">
+            <Card title="Funded Rate">
+              <p>
+                {(
+                  (safeRevenueSummary.fundedDeals /
+                    (safeRevenueSummary.totalApplications || 1)) *
+                  100
+                ).toFixed(1)}
+                %
+              </p>
+            </Card>
+          </div>
+        </div>
 
         <div className="priority-queue-section mb-4">
           <Card title="Priority Lead Queue">

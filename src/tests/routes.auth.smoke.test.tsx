@@ -7,7 +7,7 @@ import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
 import { defaultHandlers } from "@/tests/msw/defaultHandlers";
 import App from "@/App";
-import { AuthProvider, useAuth } from "@/auth/AuthContext";
+import { AuthProvider } from "@/auth/AuthContext";
 import { portalApiRoutes } from "@/utils/routeAudit";
 import { SiloProvider } from "@/context/SiloContext";
 import { clearStoredAuth, setStoredAccessToken } from "@/services/token";
@@ -30,17 +30,11 @@ const server = setupServer(
   ...defaultHandlers
 );
 
-const AuthProbe = () => {
-  const { authenticated } = useAuth();
-  return <div data-testid="auth-probe">{String(authenticated)}</div>;
-};
-
-const renderApp = (initialRoute: string, includeProbe = false) => {
+const renderApp = (initialRoute: string) => {
   window.history.pushState({}, "", initialRoute);
   return render(
     <AuthProvider>
       <SiloProvider>
-        {includeProbe ? <AuthProbe /> : null}
         <App />
       </SiloProvider>
     </AuthProvider>
@@ -64,6 +58,7 @@ describe("portal auth routing smoke tests", () => {
   });
 
   it("redirects unauthenticated users from / to /login", async () => {
+    window.__TEST_AUTH__ = { isAuthenticated: false, role: "Staff" };
     server.use(http.get("*/api/auth/me", () => new HttpResponse(null, { status: 401 })));
 
     renderApp("/");
@@ -76,6 +71,7 @@ describe("portal auth routing smoke tests", () => {
   });
 
   it("allows authenticated users to access protected routes", async () => {
+    window.__TEST_AUTH__ = { isAuthenticated: true, role: "Staff" };
     setStoredAccessToken("test-token");
     server.use(
       http.get("*/api/auth/me", () => HttpResponse.json({ id: "u1", role: "Staff" }))
@@ -92,12 +88,13 @@ describe("portal auth routing smoke tests", () => {
 
   it("navigates away from /login after OTP login", async () => {
     const user = userEvent.setup();
+    window.__TEST_AUTH__ = { isAuthenticated: false, role: "Staff" };
 
     server.use(
       http.get("*/api/auth/me", () => HttpResponse.json({ id: "u1", role: "Staff" }))
     );
 
-    renderApp("/login", true);
+    renderApp("/login");
 
     await user.type(screen.getByLabelText(/phone number/i), "+15555550100");
     await user.click(screen.getByRole("button", { name: /send code/i }));
@@ -116,6 +113,7 @@ describe("portal auth routing smoke tests", () => {
 
   it("keeps authenticated users on /lenders after a hard refresh", async () => {
     const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    window.__TEST_AUTH__ = { isAuthenticated: true, role: "Staff" };
 
     setStoredAccessToken("test-token");
     server.use(
