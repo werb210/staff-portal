@@ -351,7 +351,7 @@ const LendersContent = () => {
 
   const { data: lenders = [], isLoading, error, refetch: refetchLenders } = useQuery<Lender[], Error>({
     queryKey: ["lenders"],
-    queryFn: ({ signal }) => fetchLenders({ signal })
+    queryFn: async ({ signal }) => (await fetchLenders({ signal })) ?? []
   });
   const safeLenders = Array.isArray(lenders) ? lenders : [];
 
@@ -381,9 +381,9 @@ const LendersContent = () => {
     data: lenderDetail,
     isLoading: lenderDetailLoading,
     error: lenderDetailError
-  } = useQuery<Lender, Error>({
+  } = useQuery<Lender | null, Error>({
     queryKey: ["lender-detail", editingLenderId ?? "none"],
-    queryFn: () => fetchLenderById(editingLenderId ?? ""),
+    queryFn: async () => (await fetchLenderById(editingLenderId ?? "")) ?? null,
     enabled: Boolean(editingLenderId && isLenderModalOpen)
   });
 
@@ -394,7 +394,7 @@ const LendersContent = () => {
     refetch: refetchProducts
   } = useQuery<LenderProduct[], Error>({
     queryKey: ["lender-products", selectedLenderId ?? "none"],
-    queryFn: ({ signal }) => fetchLenderProducts(selectedLenderId ?? "", { signal }),
+    queryFn: async ({ signal }) => (await fetchLenderProducts(selectedLenderId ?? "", { signal })) ?? [],
     enabled: Boolean(selectedLenderId),
     placeholderData: (previousData) => previousData ?? []
   });

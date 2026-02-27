@@ -178,7 +178,7 @@ describe("lender management flows", () => {
 
   it("renders lender list", async () => {
     const fetchLendersMock = vi.mocked(fetchLenders);
-    fetchLendersMock.mockResolvedValueOnce([baseLender]);
+    fetchLendersMock.mockResolvedValue([baseLender]);
 
     renderWithProviders("/lenders");
 
@@ -212,7 +212,7 @@ describe("lender management flows", () => {
 
   it("updates lender info", async () => {
     const fetchLendersMock = vi.mocked(fetchLenders);
-    fetchLendersMock.mockResolvedValueOnce([baseLender]);
+    fetchLendersMock.mockResolvedValue([baseLender]);
     const fetchLenderByIdMock = vi.mocked(fetchLenderById);
     fetchLenderByIdMock.mockResolvedValueOnce(baseLender);
     const updateLenderMock = vi.mocked(updateLender);
@@ -232,7 +232,7 @@ describe("lender management flows", () => {
 
   it("loads all lender fields on edit", async () => {
     const fetchLendersMock = vi.mocked(fetchLenders);
-    fetchLendersMock.mockResolvedValueOnce([baseLender]);
+    fetchLendersMock.mockResolvedValue([baseLender]);
     const fetchLenderByIdMock = vi.mocked(fetchLenderById);
     fetchLenderByIdMock.mockResolvedValueOnce(baseLender);
 

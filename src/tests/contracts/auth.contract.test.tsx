@@ -19,7 +19,6 @@ const meSpy = vi.fn();
 let lendersAuthHeader: string | null = null;
 
 const server = setupServer(
-  ...defaultHandlers,
   http.post("http://localhost/api/auth/otp/start", async ({ request }) => {
     startOtpSpy(await request.json());
     return new HttpResponse(null, { status: 204 });
@@ -32,10 +31,11 @@ const server = setupServer(
     meSpy();
     return HttpResponse.json({ id: "1", role: "Staff" }, { status: 200 });
   }),
-  http.get("http://localhost/api/lenders", ({ request }) => {
+  http.get("*/api/lenders", ({ request }) => {
     lendersAuthHeader = request.headers.get("authorization");
     return HttpResponse.json([], { status: 200 });
-  })
+  }),
+  ...defaultHandlers
 );
 
 const AuthProbe = () => {
@@ -69,7 +69,7 @@ const TestApp = () => (
 
 describe("auth server contract", () => {
   beforeAll(() => {
-    server.listen({ onUnhandledRequest: "warn" });
+    server.listen({ onUnhandledRequest: "error" });
   });
 
   afterEach(() => {
@@ -183,7 +183,7 @@ describe("auth server contract", () => {
     window.addEventListener("unhandledrejection", swallowUnhandled, { capture: true });
 
     server.use(
-      http.get("http://localhost/api/lenders", () => new HttpResponse(null, { status: 401 }))
+      http.get("*/api/lenders", () => HttpResponse.json({ message: "Unauthorized" }, { status: 401 }))
     );
 
     try {

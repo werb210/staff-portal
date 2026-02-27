@@ -10,6 +10,7 @@ import {
 import type { AuthenticatedUser } from "@/services/auth";
 import { normalizeRole, type Role } from "@/auth/roles";
 import { useDialerStore } from "@/state/dialer.store";
+import { clearSession, readSession, writeSession } from "@/utils/sessionStore";
 
 export type AuthStatus = "idle" | "pending" | "loading" | "authenticated" | "unauthenticated";
 export type RolesStatus = "pending" | "loading" | "resolved" | "ready";
@@ -129,11 +130,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const clearAuth = useCallback(() => {
     clearStoredAuth();
 
-    localStorage.removeItem("persist");
-    sessionStorage.removeItem("persist");
-    localStorage.removeItem("token");
-    localStorage.removeItem("accessToken");
-    sessionStorage.removeItem("token");
+    localStorage.clear();
+    sessionStorage.clear();
+    void clearSession();
 
     setUserState(null);
     setAccessToken(null);
@@ -183,6 +182,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         setStoredAccessToken(token);
         setStoredUser(nextUser);
+        void writeSession({ accessToken: token, user: nextUser });
         setAccessToken(token);
         setUserState(nextUser);
 
@@ -202,12 +202,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   );
 
   useEffect(() => {
-    const token = getStoredAccessToken();
-    if (!token) {
+    const hydrate = async () => {
+      const token = getStoredAccessToken();
+      if (token) {
+        await refreshUser(token);
+        return;
+      }
+
+      const session = await readSession();
+      if (session?.accessToken && session.user) {
+        setStoredAccessToken(session.accessToken);
+        setStoredUser(session.user);
+        setAccessToken(session.accessToken);
+        setUserState(normalizeAuthUser(session.user as AuthUser));
+        setAuthStateState("authenticated");
+        setAuthStatus("authenticated");
+        setRolesStatus("resolved");
+        setIsHydratingSession(false);
+        return;
+      }
+
       clearAuth();
-      return;
-    }
-    void refreshUser(token);
+    };
+
+    void hydrate();
   }, [clearAuth, refreshUser]);
 
   const startOtp = useCallback(async ({ phone }: OtpStartPayload) => {

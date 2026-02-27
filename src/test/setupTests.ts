@@ -1,7 +1,7 @@
 import { server } from "./msw/server"
 
 beforeAll(() => {
-  server.listen()
+  server.listen({ onUnhandledRequest: "bypass" })
 })
 
 afterEach(() => {
