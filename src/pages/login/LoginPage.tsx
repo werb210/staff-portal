@@ -51,10 +51,7 @@ export default function LoginPage() {
     setRequestId("n/a");
   };
 
-  const handleSendCode = async () => {
-    const parsedPhone = normalizePhone(phone);
-    if (!parsedPhone) return;
-
+  const requestOtpCode = async (phoneValue: string) => {
     setError(null);
     setRequestId(null);
     setEndpoint("/auth/otp/start");
@@ -62,8 +59,8 @@ export default function LoginPage() {
     setSending(true);
 
     try {
-      await startOtp({ phone: parsedPhone });
-      setNormalizedPhone(parsedPhone);
+      await startOtp({ phone: phoneValue });
+      setNormalizedPhone(phoneValue);
       setCodeSent(true);
       setStatusMessage("Code sent. Check your phone for the verification code.");
     } catch (err) {
@@ -72,6 +69,19 @@ export default function LoginPage() {
     } finally {
       setSending(false);
     }
+  };
+
+  const handleSendCode = async () => {
+    const parsedPhone = normalizePhone(phone);
+    if (!parsedPhone) return;
+
+    await requestOtpCode(parsedPhone);
+  };
+
+
+  const handleResendCode = async () => {
+    if (!normalizedPhone) return;
+    await requestOtpCode(normalizedPhone);
   };
 
   const attemptVerify = async (nextCode: string) => {
@@ -114,30 +124,44 @@ export default function LoginPage() {
           </div>
         ) : null}
 
-        <div className="mb-4">
-          <label htmlFor="phone" className="block text-sm mb-1">Phone number</label>
-          <input
-            id="phone"
-            name="phone"
-            type="tel"
-            className="w-full border px-3 py-2 rounded"
-            value={phone}
-            onChange={(event) => setPhone(event.target.value)}
-            required
-            disabled={sending || codeSent}
-          />
-        </div>
+        {!codeSent ? (
+          <>
+            <div className="mb-4">
+              <label htmlFor="phone" className="block text-sm mb-1">Phone number</label>
+              <input
+                id="phone"
+                name="phone"
+                type="tel"
+                className="w-full border px-3 py-2 rounded"
+                value={phone}
+                onChange={(event) => setPhone(event.target.value)}
+                required
+                disabled={sending}
+              />
+            </div>
 
-        <button
-          type="submit"
-          disabled={sending || !phone.trim() || codeSent}
-          className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:opacity-50"
-        >
-          {sending ? "Sending..." : "Send code"}
-        </button>
+            <button
+              type="submit"
+              disabled={sending || !phone.trim()}
+              className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+            >
+              {sending ? "Sending..." : "Send code"}
+            </button>
+          </>
+        ) : null}
 
         {codeSent ? (
           <div className="mt-6">
+            <button
+              type="button"
+              onClick={() => {
+                void handleResendCode();
+              }}
+              disabled={sending || verifying}
+              className="mb-3 text-sm text-blue-600 underline disabled:opacity-50"
+            >
+              Resend code
+            </button>
             <label htmlFor="otp-digit-1" className="block text-sm mb-1">OTP digit 1</label>
             <input
               id="otp-digit-1"

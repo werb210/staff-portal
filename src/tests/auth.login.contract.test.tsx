@@ -14,7 +14,6 @@ const verifyOtpSpy = vi.fn();
 const meSpy = vi.fn();
 
 const server = setupServer(
-  ...defaultHandlers,
   http.post("http://localhost/api/auth/otp/start", async ({ request }) => {
     const contentType = request.headers.get("content-type") ?? "";
     expect(contentType.toLowerCase()).toContain("application/json");
@@ -34,7 +33,8 @@ const server = setupServer(
   http.get("*/api/auth/me", () => {
     meSpy();
     return HttpResponse.json({ id: "u1", role: "Staff" }, { status: 200 });
-  })
+  }),
+  ...defaultHandlers
 );
 
 const AuthProbe = () => {
@@ -56,7 +56,7 @@ const LocationProbe = () => {
 
 describe("login contract flow", () => {
   beforeAll(() => {
-    server.listen({ onUnhandledRequest: "warn" });
+    server.listen({ onUnhandledRequest: "error" });
   });
 
   afterEach(() => {

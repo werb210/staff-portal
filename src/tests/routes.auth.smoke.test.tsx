@@ -13,7 +13,6 @@ import { SiloProvider } from "@/context/SiloContext";
 import { clearStoredAuth, setStoredAccessToken } from "@/services/token";
 
 const server = setupServer(
-  ...defaultHandlers,
   http.get("*/api/health", () => HttpResponse.json({ status: "ok" })),
   http.get("*/api/_int/routes", () => HttpResponse.json({ routes: portalApiRoutes })),
   http.post("*/api/auth/otp/start", () =>
@@ -27,7 +26,8 @@ const server = setupServer(
   http.post("*/api/auth/otp/verify", () =>
     HttpResponse.json({ accessToken: "access-token", refreshToken: "refresh-token" })
   ),
-  http.get("*/api/lenders", () => HttpResponse.json({ items: [] }))
+  http.get("*/api/lenders", () => HttpResponse.json({ items: [] })),
+  ...defaultHandlers
 );
 
 const AuthProbe = () => {
@@ -49,7 +49,7 @@ const renderApp = (initialRoute: string, includeProbe = false) => {
 
 describe("portal auth routing smoke tests", () => {
   beforeAll(() => {
-    server.listen({ onUnhandledRequest: "warn" });
+    server.listen({ onUnhandledRequest: "error" });
   });
 
   afterEach(() => {

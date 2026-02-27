@@ -22,7 +22,7 @@ const server = setupServer(...defaultHandlers);
 
 describe("auth routing contract", () => {
   beforeAll(() => {
-    server.listen({ onUnhandledRequest: "warn" });
+    server.listen({ onUnhandledRequest: "error" });
   });
 
   afterEach(() => {
@@ -160,10 +160,10 @@ describe("auth routing contract", () => {
       http.get("*/api/auth/me", () =>
         HttpResponse.json({ id: "u1", role: "Staff" }, { status: 200 })
       ),
-      http.get("http://localhost/api/secure", () => {
+      http.get("*/api/secure", () => {
         callCount += 1;
         if (callCount === 1) {
-          return new HttpResponse(null, { status: 401 });
+          return HttpResponse.json({ message: "Unauthorized" }, { status: 401 });
         }
         return HttpResponse.json({ ok: true });
       })
