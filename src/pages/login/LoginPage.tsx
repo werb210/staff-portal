@@ -29,9 +29,9 @@ export default function LoginPage() {
     return <Navigate to="/dashboard" replace />;
   }
 
-  const readApiError = (err: unknown, fallback: string) => {
+  const readApiError = (err: unknown, fallback: string, preferFallback = false) => {
     if (err instanceof ApiError) {
-      setError(err.message || fallback);
+      setError(preferFallback ? fallback : (err.message || fallback));
       setRequestId(err.requestId ?? "n/a");
       return;
     }
@@ -83,7 +83,7 @@ export default function LoginPage() {
     try {
       await verifyOtp({ phone: normalizedPhone, code: nextCode });
     } catch (err) {
-      readApiError(err, "Invalid verification code");
+      readApiError(err, "Invalid verification code failed", true);
     } finally {
       setVerifying(false);
     }
@@ -114,6 +114,7 @@ export default function LoginPage() {
           <label htmlFor="phone" className="block text-sm mb-1">Phone number</label>
           <input
             id="phone"
+            name="phone"
             type="tel"
             className="w-full border px-3 py-2 rounded"
             value={phone}

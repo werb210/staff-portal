@@ -2,7 +2,7 @@ import axios, { AxiosError, AxiosInstance, type AxiosRequestConfig } from "axios
 
 function resolveBaseURL(): string {
   if (process.env.NODE_ENV === "test") {
-    return "/api";
+    return "http://localhost/api";
   }
 
   if (import.meta.env?.VITE_API_URL) {

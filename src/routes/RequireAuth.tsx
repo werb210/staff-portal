@@ -1,7 +1,7 @@
 import { Navigate, Outlet } from "react-router-dom"
 import { useAuth } from "@/auth/AuthContext"
 
-export default function RequireAuth() {
+export default function RequireAuth({ children }: { children?: React.ReactNode } = {}) {
   const { status, isAuthenticated } = useAuth()
 
   if (status === "loading") {
@@ -12,5 +12,5 @@ export default function RequireAuth() {
     return <Navigate to="/login" replace />
   }
 
-  return <Outlet />
+  return children ? <>{children}</> : <Outlet />
 }
