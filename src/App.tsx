@@ -6,6 +6,7 @@ import ProtectedRoute from "@/routes/ProtectedRoute";
 import LoginPage from "@/pages/LoginPage";
 import DashboardPage from "@/pages/dashboard/DashboardPage";
 import LendersPage from "@/pages/Lenders";
+import AuthProbe from "@/tests/components/AuthProbe";
 
 function SessionGuard() {
   usePortalSessionGuard();
@@ -15,6 +16,7 @@ function SessionGuard() {
 const AppRoutes = () => (
   <BrowserRouter>
     <SessionGuard />
+    {process.env.NODE_ENV === "test" ? <AuthProbe /> : null}
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/" element={<Navigate to="/dashboard" replace />} />

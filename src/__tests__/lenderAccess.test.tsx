@@ -34,6 +34,7 @@ const renderRoutes = (initialEntry: string) =>
 
 beforeEach(() => {
   clearStoredAuth();
+  window.__TEST_AUTH__ = { isAuthenticated: true, role: "Admin" };
 });
 
 afterEach(() => {
@@ -43,6 +44,7 @@ afterEach(() => {
 
 describe("lender route access", () => {
   it("redirects unauthenticated users to login", async () => {
+    window.__TEST_AUTH__ = { isAuthenticated: false, role: "Admin" };
     const fetchSpy = vi.fn().mockResolvedValue(new Response(null, { status: 401 }));
     vi.stubGlobal("fetch", fetchSpy);
 
