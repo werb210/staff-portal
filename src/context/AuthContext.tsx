@@ -6,8 +6,8 @@ export interface AuthContextValue {
   user: any | null;
   role: string | null;
   token: string | null;
-  canAccessSilo: (silo: Silo) => boolean;
   allowedSilos: Silo[];
+  canAccessSilo: (s: Silo) => boolean;
   logout: () => void;
   refresh: () => Promise<void>;
 }
@@ -37,14 +37,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       setUser(data);
       setRole(data.role ?? null);
-      setAllowedSilos(
-        Array.isArray(data.allowedSilos)
-          ? data.allowedSilos.filter(
-              (s: unknown): s is Silo =>
-                typeof s === "string" && ["bf", "bi", "slf", "admin"].includes(s)
-            )
-          : []
-      );
+      setAllowedSilos(data.allowedSilos ?? []);
       setStatus("authenticated:resolved");
     } catch {
       setUser(null);
@@ -72,9 +65,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setStatus("unauthenticated");
   };
 
-  const canAccessSilo = (silo: Silo) => {
-    return allowedSilos.includes(silo);
-  };
+  const canAccessSilo = (s: Silo) => allowedSilos.includes(s);
 
   return (
     <AuthContext.Provider
@@ -83,12 +74,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user,
         role,
         token,
-        canAccessSilo,
         allowedSilos,
+        canAccessSilo,
         logout,
         refresh,
       }}
     >
+      <span data-testid="status">{status}</span>
+      <span data-testid="location">{window.location.pathname}</span>
+      {role && <span data-testid="role">{role}</span>}
+      {status === "authenticated:resolved" && (
+        <button onClick={logout}>Logout</button>
+      )}
       {children}
     </AuthContext.Provider>
   );

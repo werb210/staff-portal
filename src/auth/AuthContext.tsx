@@ -128,7 +128,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     try {
       const profile = await api.get("/auth/me", {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
+        withCredentials: false
       });
       const nextUser = profile.data?.user ?? profile.data;
       setStoredAccessToken(token);
@@ -149,19 +150,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [accessToken, clearAuth]);
 
   useEffect(() => {
-    if (process.env.NODE_ENV === "test") {
-      setUserState({
-        id: "test-user",
-        email: "test@example.com",
-        role: "admin",
-      });
-      setAuthStateState("authenticated");
-      setAuthStatus("authenticated");
-      setRolesStatus("resolved");
-      setIsHydratingSession(false);
-      return;
-    }
-
     const token = getStoredAccessToken();
     if (!token) {
       clearAuth();
