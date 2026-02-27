@@ -8,6 +8,7 @@ import { ApiError, api } from "@/api/http";
 import { reportAuthFailure } from "@/auth/authEvents";
 import { attachRequestIdAndLog, logError, logResponse } from "@/utils/apiLogging";
 import { getAccessToken } from "@/lib/authToken";
+import { getStoredAccessToken } from "@/services/token";
 import { queueFailedMutation } from "@/utils/backgroundSyncQueue";
 import { setApiStatus } from "@/state/apiStatus";
 
@@ -45,7 +46,7 @@ const buildConfig = (
 
 const ensureAccessToken = (options?: RequestOptions) => {
   if (options?.skipAuth) return;
-  const token = getAccessToken();
+  const token = getStoredAccessToken() ?? getAccessToken();
   if (!token) {
     reportAuthFailure("missing-token");
     throw new ApiError({

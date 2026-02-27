@@ -182,16 +182,20 @@ describe("auth server contract", () => {
     };
     window.addEventListener("unhandledrejection", swallowUnhandled, { capture: true });
 
-    server.use(
-      http.get("*/api/lenders", () => HttpResponse.json({ message: "Unauthorized" }, { status: 401 }))
-    );
+    const unauthorizedAdapter = vi.fn(async (config) => ({
+      data: { message: "Unauthorized" },
+      status: 401,
+      statusText: "Unauthorized",
+      headers: {},
+      config
+    }));
 
     try {
       window.history.pushState({}, "", "/lenders");
 
       let firstError: unknown = null;
       try {
-        await apiClient.get("/lenders");
+        await apiClient.get("/lenders", { adapter: unauthorizedAdapter } as never);
       } catch (error) {
         firstError = error;
       }
@@ -200,7 +204,7 @@ describe("auth server contract", () => {
 
       let secondError: unknown = null;
       try {
-        await apiClient.get("/lenders");
+        await apiClient.get("/lenders", { adapter: unauthorizedAdapter } as never);
       } catch (error) {
         secondError = error;
       }

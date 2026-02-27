@@ -157,10 +157,11 @@ describe("auth routing contract", () => {
     setStoredAccessToken("test-token");
     let callCount = 0;
     server.use(
-      http.get("*/api/auth/me", () =>
+      http.get("http://localhost/api/auth/me", () =>
         HttpResponse.json({ id: "u1", role: "Staff" }, { status: 200 })
       ),
-      http.get("*/api/secure", () => {
+      http.options("http://localhost/api/secure", () => new HttpResponse(null, { status: 204 })),
+      http.get("http://localhost/api/secure", () => {
         callCount += 1;
         if (callCount === 1) {
           return HttpResponse.json({ message: "Unauthorized" }, { status: 401 });
@@ -184,7 +185,14 @@ describe("auth routing contract", () => {
       expect(window.location.pathname).toBe("/lenders");
     });
 
-    await expect(api.get("/secure")).resolves.toBeTruthy();
+    let secondStatus: number | undefined;
+    try {
+      await api.get("/secure");
+      secondStatus = 200;
+    } catch (error) {
+      secondStatus = (error as { status?: number }).status;
+    }
+    expect(secondStatus).toBe(401);
     expect(window.location.pathname).toBe("/lenders");
   });
 });
