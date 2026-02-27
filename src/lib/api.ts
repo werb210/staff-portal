@@ -1,4 +1,5 @@
 import axios, { AxiosError, AxiosInstance, type AxiosRequestConfig } from "axios";
+import { getStoredAccessToken } from "@/services/token";
 
 function resolveBaseURL(): string {
   if (process.env.NODE_ENV === "test") {
@@ -47,6 +48,17 @@ export const api: AxiosInstance = axios.create({
   withCredentials: true,
 });
 
+api.interceptors.request.use((config) => {
+  const token = getStoredAccessToken();
+  if (token && !config.headers?.Authorization) {
+    config.headers = {
+      ...(config.headers as Record<string, string> | undefined),
+      Authorization: `Bearer ${token}`
+    } as any;
+  }
+  return config;
+});
+
 export async function apiRequest<T>(config: AxiosRequestConfig): Promise<T> {
   try {
     const response = await api.request<T>(config);
@@ -68,12 +80,18 @@ export async function apiRequest<T>(config: AxiosRequestConfig): Promise<T> {
 
 api.interceptors.response.use(
   (response) => response,
-  (error: AxiosError) => {
-    if (process.env.NODE_ENV === "test") {
-      return Promise.reject(error);
-    }
-
-    return Promise.reject(error);
+  (error: AxiosError<{ message?: string; code?: string }>) => {
+    const status = error.response?.status ?? 500;
+    const data = error.response?.data;
+    return Promise.reject(
+      new ApiError({
+        status,
+        message: data?.message ?? error.message,
+        code: data?.code,
+        requestId: (error.response?.headers as Record<string, string> | undefined)?.["x-request-id"],
+        details: data
+      })
+    );
   }
 );
 

@@ -15,12 +15,19 @@ function getEnv(key: RequiredEnv): string {
   return value || "";
 }
 
+const isTestEnv =
+  process.env.NODE_ENV === "test" ||
+  process.env.VITEST === "true" ||
+  import.meta.env.MODE === "test";
+
 export const ENV = {
   API_BASE_URL:
     getEnv("VITE_API_BASE_URL") ||
-    (window.location.hostname.includes("boreal.financial")
-      ? "https://api.staff.boreal.financial"
-      : "http://localhost:3000"),
+    (isTestEnv
+      ? "http://localhost/api"
+      : window.location.hostname.includes("boreal.financial")
+        ? "https://api.staff.boreal.financial"
+        : "/api"),
 
   JWT_STORAGE_KEY:
     getEnv("VITE_JWT_STORAGE_KEY") || "boreal_staff_token"

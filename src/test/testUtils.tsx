@@ -1,6 +1,6 @@
 import { render, type RenderOptions } from "@testing-library/react";
 import { type ReactElement, type ReactNode } from "react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, RouterProvider } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthContext, type AuthContextValue } from "@/auth/AuthContext";
 import { BusinessUnitProvider } from "@/context/BusinessUnitContext";
@@ -20,69 +20,89 @@ type ExtendedRenderOptions = Omit<RenderOptions, "wrapper"> & {
   auth?: Partial<AuthContextValue>;
 };
 
-const createAuthValue = (overrides: Partial<AuthContextValue>): AuthContextValue => ({
-  authState: "authenticated",
-  status: "authenticated",
-  authStatus: "authenticated",
-  rolesStatus: "resolved",
-  user: { id: "test-user", email: "staff@example.com", role: "Staff" },
-  accessToken: "test-token",
-  role: "Staff",
-  roles: ["Staff"],
-  capabilities: [],
-  error: null,
-  pendingPhoneNumber: null,
-  authenticated: true,
-  isAuthenticated: true,
-  isLoading: false,
-  authReady: true,
-  isHydratingSession: false,
-  login: async () => false,
-  startOtp: async () => true,
-  verifyOtp: async () => true,
-  loginWithOtp: async () => true,
-  refreshUser: async () => true,
-  clearAuth: () => undefined,
-  logout: async () => {
-    localStorage.removeItem("persist");
-    sessionStorage.removeItem("persist");
-  },
-  setAuth: () => undefined,
-  setUser: () => undefined,
-  setAuthenticated: () => undefined,
-  setAuthState: () => undefined,
-  ...overrides
-});
+const createAuthValue = (overrides: Partial<AuthContextValue>): AuthContextValue => {
+  const fallbackUser = { id: "test-user", email: "staff@example.com", role: "Staff" };
+  const user = overrides.user ?? fallbackUser;
+
+  return {
+    authState: "authenticated",
+    status: "authenticated",
+    authStatus: "authenticated",
+    rolesStatus: "resolved",
+    user,
+    accessToken: "test-token",
+    role: (overrides.role ?? (typeof user?.role === "string" ? (user.role as any) : "Staff")) as any,
+    roles: overrides.roles ?? [((typeof user?.role === "string" ? user.role : "Staff") as any)],
+    capabilities: [],
+    error: null,
+    pendingPhoneNumber: null,
+    authenticated: overrides.authenticated ?? true,
+    isAuthenticated: overrides.isAuthenticated ?? overrides.authenticated ?? true,
+    isLoading: false,
+    authReady: true,
+    isHydratingSession: false,
+    login: async () => false,
+    startOtp: async () => true,
+    verifyOtp: async () => true,
+    loginWithOtp: async () => true,
+    refreshUser: async () => true,
+    clearAuth: () => undefined,
+    logout: async () => {
+      localStorage.removeItem("persist");
+      sessionStorage.removeItem("persist");
+    },
+    setAuth: () => undefined,
+    setUser: () => undefined,
+    setAuthenticated: () => undefined,
+    setAuthState: () => undefined,
+    ...overrides
+  };
+};
 
 export const renderWithProviders = (ui: ReactElement, options: ExtendedRenderOptions = {}) => {
   const { route = "/", auth = {}, ...rest } = options;
   const queryClient = createQueryClient();
+  const shouldWrapRouter = ui.type !== MemoryRouter && ui.type !== RouterProvider;
 
-  return render(ui, {
+  const result = render(ui, {
     wrapper: ({ children }) => (
       <QueryClientProvider client={queryClient}>
-        <MemoryRouter initialEntries={[route]}>
+        {shouldWrapRouter ? (
+          <MemoryRouter initialEntries={[route]}>
+            <AuthContext.Provider value={createAuthValue(auth)}>
+              <BusinessUnitProvider>{children}</BusinessUnitProvider>
+            </AuthContext.Provider>
+          </MemoryRouter>
+        ) : (
           <AuthContext.Provider value={createAuthValue(auth)}>
-            <BusinessUnitProvider>
-              {children}
-            </BusinessUnitProvider>
+            <BusinessUnitProvider>{children}</BusinessUnitProvider>
           </AuthContext.Provider>
-        </MemoryRouter>
+        )}
       </QueryClientProvider>
     ),
     ...rest
   });
+
+  return {
+    ...result,
+    queryClient
+  };
 };
 
 export const renderWithLenderProviders = (ui: ReactElement, options: Omit<RenderOptions, "wrapper"> = {}) => {
   const queryClient = createQueryClient();
+  const shouldWrapRouter = ui.type !== MemoryRouter && ui.type !== RouterProvider;
 
   return render(ui, {
     wrapper: ({ children }) => (
       <QueryClientProvider client={queryClient}>
-        <MemoryRouter initialEntries={["/"]}>
+        {shouldWrapRouter ? (
+          <MemoryRouter initialEntries={["/"]}>
+            <LenderAuthProvider>{children}</LenderAuthProvider>
+          </MemoryRouter>
+        ) : (
           <LenderAuthProvider>{children}</LenderAuthProvider>
-        </MemoryRouter>
+        )}
       </QueryClientProvider>
     ),
     ...options

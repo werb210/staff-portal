@@ -10,6 +10,7 @@ import {
 import type { AuthenticatedUser } from "@/services/auth";
 import { normalizeRole, type Role } from "@/auth/roles";
 import { useDialerStore } from "@/state/dialer.store";
+import { readSession } from "@/utils/sessionStore";
 
 export type AuthStatus = "idle" | "pending" | "loading" | "authenticated" | "unauthenticated";
 export type RolesStatus = "pending" | "loading" | "resolved" | "ready";
@@ -186,12 +187,42 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [accessToken, clearAuth]);
 
   useEffect(() => {
-    const token = getStoredAccessToken();
-    if (!token) {
-      clearAuth();
-      return;
-    }
-    void refreshUser(token);
+    const hydrate = async () => {
+      const token = getStoredAccessToken();
+      if (token) {
+        await refreshUser(token);
+        return;
+      }
+
+      try {
+        const session = await readSession();
+        const sessionToken = session?.accessToken ?? null;
+        if (!sessionToken) {
+          clearAuth();
+          return;
+        }
+
+        const nextUser = normalizeAuthUser((session?.user as AuthUser) ?? null);
+        if (!nextUser) {
+          clearAuth();
+          return;
+        }
+
+        setStoredAccessToken(sessionToken);
+        setStoredUser(nextUser);
+        setAccessToken(sessionToken);
+        setUserState(nextUser);
+        setAuthStateState("authenticated");
+        setAuthStatus("authenticated");
+        setRolesStatus("resolved");
+        setError(null);
+        setIsHydratingSession(false);
+      } catch {
+        clearAuth();
+      }
+    };
+
+    void hydrate();
   }, [clearAuth, refreshUser]);
 
   const startOtp = useCallback(async ({ phone }: OtpStartPayload) => {

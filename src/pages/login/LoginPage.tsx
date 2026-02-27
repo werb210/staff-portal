@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Navigate } from "react-router-dom";
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { ApiError } from "@/api/http";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -14,6 +15,7 @@ const normalizePhone = (value: string) => {
 
 export default function LoginPage() {
   const { authenticated, authStatus, startOtp, verifyOtp } = useAuth();
+  const navigate = useNavigate();
   const [phone, setPhone] = useState("");
   const [normalizedPhone, setNormalizedPhone] = useState("");
   const [code, setCode] = useState("");
@@ -25,9 +27,11 @@ export default function LoginPage() {
   const [requestId, setRequestId] = useState<string | null>(null);
   const [endpoint, setEndpoint] = useState<string | null>(null);
 
-  if (authenticated && authStatus === "authenticated") {
-    return <Navigate to="/dashboard" replace />;
-  }
+  useEffect(() => {
+    if (authenticated && authStatus === "authenticated") {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [authenticated, authStatus, navigate]);
 
   const readApiError = (err: unknown, fallback: string, preferFallback = false) => {
     if (err instanceof ApiError) {

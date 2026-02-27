@@ -6,9 +6,16 @@ export default function ProtectedRoute({
 }: {
   children: React.ReactNode
 }) {
-  const { status, isAuthenticated } = useAuth()
+  const { status, authState, authStatus, rolesStatus, authReady, isAuthenticated } = useAuth()
 
-  if (status === "loading") {
+  const isLoading =
+    status === "loading" ||
+    authState === "loading" ||
+    authStatus === "loading" ||
+    rolesStatus === "loading" ||
+    !authReady
+
+  if (isLoading) {
     return <div>Loading...</div>
   }
 
