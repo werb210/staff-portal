@@ -8,6 +8,7 @@ export type NoteMessage = {
   body: string;
   createdAt: string;
   updatedAt?: string;
+  mentions?: string[];
 };
 
 export const fetchNotesThread = (applicationId: string, businessUnit: BusinessUnit, options?: RequestOptions) =>
@@ -16,8 +17,13 @@ export const fetchNotesThread = (applicationId: string, businessUnit: BusinessUn
     options
   );
 
-export const sendNoteMessage = (applicationId: string, body: string, businessUnit: BusinessUnit) =>
-  apiClient.post(withBusinessUnitQuery(`/api/portal/applications/${applicationId}/notes`, businessUnit), { body });
+export const sendNoteMessage = (
+  applicationId: string,
+  body: string,
+  businessUnit: BusinessUnit,
+  mentions: string[] = []
+) =>
+  apiClient.post(withBusinessUnitQuery(`/api/portal/applications/${applicationId}/notes`, businessUnit), { body, mentions });
 
 export const updateNoteMessage = (applicationId: string, noteId: string, body: string, businessUnit: BusinessUnit) =>
   apiClient.patch(

@@ -25,7 +25,8 @@ const NotesTab = () => {
   });
 
   const mutation = useMutation({
-    mutationFn: (text: string) => sendNoteMessage(applicationId ?? "", text, businessUnit),
+    mutationFn: ({ text, mentions }: { text: string; mentions: string[] }) =>
+      sendNoteMessage(applicationId ?? "", text, businessUnit, mentions),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notes", businessUnit, applicationId] });
       queryClient.invalidateQueries({ queryKey: ["pipeline"] });
@@ -55,8 +56,9 @@ const NotesTab = () => {
     }
   }, [sortedMessages]);
 
-  const handleSend = async (text: string) => {
-    await mutation.mutateAsync(text);
+  const handleSend = async (text: string, mentions: string[]) => {
+    const uniqueMentions = Array.from(new Set(mentions));
+    await mutation.mutateAsync({ text, mentions: uniqueMentions });
   };
 
   const handleEdit = async (noteId: string, body: string) => {

@@ -32,7 +32,7 @@ const mockOffer: OfferRecord = {
 describe("OffersTab", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    useApplicationDrawerStore.setState({ selectedApplicationId: "app-1", selectedTab: "offers", isOpen: true });
+    useApplicationDrawerStore.setState({ selectedApplicationId: "app-1", selectedTab: "application", isOpen: true });
     (fetchOffers as MockedFunction<typeof fetchOffers>).mockResolvedValue([]);
     (fetchPortalApplication as MockedFunction<typeof fetchPortalApplication>).mockResolvedValue({
       id: "app-1",

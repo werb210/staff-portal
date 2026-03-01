@@ -1,13 +1,16 @@
 import { useState } from "react";
 
-const NotesComposer = ({ onSend }: { onSend: (text: string) => Promise<void> | void }) => {
+const NotesComposer = ({ onSend }: { onSend: (text: string, mentions: string[]) => Promise<void> | void }) => {
   const [value, setValue] = useState("");
   const [sending, setSending] = useState(false);
 
   const handleSend = async () => {
     if (!value.trim()) return;
     setSending(true);
-    await onSend(value);
+    const mentionMatches = Array.from(value.matchAll(/@\[([A-Za-z0-9_-]+)\]/g))
+      .map((match) => match[1])
+      .filter((mention): mention is string => Boolean(mention));
+    await onSend(value, mentionMatches);
     setValue("");
     setSending(false);
   };

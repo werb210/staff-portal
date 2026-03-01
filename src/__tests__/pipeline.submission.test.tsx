@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import LendersTab from "@/pages/applications/drawer/tab-lenders/LendersTab";
 import { renderWithProviders } from "@/test/testUtils";
 import { useApplicationDrawerStore } from "@/state/applicationDrawer.store";
-import { createLenderSubmission, fetchLenderMatches, fetchLenderSubmissions } from "@/api/lenders";
+import { createLenderSubmission, fetchLenderMatches } from "@/api/lenders";
 
 vi.mock("@/api/lenders", () => ({
   fetchLenderMatches: vi.fn(),
@@ -22,25 +22,14 @@ describe("pipeline submission", () => {
     vi.clearAllMocks();
   });
 
-  it("confirms Google Sheet submissions before sending", async () => {
-    vi.mocked(fetchLenderMatches).mockResolvedValue([
-      { id: "prod-1", lenderName: "Sheet Lender", submissionMethod: "GOOGLE_SHEET" }
-    ]);
-    vi.mocked(fetchLenderSubmissions).mockResolvedValue([]);
+  it("sends selected lenders without duplicate submit affordances", async () => {
+    vi.mocked(fetchLenderMatches).mockResolvedValue([{ id: "prod-1", lenderName: "Sheet Lender" }]);
     vi.mocked(createLenderSubmission).mockResolvedValue(undefined);
 
     renderWithProviders(<LendersTab />);
 
-    await waitFor(() => {
-      expect(screen.getByText("Sheet Lender")).toBeInTheDocument();
-    });
-
-    await userEvent.click(screen.getByRole("checkbox"));
-    await userEvent.click(screen.getByRole("button", { name: "Send to Lender" }));
-
-    expect(screen.getByText(/submit the application to the lender’s Google Sheet/i)).toBeInTheDocument();
-
-    await userEvent.click(screen.getByRole("button", { name: /Confirm/i }));
+    await userEvent.click(await screen.findByRole("checkbox"));
+    await userEvent.click(screen.getByRole("button", { name: "Send" }));
 
     await waitFor(() => {
       expect(createLenderSubmission).toHaveBeenCalledWith("app-55", ["prod-1"]);

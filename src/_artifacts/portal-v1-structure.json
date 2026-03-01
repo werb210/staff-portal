@@ -14,29 +14,18 @@
     "tabs": [
       {
         "name": "Application",
-        "editable": true,
-        "actions": [
-          "Save"
-        ]
+        "editable": true
       },
       {
         "name": "Banking Analysis",
         "editable": false
       },
       {
-        "name": "Financials / OCR",
+        "name": "Financials",
         "editable": false
       },
       {
         "name": "Documents",
-        "editable": true,
-        "actions": [
-          "Accept",
-          "Reject"
-        ]
-      },
-      {
-        "name": "Comms",
         "editable": false
       },
       {
@@ -44,35 +33,12 @@
         "editable": false
       },
       {
-        "name": "Notes (internal staff only)",
-        "editable": true,
-        "actions": [
-          "Send Note"
-        ]
+        "name": "Notes",
+        "editable": true
       },
       {
-        "name": "Lender Matching",
-        "editable": true,
-        "actions": [
-          "Send to Lender",
-          "Retry send",
-          "Retry",
-          "Retry submission",
-          "Confirm submission",
-          "Confirm retry"
-        ]
-      },
-      {
-        "name": "Offers",
-        "editable": true,
-        "actions": [
-          "Upload term sheet",
-          "Archive offer"
-        ]
-      },
-      {
-        "name": "Call History",
-        "editable": false
+        "name": "Lenders",
+        "editable": true
       }
     ]
   }

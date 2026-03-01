@@ -16,7 +16,7 @@ const DocumentsTab = () => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const isStaff = canAccessStaffPortal(resolveUserRole((user as { role?: string | null } | null)?.role ?? null));
-  const { data: documents = [], isLoading, error } = useQuery<DocumentRequirement[]>({
+  const { data: documents = [], isLoading, error, refetch } = useQuery<DocumentRequirement[]>({
     queryKey: ["applications", applicationId, "documents"],
     queryFn: ({ signal }) => fetchDocumentRequirements(applicationId ?? "", { signal }),
     enabled: Boolean(applicationId),
@@ -101,9 +101,9 @@ const DocumentsTab = () => {
         await rejectDocument(activeAction.document.id, rejectionReason.trim());
         setFeedback({ type: "success", message: "Document rejected." });
       }
+      await refetch();
       setActiveAction(null);
       setRejectionReason("");
-      queryClient.invalidateQueries({ queryKey: ["applications", applicationId, "documents"] });
       queryClient.invalidateQueries({ queryKey: ["applications", applicationId, "details"] });
       queryClient.invalidateQueries({ queryKey: ["pipeline"] });
     } catch (actionError) {
