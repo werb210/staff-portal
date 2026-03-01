@@ -11,6 +11,7 @@ import DashboardPage from "@/pages/dashboard/DashboardPage";
 import LendersPage from "@/pages/Lenders";
 import AuthProbe from "@/tests/components/AuthProbe";
 import { useAuth } from "@/auth/AuthContext";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 function SessionGuard() {
   usePortalSessionGuard();
@@ -63,12 +64,18 @@ export default function App() {
   const existingAuthContext = useContext(AuthContext);
 
   if (existingAuthContext) {
-    return <AppRoutes />;
+    return (
+      <ErrorBoundary>
+        <AppRoutes />
+      </ErrorBoundary>
+    );
   }
 
   return (
     <AuthProvider>
-      <AppRoutes />
+      <ErrorBoundary>
+        <AppRoutes />
+      </ErrorBoundary>
     </AuthProvider>
   );
 }

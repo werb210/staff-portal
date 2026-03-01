@@ -13,7 +13,8 @@ import OffersTab from "./OffersTab";
 import { useApplicationDrawerStore } from "@/state/applicationDrawer.store";
 import { usePipelineStore } from "@/pages/applications/pipeline/pipeline.store";
 import { useAuth } from "@/hooks/useAuth";
-import { canAccessStaffPortal, resolveUserRole } from "@/utils/roles";
+import { resolveUserRole } from "@/utils/roles";
+import { requireRole } from "@/auth/roleGuard";
 import { canWrite } from "@/auth/can";
 import { useApplicationDetails } from "@/pages/applications/hooks/useApplicationDetails";
 import CallHistoryTab from "@/components/CallHistoryTab";
@@ -39,17 +40,19 @@ const ApplicationDrawer = () => {
   const selectedApplicationId = usePipelineStore((state) => state.selectedApplicationId);
   const closeDrawer = usePipelineStore((state) => state.closeDrawer);
   const { user } = useAuth();
-  const resolvedRole = resolveUserRole((user as { role?: string | null } | null)?.role ?? null);
-  const isStaff = canAccessStaffPortal(resolvedRole);
-  const canEdit = canWrite(resolvedRole ?? null);
+  const normalizedUser = {
+    role: resolveUserRole((user as { role?: string | null } | null)?.role ?? null)
+  };
+  const canViewStaffTabs = requireRole(normalizedUser, ["Admin", "Staff"]);
+  const canEdit = canWrite(normalizedUser.role ?? null);
   const visibleTabs = useMemo(
     () =>
       TABS.filter((tab) => {
         if (!canEdit && (tab.id === "offers" || tab.id === "notes")) return false;
-        if (!isStaff && tab.id === "call-history") return false;
+        if (!canViewStaffTabs && tab.id === "call-history") return false;
         return true;
       }),
-    [isStaff, canEdit]
+    [canViewStaffTabs, canEdit]
   );
   const tabOrder = visibleTabs.map((tab) => tab.id);
   const defaultTab = tabOrder[0] ?? null;
@@ -119,10 +122,12 @@ function CallHistoryPanel() {
   const applicationId = useApplicationDrawerStore((state) => state.selectedApplicationId);
   const { data: applicationDetails } = useApplicationDetails();
   const { user } = useAuth();
-  const resolvedRole = resolveUserRole((user as { role?: string | null } | null)?.role ?? null);
+  const normalizedUser = {
+    role: resolveUserRole((user as { role?: string | null } | null)?.role ?? null)
+  };
 
-  if (!canAccessStaffPortal(resolvedRole)) {
-    return <div className="drawer-placeholder">Call history is restricted to staff users.</div>;
+  if (!requireRole(normalizedUser, ["Admin", "Staff"])) {
+    return null;
   }
 
   const detailsClientId =
