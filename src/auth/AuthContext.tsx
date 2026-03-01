@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import api from "@/lib/api";
 import { startOtp as startOtpService, verifyOtp as verifyOtpService, logout as logoutService } from "@/services/auth";
+import { destroyVoice } from "@/services/voiceService";
 import {
   clearStoredAuth,
   getStoredAccessToken,
@@ -288,6 +289,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       await logoutService();
     } finally {
       clearAuth();
+      destroyVoice();
 
       useDialerStore.getState().closeDialer();
       useDialerStore.getState().resetCall();
