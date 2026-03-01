@@ -8,6 +8,7 @@ import SMSComposer from "@/components/sms/SMSComposer";
 import EmailViewer from "@/components/email/EmailViewer";
 import TimelineFeed from "@/pages/crm/timeline/TimelineFeed";
 import { useDialerStore } from "@/state/dialer.store";
+import { startOutboundCall } from "@/services/voiceService";
 import CreditReadinessPanel from "@/components/crm/CreditReadinessPanel";
 
 interface ContactDetailsDrawerProps {
@@ -147,15 +148,17 @@ const ContactDetailsDrawer = ({ contact, onClose }: ContactDetailsDrawerProps) =
         </Card>
         <div className="flex gap-2 my-2">
           <Button
-            onClick={() =>
+            onClick={() => {
+              void startOutboundCall(contact.id);
+
               openDialer({
                 contactId: contact.id,
                 contactName: contact.name,
                 applicationId: contact.applicationIds[0],
                 phone: contact.phone,
                 source: "crm"
-              })
-            }
+              });
+            }}
           >
             Call
           </Button>
