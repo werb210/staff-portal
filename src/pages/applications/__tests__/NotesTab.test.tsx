@@ -47,7 +47,7 @@ describe("NotesTab", () => {
     await userEvent.type(textarea, "New update");
     await userEvent.click(screen.getByRole("button", { name: "Submit" }));
 
-    expect(sendNoteMessage).toHaveBeenCalledWith("app-1", "New update", "BF");
+    expect(sendNoteMessage).toHaveBeenCalledWith("app-1", "New update", "BF", []);
 
     const note = screen.getByText("Initial review complete").closest(".note-message");
     expect(note).not.toBeNull();

@@ -7,6 +7,8 @@ export type CreditSummary = {
   riskAssessment?: string;
   collateralOverview?: string;
   termsSummary?: string;
+  content?: string;
+  status?: string;
   pdfUrl?: string;
 };
 

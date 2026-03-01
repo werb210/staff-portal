@@ -22,14 +22,11 @@ export type DrawerTab = {
 export const TABS: DrawerTab[] = [
   { id: "application", label: "Application" },
   { id: "banking", label: "Banking Analysis" },
-  { id: "financials", label: "Financials / OCR" },
+  { id: "financials", label: "Financials" },
   { id: "documents", label: "Documents" },
-  { id: "comms", label: "Comms" },
   { id: "credit-summary", label: "Credit Summary" },
-  { id: "notes", label: "Notes (internal staff only)" },
-  { id: "lenders", label: "Lender Matching" },
-  { id: "offers", label: "Offers" },
-  { id: "call-history", label: "Call History" }
+  { id: "notes", label: "Notes" },
+  { id: "lenders", label: "Lenders" }
 ];
 
 type DrawerTabsProps = {
