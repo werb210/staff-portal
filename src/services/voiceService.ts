@@ -1,86 +1,154 @@
-import { Call, Device } from "@twilio/voice-sdk";
+import { Device, Call } from "@twilio/voice-sdk";
 
 let device: Device | null = null;
 let activeCall: Call | null = null;
-let heartbeatInterval: number | null = null;
+let refreshTimer: number | null = null;
+let initializing = false;
 
-export async function initVoice(_userId: string) {
+export type CallState = "idle" | "connecting" | "connected" | "ended" | "error";
+
+let state: CallState = "idle";
+const listeners = new Set<(s: CallState) => void>();
+
+function setState(s: CallState) {
+  state = s;
+  listeners.forEach((fn) => fn(s));
+}
+
+export function subscribe(fn: (s: CallState) => void) {
+  listeners.add(fn);
+  fn(state);
+  return () => listeners.delete(fn);
+}
+
+async function fetchToken() {
+  const res = await fetch("/api/voice/token", {
+    method: "POST",
+    credentials: "include"
+  });
+
+  if (!res.ok) throw new Error("token_failed");
+  return res.json() as Promise<{ token: string }>;
+}
+
+export async function initVoice() {
+  if (location.protocol !== "https:" && location.hostname !== "localhost") {
+    console.error("Voice requires HTTPS");
+    return;
+  }
+
+  if (device || initializing) return;
+
+  initializing = true;
+
   try {
-    const res = await fetch("/api/voice/token", {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" }
+    await navigator.mediaDevices.getUserMedia({ audio: true });
+
+    const { token } = await fetchToken();
+
+    device = new Device(token, { logLevel: 1 });
+
+    device.on("registered", () => {
+      initializing = false;
     });
 
-    if (!res.ok) return;
-
-    const { token } = (await res.json()) as { token?: string; identity?: string };
-    if (!token) return;
-
-    device?.destroy();
-    device = new Device(token, {
-      logLevel: 1
+    device.on("error", () => {
+      setState("error");
     });
 
-    device.on("incoming", (call: Call) => {
-      window.dispatchEvent(new CustomEvent("incoming-call", { detail: call }));
+    device.on("incoming", (call) => {
+      if (activeCall) {
+        call.reject();
+        return;
+      }
+      activeCall = call;
+      call.accept();
+
+      call.on("accept", () => {
+        setState("connected");
+      });
+
+      call.on("disconnect", () => {
+        activeCall = null;
+        setState("ended");
+      });
     });
 
     device.register();
-
-    startPresenceHeartbeat();
+    scheduleRefresh();
   } catch {
-    // Do nothing when voice token/bootstrap fails.
+    setState("error");
+    initializing = false;
   }
 }
 
-function startPresenceHeartbeat() {
-  if (heartbeatInterval) {
-    window.clearInterval(heartbeatInterval);
-  }
+function scheduleRefresh() {
+  if (refreshTimer) clearTimeout(refreshTimer);
 
-  heartbeatInterval = window.setInterval(() => {
-    void fetch("/api/voice/presence", {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        status: activeCall ? "busy" : "online",
-        source: "portal"
-      })
+  refreshTimer = window.setTimeout(async () => {
+    if (!device) return;
+
+    try {
+      const { token } = await fetchToken();
+      device.updateToken(token);
+      scheduleRefresh();
+    } catch {
+      setState("error");
+    }
+  }, 50 * 60 * 1000);
+}
+
+export async function startCall() {
+  if (!device || activeCall) return;
+
+  setState("connecting");
+
+  try {
+    activeCall = await device.connect({});
+
+    activeCall.on("accept", () => {
+      setState("connected");
     });
-  }, 15000);
+
+    activeCall.on("disconnect", () => {
+      activeCall = null;
+      setState("ended");
+    });
+  } catch {
+    setState("error");
+  }
 }
 
-export async function startOutboundCall(clientId: string) {
-  if (!device) return;
-
-  const res = await fetch("/api/voice/call", {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ clientId })
-  });
-
-  if (!res.ok) return;
-
-  const { callId } = (await res.json()) as { callId?: string };
-  if (!callId) return;
-
-  activeCall = await device.connect({
-    params: { callId }
-  });
-
-  activeCall.on("disconnect", () => {
+export function endCall() {
+  if (activeCall) {
+    activeCall.disconnect();
     activeCall = null;
+  }
+}
+
+export function destroyVoice() {
+  if (refreshTimer) {
+    clearTimeout(refreshTimer);
+    refreshTimer = null;
+  }
+
+  if (activeCall) {
+    activeCall.disconnect();
+    activeCall = null;
+  }
+
+  if (device) {
+    device.destroy();
+    device = null;
+  }
+
+  initializing = false;
+}
+
+if (typeof window !== "undefined") {
+  window.addEventListener("online", () => {
+    if (!device) {
+      void initVoice();
+    }
   });
-}
-
-export function acceptIncoming(call: Call) {
-  activeCall = call;
-  call.accept();
-}
-
-export function rejectIncoming(call: Call) {
-  call.reject();
 }

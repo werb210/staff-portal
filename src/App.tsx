@@ -1,16 +1,14 @@
 import React, { useContext, useEffect } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AuthContext, AuthProvider } from "@/auth/AuthContext";
-import { roleIn } from "@/auth/roles";
 import { usePortalSessionGuard } from "@/auth/portalSessionGuard";
 import IncomingCallModal from "@/components/IncomingCallModal";
 import ProtectedRoute from "@/routes/ProtectedRoute";
-import { initVoice } from "@/services/voiceService";
+import { destroyVoice, initVoice } from "@/services/voiceService";
 import LoginPage from "@/pages/LoginPage";
 import DashboardPage from "@/pages/dashboard/DashboardPage";
 import LendersPage from "@/pages/Lenders";
 import AuthProbe from "@/tests/components/AuthProbe";
-import { useAuth } from "@/auth/AuthContext";
 
 function SessionGuard() {
   usePortalSessionGuard();
@@ -18,14 +16,14 @@ function SessionGuard() {
 }
 
 function VoiceBootstrap() {
-  const { user, role } = useAuth();
-
   useEffect(() => {
     if (process.env.NODE_ENV === "test") return;
-    if (!user?.id) return;
-    if (!roleIn(role, ["Admin", "Staff"])) return;
-    void initVoice(user.id);
-  }, [role, user?.id]);
+    void initVoice();
+
+    return () => {
+      destroyVoice();
+    };
+  }, []);
 
   return null;
 }
