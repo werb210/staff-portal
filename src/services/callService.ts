@@ -1,3 +1,5 @@
+import { apiRequest } from "@/services/api";
+
 export interface CallSession {
   id: string;
   direction: "inbound" | "outbound";
@@ -8,15 +10,7 @@ export interface CallSession {
 }
 
 export async function fetchCallHistory(clientId: string): Promise<CallSession[]> {
-  const res = await fetch(`/api/voice/history?client_id=${clientId}`, {
-    credentials: "include"
-  });
-
-  if (!res.ok) {
-    throw new Error("Failed to load call history");
-  }
-
-  const data: unknown = await res.json();
+  const data = await apiRequest<unknown>(`/api/voice/history?client_id=${clientId}`);
 
   if (!Array.isArray(data)) return [];
 

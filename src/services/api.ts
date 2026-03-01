@@ -24,11 +24,37 @@ const navigateTo = (path: string) => {
   }
   try {
     window.location.assign(path);
-  } catch (error) {
+  } catch {
     window.history.pushState({}, "", path);
     window.dispatchEvent(new PopStateEvent("popstate"));
   }
 };
+
+export async function apiRequest<T>(url: string, options: RequestInit = {}): Promise<T> {
+  const res = await fetch(url, {
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      ...(options.headers ?? {})
+    },
+    ...options
+  });
+
+  if (res.status === 401) {
+    navigateTo("/login");
+    throw new Error("unauthorized");
+  }
+
+  const data = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    const apiError =
+      data && typeof data === "object" && "error" in data && typeof data.error === "string" ? data.error : "api_error";
+    throw new Error(apiError);
+  }
+
+  return data as T;
+}
 
 export const redirectToLogin = () => {
   navigateTo("/login");

@@ -154,6 +154,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [error, setError] = useState<string | null>(null);
   const [isHydratingSession, setIsHydratingSession] = useState(true);
   const didHydrateRef = useRef(false);
+  const refreshingRef = useRef(false);
 
   const clearAuth = useCallback(() => {
     clearStoredAuth();
@@ -180,6 +181,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         clearAuth();
         return false;
       }
+
+      if (refreshingRef.current) {
+        return false;
+      }
+
+      refreshingRef.current = true;
 
       setAuthStateState("loading");
       setAuthStatus("loading");
@@ -220,9 +227,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setError(null);
         return true;
       } catch {
+        setUserState(null);
         clearAuth();
         return false;
       } finally {
+        refreshingRef.current = false;
         setIsHydratingSession(false);
       }
     },

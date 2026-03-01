@@ -69,6 +69,10 @@
           "Upload term sheet",
           "Archive offer"
         ]
+      },
+      {
+        "name": "Call History",
+        "editable": false
       }
     ]
   }
