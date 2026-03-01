@@ -118,13 +118,20 @@ const ApplicationDrawer = () => {
 function CallHistoryPanel() {
   const applicationId = useApplicationDrawerStore((state) => state.selectedApplicationId);
   const { data: applicationDetails } = useApplicationDetails();
+  const { user } = useAuth();
+  const resolvedRole = resolveUserRole((user as { role?: string | null } | null)?.role ?? null);
 
-  const clientId =
-    typeof (applicationDetails as Record<string, unknown> | undefined)?.client_id === "string"
-      ? ((applicationDetails as Record<string, string>).client_id as string)
-      : applicationId;
+  if (!canAccessStaffPortal(resolvedRole)) {
+    return <div className="drawer-placeholder">Call history is restricted to staff users.</div>;
+  }
 
-  if (!clientId) return <div className="drawer-placeholder">Select an application to view call history.</div>;
+  const detailsClientId =
+    applicationDetails && typeof (applicationDetails as Record<string, unknown>).client_id === "string"
+      ? ((applicationDetails as Record<string, unknown>).client_id as string)
+      : null;
+  const clientId = detailsClientId ?? applicationId;
+
+  if (!clientId) return <div className="drawer-placeholder">Client not selected.</div>;
 
   return <CallHistoryTab clientId={clientId} />;
 }
