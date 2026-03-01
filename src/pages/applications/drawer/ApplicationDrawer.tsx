@@ -15,6 +15,8 @@ import { usePipelineStore } from "@/pages/applications/pipeline/pipeline.store";
 import { useAuth } from "@/hooks/useAuth";
 import { canAccessStaffPortal, resolveUserRole } from "@/utils/roles";
 import { canWrite } from "@/auth/can";
+import { useApplicationDetails } from "@/pages/applications/hooks/useApplicationDetails";
+import CallHistoryTab from "@/components/CallHistoryTab";
 
 const tabContentMap: Record<DrawerTabId, JSX.Element> = {
   application: <ApplicationTab />,
@@ -25,7 +27,8 @@ const tabContentMap: Record<DrawerTabId, JSX.Element> = {
   documents: <DocumentsTab />,
   notes: <NotesTab />,
   offers: <OffersTab />,
-  lenders: <LendersTab />
+  lenders: <LendersTab />,
+  "call-history": <CallHistoryPanel />
 };
 
 const ApplicationDrawer = () => {
@@ -43,6 +46,7 @@ const ApplicationDrawer = () => {
     () =>
       TABS.filter((tab) => {
         if (!canEdit && (tab.id === "offers" || tab.id === "notes")) return false;
+        if (!isStaff && tab.id === "call-history") return false;
         return true;
       }),
     [isStaff, canEdit]
@@ -108,5 +112,21 @@ const ApplicationDrawer = () => {
     </div>
   );
 };
+
+
+
+function CallHistoryPanel() {
+  const applicationId = useApplicationDrawerStore((state) => state.selectedApplicationId);
+  const { data: applicationDetails } = useApplicationDetails();
+
+  const clientId =
+    typeof (applicationDetails as Record<string, unknown> | undefined)?.client_id === "string"
+      ? ((applicationDetails as Record<string, string>).client_id as string)
+      : applicationId;
+
+  if (!clientId) return <div className="drawer-placeholder">Select an application to view call history.</div>;
+
+  return <CallHistoryTab clientId={clientId} />;
+}
 
 export default ApplicationDrawer;
