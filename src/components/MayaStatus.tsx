@@ -5,9 +5,14 @@ export default function MayaStatus() {
   const [status, setStatus] = useState<string>("degraded");
 
   useEffect(() => {
-    api.get("/health").then((res) => {
-      setStatus((res.data as { maya?: string })?.maya ?? "degraded");
-    });
+    void api
+      .get("/health")
+      .then((res) => {
+        setStatus((res.data as { maya?: string })?.maya ?? "degraded");
+      })
+      .catch(() => {
+        // swallow health-check failures (non-blocking)
+      });
   }, []);
 
   const healthy = status === "healthy" || status === "ok";
