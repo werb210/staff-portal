@@ -9,6 +9,7 @@ import CreditSummaryTab from "./tab-credit-summary/CreditSummaryTab";
 import DocumentsTab from "./tab-documents/DocumentsTab";
 import NotesTab from "./tab-notes/NotesTab";
 import LendersTab from "./tab-lenders/LendersTab";
+import CallHistoryTab from "./tab-call-history/CallHistoryTab";
 import { useApplicationDrawerStore } from "@/state/applicationDrawer.store";
 import { usePipelineStore } from "@/pages/applications/pipeline/pipeline.store";
 
@@ -18,6 +19,7 @@ const tabContentMap: Partial<Record<DrawerTabId, JSX.Element>> = {
   financials: <FinancialTab />,
   "credit-summary": <CreditSummaryTab />,
   documents: <DocumentsTab />,
+  "call-history": <CallHistoryTab />,
   notes: <NotesTab />,
   lenders: <LendersTab />
 };

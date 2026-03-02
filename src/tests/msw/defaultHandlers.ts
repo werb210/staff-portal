@@ -37,6 +37,15 @@ export const defaultHandlers = [
     })),
   http.get("*/api/analytics/lender-performance", () => HttpResponse.json([])),
   http.get("*/api/analytics/priority-leads", () => HttpResponse.json([])),
+  http.get("*/api/dialer/stats", () =>
+    HttpResponse.json({
+      totalCalls: 0,
+      avgDurationSeconds: 0,
+      missedCallPercent: 0,
+      voicemailCount: 0,
+      leaderboard: []
+    })),
+  http.get("*/api/dialer/calls", () => HttpResponse.json([])),
 
   http.get("*/api/client/lenders", () => HttpResponse.json({ lenders: [] })),
   http.get("*/api/client/lender-products", () => HttpResponse.json({ products: [] })),
