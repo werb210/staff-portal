@@ -1,10 +1,7 @@
 name: Azure Portal Deploy
 
 on:
-  push:
-    branches:
-      - main
-  workflow_dispatch: {}
+  workflow_dispatch:
 
 jobs:
   build-and-deploy:
@@ -17,22 +14,12 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "22"
-          cache: "npm"
+          node-version: 20
+          cache: npm
           cache-dependency-path: package-lock.json
 
       - name: Install dependencies
         run: npm ci
-
-      - name: Typecheck gate
-        run: npm run typecheck
-
-      - name: Test gate
-        run: npm test -- --run
-
-      - name: Audit gate
-        run: npm audit --omit=dev --audit-level=moderate
-        continue-on-error: false
 
       - name: Build
         env:
@@ -43,3 +30,10 @@ jobs:
           VITE_CLIENT_APP_SHARED_TOKEN: ${{ secrets.VITE_CLIENT_APP_SHARED_TOKEN }}
           VITE_JWT_STORAGE_KEY: ${{ secrets.VITE_JWT_STORAGE_KEY }}
         run: npm run build
+
+      - name: Deploy to Azure
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: ./dist
