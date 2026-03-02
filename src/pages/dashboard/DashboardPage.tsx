@@ -6,6 +6,7 @@ import AppLoading from "@/components/layout/AppLoading";
 import LenderCountWidget from "@/components/LenderCountWidget";
 import CampaignRevenue from "@/components/CampaignRevenue";
 import CommissionTrendChart from "@/components/CommissionTrendChart";
+import CallPerformanceCard from "@/components/CallPerformanceCard";
 import { useAuth } from "@/hooks/useAuth";
 
 interface LenderMetrics {
@@ -180,6 +181,10 @@ const DashboardPage = () => {
           <Card title="Campaign ROI Snapshot">
             <CampaignRevenue />
           </Card>
+        </div>
+
+        <div className="mb-4">
+          <CallPerformanceCard />
         </div>
 
         <div className="commission-trend-section mb-4">

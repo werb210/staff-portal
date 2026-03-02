@@ -33,6 +33,10 @@
         "editable": false
       },
       {
+        "name": "Calls",
+        "editable": false
+      },
+      {
         "name": "Notes",
         "editable": true
       },

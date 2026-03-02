@@ -25,6 +25,7 @@ export const TABS: DrawerTab[] = [
   { id: "financials", label: "Financials" },
   { id: "documents", label: "Documents" },
   { id: "credit-summary", label: "Credit Summary" },
+  { id: "call-history", label: "Calls" },
   { id: "notes", label: "Notes" },
   { id: "lenders", label: "Lenders" }
 ];
