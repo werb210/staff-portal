@@ -8,6 +8,7 @@ import CampaignRevenue from "@/components/CampaignRevenue";
 import CommissionTrendChart from "@/components/CommissionTrendChart";
 import CallPerformanceCard from "@/components/CallPerformanceCard";
 import { useAuth } from "@/hooks/useAuth";
+import PortalDialer from "@/telephony/components/PortalDialer";
 
 interface LenderMetrics {
   lenderName: string;
@@ -41,6 +42,7 @@ const DashboardPage = () => {
   const [lenderMetrics, setLenderMetrics] = useState<LenderMetrics[]>([]);
   const [revenueSummary, setRevenueSummary] = useState<RevenueSummary | null>(null);
   const [priorityLeads, setPriorityLeads] = useState<LeadIntelligence[]>([]);
+  const [showDialer, setShowDialer] = useState(false);
 
   const safeRevenueSummary: RevenueSummary = {
     totalFunded: revenueSummary?.totalFunded ?? 0,
@@ -113,6 +115,8 @@ const DashboardPage = () => {
   return (
     <RequireRole roles={["Admin", "Staff"]}>
       <div className="page">
+        <button onClick={() => setShowDialer(true)}>Dialer</button>
+        {showDialer && <PortalDialer />}
         <div className="executive-kpi-grid mb-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div className="kpi-card">
             <Card title="Total Funded">
