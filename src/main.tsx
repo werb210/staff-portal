@@ -3,6 +3,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
 import { SiloProvider } from "@/core/SiloContext";
+import { initializeVoice } from "./telephony/services/voiceDevice";
 
 registerSW({ immediate: true });
 
@@ -13,6 +14,8 @@ if (!rootElement) {
 }
 
 const root = ReactDOM.createRoot(rootElement);
+
+void initializeVoice("staff_user");
 
 if (import.meta.env.MODE === "production") {
   root.render(
