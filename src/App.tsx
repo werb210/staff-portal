@@ -1,4 +1,5 @@
-import React, { useContext, useEffect } from "react";
+import React, { useContext, useEffect, useMemo } from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AuthContext, AuthProvider } from "@/auth/AuthContext";
 import { roleIn } from "@/auth/roles";
@@ -6,11 +7,16 @@ import { usePortalSessionGuard } from "@/auth/portalSessionGuard";
 import IncomingCallModal from "@/components/IncomingCallModal";
 import { ActiveCallBanner } from "@/components/ActiveCallBanner";
 import ProtectedRoute from "@/routes/ProtectedRoute";
+import RequireRole from "@/components/auth/RequireRole";
 import { useServerCallSync } from "@/dialer/useServerCallSync";
 import { bootstrapVoice } from "@/telephony/bootstrapVoice";
 import LoginPage from "@/pages/LoginPage";
 import DashboardPage from "@/pages/dashboard/DashboardPage";
 import LendersPage from "@/pages/Lenders";
+import PipelinePage from "@/core/engines/pipeline/PipelinePage";
+import { PipelineEngineProvider } from "@/core/engines/pipeline/PipelineEngineProvider";
+import { pipelineApi } from "@/core/engines/pipeline/pipeline.api";
+import ApplicationDetail from "@/pages/application/ApplicationDetail";
 import AuthProbe from "@/tests/components/AuthProbe";
 import { useAuth } from "@/auth/AuthContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -58,22 +64,31 @@ const AppRoutes = () => (
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
         <Route
-          path="/dashboard"
+          path="/pipeline"
           element={
             <ProtectedRoute>
-              <DashboardPage />
+              <RequireRole roles={["Admin", "Staff", "Marketing"]}>
+                <PipelineEngineProvider
+                  config={{
+                    businessUnit: "BF",
+                    api: {
+                      fetchPipeline: pipelineApi.fetchPipeline,
+                      updateStage: async () => ({}),
+                      exportApplications: pipelineApi.exportApplications
+                    }
+                  }}
+                >
+                  <PipelinePage />
+                </PipelineEngineProvider>
+              </RequireRole>
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/lenders/*"
-          element={
-            <ProtectedRoute>
-              <LendersPage />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/applications" element={<ProtectedRoute><ApplicationDetail /></ProtectedRoute>} />
+        <Route path="/lenders/*" element={<ProtectedRoute><LendersPage /></ProtectedRoute>} />
+        <Route path="/reports" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff", "Marketing"]}><div>Reports</div></RequireRole></ProtectedRoute>} />
       </Routes>
     </MobileShell>
   </BrowserRouter>
@@ -81,26 +96,27 @@ const AppRoutes = () => (
 
 export default function App() {
   const existingAuthContext = useContext(AuthContext);
+  const queryClient = useMemo(() => new QueryClient(), []);
 
   if (existingAuthContext) {
     return (
-      <ErrorBoundary>
+      <QueryClientProvider client={queryClient}><ErrorBoundary>
         <>
           <AppRoutes />
           <IncomingCallOverlay />
         </>
-      </ErrorBoundary>
+      </ErrorBoundary></QueryClientProvider>
     );
   }
 
   return (
     <AuthProvider>
-      <ErrorBoundary>
+      <QueryClientProvider client={queryClient}><ErrorBoundary>
         <>
           <AppRoutes />
           <IncomingCallOverlay />
         </>
-      </ErrorBoundary>
+      </ErrorBoundary></QueryClientProvider>
     </AuthProvider>
   );
 }
