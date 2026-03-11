@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { withApiBase } from "@/lib/apiBase";
 
 type KnowledgeEntry = {
   id: string;
@@ -14,7 +15,7 @@ export function KnowledgeBaseAdmin({ isAdmin }: KnowledgeBaseAdminProps) {
   const [content, setContent] = useState("");
 
   async function load() {
-    const res = await fetch("/api/ai/knowledge");
+    const res = await fetch(withApiBase("/api/ai/knowledge"));
     const data = (await res.json()) as KnowledgeEntry[];
     setEntries(data);
   }
@@ -22,7 +23,7 @@ export function KnowledgeBaseAdmin({ isAdmin }: KnowledgeBaseAdminProps) {
   async function addEntry() {
     if (!content.trim()) return;
 
-    await fetch("/api/ai/knowledge", {
+    await fetch(withApiBase("/api/ai/knowledge"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ content })

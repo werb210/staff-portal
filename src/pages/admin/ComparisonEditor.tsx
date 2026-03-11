@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { withApiBase } from "@/lib/apiBase";
 
 export default function ComparisonEditor() {
   const { user } = useAuth();
   const [data, setData] = useState<unknown>(null);
 
   async function load() {
-    const res = await fetch("/api/comparison");
+    const res = await fetch(withApiBase("/api/comparison"));
     const json = await res.json();
     setData(json);
   }

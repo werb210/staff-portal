@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { withApiBase } from "@/lib/apiBase";
 
 export default function MayaOutboundUpload() {
 
@@ -11,7 +12,7 @@ export default function MayaOutboundUpload() {
     const formData = new FormData();
     formData.append("file", file);
 
-    const res = await fetch("/api/admin/upload-leads", {
+    const res = await fetch(withApiBase("/api/admin/upload-leads"), {
       method: "POST",
       body: formData
     });
@@ -21,7 +22,7 @@ export default function MayaOutboundUpload() {
   }
 
   async function runOutbound() {
-    const res = await fetch("/api/admin/run-outbound", {
+    const res = await fetch(withApiBase("/api/admin/run-outbound"), {
       method: "POST"
     });
 

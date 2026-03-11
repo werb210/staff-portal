@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { withApiBase } from "@/lib/apiBase";
 
 type AnalyticsEvent = {
   event_name?: string;
@@ -10,7 +11,7 @@ export default function AnalyticsPage() {
   const [events, setEvents] = useState<AnalyticsEvent[]>([]);
 
   useEffect(() => {
-    fetch("/api/analytics")
+    fetch(withApiBase("/api/analytics"))
       .then((res) => res.json())
       .then((data) => setEvents(Array.isArray(data) ? data : []))
       .catch(() => setEvents([]));

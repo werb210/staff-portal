@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { withApiBase } from "@/lib/apiBase";
 
 type Session = {
   id: string;
@@ -10,14 +11,14 @@ export default function AiQueueView() {
   const [sessions, setSessions] = useState<Session[]>([]);
 
   useEffect(() => {
-    fetch("/api/ai/sessions")
+    fetch(withApiBase("/api/ai/sessions"))
       .then((res) => res.json())
       .then(setSessions)
       .catch(() => setSessions([]));
   }, []);
 
   async function takeSession(id: string) {
-    await fetch("/api/ai/take", {
+    await fetch(withApiBase("/api/ai/take"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ sessionId: id })

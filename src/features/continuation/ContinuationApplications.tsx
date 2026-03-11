@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { withApiBase } from "@/lib/apiBase";
 
 interface ContinuationApp {
   id: string;
@@ -23,7 +24,7 @@ export default function ContinuationApplications() {
   const [apps, setApps] = useState<ContinuationApp[]>([]);
 
   useEffect(() => {
-    fetch("/api/continuation")
+    fetch(withApiBase("/api/continuation"))
       .then((res) => res.json())
       .then((data: ContinuationApp[]) => {
         setApps(

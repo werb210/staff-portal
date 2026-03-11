@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { withApiBase } from "@/lib/apiBase";
 
 interface TrendData {
   date: string;
@@ -11,7 +12,7 @@ export default function CommissionTrendChart() {
   useEffect(() => {
     const token = localStorage.getItem("auth_token");
 
-    fetch("/api/analytics/commission-trend", {
+    fetch(withApiBase("/api/analytics/commission-trend"), {
       headers: {
         Authorization: `Bearer ${token}`,
       },

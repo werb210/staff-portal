@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useMemo } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Outlet, Route, Routes } from "react-router-dom";
 import { AuthContext, AuthProvider } from "@/auth/AuthContext";
 import { roleIn } from "@/auth/roles";
 import { usePortalSessionGuard } from "@/auth/portalSessionGuard";
@@ -33,10 +33,11 @@ function SessionGuard() {
 }
 
 function VoiceBootstrap() {
-  const { role } = useAuth();
+  const { role, authenticated, authStatus } = useAuth();
 
   useEffect(() => {
     if (process.env.NODE_ENV === "test") return;
+    if (!authenticated || authStatus !== "authenticated") return;
     if (!roleIn(role, ["Admin", "Staff"])) return;
 
     void bootstrapVoice().catch(() => {
@@ -46,29 +47,41 @@ function VoiceBootstrap() {
     return () => {
       void destroyVoiceDevice();
     };
-  }, [role]);
+  }, [authenticated, authStatus, role]);
 
   return null;
 }
 
 function ServerCallSyncBootstrap() {
-  useServerCallSync();
+  const { authenticated, authStatus } = useAuth();
+  useServerCallSync({ enabled: authenticated && authStatus === "authenticated" });
   return null;
+}
+
+function AppShell() {
+  return (
+    <>
+      <SessionGuard />
+      <VoiceBootstrap />
+      <ServerCallSyncBootstrap />
+      <ActiveCallBanner />
+      <IncomingCallModal />
+      <DialerButton />
+      <PortalDialer />
+      <IncomingCallOverlay />
+      <MobileShell>
+        <Outlet />
+      </MobileShell>
+    </>
+  );
 }
 
 const AppRoutes = () => (
   <BrowserRouter>
-    <SessionGuard />
-    <VoiceBootstrap />
-    <ServerCallSyncBootstrap />
-    <ActiveCallBanner />
-    <IncomingCallModal />
-    <DialerButton />
-    <PortalDialer />
     {process.env.NODE_ENV === "test" ? <AuthProbe /> : null}
-    <MobileShell>
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route element={<AppShell />}>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
         <Route
@@ -95,8 +108,8 @@ const AppRoutes = () => (
         <Route path="/applications/:id" element={<ProtectedRoute><ApplicationDetail /></ProtectedRoute>} />
         <Route path="/lenders/*" element={<ProtectedRoute><LendersPage /></ProtectedRoute>} />
         <Route path="/reports" element={<ProtectedRoute><RequireRole roles={["Admin", "Staff", "Marketing"]}><div>Reports</div></RequireRole></ProtectedRoute>} />
-      </Routes>
-    </MobileShell>
+      </Route>
+    </Routes>
   </BrowserRouter>
 );
 
@@ -108,10 +121,7 @@ export default function App() {
     return (
       <QueryClientProvider client={queryClient}><ErrorBoundary>
         <ToastProvider>
-          <>
-            <AppRoutes />
-            <IncomingCallOverlay />
-          </>
+          <AppRoutes />
         </ToastProvider>
       </ErrorBoundary></QueryClientProvider>
     );
@@ -121,10 +131,7 @@ export default function App() {
     <AuthProvider>
       <QueryClientProvider client={queryClient}><ErrorBoundary>
         <ToastProvider>
-          <>
-            <AppRoutes />
-            <IncomingCallOverlay />
-          </>
+          <AppRoutes />
         </ToastProvider>
       </ErrorBoundary></QueryClientProvider>
     </AuthProvider>

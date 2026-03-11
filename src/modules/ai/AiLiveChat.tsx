@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { withApiBase } from "@/lib/apiBase";
 
 type Message = {
   role: "user" | "ai" | "staff";
@@ -49,7 +50,7 @@ export default function AiLiveChat({ sessionId }: { sessionId: string }) {
   }
 
   async function closeSession() {
-    await fetch("/api/ai/close", {
+    await fetch(withApiBase("/api/ai/close"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ sessionId })

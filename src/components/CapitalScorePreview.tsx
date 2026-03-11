@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { withApiBase } from "@/lib/apiBase";
 
 type ScoringResponse = {
   score?: number;
@@ -9,7 +10,7 @@ export default function CapitalScorePreview() {
   const [score, setScore] = useState<ScoringResponse | null>(null);
 
   async function testScore() {
-    const res = await fetch("/api/scoring", {
+    const res = await fetch(withApiBase("/api/scoring"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
