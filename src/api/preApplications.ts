@@ -1,3 +1,4 @@
+import { withApiBase } from "@/lib/apiBase";
 export interface PreApplicationRecord {
   id: string;
   companyName: string;
@@ -8,7 +9,7 @@ export interface PreApplicationRecord {
 }
 
 export async function fetchPreApplications(): Promise<PreApplicationRecord[]> {
-  const res = await fetch("/api/preapp/admin/list", {
+  const res = await fetch(withApiBase("/api/preapp/admin/list"), {
     credentials: "include",
   });
 
@@ -20,7 +21,7 @@ export async function fetchPreApplications(): Promise<PreApplicationRecord[]> {
 }
 
 export async function convertPreApplication(id: string) {
-  const res = await fetch("/api/preapp/admin/convert", {
+  const res = await fetch(withApiBase("/api/preapp/admin/convert"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",

@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { withApiBase } from "@/lib/apiBase";
 import { setCallStatus, type CallStatus } from "./callStore";
 
 const VALID_STATUSES: ReadonlySet<CallStatus> = new Set([
@@ -12,26 +13,28 @@ const VALID_STATUSES: ReadonlySet<CallStatus> = new Set([
   "voicemail"
 ]);
 
-function resolveApiUrl(path: string): string {
-  if (typeof window !== "undefined" && window.location?.origin) {
-    return new URL(path, window.location.origin).toString();
-  }
-
-  return path;
-}
+type ServerCallSyncOptions = {
+  enabled?: boolean;
+};
 
 function asCallStatus(value: unknown): CallStatus | null {
   if (typeof value !== "string") return null;
   return VALID_STATUSES.has(value as CallStatus) ? (value as CallStatus) : null;
 }
 
-export function useServerCallSync(): void {
+export function useServerCallSync({ enabled = true }: ServerCallSyncOptions = {}): void {
   useEffect(() => {
+    if (!enabled) return;
+
     const interval = setInterval(async () => {
       try {
-        const res = await fetch(resolveApiUrl("/api/call/status"), {
+        const res = await fetch(withApiBase("/api/call/status"), {
           credentials: "include"
         });
+
+        if (res.status === 404) {
+          return;
+        }
 
         if (!res.ok) return;
 
@@ -46,5 +49,5 @@ export function useServerCallSync(): void {
     }, 5000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [enabled]);
 }

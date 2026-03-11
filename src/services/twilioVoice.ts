@@ -1,11 +1,12 @@
 import { Device } from "@twilio/voice-sdk";
+import { withApiBase } from "@/lib/apiBase";
 
 type VoiceDevice = InstanceType<typeof Device>;
 
 let device: VoiceDevice | null = null;
 
 export async function fetchTwilioToken(): Promise<string> {
-  const response = await fetch("/api/twilio/token", { credentials: "include" });
+  const response = await fetch(withApiBase("/api/twilio/token"), { credentials: "include" });
   if (!response.ok) {
     throw new Error("Failed to fetch Twilio token");
   }

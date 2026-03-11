@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { withApiBase } from "@/lib/apiBase";
 
 type IssueReport = {
   id: string;
@@ -22,7 +23,7 @@ function IssueReports({ isAdmin = true }: IssueReportsProps) {
   }, [isAdmin]);
 
   async function load() {
-    const res = await fetch("/api/support/report");
+    const res = await fetch(withApiBase("/api/support/report"));
     const data = (await res.json()) as { issues?: IssueReport[] } | IssueReport[];
     setIssues(Array.isArray(data) ? data : (data.issues ?? []));
   }

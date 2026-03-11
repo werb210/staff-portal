@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import {
+import { withApiBase } from "@/lib/apiBase";
   LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid,
   PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar
 } from "recharts";
@@ -23,13 +24,13 @@ export default function MayaIntelligence() {
   const [roiProjection, setRoiProjection] = useState<number | null>(null);
 
   useEffect(() => {
-    fetch("/api/maya/overview")
+    fetch(withApiBase("/api/maya/overview"))
       .then(res => res.json())
       .then(setData);
   }, []);
 
   async function simulateROI() {
-    const res = await fetch("/api/maya/roi-simulate", {
+    const res = await fetch(withApiBase("/api/maya/roi-simulate"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ budget: roiInput })
@@ -39,7 +40,7 @@ export default function MayaIntelligence() {
   }
 
   async function rollbackModel(version: string) {
-    await fetch("/api/maya/model-rollback", {
+    await fetch(withApiBase("/api/maya/model-rollback"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ version })

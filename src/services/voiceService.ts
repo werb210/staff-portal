@@ -1,5 +1,6 @@
 import { Call, Device } from "@twilio/voice-sdk";
 import { setCallStatus } from "@/dialer/callStore";
+import { withApiBase } from "@/lib/apiBase";
 
 let device: Device | null = null;
 let activeCall: Call | null = null;
@@ -20,7 +21,7 @@ export async function initVoice(_userId?: string): Promise<void> {
   registrationInProgress = true;
 
   try {
-    const res = await fetch("/api/voice/token", {
+    const res = await fetch(withApiBase("/api/voice/token"), {
       method: "POST",
       credentials: "include"
     });
@@ -84,7 +85,7 @@ function scheduleTokenRefresh() {
 
   tokenRefreshTimer = setTimeout(async () => {
     try {
-      const res = await fetch("/api/voice/token", {
+      const res = await fetch(withApiBase("/api/voice/token"), {
         method: "POST",
         credentials: "include"
       });
@@ -110,7 +111,7 @@ function startPresenceHeartbeat() {
   heartbeatInterval = window.setInterval(() => {
     if (!device) return;
 
-    void fetch("/api/voice/presence", {
+    void fetch(withApiBase("/api/voice/presence"), {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
@@ -145,7 +146,7 @@ export async function acceptIncoming(call: Call): Promise<boolean> {
 
   if (callSid) {
     try {
-      const lockResponse = await fetch(`/api/call/lock/${encodeURIComponent(String(callSid))}`, {
+      const lockResponse = await fetch(withApiBase(`/api/call/lock/${encodeURIComponent(String(callSid))}`), {
         credentials: "include"
       });
 
