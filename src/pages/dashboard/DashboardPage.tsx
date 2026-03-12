@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import Dashboard from "@/pages/dashboard/Dashboard";
 
 const DashboardPage = () => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
 
   if (isLoading) {
     return <AppLoading />;
@@ -13,6 +13,10 @@ const DashboardPage = () => {
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
+  }
+
+  if (!user) {
+    return <div>Loading...</div>;
   }
 
   return (
