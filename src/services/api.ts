@@ -1,5 +1,6 @@
-import { getApiBaseUrl } from "@/config/api";
 import { getRequestId } from "@/api/requestId";
+import { getApiBaseUrl } from "@/config/api";
+import { apiClient } from "@/lib/apiClient";
 
 function normalizePath(path: string) {
   if (!path.startsWith("/")) path = `/${path}`;
@@ -33,30 +34,31 @@ const navigateTo = (path: string) => {
 
 export async function apiRequest<T>(url: string, options: RequestInit = {}): Promise<T> {
   const requestId = getRequestId();
-  const res = await fetch(url, {
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Request-Id": requestId,
-      ...(options.headers ?? {})
-    },
-    ...options
-  });
+  const method = (options.method || "GET") as "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
-  if (res.status === 401) {
-    navigateTo("/login");
-    throw new Error("unauthorized");
+  try {
+    const res = await apiClient.request<T>({
+      url,
+      method,
+      data: options.body,
+      headers: {
+        "X-Request-Id": requestId,
+        ...(options.headers as Record<string, string> | undefined)
+      }
+    });
+
+    return res.data;
+  } catch (error: unknown) {
+    const status = (error as { response?: { status?: number } })?.response?.status;
+
+    if (status === 401) {
+      navigateTo("/login");
+      throw new Error("unauthorized");
+    }
+
+    const apiError = (error as { response?: { data?: { error?: string } } })?.response?.data?.error;
+    throw new Error(apiError || "api_error");
   }
-
-  const data = await res.json().catch(() => ({}));
-
-  if (!res.ok) {
-    const apiError =
-      data && typeof data === "object" && "error" in data && typeof data.error === "string" ? data.error : "api_error";
-    throw new Error(apiError);
-  }
-
-  return data as T;
 }
 
 export const redirectToLogin = () => {
