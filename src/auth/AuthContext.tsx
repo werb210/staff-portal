@@ -246,9 +246,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             return normalizeAuthUser(profile.data?.user ?? profile.data);
           } catch {
             const response = await fetch(withApiBase("/api/auth/me"), {
-              headers: { Authorization: `Bearer ${token}` },
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
               credentials: "include",
             });
+
+            if (response.status === 401) {
+              if (typeof window !== "undefined" && window.location.pathname !== "/login") {
+                window.location.href = "/login";
+              }
+              throw createHttpError(401, "Unauthorized");
+            }
 
             if (!response.ok) {
               throw createHttpError(response.status, "Unable to hydrate auth session.");

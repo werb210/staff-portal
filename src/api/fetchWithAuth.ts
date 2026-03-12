@@ -5,7 +5,7 @@ import { ApiError } from "@/lib/api";
 export async function fetchWithAuth(
   input: RequestInfo,
   init: RequestInit = {}
-): Promise<Response> {
+): Promise<Response | undefined> {
   const token = getAccessToken();
 
   if (!token) {
@@ -27,6 +27,8 @@ export async function fetchWithAuth(
 
   if (response.status === 401) {
     reportAuthFailure("unauthorized");
+    window.location.href = "/login";
+    return;
   }
 
   return response;
