@@ -1,12 +1,12 @@
 import api from "@/lib/api";
 
 export async function startOtp(phone: string) {
-  const res = await api.post("/auth/otp/start", { phone });
+  const res = await api.post("/api/auth/otp/start", { phone });
   return res.data;
 }
 
 export async function verifyOtp(phone: string, code: string) {
-  const res = await api.post("/auth/otp/verify", { phone, code });
+  const res = await api.post("/api/auth/otp/verify", { phone, code });
 
   const data = res.data;
 
@@ -30,7 +30,7 @@ export async function verifyOtp(phone: string, code: string) {
 
 export async function logout() {
   try {
-    await api.post("/auth/logout");
+    await api.post("/api/auth/logout");
   } catch {}
 
   localStorage.removeItem("boreal_staff_token");
