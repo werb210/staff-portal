@@ -27,17 +27,10 @@ export function useServerCallSync({ enabled = true }: ServerCallSyncOptions = {}
     if (!enabled) return;
 
     const interval = setInterval(async () => {
-      const serverStatus = (await getCallStatus()) as { status?: unknown; activeCall?: unknown };
+      const serverStatus = await getCallStatus();
       const activeCall = serverStatus?.activeCall ?? false;
+      const status = asCallStatus(serverStatus?.status);
 
-      if (!serverStatus || typeof serverStatus !== "object") {
-        if (!activeCall) {
-          setCallStatus("idle");
-        }
-        return;
-      }
-
-      const status = asCallStatus(serverStatus.status);
       if (status) {
         setCallStatus(status);
       } else if (!activeCall) {
