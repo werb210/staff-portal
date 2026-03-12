@@ -1,36 +1,29 @@
-import axios from "axios";
 import { clearToken, getToken } from "@/auth/tokenStorage";
-
-const API_BASE = import.meta.env.VITE_API_URL || "https://api.staff.boreal.financial";
-
-const api = axios.create({
-  baseURL: API_BASE,
-  withCredentials: true
-});
+import { apiClient } from "@/lib/apiClient";
 
 const token = getToken();
 
 if (token) {
-  api.defaults.headers.common.Authorization = `Bearer ${token}`;
+  apiClient.defaults.headers.common.Authorization = `Bearer ${token}`;
 }
 
-api.interceptors.request.use((config) => {
-  const token = getToken();
+apiClient.interceptors.request.use((config) => {
+  const currentToken = getToken();
 
-  if (token) {
+  if (currentToken) {
     config.headers = config.headers || {};
-    config.headers.Authorization = `Bearer ${token}`;
+    config.headers.Authorization = `Bearer ${currentToken}`;
   }
 
   return config;
 });
 
-api.interceptors.response.use(
+apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
       clearToken();
-      delete api.defaults.headers.common.Authorization;
+      delete apiClient.defaults.headers.common.Authorization;
       window.location.href = "/login";
     }
 
@@ -38,4 +31,4 @@ api.interceptors.response.use(
   }
 );
 
-export default api;
+export default apiClient;

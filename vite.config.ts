@@ -4,6 +4,9 @@ import { VitePWA } from "vite-plugin-pwa";
 import path from "path";
 
 export default defineConfig({
+  define: {
+    "process.env": {}
+  },
   plugins: [
     react(),
     VitePWA({

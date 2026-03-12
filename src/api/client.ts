@@ -1,12 +1,5 @@
-import axios from "axios";
 import { getToken } from "@/auth/tokenStorage";
-
-const baseURL = process.env.NODE_ENV === "test" ? "http://localhost" : (import.meta.env.VITE_API_URL || "https://api.staff.boreal.financial");
-
-const apiClient = axios.create({
-  baseURL,
-  withCredentials: true,
-});
+import { apiClient } from "@/lib/apiClient";
 
 apiClient.interceptors.request.use((config) => {
   const token = getToken();

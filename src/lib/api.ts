@@ -1,57 +1,27 @@
-import { API_BASE } from "../config/apiBase"
+import { apiClient } from "@/lib/apiClient";
 
-export async function apiFetch(path: string, options: RequestInit = {}) {
-  const url = `${API_BASE}${path.startsWith("/") ? path : `/${path}`}`
-
-  const res = await fetch(url, {
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers || {})
-    },
-    ...options
-  })
-
-  if (!res.ok) {
-    const text = await res.text()
-    throw new Error(`API ${res.status}: ${text}`)
-  }
-
-  return res.json()
+function normalizePath(path: string): string {
+  return path.startsWith("/") ? path : `/${path}`;
 }
 
-export async function request(
-  path: string,
-  options: RequestInit = {}
-) {
-  const base =
-    import.meta.env.VITE_API_URL ||
-    "https://api.staff.boreal.financial"
+export async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const method = (options.method || "GET") as "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+  const response = await apiClient.request<T>({
+    url: normalizePath(path),
+    method,
+    data: options.body,
+    headers: options.headers as Record<string, string> | undefined
+  });
 
-  const url =
-    path.startsWith("http")
-      ? path
-      : `${base}${path.startsWith("/") ? "" : "/"}${path}`
+  return response.data;
+}
 
-  const res = await fetch(url, {
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers || {})
-    },
-    ...options
-  })
-
-  if (!res.ok) {
-    const text = await res.text()
-    throw new Error(text || `API ${res.status}`)
-  }
-
-  return res.json()
+export async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+  return apiFetch<T>(path, options);
 }
 
 export const api = {
   request
-}
+};
 
-export default api
+export default api;
