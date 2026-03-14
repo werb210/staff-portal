@@ -1,8 +1,10 @@
 import React from "react";
-import { getRequestId } from "@/utils/requestId";
 
-export class ErrorBoundary extends React.Component<React.PropsWithChildren, { hasError: boolean }> {
-  constructor(props: React.PropsWithChildren) {
+type Props = { children: React.ReactNode };
+type State = { hasError: boolean };
+
+class ErrorBoundary extends React.Component<Props, State> {
+  constructor(props: Props) {
     super(props);
     this.state = { hasError: false };
   }
@@ -11,13 +13,19 @@ export class ErrorBoundary extends React.Component<React.PropsWithChildren, { ha
     return { hasError: true };
   }
 
-  componentDidCatch() {
-    console.error("UI render failure", { requestId: getRequestId() });
+  componentDidCatch(error: Error, info: React.ErrorInfo) {
+    console.error("Portal runtime error:", error, info);
   }
 
   render() {
     if (this.state.hasError) {
-      return <div role="alert">Unexpected error</div>;
+      return (
+        <div style={{ padding: 40 }}>
+          <h2>Portal Error</h2>
+          <p>The portal encountered an unexpected error.</p>
+          <p>Please refresh the page.</p>
+        </div>
+      );
     }
 
     return this.props.children;
