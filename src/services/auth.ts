@@ -2,6 +2,7 @@ import api from "../core/apiClient";
 import { clearToken, setToken } from "@/auth/tokenStorage";
 import { apiFetch } from "@/lib/api";
 import { normalizePhone } from "@/utils/phone";
+import { ENV } from "@/config/env";
 
 export type AuthenticatedUser = {
   id?: string;
@@ -32,6 +33,9 @@ export async function verifyOtp(payload: { phone: string; code: string }) {
 
   if (token) {
     setToken(token);
+    if (typeof window !== "undefined") {
+      window.sessionStorage.setItem(ENV.JWT_STORAGE_KEY, token);
+    }
     api.defaults.headers.common.Authorization = `Bearer ${token}`;
   }
 
