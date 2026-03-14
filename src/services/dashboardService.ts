@@ -1,13 +1,19 @@
 import { apiFetch } from "../lib/apiClient";
 
-export async function loadDashboard() {
+export async function getDashboardMetrics() {
   return apiFetch("/api/dashboard/metrics");
 }
 
-export async function loadPipeline() {
+export const loadDashboard = getDashboardMetrics;
+
+export async function getPipeline() {
   return apiFetch("/api/dashboard/pipeline");
 }
 
-export async function loadOffers() {
+export const loadPipeline = getPipeline;
+
+export async function getOffers() {
   return apiFetch("/api/dashboard/offers");
 }
+
+export const loadOffers = getOffers;
