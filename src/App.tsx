@@ -18,7 +18,6 @@ import PipelinePage from "@/pages/pipeline/PipelinePage";
 import ApplicationDetail from "@/pages/application/ApplicationDetail";
 import AuthProbe from "@/__tests__/support/AuthProbe";
 import { useAuth } from "@/auth/AuthContext";
-import { ErrorBoundary } from "@/components/ErrorBoundary";
 import ToastProvider from "@/components/ui/ToastProvider";
 import DialerButton from "@/components/DialerButton";
 import MobileShell from "@/mobile/MobileShell";
@@ -121,21 +120,21 @@ export default function App() {
 
   if (existingAuthContext) {
     return (
-      <QueryClientProvider client={queryClient}><ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
         <ToastProvider>
           <AppRoutes />
         </ToastProvider>
-      </ErrorBoundary></QueryClientProvider>
+      </QueryClientProvider>
     );
   }
 
   return (
     <AuthProvider>
-      <QueryClientProvider client={queryClient}><ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
         <ToastProvider>
           <AppRoutes />
         </ToastProvider>
-      </ErrorBoundary></QueryClientProvider>
+      </QueryClientProvider>
     </AuthProvider>
   );
 }
