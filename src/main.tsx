@@ -5,8 +5,10 @@ import { BrowserRouter } from "react-router-dom";
 import App from "./App";
 import { SiloProvider } from "@/core/SiloContext";
 import { checkServerHealth } from "./services/healthService";
+import { installFetchGuard } from "./utils/fetchGuard";
 
 registerSW({ immediate: true });
+installFetchGuard();
 
 void checkServerHealth().then((data) => {
   console.log("Server health:", data);
