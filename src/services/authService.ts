@@ -1,11 +1,13 @@
 import { apiFetch } from "../lib/apiClient";
 
-export async function requestOtp(phone: string) {
+export async function startOtp(phone: string) {
   return apiFetch("/api/auth/otp/start", {
     method: "POST",
     body: JSON.stringify({ phone })
   });
 }
+
+export const requestOtp = startOtp;
 
 export async function verifyOtp(code: string) {
   return apiFetch("/api/auth/otp/verify", {
